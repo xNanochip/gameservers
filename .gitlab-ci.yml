@@ -18,8 +18,8 @@ stages:
             #git stash;
             echo "fetching git";
             git fetch origin master;
-            echo "resetting git";
-            git reset --hard origin/master;
+            echo "hard resetting git";
+            git reset --hard;
             echo "pulling git";
             git pull;
             echo "chmodding";
