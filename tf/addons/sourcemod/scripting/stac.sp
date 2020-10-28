@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.4.6d"
+#define PLUGIN_VERSION  "3.4.6e"
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 public Plugin myinfo =
