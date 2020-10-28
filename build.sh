@@ -1,3 +1,4 @@
+#/bin/bash
 shopt -s globstar
 
 SPCOMP_PATH=$(realpath "tf/addons/sourcemod/scripting/spcomp")
@@ -6,7 +7,13 @@ SCRIPTS_DIR=$(realpath 'tf/addons/sourcemod/scripting/')
 
 chmod 744 $SPCOMP_PATH
 
-git diff --name-only HEAD $1 | grep "\.sp$" > ./00
+
+touch ./00
+
+find . -iname '*.sp' -mmin -5 -print0 | while read -d $'\0' file
+do
+    echo $file>> ./00
+done
 
 # ==========================
 # Compile all scripts that don't have any smxes
@@ -65,3 +72,4 @@ rm ./00
 echo "[INFO] All plugin files are recompiled."
 
 exit;
+
