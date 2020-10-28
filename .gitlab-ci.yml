@@ -14,14 +14,16 @@ stages:
         for d in ./*/ ; do
             cd "$d";
             pwd;
+            echo "fetching git"
             git stash;
             git fetch origin master;
             git reset --hard origin/master;
-
+            echo "chmodding"
             chmod 744 build.sh;
             chmod 744 start.sh;
-            ./build.sh;
-
+            echo "starting compile script"
+            bash ./build.sh;
+            echo "leaving directory"
             cd ../;
         done
 
