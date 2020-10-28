@@ -1,19 +1,27 @@
 #!/bin/bash
-pwd;
-echo "stashing git";
-git stash;
-echo "fetching git";
-git fetch origin master;
-echo "resetting git";
-git reset --hard origin/master;
-# checking out master
-git config pull.rebase false;
-git checkout master;
-echo "pulling git"
-git pull -f --progress;
-echo "chmodding";
-chmod 744 build.sh;
-chmod 744 start.sh;
+
+cd /srv/daemon-data/
+for d in ./*/ ; do
+    pwd;
+    echo "stashing git";
+    git stash;
+    echo "fetching git";
+    git fetch origin master;
+    echo "resetting git";
+    git reset --hard origin/master;
+    # checking out master
+    git config pull.rebase false;
+    git checkout master;
+    echo "pulling git"
+    git pull -f --progress;
+    echo "chmodding";
+    #chmod 744 build.sh;
+    chmod 744 start.sh;
+    # leaving directory
+    cd ../
+done
+
+
 echo "starting compile script";
 
 shopt -s globstar
@@ -24,12 +32,11 @@ SCRIPTS_DIR=$(realpath 'tf/addons/sourcemod/scripting/')
 
 chmod 744 $SPCOMP_PATH
 
-rm ./00
-touch ./00
-
-find . -iname '*.sp' -mmin -5 -print0 | while read -d $'\0' file
+rm /tmp/00
+touch /tmp/00
+find /srv/daemon-data/ -iname '*.sp' -mmin -5 -print0 | while read -d $'\0' file
 do
-    echo $file>> ./00
+    echo $file>> /tmp/00
 done
 
 # ==========================
@@ -50,14 +57,14 @@ do
         PLUGIN_COMPILED_PATH="$COMPILED_DIR/$(basename $PLUGIN_NAME).smx"
 
         if [[ ! -f "$PLUGIN_COMPILED_PATH" ]]; then
-            echo $PLUGIN_SCRIPT_PATH >> ./00
+            echo $PLUGIN_SCRIPT_PATH >> /tmp//00
         fi
     fi
 done
 
 echo "[INFO] Full compile list:"
 echo "========================="
-cat ./00
+cat /tmp/00
 echo "========================="
 
 
@@ -83,8 +90,8 @@ while read p; do
     if [[ -f "$PLUGIN_SCRIPT_PATH" ]]; then
         $SPCOMP_PATH -D$SCRIPTS_DIR `realpath --relative-to $SCRIPTS_DIR $PLUGIN_SCRIPT_PATH` -o$PLUGIN_COMPILED_PATH -v0
     fi
-done < ./00
-rm ./00
+done < /tmp/00
+rm /tmp/00
 
 echo "[INFO] All plugin files are recompiled."
 
