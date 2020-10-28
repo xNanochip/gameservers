@@ -10,7 +10,7 @@ git reset --hard origin/master;
 git config pull.rebase false;
 git checkout master;
 echo "pulling git"
-git pull master;
+git pull;
 echo "chmodding";
 chmod 744 build.sh;
 chmod 744 start.sh;
