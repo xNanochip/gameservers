@@ -60,14 +60,14 @@ public Action Cmd_PmSpy(int client, int args)
 		pmspy[client] = false;
 		SetClientCookie(client, cPmspy, "false");
 		if (csgo) ReplyToCommand(client, "[PM SPY] Disabled.");
-		else CReplyToCommand(client, "{green}[PM SPY] Disabled.");
+		else MC_ReplyToCommand(client, "{green}[PM SPY] Disabled.");
 	}
 	else
 	{
 		pmspy[client] = true;
 		SetClientCookie(client, cPmspy, "true");
 		if (csgo) ReplyToCommand(client, "[PM SPY] Enabled.");
-		else CReplyToCommand(client, "{green}[PM SPY] Enabled.");
+		else MC_ReplyToCommand(client, "{green}[PM SPY] Enabled.");
 	}
 	return Plugin_Handled;
 }
@@ -162,12 +162,12 @@ void SendPrivateChat(client, target, const char[] message)
 		if (csgo)
 			PrintToChat(target, "(Console to You) Console :  %s", message);
 		else
-			CPrintToChat(target, "{black}({darkmagenta}Console {azure}to {fuchsia}You{black}) {default}Console :  {azure}%s", message);
+			MC_PrintToChat(target, "{black}({darkmagenta}Console {azure}to {fuchsia}You{black}) {default}Console :  {azure}%s", message);
 	}
 	
 	if (BaseComm_IsClientGagged(client))
 	{
-		CPrintToChat(client, "[{green}SM{default}] You may not private message someone while gagged.");
+		MC_PrintToChat(client, "[{green}SM{default}] You may not private message someone while gagged.");
 		return;
 	}
 	
@@ -176,13 +176,13 @@ void SendPrivateChat(client, target, const char[] message)
 		if (csgo)
 			PrintToChat(client, "(You to %N) %N :  %s", target, client, message);
 		else
-			CPrintToChatEx(client, client, "{black}({fuchsia}You {azure}to {darkmagenta}%N{black}) {teamcolor}%N {default}:  {azure}%s", target, client, message);
+			MC_PrintToChatEx(client, client, "{black}({fuchsia}You {azure}to {darkmagenta}%N{black}) {teamcolor}%N {default}:  {azure}%s", target, client, message);
 	}
 	
 	if (csgo)
 		PrintToChat(target, "(%N to You) %N :  %s", client, client, message);
 	else
-		CPrintToChatEx(target, client, "{black}({darkmagenta}%N {azure}to {fuchsia}You{black}) {teamcolor}%N {default}:  {azure}%s", client, client, message);
+		MC_PrintToChatEx(target, client, "{black}({darkmagenta}%N {azure}to {fuchsia}You{black}) {teamcolor}%N {default}:  {azure}%s", client, client, message);
 	
 	for (new i = 1; i <= MaxClients; i++)
 	{
@@ -191,7 +191,7 @@ void SendPrivateChat(client, target, const char[] message)
 			if (csgo)
 				PrintToChat(i, "[PM SPY] (%N to %N) %N :  %s", client, target, client, message);
 			else
-				CPrintToChatEx(i, client, "{green}[PM SPY] {black}({darkmagenta}%N {azure}to {darkmagenta}%N{black}) {teamcolor}%N {default}:  {azure}%s", client, target, client, message);
+				MC_PrintToChatEx(i, client, "{green}[PM SPY] {black}({darkmagenta}%N {azure}to {darkmagenta}%N{black}) {teamcolor}%N {default}:  {azure}%s", client, target, client, message);
 		}
 	}
 	LogAction(client, -1, "\"%L\" sent a private message to \"%L\" (message: %s)", client, target, message);
