@@ -8,6 +8,7 @@ stages:
     - git config --global core.filemode false
     - git config --global user.email "support@creators.tf"
     - git config --global user.name "Creators.TF Production"
+    - chmod +x ./do.sh
     - bash do.sh
 
 
