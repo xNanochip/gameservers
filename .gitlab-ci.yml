@@ -13,29 +13,14 @@ stages:
     - >
         for d in ./*/ ; do
             cd "$d";
-            if [ -d ".git" ]; then
+            git stash;
+            git fetch origin master;
+            git reset --hard origin/master;
 
-                #CI_LOCAL_REMOTE=`git remote get-url origin`;
-                #CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE##*@}";
-                #CI_LOCAL_REMOTE=`echo $CI_LOCAL_REMOTE | tr : /`
+            chmod 744 build.sh;
+            chmod 744 start.sh;
+            ./build.sh;
 
-                #CI_REMOTE_REMOTE="$CI_SERVER_HOST/$CI_PROJECT_PATH.git"
-                #CI_REMOTE_REMOTE=`echo $CI_REMOTE_REMOTE | tr : /`
-
-                #if [ "$CI_LOCAL_REMOTE" == "$CI_REMOTE_REMOTE" ]; then
-                    #if [ `git rev-parse --abbrev-ref HEAD` == "$CI_COMMIT_REF_NAME" ]; then
-
-                        #COMMIT_OLD=`git rev-parse HEAD`;
-                        git stash;
-                        git fetch origin master;
-                        git reset --hard origin/master;
-
-                        chmod 744 build.sh;
-                        chmod 744 start.sh;
-                        ./build.sh;
-                    #fi;
-                #fi;
-            fi;
             cd ../;
         done
 
