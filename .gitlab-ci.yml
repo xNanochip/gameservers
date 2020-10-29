@@ -9,18 +9,16 @@ stages:
     - cd /srv/daemon-data
     - >
         for d in ./*/ ; do
+            echo "changing directory"
             cd "$d";
             if [ -d ".git" ]; then
-
+                echo "setting variables"
                 CI_LOCAL_REMOTE=`git remote get-url origin`;
                 CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE##*@}";
                 CI_LOCAL_REMOTE=`echo $CI_LOCAL_REMOTE | tr : /`
 
                 CI_REMOTE_REMOTE="$CI_SERVER_HOST/$CI_PROJECT_PATH.git"
                 CI_REMOTE_REMOTE=`echo $CI_REMOTE_REMOTE | tr : /`
-
-                if [ "$CI_LOCAL_REMOTE" == "$CI_REMOTE_REMOTE" ]; then
-                    if [ `git rev-parse --abbrev-ref HEAD` == "$CI_COMMIT_REF_NAME" ]; then
 
                         COMMIT_OLD=`git rev-parse HEAD`;
                         echo "stashing"
@@ -33,8 +31,7 @@ stages:
                         chmod 744 build.sh;
                         chmod 744 start.sh;
                         ./build.sh $COMMIT_OLD;
-                    fi;
-                fi;
+
             fi;
             cd ../;
         done
