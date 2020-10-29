@@ -23,9 +23,13 @@ stages:
                     if [ `git rev-parse --abbrev-ref HEAD` == "$CI_COMMIT_REF_NAME" ]; then
 
                         COMMIT_OLD=`git rev-parse HEAD`;
+                        echo "stashing";
                         git stash;
+                        echo "fetching";
                         git fetch origin $CI_COMMIT_REF_NAME;
+                        echo "resetting;
                         git reset --hard origin/$CI_COMMIT_REF_NAME;
+                        echo "chmodding";
                         chmod 744 build.sh;
                         chmod 744 start.sh;
                         ./build.sh $COMMIT_OLD;
