@@ -50,7 +50,7 @@ deploy-oregon:
 
 deploy-virginia:
     tags:
-    - virginia_public
+    - virginiapub
     <<: *deploy_template
 
 deploy-russia:
