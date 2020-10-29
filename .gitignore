@@ -161,6 +161,6 @@ tf/cfg/*
 !tf/cfg/pure_server_whitelist.txt
 
 # private
-tf/addons/sourcemod/configs/databases.cfg
-tf/addons/sourcemod/configs/discord.cfg
-tf/cfg/quickplay/private.cfg
+#tf/addons/sourcemod/configs/databases.cfg
+#tf/addons/sourcemod/configs/discord.cfg
+#tf/cfg/quickplay/private.cfg
