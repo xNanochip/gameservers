@@ -38,23 +38,10 @@ stages:
             cd ../;
         done
 
-deploy-europe:
-    tags:
-    - europe_public
-    <<: *deploy_template
-
-deploy-oregon:
-    tags:
-    - oregon_public
-    <<: *deploy_template
-
 deploy-virginia:
     tags:
     - virginiapub
     <<: *deploy_template
 
-deploy-russia:
-    tags:
-    - russia_public
-    <<: *deploy_template
+
 
