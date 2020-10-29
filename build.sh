@@ -8,12 +8,7 @@ SCRIPTS_DIR=$(realpath 'tf/addons/sourcemod/scripting/')
 
 chmod 744 $SPCOMP_PATH
 
-rm /tmp/00
-touch /tmp/00
-find /srv/daemon-data/ -iname '*.sp' -mmin -5 -print0 | while read -d $'\0' file
-do
-    echo $file>> /tmp/00
-done
+git diff --name-only HEAD $1 | grep "\.sp$" > ./00
 
 # ==========================
 # Compile all scripts that don't have any smxes
@@ -33,14 +28,14 @@ do
         PLUGIN_COMPILED_PATH="$COMPILED_DIR/$(basename $PLUGIN_NAME).smx"
 
         if [[ ! -f "$PLUGIN_COMPILED_PATH" ]]; then
-            echo $PLUGIN_SCRIPT_PATH >> /tmp//00
+            echo $PLUGIN_SCRIPT_PATH >> ./00
         fi
     fi
 done
 
 echo "[INFO] Full compile list:"
 echo "========================="
-cat /tmp/00
+cat ./00
 echo "========================="
 
 
@@ -66,11 +61,9 @@ while read p; do
     if [[ -f "$PLUGIN_SCRIPT_PATH" ]]; then
         $SPCOMP_PATH -D$SCRIPTS_DIR `realpath --relative-to $SCRIPTS_DIR $PLUGIN_SCRIPT_PATH` -o$PLUGIN_COMPILED_PATH -v0
     fi
-done < /tmp/00
-rm /tmp/00
+done < ./00
+rm ./00
 
 echo "[INFO] All plugin files are recompiled."
 
 exit;
-
-
