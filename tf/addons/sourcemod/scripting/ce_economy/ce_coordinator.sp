@@ -10,6 +10,7 @@
 #define MESSAGE_DELAY 5
 #define JOB_FETCH_INTERVAL 5.0
 #define MAX_RESPONSE_LENGTH 8192
+#define MAX_BODY_REQUEST_SIZE 5000
 
 public Plugin myinfo =
 {
@@ -77,12 +78,19 @@ public Action Timer_JobFetch(Handle timer, any data)
 			m_hMsgQueue.Erase(i);
 			i--;
 			j++;
+			
+			int size = hConf.ExportLength;
+			if(size > MAX_BODY_REQUEST_SIZE)
+			{
+				break;
+			}
 		}
 		hConf.GoBack();
 	}
-
-	char sName[10000];
-	hConf.ExportToString(sName, sizeof(sName));
+	
+	int size = hConf.ExportLength;
+	char[] sName = new char[size + 1];
+	hConf.ExportToString(sName, size);
 	delete hConf;
 
 	CESC_SendAPIRequest(sURL, RequestType_POST, httpJobCallback, _, sName);
