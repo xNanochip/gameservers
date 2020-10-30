@@ -43,7 +43,7 @@ deploy-virginia:
 
 deploy-europe:
     tags:
-    - europepub
+    - eupub
     <<: *deploy_template
 
 deploy-oregon:
