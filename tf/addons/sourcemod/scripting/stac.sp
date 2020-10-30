@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.4.7"
+#define PLUGIN_VERSION  "3.4.4b"
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 public Plugin myinfo =
@@ -161,7 +161,7 @@ public void OnPluginStart()
     // grab player spawns
     HookEvent("player_spawn", ePlayerSpawned);
     // grab player teleports
-    HookEvent("player_teleported", ePlayerTeled);
+    HookEvent("player_teleported", ePlayerTeled, EventHookMode_Pre);
     // grab player name changes
     HookEvent("player_changename", ePlayerChangedName, EventHookMode_Pre);
 
