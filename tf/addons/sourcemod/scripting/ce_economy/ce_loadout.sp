@@ -190,6 +190,7 @@ public Action cResetLoadout(int args)
 	int iTarget = FindTargetBySteamID(sArg1);
 	if (IsClientValid(iTarget))
 	{
+		if (m_bWaitingForLoadout[iTarget])return Plugin_Handled;
 		RequestPlayerLoadout(iTarget, false);
 
 	}
