@@ -241,10 +241,10 @@ public void httpFetchContracker(const char[] content, int size, int status, any 
 			// Getting the Index of the quest.
 			int iIndex = hProgress.GetNum("id");
 				
-			LogMessage("%d :: %d", m_iWaitingForQuest[client], iIndex);
-				
 			if(m_iWaitingForQuest[client] > -1 && m_iWaitingForQuest[client] != iIndex)
 			{
+				LogMessage("Locking it...");
+				
 				m_hQuest[client].m_iIndex = 0;
 				delete hProgress;
 				return;
