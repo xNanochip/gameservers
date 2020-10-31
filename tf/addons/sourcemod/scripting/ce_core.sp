@@ -27,7 +27,6 @@ char m_sPlugins[][] = {
 	"ce_util",
 	"ce_events",
 	"ce_coordinator",
-	"ce_complex_conditions",
 	"ce_models",
 
 	// Manager Subplugins
