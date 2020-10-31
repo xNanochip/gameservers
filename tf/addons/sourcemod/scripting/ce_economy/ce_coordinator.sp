@@ -100,6 +100,7 @@ public Action Timer_JobFetch(Handle timer, any data)
 public void httpJobCallback(const char[] content, int size, int status, any value)
 {
 	PrintToServer(content);
+	return;
 	if(status == StatusCode_Success)
 	{
 		KeyValues kvResponse = new KeyValues("Jobs");
