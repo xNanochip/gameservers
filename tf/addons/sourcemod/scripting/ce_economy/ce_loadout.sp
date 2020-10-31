@@ -265,8 +265,6 @@ public void httpPlayerLoadout(const char[] content, int size, int status, any pa
 	int client = hPack.ReadCell();
 	bool apply = hPack.ReadCell();
 	delete hPack;
-	
-	PrintToServer(content);
 
 	if(status == StatusCode_Success)
 	{
