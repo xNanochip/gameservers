@@ -5,7 +5,7 @@
 #include <ce_coordinator>
 #include <basecomm>
 
-#define SERVER_INFO_INTERVAL 50.0
+#define SERVER_INFO_INTERVAL 60.0
 
 bool g_bGCEnabled = true;
 
