@@ -49,7 +49,7 @@ char m_sPlugins[][] = {
 
 	// Misc Subplugins
 	"ce_testing",
-	"ce_mann_vs_machines"
+	"ce_gamemode_mann_vs_machines"
 };
 
 public void OnAllPluginsLoaded()
