@@ -217,6 +217,7 @@ public any Native_SetPlayerQuest(Handle plugin, int numParams)
 
 public void httpFetchContracker(const char[] content, int size, int status, any client)
 {
+	PrintToServer(content);
 	if(status == StatusCode_Success)
 	{
 		if (content[0] != '"')return;
