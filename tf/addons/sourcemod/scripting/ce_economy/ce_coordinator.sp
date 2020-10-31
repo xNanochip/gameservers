@@ -10,7 +10,7 @@
 #define MESSAGE_DELAY 5
 #define JOB_FETCH_INTERVAL 5.0
 #define MAX_RESPONSE_LENGTH 8192
-#define MAX_BODY_REQUEST_SIZE 5000
+#define MAX_BODY_REQUEST_SIZE 1000
 
 public Plugin myinfo =
 {
