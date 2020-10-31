@@ -217,7 +217,6 @@ public any Native_SetPlayerQuest(Handle plugin, int numParams)
 
 public void httpFetchContracker(const char[] content, int size, int status, any client)
 {
-	PrintToServer(content);
 	if(status == StatusCode_Success)
 	{
 		if (content[0] != '"')return;
@@ -241,6 +240,8 @@ public void httpFetchContracker(const char[] content, int size, int status, any 
 		{
 			// Getting the Index of the quest.
 			int iIndex = hProgress.GetNum("id");
+				
+			LogMessage("%d :: %d", m_iWaitingForQuest[client], iIndex);
 				
 			if(m_iWaitingForQuest[client] > -1 && m_iWaitingForQuest[client] != iIndex)
 			{
