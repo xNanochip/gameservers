@@ -243,8 +243,6 @@ public void httpFetchContracker(const char[] content, int size, int status, any 
 				
 			if(m_iWaitingForQuest[client] > -1 && m_iWaitingForQuest[client] != iIndex)
 			{
-				LogMessage("Locking it...");
-				
 				m_hQuest[client].m_iIndex = 0;
 				delete hProgress;
 				return;
