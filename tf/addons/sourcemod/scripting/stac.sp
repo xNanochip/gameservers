@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.4.4b"
+#define PLUGIN_VERSION  "3.5.0b"
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 public Plugin myinfo =
@@ -160,8 +160,6 @@ public void OnPluginStart()
     HookEvent("teamplay_round_start", eRoundStart);
     // grab player spawns
     HookEvent("player_spawn", ePlayerSpawned);
-    // grab player teleports
-    HookEvent("player_teleported", ePlayerTeled, EventHookMode_Pre);
     // grab player name changes
     HookEvent("player_changename", ePlayerChangedName, EventHookMode_Pre);
 
@@ -617,7 +615,7 @@ public Action ShowDetections(int callingCl, int args)
                 }
                 if (pSilentDetects[Cl] >= 1)
                 {
-                    ReplyToCommand(callingCl, "- %i psilent / norecoil detections for %N", pSilentDetects[Cl], Cl);
+                    ReplyToCommand(callingCl, "- %i silent aim detections for %N", pSilentDetects[Cl], Cl);
                 }
                 if (fakeAngDetects[Cl] >= 1)
                 {
@@ -751,19 +749,18 @@ public Action ePlayerSpawned(Handle event, char[] name, bool dontBroadcast)
     }
 }
 
-public Action ePlayerTeled(Handle event, char[] name, bool dontBroadcast)
-{
-    int Cl = GetClientOfUserId(GetEventInt(event, "userid"));
-    if (IsValidClient(Cl))
-    {
-        timeSinceTeled[Cl] = GetEngineTime();
-    }
-}
-
 public Action ePlayerChangedName(Handle event, char[] name, bool dontBroadcast)
 {
     int userid = GetEventInt(event, "userid");
     NameCheck(userid);
+}
+
+public Action TF2_OnPlayerTeleport(int Cl, int teleporter, bool& result)
+{
+    if (IsValidClient(Cl))
+    {
+        timeSinceTeled[Cl] = GetEngineTime();
+    }
 }
 
 public void TF2_OnConditionAdded(int Cl, TFCond condition)
@@ -866,7 +863,7 @@ void ClearClBasedVars(int userid)
     turnTimes[Cl]               = 0;
     aimsnapDetects[Cl]          = 0;
     pSilentDetects[Cl]          = 0;
-    bhopDetects[Cl]             = 0;
+    bhopDetects[Cl]             = -1;
     isConsecStringOfBhops[Cl]   = false;
     bhopConsecDetects[Cl]       = 0;
     fakeAngDetects[Cl]          = 0;
@@ -1030,8 +1027,6 @@ public Action OnPlayerRunCmd
             //    maxEngineTimeFor[Cl] = engineTime0[Cl] - engineTime1[Cl];
             //}
 
-
-
             // we need this later for decrimenting psilent detections after 20 minutes!
             int userid = GetClientUserId(Cl);
 
@@ -1049,13 +1044,19 @@ public Action OnPlayerRunCmd
             cmdnum1[Cl] = cmdnum0[Cl];
             cmdnum0[Cl] = cmdnum;
 
-            // R O U N D ( fuzzy psilent detection to detect lmaobox silent+ SOOON )
-            // angles2[Cl][0] = RoundFloat(angles2[Cl][0] * 10.0) / 10.0;
-            // angles2[Cl][1] = RoundFloat(angles2[Cl][1] * 10.0) / 10.0;
-            // angles1[Cl][0] = RoundFloat(angles1[Cl][0] * 10.0) / 10.0;
-            // angles1[Cl][1] = RoundFloat(angles1[Cl][1] * 10.0) / 10.0;
-            // angles0[Cl][0] = RoundFloat(angles0[Cl][0] * 10.0) / 10.0;
-            // angles0[Cl][1] = RoundFloat(angles0[Cl][1] * 10.0) / 10.0;
+            // R O U N D ( fuzzy psilent detection to detect lmaobox silent+ and better detect other forms of silent aim )
+            float fuzzyAngles2[2];
+            float fuzzyAngles1[2];
+            float fuzzyAngles0[2];
+
+
+            fuzzyAngles2[0] = RoundFloat(angles2[Cl][0] * 10.0) / 10.0;
+            fuzzyAngles2[1] = RoundFloat(angles2[Cl][1] * 10.0) / 10.0;
+            fuzzyAngles1[0] = RoundFloat(angles1[Cl][0] * 10.0) / 10.0;
+            fuzzyAngles1[1] = RoundFloat(angles1[Cl][1] * 10.0) / 10.0;
+            fuzzyAngles0[0] = RoundFloat(angles0[Cl][0] * 10.0) / 10.0;
+            fuzzyAngles0[1] = RoundFloat(angles0[Cl][1] * 10.0) / 10.0;
+
             if  (
                 AreAnglesUnlaggyAndValid(Cl)
                 &&  // don't run these check if client is currently using a spin bind
@@ -1077,7 +1078,9 @@ public Action OnPlayerRunCmd
                     note that this won't detect some snaps when a player is moving their strafe keys and mouse @ the same time while they are aimlocking.
                     i'll *try* to work mouse movement into this function at SOME point but it works reasonably well for right now.
                 */
-                // don't run this check if cvar is -1
+                // is this a fuzzy detect or not
+                int fuzzy = -1;
+                // don't run this check if silent aim cvar is -1
                 if (maxPsilentDetections != -1)
                 {
                     if
@@ -1096,6 +1099,29 @@ public Action OnPlayerRunCmd
                              && angles1[Cl][1] != angles2[Cl][1]
                         )
                     )
+                    {
+                        fuzzy = 0;
+                    }
+                    else if
+                    (
+                        // etc
+                        (
+                                fuzzyAngles0[0] == fuzzyAngles2[0]
+                             && fuzzyAngles0[1] == fuzzyAngles2[1]
+                        )
+                        &&
+                        // etc
+                        (
+                                fuzzyAngles1[0] != fuzzyAngles0[0]
+                             && fuzzyAngles1[1] != fuzzyAngles0[1]
+                             && fuzzyAngles1[0] != fuzzyAngles2[0]
+                             && fuzzyAngles1[1] != fuzzyAngles2[1]
+                        )
+                    )
+                    {
+                        fuzzy = 1;
+                    }
+                    if (fuzzy > -1)
                     {
                         /*
                             ok - lets make sure there's a difference of at least 1 degree on either axis to avoid most fake detections
@@ -1124,15 +1150,14 @@ public Action OnPlayerRunCmd
                             // have this detection expire in 20 minutes
                             CreateTimer(1200.0, Timer_decr_pSilent, userid);
                             // print a bunch of bullshit
-                            PrintToImportant("{hotpink}[StAC]{white} SilentAim detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i", aDiffReal, Cl,  pSilentDetects[Cl]);
+                            PrintToImportant("{hotpink}[StAC]{white} SilentAim detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}. fuzzy = {blue}%i", aDiffReal, Cl,  pSilentDetects[Cl], fuzzy);
                             PrintToImportant("{white}User Net Info: {palegreen}%.2f{white}%% loss, {palegreen}%.2f{white}%% choke, {palegreen}%.2f{white} ms ping", loss, choke, ping);
                             CPrintToSTV("angles0: x %.2f y %.2f angles1: x %.2f y %.2f angles2: x %.2f y %.2f", angles0[Cl][0], angles0[Cl][1], angles1[Cl][0], angles1[Cl][1], angles2[Cl][0], angles2[Cl][1]);
                             CPrintToSTV("cmdnum0: %i cmdnum1: %i cmdnum2: %i", cmdnum0[Cl], cmdnum1[Cl], cmdnum2[Cl]);
                             PrintToImportant("Time between client ticks: %f", engineTime0[Cl] - engineTime1[Cl]);
-                            StacLog("[StAC] SilentAim detection of %.2f° on \n%L.\nDetections so far: %i", aDiffReal, Cl,  pSilentDetects[Cl]);
+                            StacLog("[StAC] SilentAim detection of %.2f° on \n%L.\nDetections so far: %i.\nfuzzy = %i", aDiffReal, Cl,  pSilentDetects[Cl], fuzzy);
                             StacLog("\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\n angles2: x %.2f y %.2f\nCmdnum:\n cmdnum0: %i\n cmdnum1: %i\n cmdnum2: %i", loss, choke, ping, angles0[Cl][0], angles0[Cl][1], angles1[Cl][0], angles1[Cl][1], angles2[Cl][0], angles2[Cl][1], cmdnum0[Cl], cmdnum1[Cl], cmdnum2[Cl]);
                             StacLog("Time between client ticks: %f", engineTime0[Cl] - engineTime1[Cl]);
-
 
                             // BAN USER if they trigger too many detections
                             if (pSilentDetects[Cl] >= maxPsilentDetections && maxPsilentDetections > 0)
@@ -1299,7 +1324,7 @@ public Action OnPlayerRunCmd
                   +/- 180 y (left / right, but we don't check this atm because there's things that naturally fuck up y angles, such as taunts)
                   +/- 50 z (roll / tilt)
                 while they are not in spec & on a map camera, we should log it.
-                we would fix it but cheaters can just ignore server-enforced viewangle changes so there's no point
+                we would fix them but cheaters can just ignore server-enforced viewangle changes so there's no point
 
                 these bounds were lifted from lilac. Thanks lilac
             */
@@ -1849,10 +1874,6 @@ void QueryEverythingAllClients()
         }
     }
 }
-
-
-
-
 
 ////////////
 // STONKS //
