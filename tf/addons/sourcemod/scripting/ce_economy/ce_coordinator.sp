@@ -92,12 +92,14 @@ public Action Timer_JobFetch(Handle timer, any data)
 	char[] sName = new char[size + 1];
 	hConf.ExportToString(sName, size);
 	delete hConf;
+	PrintToServer(sName);
 
 	CESC_SendAPIRequest(sURL, RequestType_POST, httpJobCallback, _, sName);
 }
 
 public void httpJobCallback(const char[] content, int size, int status, any value)
 {
+	PrintToServer(content);
 	if(status == StatusCode_Success)
 	{
 		KeyValues kvResponse = new KeyValues("Jobs");
