@@ -189,7 +189,7 @@ public any Native_SetPlayerQuest(Handle plugin, int numParams)
 
 	char sUrl[128];
 	Format(sUrl, sizeof(sUrl), "/api/IUsers/GContracker?get=contract&contract=%d", quest);
-	
+
 	m_iWaitingForQuest[client] = quest;
 
 	// To load a quest, we make a request to server fetching quest progress.
@@ -221,7 +221,7 @@ public void httpFetchContracker(const char[] content, int size, int status, any 
 		{
 			// Getting the Index of the quest.
 			int iIndex = hProgress.GetNum("id");
-				
+
 			if(m_iWaitingForQuest[client] > -1 && m_iWaitingForQuest[client] != iIndex)
 			{
 				m_hQuest[client].m_iIndex = 0;
@@ -365,6 +365,7 @@ public void FlushClientCache(int client)
 	strcopy(m_hQuest[client].m_sRestrictionMap, 64, "");
 	strcopy(m_hQuest[client].m_sRestrictionStrictMap, 64, "");
 	m_hQuest[client].m_nRestrictionClass = TFClass_Unknown;
+	m_hQuest[client].m_iCEWeaponIndex = 0;
 
 	delete m_hQuest[client].m_hObjectives;
 }
