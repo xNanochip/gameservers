@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.5.0b"
+#define PLUGIN_VERSION  "3.5.1b"
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 public Plugin myinfo =
@@ -29,8 +29,8 @@ public Plugin myinfo =
 }
 
 // TIMER HANDLES
-Handle g_hQueryTimer        [MAXPLAYERS+1];
-Handle g_hTriggerTimedStuffTimer;
+Handle QueryTimer           [MAXPLAYERS+1];
+Handle TriggerTimedStuffTimer;
 // TPS INFO
 float tickinterv;
 float tps;
@@ -53,13 +53,9 @@ float loss;
 float choke;
 float ping;
 // STORED ANGLES PER CLIENT
-float angles0               [MAXPLAYERS+1]   [2];
-float angles1               [MAXPLAYERS+1]   [2];
-float angles2               [MAXPLAYERS+1]   [2];
+float clangles              [3][MAXPLAYERS+1][2];
 // STORED cmdnum PER CLIENT
-int cmdnum0                 [MAXPLAYERS+1];
-int cmdnum1                 [MAXPLAYERS+1];
-int cmdnum2                 [MAXPLAYERS+1];
+int clcmdnum                [3][MAXPLAYERS+1];
 // STORED BUTTONS PER CLIENT
 int buttonsPrev             [MAXPLAYERS+1];
 // STORED GRAVITY STATE PER CLIENT
@@ -70,10 +66,8 @@ bool userBanQueued          [MAXPLAYERS+1];
 // STORED SENS PER CLIENT
 float sensFor               [MAXPLAYERS+1];
 
-
-// test test test
-float engineTime0[MAXPLAYERS+1];
-float engineTime1[MAXPLAYERS+1];
+// get last 6 ticks
+float engineTime[6][MAXPLAYERS+1];
 //float maxEngineTimeFor[MAXPLAYERS+1];
 //
 //// debug
@@ -694,24 +688,24 @@ void NukeTimers()
 {
     for (int Cl = 1; Cl <= MaxClients; Cl++)
     {
-        if (g_hQueryTimer[Cl] != null)
+        if (QueryTimer[Cl] != null)
         {
             if (DEBUG)
             {
                 StacLog("[StAC] Destroying timer for %L", Cl);
             }
-            KillTimer(g_hQueryTimer[Cl]);
-            g_hQueryTimer[Cl] = null;
+            KillTimer(QueryTimer[Cl]);
+            QueryTimer[Cl] = null;
         }
     }
-    if (g_hTriggerTimedStuffTimer != null)
+    if (TriggerTimedStuffTimer != null)
     {
         if (DEBUG)
         {
             StacLog("[StAC] Destroying reseeding timer");
         }
-        KillTimer(g_hTriggerTimedStuffTimer);
-        g_hTriggerTimedStuffTimer = null;
+        KillTimer(TriggerTimedStuffTimer);
+        TriggerTimedStuffTimer = null;
     }
 }
 
@@ -726,11 +720,11 @@ void ResetTimers()
             {
                 StacLog("[StAC] Creating timer for %L", Cl);
             }
-            g_hQueryTimer[Cl] = CreateTimer(GetRandomFloat(minRandCheckVal, maxRandCheckVal), Timer_CheckClientConVars, GetClientUserId(Cl));
+            QueryTimer[Cl] = CreateTimer(GetRandomFloat(minRandCheckVal, maxRandCheckVal), Timer_CheckClientConVars, GetClientUserId(Cl));
         }
     }
     // create timer to reset seed every 15 mins
-    g_hTriggerTimedStuffTimer = CreateTimer(900.0, timer_TriggerTimedStuff, _, TIMER_REPEAT);
+    TriggerTimedStuffTimer = CreateTimer(900.0, timer_TriggerTimedStuff, _, TIMER_REPEAT);
 }
 
 public Action eRoundStart(Handle event, char[] name, bool dontBroadcast)
@@ -889,7 +883,7 @@ public void OnClientPutInServer(int Cl)
         // clear per client values
         ClearClBasedVars(userid);
         // clear timer
-        g_hQueryTimer[Cl] = null;
+        QueryTimer[Cl] = null;
         // hook settransmit
         //SDKHook(Cl, SDKHook_SetTransmit, hookSetTransmit);
         // query convars on player connect
@@ -897,7 +891,7 @@ public void OnClientPutInServer(int Cl)
         {
             StacLog("[StAC] %N joined. Checking cvars", Cl);
         }
-        g_hQueryTimer[Cl] = CreateTimer(0.01, Timer_CheckClientConVars, userid);
+        QueryTimer[Cl] = CreateTimer(0.01, Timer_CheckClientConVars, userid);
     }
 }
 
@@ -906,10 +900,10 @@ public void OnClientDisconnect(int Cl)
     int userid = GetClientUserId(Cl);
     // clear per client values
     ClearClBasedVars(userid);
-    if (g_hQueryTimer[Cl] != null)
+    if (QueryTimer[Cl] != null)
     {
-        KillTimer(g_hQueryTimer[Cl]);
-        g_hQueryTimer[Cl] = null;
+        KillTimer(QueryTimer[Cl]);
+        QueryTimer[Cl] = null;
     }
 }
 
@@ -918,12 +912,6 @@ public Action ForceCheckAll(int client, int args)
     QueryEverythingAllClients();
     ReplyToCommand(client, "[StAC] Checking cvars on all clients.");
 }
-
-stock abs(x)
-{
-   return x > 0 ? x : -x;
-}
-
 
 /*
     in OnPlayerRunCmd, we check for:
@@ -958,11 +946,15 @@ public Action OnPlayerRunCmd
         }
         //seed = GetURandomInt();
 
-        // set previous tick time to test lagginess (THANK YOU BACKWARDS FOR HELP WITH THIS)
-        engineTime1[Cl] = engineTime0[Cl];
-        // grab current time to compare to time since last spawn/taunt/tele
-        engineTime0[Cl] = GetEngineTime();
+        // set previous tick times to test lagginess (THANK YOU BACKWARDS FOR HELP WITH THIS)
+        engineTime[5][Cl] = engineTime[4][Cl];
+        engineTime[4][Cl] = engineTime[3][Cl];
+        engineTime[3][Cl] = engineTime[2][Cl];
+        engineTime[2][Cl] = engineTime[1][Cl];
+        engineTime[1][Cl] = engineTime[0][Cl];
+        engineTime[0][Cl] = GetEngineTime();
 
+        // grab current time to compare to time since last spawn/taunt/tele
         // convert to percentages
         loss = GetClientAvgLoss(Cl, NetFlow_Both) * 100.0;
         choke = GetClientAvgChoke(Cl, NetFlow_Both) * 100.0;
@@ -987,11 +979,11 @@ public Action OnPlayerRunCmd
                     // ...isn't taunting,
                      && !playerTaunting[Cl]
                     // ...didn't recently spawn,
-                     && engineTime0[Cl] - 1.0 > timeSinceSpawn[Cl]
+                     && engineTime[0][Cl] - 1.0 > timeSinceSpawn[Cl]
                     // ...didn't recently taunt,
-                     && engineTime0[Cl] - 1.0 > timeSinceTaunt[Cl]
+                     && engineTime[0][Cl] - 1.0 > timeSinceTaunt[Cl]
                     // ...didn't recently teleport,
-                     && engineTime0[Cl] - 1.0 > timeSinceTeled[Cl]
+                     && engineTime[0][Cl] - 1.0 > timeSinceTeled[Cl]
                     // ...isn't already queued to be banned,
                      && !userBanQueued[Cl]
                     // ...doesn't have 5% or more packet loss,
@@ -1000,62 +992,46 @@ public Action OnPlayerRunCmd
                      && choke <= 51.0
                     // ...and isn't timing out.
                      && !IsClientTimingOut(Cl)
-                    // make sure last two ticks were within a tenth of a second of each other
-                     && engineTime0[Cl] - engineTime1[Cl] < 0.1
-                    // make sure ticks aren't immediate (probably means they're out of order i'm not quite sure)
-                     && engineTime0[Cl] - engineTime1[Cl] > 0.0
+                    // check difference between client ticks to make sure client has been relatively unlaggy
+                     && engineTime[0][Cl] - engineTime[1][Cl] < 0.1
+                     && engineTime[0][Cl] - engineTime[1][Cl] > 0.0
+                     && engineTime[1][Cl] - engineTime[2][Cl] < 0.1
+                     && engineTime[1][Cl] - engineTime[2][Cl] > 0.0
+                     && engineTime[2][Cl] - engineTime[3][Cl] < 0.1
+                     && engineTime[2][Cl] - engineTime[3][Cl] > 0.0
+                     && engineTime[3][Cl] - engineTime[4][Cl] < 0.1
+                     && engineTime[3][Cl] - engineTime[4][Cl] > 0.0
+                     && engineTime[4][Cl] - engineTime[5][Cl] < 0.1
+                     && engineTime[4][Cl] - engineTime[5][Cl] > 0.0
                 )
             )
         {
-            // ultra debug
-            //LogMessage("%i %i", mouse[0], mouse[1]);
-            //LogMessage("%f %f", angles[0], angles[1]);
-            // testing
-            //if (abs(mouse[0]) > maxMouseXFor[Cl])
-            //{
-            //    maxMouseXFor[Cl] = abs(mouse[0]);
-            //}
-            //
-            //if (abs(mouse[1]) > maxMouseYFor[Cl])
-            //{
-            //    maxMouseYFor[Cl] = abs(mouse[1]);
-            //}
-            //LogMessage("%f", engineTime0[Cl] - engineTime1[Cl]);
-            // testing
-            //if (engineTime0[Cl] - engineTime1[Cl] > maxEngineTimeFor[Cl])
-            //{
-            //    maxEngineTimeFor[Cl] = engineTime0[Cl] - engineTime1[Cl];
-            //}
-
             // we need this later for decrimenting psilent detections after 20 minutes!
             int userid = GetClientUserId(Cl);
 
             // grab angles
             // thanks to nosoop from the sm discord for some help with this
-            angles2[Cl][0] = angles1[Cl][0];
-            angles2[Cl][1] = angles1[Cl][1];
-            angles1[Cl][0] = angles0[Cl][0];
-            angles1[Cl][1] = angles0[Cl][1];
-            angles0[Cl][0] = angles[0];
-            angles0[Cl][1] = angles[1];
+            clangles[2][Cl][0] = clangles[1][Cl][0];
+            clangles[2][Cl][1] = clangles[1][Cl][1];
+            clangles[1][Cl][0] = clangles[0][Cl][0];
+            clangles[1][Cl][1] = clangles[0][Cl][1];
+            clangles[0][Cl][0] = angles[0];
+            clangles[0][Cl][1] = angles[1];
 
             // grab cmdnum
-            cmdnum2[Cl] = cmdnum1[Cl];
-            cmdnum1[Cl] = cmdnum0[Cl];
-            cmdnum0[Cl] = cmdnum;
+            clcmdnum[2][Cl] = clcmdnum[1][Cl];
+            clcmdnum[1][Cl] = clcmdnum[0][Cl];
+            clcmdnum[0][Cl] = cmdnum;
 
             // R O U N D ( fuzzy psilent detection to detect lmaobox silent+ and better detect other forms of silent aim )
-            float fuzzyAngles2[2];
-            float fuzzyAngles1[2];
-            float fuzzyAngles0[2];
+            float fuzzyClangles[3][2];
 
-
-            fuzzyAngles2[0] = RoundFloat(angles2[Cl][0] * 10.0) / 10.0;
-            fuzzyAngles2[1] = RoundFloat(angles2[Cl][1] * 10.0) / 10.0;
-            fuzzyAngles1[0] = RoundFloat(angles1[Cl][0] * 10.0) / 10.0;
-            fuzzyAngles1[1] = RoundFloat(angles1[Cl][1] * 10.0) / 10.0;
-            fuzzyAngles0[0] = RoundFloat(angles0[Cl][0] * 10.0) / 10.0;
-            fuzzyAngles0[1] = RoundFloat(angles0[Cl][1] * 10.0) / 10.0;
+            fuzzyClangles[2][0] = RoundFloat(clangles[2][Cl][0] * 10.0) / 10.0;
+            fuzzyClangles[2][1] = RoundFloat(clangles[2][Cl][1] * 10.0) / 10.0;
+            fuzzyClangles[1][0] = RoundFloat(clangles[1][Cl][0] * 10.0) / 10.0;
+            fuzzyClangles[1][1] = RoundFloat(clangles[1][Cl][1] * 10.0) / 10.0;
+            fuzzyClangles[0][0] = RoundFloat(clangles[0][Cl][0] * 10.0) / 10.0;
+            fuzzyClangles[0][1] = RoundFloat(clangles[0][Cl][1] * 10.0) / 10.0;
 
             if  (
                 AreAnglesUnlaggyAndValid(Cl)
@@ -1087,16 +1063,16 @@ public Action OnPlayerRunCmd
                     (
                         // so the current and 2nd previous angles match...
                         (
-                                angles0[Cl][0] == angles2[Cl][0]
-                             && angles0[Cl][1] == angles2[Cl][1]
+                                clangles[0][Cl][0] == clangles[2][Cl][0]
+                             && clangles[0][Cl][1] == clangles[2][Cl][1]
                         )
                         &&
                         // BUT the 1st previous (in between) angle doesnt?
                         (
-                                angles1[Cl][0] != angles0[Cl][0]
-                             && angles1[Cl][1] != angles0[Cl][1]
-                             && angles1[Cl][0] != angles2[Cl][0]
-                             && angles1[Cl][1] != angles2[Cl][1]
+                                clangles[1][Cl][0] != clangles[0][Cl][0]
+                             && clangles[1][Cl][1] != clangles[0][Cl][1]
+                             && clangles[1][Cl][0] != clangles[2][Cl][0]
+                             && clangles[1][Cl][1] != clangles[2][Cl][1]
                         )
                     )
                     {
@@ -1106,16 +1082,16 @@ public Action OnPlayerRunCmd
                     (
                         // etc
                         (
-                                fuzzyAngles0[0] == fuzzyAngles2[0]
-                             && fuzzyAngles0[1] == fuzzyAngles2[1]
+                                fuzzyClangles[0][0] == fuzzyClangles[2][0]
+                             && fuzzyClangles[0][1] == fuzzyClangles[2][1]
                         )
                         &&
                         // etc
                         (
-                                fuzzyAngles1[0] != fuzzyAngles0[0]
-                             && fuzzyAngles1[1] != fuzzyAngles0[1]
-                             && fuzzyAngles1[0] != fuzzyAngles2[0]
-                             && fuzzyAngles1[1] != fuzzyAngles2[1]
+                                fuzzyClangles[1][0] != fuzzyClangles[0][0]
+                             && fuzzyClangles[1][1] != fuzzyClangles[0][1]
+                             && fuzzyClangles[1][0] != fuzzyClangles[2][0]
+                             && fuzzyClangles[1][1] != fuzzyClangles[2][1]
                         )
                     )
                     {
@@ -1137,14 +1113,23 @@ public Action OnPlayerRunCmd
                             doing this might make it harder to detect legitcheaters but like. legitcheating in a 12 yr old dead game OMEGALUL who fucking cares
                         */
                         // actual angle calculation here
-                        float aDiffReal = CalcAngDeg(angles0[Cl], angles1[Cl]);
+                        float aDiffReal = CalcAngDeg(clangles[0][Cl], clangles[1][Cl]);
                         // refactored from smac - make sure we don't fuck up angles near the x/y axes!
                         if (aDiffReal > 180.0)
                         {
                             aDiffReal = FloatAbs(aDiffReal - 360.0);
                         }
-                        // needs to be more than a degree
-                        if (aDiffReal >= 1.0)
+                        if  (
+                                (
+                                    // needs to be more than a degree if not fuzzy
+                                    aDiffReal >= 1.0 && fuzzy == 0
+                                )
+                                ||
+                                (
+                                    // needs to be more a degree if fuzzy (futureproofing)
+                                    aDiffReal >= 1.0 && fuzzy == 1
+                                )
+                            )
                         {
                             pSilentDetects[Cl]++;
                             // have this detection expire in 20 minutes
@@ -1152,13 +1137,12 @@ public Action OnPlayerRunCmd
                             // print a bunch of bullshit
                             PrintToImportant("{hotpink}[StAC]{white} SilentAim detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}. fuzzy = {blue}%i", aDiffReal, Cl,  pSilentDetects[Cl], fuzzy);
                             PrintToImportant("{white}User Net Info: {palegreen}%.2f{white}%% loss, {palegreen}%.2f{white}%% choke, {palegreen}%.2f{white} ms ping", loss, choke, ping);
-                            CPrintToSTV("angles0: x %.2f y %.2f angles1: x %.2f y %.2f angles2: x %.2f y %.2f", angles0[Cl][0], angles0[Cl][1], angles1[Cl][0], angles1[Cl][1], angles2[Cl][0], angles2[Cl][1]);
-                            CPrintToSTV("cmdnum0: %i cmdnum1: %i cmdnum2: %i", cmdnum0[Cl], cmdnum1[Cl], cmdnum2[Cl]);
-                            PrintToImportant("Time between client ticks: %f", engineTime0[Cl] - engineTime1[Cl]);
+                            CPrintToSTV("clangles0: x %.2f y %.2f clangles1: x %.2f y %.2f clangles2: x %.2f y %.2f", clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1], clangles[2][Cl][0], clangles[2][Cl][1]);
+                            CPrintToSTV("clcmdnum0: %i clcmdnum1: %i clcmdnum2: %i", clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
+                            PrintToImportant("Time between last 5 client ticks (most recent first):\n1 %f 2 %f 3 %f 4 %f 5 %f", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
                             StacLog("[StAC] SilentAim detection of %.2f° on \n%L.\nDetections so far: %i.\nfuzzy = %i", aDiffReal, Cl,  pSilentDetects[Cl], fuzzy);
-                            StacLog("\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\n angles2: x %.2f y %.2f\nCmdnum:\n cmdnum0: %i\n cmdnum1: %i\n cmdnum2: %i", loss, choke, ping, angles0[Cl][0], angles0[Cl][1], angles1[Cl][0], angles1[Cl][1], angles2[Cl][0], angles2[Cl][1], cmdnum0[Cl], cmdnum1[Cl], cmdnum2[Cl]);
-                            StacLog("Time between client ticks: %f", engineTime0[Cl] - engineTime1[Cl]);
-
+                            StacLog("\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\n angles2: x %.2f y %.2f\nCmdnum:\n clcmdnum[0]: %i\n clcmdnum[1]: %i\n clcmdnum[2]: %i", loss, choke, ping, clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1], clangles[2][Cl][0], clangles[2][Cl][1], clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
+                            StacLog("\nTime between last 5 client ticks (most recent first):\n1 %f\n2 %f\n3 %f\n4 %f\n5 %f\n", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
                             // BAN USER if they trigger too many detections
                             if (pSilentDetects[Cl] >= maxPsilentDetections && maxPsilentDetections > 0)
                             {
@@ -1178,7 +1162,7 @@ public Action OnPlayerRunCmd
                 if (maxAimsnapDetections != -1)
                 {
                     // calculate 1 tick angle snap
-                    float aDiffReal = CalcAngDeg(angles0[Cl], angles1[Cl]);
+                    float aDiffReal = CalcAngDeg(clangles[0][Cl], clangles[1][Cl]);
                     // refactored from smac - make sure we don't fuck up angles near the x/y axes!
                     if (aDiffReal > 180.0)
                     {
@@ -1212,17 +1196,15 @@ public Action OnPlayerRunCmd
                                 aimsnapDetects[Cl]++;
                                 // have this detection expire in 20 minutes
                                 CreateTimer(1200.0, Timer_decr_aimsnaps, userid);
-                                PrintToImportant("{hotpink}[StAC]{white} Plain Aimsnap detection of {red}%.2f{white}° on %N.\nDetections so far: {palegreen}%i", aDiffReal, Cl,  aimsnapDetects[Cl]);
+                                PrintToImportant("{hotpink}[StAC]{white} Aimsnap detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.", aDiffReal, Cl,  aimsnapDetects[Cl]);
                                 PrintToImportant("{white}User Net Info: {palegreen}%.2f{white}%% loss, {palegreen}%.2f{white}%% choke, {palegreen}%.2f{white} ms ping", loss, choke, ping);
-                                PrintToImportant("{white}User Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i.", wx, wy);
-                                PrintToImportant("Time between client ticks: %f", engineTime0[Cl] - engineTime1[Cl]);
-                                CPrintToSTV("angles0: x %.2f y %.2f angles1: x %.2f y %.2f", angles0[Cl][0], angles0[Cl][1], angles1[Cl][0], angles1[Cl][1]);
-                                CPrintToSTV("cmdnum0: %i cmdnum1: %i cmdnum2: %i", cmdnum0[Cl], cmdnum1[Cl], cmdnum2[Cl]);
-                                StacLog("[StAC] Plain Aimsnap of %.2f° on \n%L.\nDetections so far: %i", aDiffReal, Cl,  aimsnapDetects[Cl]);
-                                StacLog("\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\nCmdnum:\n cmdnum0: %i\n cmdnum1: %i\n cmdnum2: %i", loss, choke, ping, angles0[Cl][0], angles0[Cl][1], angles1[Cl][0], angles1[Cl][1], cmdnum0[Cl], cmdnum1[Cl], cmdnum2[Cl]);
+                                CPrintToSTV("clangles0: x %.2f y %.2f clangles1: x %.2f y %.2f", clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1]);
+                                CPrintToSTV("clcmdnum0: %i clcmdnum1: %i clcmdnum2: %i", clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
+                                PrintToImportant("Time between last 5 client ticks (most recent first):\n1 %f 2 %f 3 %f 4 %f 5 %f", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
+                                StacLog("[StAC] Aimsnap detection of %.2f° on \n%L.\nDetections so far: %i.", aDiffReal, Cl,  aimsnapDetects[Cl]);
+                                StacLog("\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\n\nCmdnum:\n clcmdnum[0]: %i\n clcmdnum[1]: %i\n clcmdnum[2]: %i", loss, choke, ping, clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1], clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
+                                StacLog("\nTime between last 5 client ticks (most recent first):\n1 %f\n2 %f\n3 %f\n4 %f\n5 %f\n", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
                                 StacLog("User Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i.", wx, wy);
-                                StacLog("Time between client ticks: %f", engineTime0[Cl] - engineTime1[Cl]);
-
                                 // BAN USER if they trigger too many detections
                                 if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
                                 {
@@ -1844,7 +1826,7 @@ public Action Timer_CheckClientConVars(Handle timer, any userid)
     // get actual client index
     int Cl = GetClientOfUserId(userid);
     // null out timer here
-    g_hQueryTimer[Cl] = null;
+    QueryTimer[Cl] = null;
     if (IsValidClient(Cl))
     {
         if (DEBUG)
@@ -1854,7 +1836,7 @@ public Action Timer_CheckClientConVars(Handle timer, any userid)
         // query the client!
         QueryEverything(userid);
         // check randomly using values of stac_min_randomcheck_secs & stac_max_randomcheck_secs for violating clients, then recheck with a new random value
-        g_hQueryTimer[Cl] = CreateTimer(GetRandomFloat(minRandCheckVal, maxRandCheckVal), Timer_CheckClientConVars, userid);
+        QueryTimer[Cl] = CreateTimer(GetRandomFloat(minRandCheckVal, maxRandCheckVal), Timer_CheckClientConVars, userid);
     }
 }
 
@@ -1982,12 +1964,12 @@ stock bool AreAnglesUnlaggyAndValid(int Cl)
             (
                 // OK lets make sure we dont get any fake detections on startup
                 // this also ignores weird angle resets in mge / dm
-                    angles0[Cl][0] != 0.00
-                 && angles0[Cl][1] != 0.00
-                 && angles1[Cl][0] != 0.00
-                 && angles1[Cl][1] != 0.00
-                 && angles2[Cl][0] != 0.00
-                 && angles2[Cl][1] != 0.00
+                    clangles[0][Cl][0] != 0.00
+                 && clangles[0][Cl][1] != 0.00
+                 && clangles[1][Cl][0] != 0.00
+                 && clangles[1][Cl][1] != 0.00
+                 && clangles[2][Cl][0] != 0.00
+                 && clangles[2][Cl][1] != 0.00
             )
             &&
             // make sure ticks are sequential, hopefully avoid laggy players
@@ -1996,16 +1978,16 @@ stock bool AreAnglesUnlaggyAndValid(int Cl)
                 [StAC] pSilent / NoRecoil detection of 5.20° on <user>.
                 Detections so far: 15
                 User Net Info: 0.00% loss, 24.10% choke, 66.22 ms ping
-                 cmdnum0: 61167
-                 cmdnum1: 61166
-                 cmdnum2: 61165
+                 clcmdnum[0]: 61167
+                 clcmdnum[1]: 61166
+                 clcmdnum[2]: 61165
                  angles0: x 8.82 y 127.68
                  angles1: x 5.38 y 131.60
                  angles2: x 8.82 y 127.68
             */
             (
-                   cmdnum0[Cl] - 1 == cmdnum1[Cl]
-                && cmdnum1[Cl] - 1 == cmdnum2[Cl]
+                   clcmdnum[0][Cl] - 1 == clcmdnum[1][Cl]
+                && clcmdnum[1][Cl] - 1 == clcmdnum[2][Cl]
             )
         )
         {
@@ -2102,4 +2084,9 @@ stock int TF2_GetNumWearables(int client)
     // 3532 windows
     int offset = FindSendPropInfo("CTFPlayer", "m_flMaxspeed") - 20 + 12;
     return GetEntData(client, offset);
+}
+
+stock abs(x)
+{
+   return x > 0 ? x : -x;
 }
