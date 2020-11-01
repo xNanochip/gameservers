@@ -5,7 +5,7 @@
 #include <ce_coordinator>
 #include <basecomm>
 
-#define SERVER_INFO_INTERVAL 30.0
+#define SERVER_INFO_INTERVAL 60.0
 
 bool g_bGCEnabled = true;
 
@@ -156,7 +156,7 @@ public void CESC_SendServerInfoMessage()
 {
 	if (!g_bGCEnabled)return;
 	KeyValues hMessage = new KeyValues("content");
-	
+
 	int count = 0;
 	for (int i = 1; i <= MaxClients; i++)
 	{
@@ -164,7 +164,7 @@ public void CESC_SendServerInfoMessage()
 
 		char sSteamID[64];
 		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-		
+
 		char sKey[32];
 		Format(sKey, sizeof(sKey), "steamids/%d", count);
 		hMessage.SetString(sKey, sSteamID);
@@ -180,10 +180,10 @@ public void CESC_SendPlayerJoinMessage(int client)
 	if (!g_bGCEnabled)return;
 	if (IsFakeClient(client))return;
 	KeyValues hMessage = new KeyValues("content");
-	
+
 	char sSteamID[64];
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-	
+
 	hMessage.SetString("steamid", sSteamID);
 
 	CESC_SendMessage(hMessage, "player_join");
@@ -195,10 +195,10 @@ public void CESC_SendPlayerLeaveMessage(int client)
 	if (!g_bGCEnabled)return;
 	if (IsFakeClient(client))return;
 	KeyValues hMessage = new KeyValues("content");
-	
+
 	char sSteamID[64];
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-	
+
 	hMessage.SetString("steamid", sSteamID);
 
 	CESC_SendMessage(hMessage, "player_left");

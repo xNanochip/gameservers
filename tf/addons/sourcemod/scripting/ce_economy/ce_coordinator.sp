@@ -10,7 +10,7 @@
 #define MESSAGE_DELAY 5
 #define JOB_FETCH_INTERVAL 5.0
 #define MAX_RESPONSE_LENGTH 8192
-#define MAX_BODY_REQUEST_SIZE 5000
+#define MAX_BODY_REQUEST_SIZE 1000
 
 public Plugin myinfo =
 {
@@ -78,7 +78,7 @@ public Action Timer_JobFetch(Handle timer, any data)
 			m_hMsgQueue.Erase(i);
 			i--;
 			j++;
-			
+
 			int size = hConf.ExportLength;
 			if(size > MAX_BODY_REQUEST_SIZE)
 			{
@@ -87,7 +87,7 @@ public Action Timer_JobFetch(Handle timer, any data)
 		}
 		hConf.GoBack();
 	}
-	
+
 	int size = hConf.ExportLength;
 	char[] sName = new char[size + 1];
 	hConf.ExportToString(sName, size);
@@ -213,6 +213,9 @@ public any Native_SendAPIRequest(Handle plugin, int numParams)
 	// Accept Header
 	httpMessage.SetHeader("Content-Type", "text/keyvalues");
 	httpMessage.SetHeader("Accept", "text/keyvalues");
+
+	Format(sHeaderAuth, sizeof(sHeaderAuth), "Creators.TF Server/1.0 (Server #%d)", iServerID);
+	httpMessage.SetHeader("User-Agent", sHeaderAuth);
 
 	// Setting data of the request.
 	if(!StrEqual(sData, ""))

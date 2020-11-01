@@ -367,7 +367,6 @@ public bool HasClassLoadoutChanged(int client, TFClassType class, KeyValues kv)
 
 public void ClearLoadoutCache(int client)
 {
-	LogMessage("Cleaned loadout info for %N", client);
 	delete m_hLoadout[client];
 }
 

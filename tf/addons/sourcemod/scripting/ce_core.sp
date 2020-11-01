@@ -27,7 +27,6 @@ char m_sPlugins[][] = {
 	"ce_util",
 	"ce_events",
 	"ce_coordinator",
-	"ce_complex_conditions",
 	"ce_models",
 
 	// Manager Subplugins
@@ -50,7 +49,7 @@ char m_sPlugins[][] = {
 
 	// Misc Subplugins
 	"ce_testing",
-	"ce_mann_vs_machines"
+	"ce_gamemode_mann_vs_machines"
 };
 
 public void OnAllPluginsLoaded()
