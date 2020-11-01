@@ -1006,26 +1006,6 @@ public Action OnPlayerRunCmd
                 )
             )
         {
-            // ultra debug
-            //LogMessage("%i %i", mouse[0], mouse[1]);
-            //LogMessage("%f %f", angles[0], angles[1]);
-            // testing
-            //if (abs(mouse[0]) > maxMouseXFor[Cl])
-            //{
-            //    maxMouseXFor[Cl] = abs(mouse[0]);
-            //}
-            //
-            //if (abs(mouse[1]) > maxMouseYFor[Cl])
-            //{
-            //    maxMouseYFor[Cl] = abs(mouse[1]);
-            //}
-            //LogMessage("%f", engineTime0[Cl] - engineTime1[Cl]);
-            // testing
-            //if (engineTime0[Cl] - engineTime1[Cl] > maxEngineTimeFor[Cl])
-            //{
-            //    maxEngineTimeFor[Cl] = engineTime0[Cl] - engineTime1[Cl];
-            //}
-
             // we need this later for decrimenting psilent detections after 20 minutes!
             int userid = GetClientUserId(Cl);
 
@@ -1221,7 +1201,7 @@ public Action OnPlayerRunCmd
                                 CPrintToSTV("clangles0: x %.2f y %.2f clangles1: x %.2f y %.2f", clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1]);
                                 CPrintToSTV("clcmdnum0: %i clcmdnum1: %i clcmdnum2: %i", clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
                                 PrintToImportant("Time between last 5 client ticks (most recent first):\n1 %f 2 %f 3 %f 4 %f 5 %f", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
-                                StacLog("[StAC] Aimsnap detection of %.2f° on \n%L.\nDetections so far: %i.", aDiffReal, Cl,  pSilentDetects[Cl]);
+                                StacLog("[StAC] Aimsnap detection of %.2f° on \n%L.\nDetections so far: %i.", aDiffReal, Cl,  aimsnapDetects[Cl]);
                                 StacLog("\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\n\nCmdnum:\n clcmdnum[0]: %i\n clcmdnum[1]: %i\n clcmdnum[2]: %i", loss, choke, ping, clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1], clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
                                 StacLog("\nTime between last 5 client ticks (most recent first):\n1 %f\n2 %f\n3 %f\n4 %f\n5 %f\n", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
                                 StacLog("User Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i.", wx, wy);
