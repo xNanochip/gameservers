@@ -29,6 +29,7 @@ ConVar ce_economy_backend_domain;
 ConVar ce_economy_backend_secure;
 ConVar ce_economy_backend_auth;
 ConVar ce_server_index;
+ConVar ce_coordinator_log;
 
 public void OnPluginStart()
 {
@@ -39,6 +40,7 @@ public void OnPluginStart()
 	ce_economy_backend_auth = CreateConVar("ce_economy_backend_auth", "", "", FCVAR_PROTECTED);
 	ce_economy_backend_secure = CreateConVar("ce_economy_backend_secure", "1", "", FCVAR_PROTECTED);
 	ce_server_index = CreateConVar("ce_server_index", "-1", "", FCVAR_PROTECTED);
+	ce_coordinator_log = CreateConVar("ce_coordinator_log", "0", "", FCVAR_PROTECTED);
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -92,12 +94,25 @@ public Action Timer_JobFetch(Handle timer, any data)
 	char[] sName = new char[size + 1];
 	hConf.ExportToString(sName, size);
 	delete hConf;
+	
+	if(ce_coordinator_log.BoolValue)
+	{
+		LogMessage("=== PRE REQUEST ===");
+		PrintToServer(sName);
+	}
 
 	CESC_SendAPIRequest(sURL, RequestType_POST, httpJobCallback, _, sName);
 }
 
 public void httpJobCallback(const char[] content, int size, int status, any value)
 {
+	
+	if(ce_coordinator_log.BoolValue)
+	{
+		PrintToServer(content);
+		LogMessage("=== POST REQUEST ===");
+	}
+	
 	if(status == StatusCode_Success)
 	{
 		KeyValues kvResponse = new KeyValues("Jobs");

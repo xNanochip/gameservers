@@ -28,11 +28,8 @@ public Plugin myinfo =
 }
 
 CEQuest m_hQuest[MAXPLAYERS + 1];
-bool m_bTrustedProgress;
 ArrayList m_hFriends[MAXPLAYERS + 1];
 int m_iWaitingForQuest[MAXPLAYERS + 1];
-
-ConVar ce_quest_progress_always_trusted;
 
 public void OnPluginStart()
 {
@@ -50,23 +47,7 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_contract", cQuest, "Check your Contract progress");
 
 	RegAdminCmd("ce_quest_activate", cQuestActivate, ADMFLAG_ROOT, "Check your Contract progress");
-	RegAdminCmd("ce_quest_save_progress", cSaveProgress, ADMFLAG_ROOT, "Save progress.");
 
-	HookEvent("teamplay_round_win", evTeamplayRoundWin);
-	HookEvent("teamplay_round_start", evTeamplayRoundStart);
-	ce_quest_progress_always_trusted = CreateConVar("ce_quest_progress_always_trusted", "0", "");
-
-}
-
-public Action evTeamplayRoundWin(Handle hEvent, const char[] szName, bool bDontBroadcast)
-{
-	CESC_SaveContractProgressMessage();
-	m_bTrustedProgress = true;
-}
-
-public Action evTeamplayRoundStart(Handle hEvent, const char[] szName, bool bDontBroadcast)
-{
-	m_bTrustedProgress = false;
 }
 
 public void CEQuest_InitClient(int client)
@@ -208,7 +189,7 @@ public any Native_SetPlayerQuest(Handle plugin, int numParams)
 
 	char sUrl[128];
 	Format(sUrl, sizeof(sUrl), "/api/IUsers/GContracker?get=contract&contract=%d", quest);
-	
+
 	m_iWaitingForQuest[client] = quest;
 
 	// To load a quest, we make a request to server fetching quest progress.
@@ -240,7 +221,7 @@ public void httpFetchContracker(const char[] content, int size, int status, any 
 		{
 			// Getting the Index of the quest.
 			int iIndex = hProgress.GetNum("id");
-				
+
 			if(m_iWaitingForQuest[client] > -1 && m_iWaitingForQuest[client] != iIndex)
 			{
 				m_hQuest[client].m_iIndex = 0;
@@ -384,6 +365,7 @@ public void FlushClientCache(int client)
 	strcopy(m_hQuest[client].m_sRestrictionMap, 64, "");
 	strcopy(m_hQuest[client].m_sRestrictionStrictMap, 64, "");
 	m_hQuest[client].m_nRestrictionClass = TFClass_Unknown;
+	m_hQuest[client].m_iCEWeaponIndex = 0;
 
 	delete m_hQuest[client].m_hObjectives;
 }
@@ -391,12 +373,6 @@ public void FlushClientCache(int client)
 public void FlushFriendsCache(int client)
 {
 	delete m_hFriends[client];
-}
-
-public Action cSaveProgress(int client, int args)
-{
-	CESC_SaveContractProgressMessage();
-	return Plugin_Handled;
 }
 
 public Action cQuestActivate(int client, int args)
@@ -837,12 +813,6 @@ public any Native_FindQuestByIndex(Handle plugin, int numParams)
 	return hReturn;
 }
 
-public bool CEQuest_ProgressIsTrusted()
-{
-	if (ce_quest_progress_always_trusted.BoolValue)return true;
-	return m_bTrustedProgress;
-}
-
 public void CESC_SendContractProgressMessage(int client, int contract, int objective)
 {
 	if (!IsClientReady(client))return;
@@ -859,7 +829,6 @@ public void CESC_SendContractProgressMessage(int client, int contract, int objec
 	hMessage.SetNum("contract", contract);
 	hMessage.SetNum("objective", objective);
 	hMessage.SetNum("points/0", hPrimary.m_iProgress);
-	hMessage.SetNum("trusted", CEQuest_ProgressIsTrusted());
 
 	if(objective > 0)
 	{
@@ -904,28 +873,4 @@ public bool CEQuest_CanUseQuest(int client)
 	}
 
 	return true;
-}
-
-public void CESC_SaveContractProgressMessage()
-{
-	KeyValues hMessage = new KeyValues("content");
-
-	int count = 0;
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if (!IsClientReady(i))continue;
-
-		char sSteamID[64];
-		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-
-		char sKey[32];
-		Format(sKey, sizeof(sKey), "users/%d/steamid", count);
-		hMessage.SetString(sKey, sSteamID);
-		Format(sKey, sizeof(sKey), "users/%d/contract", count);
-		hMessage.SetNum(sKey, m_hQuest[i].m_iIndex);
-		count++;
-	}
-
-	CESC_SendMessage(hMessage, "quest_save");
-	delete hMessage;
 }
