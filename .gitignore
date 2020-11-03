@@ -159,6 +159,7 @@ tf/cfg/*
 !tf/cfg/sourcemod
 !tf/cfg/cp_powerhouse.cfg
 !tf/cfg/pure_server_whitelist.txt
+!tf/cfg/sd_doomsday_event.cfg
 
 # private
 #tf/addons/sourcemod/configs/databases.cfg
