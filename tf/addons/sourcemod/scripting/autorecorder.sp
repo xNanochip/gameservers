@@ -29,7 +29,7 @@
 */
 
 #include <sourcemod>
-#include <ce_core>
+#include <ce_coordinator>
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -231,7 +231,7 @@ void StartRecord()
 
 		// replace slashes in map path name with dashes, to prevent fail on workshop maps
 		ReplaceString(sMap, sizeof(sMap), "/", "-", false);		
-		int id = CE_GetServerID();
+		int id = CESC_GetServerID();
 		ServerCommand("tv_record \"%s/%d-%s-%s\"", sPath, id, sTime, sMap);
 		g_bIsRecording = true;
 
