@@ -204,6 +204,7 @@ public any Native_SendAPIRequest(Handle plugin, int numParams)
 			Format(sURL, sizeof(sURL), "http://%s%s", sURL, sUrl);
 		}
 	}
+	LogMessage("URL: %s", sURL);
 
 	System2HTTPRequest httpMessage = new System2HTTPRequest(httpRequestCallback, sURL);
 
