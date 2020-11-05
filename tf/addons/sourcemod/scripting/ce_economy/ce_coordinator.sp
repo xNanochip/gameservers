@@ -110,7 +110,7 @@ public void httpJobCallback(const char[] content, int size, int status, any valu
 	if(ce_coordinator_log.BoolValue)
 	{
 		PrintToServer(content);
-		LogMessage("=== POST REQUEST ===");
+		LogMessage("=== POST REQUEST (%d) ===", status);
 	}
 	
 	if(status == StatusCode_Success)
