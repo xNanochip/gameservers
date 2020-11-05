@@ -6,4 +6,6 @@ enum struct CECampaign
 
     int m_iStartTime;
     int m_iEndTime;
+
+    int m_iDelta[MAXPLAYERS + 1];
 }

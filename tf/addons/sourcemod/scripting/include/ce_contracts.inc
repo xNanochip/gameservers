@@ -23,6 +23,7 @@ enum struct CEObjective
 	int m_iLimit;
 
 	bool m_bMarked;
+	bool m_bUpdated;
 
 	CEQuestActions m_nActions[MAX_HOOKS];
 	CELogicEvents m_nEvent[MAX_HOOKS];

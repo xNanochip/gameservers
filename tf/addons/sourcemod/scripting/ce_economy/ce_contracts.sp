@@ -13,6 +13,7 @@
 
 #define QUEST_HUD_REFRESH_RATE 0.5
 #define QUEST_PANEL_MAX_CHARS 30
+#define QUEST_PROGRESS_INTERVAL 10.0
 
 #define CHAR_FULL "█"
 #define CHAR_PROGRESS "▓"
@@ -41,6 +42,7 @@ public void OnPluginStart()
 	}
 
 	CreateTimer(QUEST_HUD_REFRESH_RATE, Timer_HudRefresh, _, TIMER_REPEAT);
+	CreateTimer(QUEST_PROGRESS_INTERVAL, Timer_SaveProgress, _, TIMER_REPEAT);
 
 	RegConsoleCmd("sm_quest", cQuest, "Check your Contract progress");
 	RegConsoleCmd("sm_q", cQuest, "Check your Contract progress");
@@ -118,6 +120,11 @@ public void CEQuest_SetPlayerActiveQuest(int client)
 	CEQuest_SetPlayerQuest(client, QUEST_INDEX_ACTIVE);
 }
 
+public Action Timer_SaveProgress(Handle timer, any data)
+{
+	CESC_SendContractProgressMessage();
+}
+
 public Action Timer_HudRefresh(Handle timer, any data)
 {
 	for (int i = 1; i <= MaxClients; i++)
@@ -126,7 +133,6 @@ public Action Timer_HudRefresh(Handle timer, any data)
 		if (m_hQuest[i].m_iIndex == 0)continue;
 
 		char sText[256];
-
 		Format(sText, sizeof(sText), "%s: \n", m_hQuest[i].m_sName);
 
 		if(CEQuest_IsQuestActive(i))
@@ -644,6 +650,7 @@ public bool CEQuest_AddObjectiveProgress(int client, int source, int objective, 
 		bChanged = true;
 		bCompleted = hPrimaryOld.m_iProgress < iLimit && hPrimary.m_iProgress >= iLimit;
 	}
+	hPrimary.m_bUpdated = true;
 	m_hQuest[client].m_hObjectives.SetArray(QUEST_OBJECTIVE_PRIMARY, hPrimary);
 
 	// Increasing progress for bonus objective.
@@ -659,11 +666,9 @@ public bool CEQuest_AddObjectiveProgress(int client, int source, int objective, 
 			bChanged = true;
 			bIsBonusCompleted = hObjectiveOld.m_iProgress < iLimit && hObjective.m_iProgress >= iLimit;
 		}
+		hObjective.m_bUpdated = true;
 		m_hQuest[client].m_hObjectives.SetArray(objective, hObjective);
 	}
-
-	// Sending GC message about new progress.
-	CESC_SendContractProgressMessage(client, m_hQuest[client].m_iIndex, objective);
 
 	m_hQuest[client].m_iSource = source;
 	bool bIsHalloween = StrEqual(m_hQuest[client].m_sPostfix, "MP");
@@ -813,32 +818,43 @@ public any Native_FindQuestByIndex(Handle plugin, int numParams)
 	return hReturn;
 }
 
-public void CESC_SendContractProgressMessage(int client, int contract, int objective)
+public void CESC_SendContractProgressMessage()
 {
-	if (!IsClientReady(client))return;
-	KeyValues hMessage = new KeyValues("content");
-
-	CEObjective hObjective, hPrimary;
-	m_hQuest[client].m_hObjectives.GetArray(objective, hObjective);
-	m_hQuest[client].m_hObjectives.GetArray(QUEST_OBJECTIVE_PRIMARY, hPrimary);
-
-	char sSteamID[64];
-	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-
-	hMessage.SetString("steamid", sSteamID);
-	hMessage.SetNum("contract", contract);
-	hMessage.SetNum("objective", objective);
-	hMessage.SetNum("points/0", hPrimary.m_iProgress);
-
-	if(objective > 0)
+	KeyValues hMsg;
+	
+	for (int i = 1; i <= MaxClients; i++)
 	{
-		char sKey[32];
-		Format(sKey, sizeof(sKey), "points/%d", objective);
-		hMessage.SetNum(sKey, hObjective.m_iProgress);
+		if (!IsClientReady(i))continue;
+		if (m_hQuest[i].m_iIndex == 0)continue;
+		
+		char sSteamID[64];
+		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
+		
+		for (int j = 0; j < m_hQuest[i].m_hObjectives.Length; j++)
+		{
+			CEObjective hObj;
+			m_hQuest[i].m_hObjectives.GetArray(j, hObj);
+			if (!hObj.m_bUpdated)continue;
+			
+			if (hMsg == null)hMsg = new KeyValues("Message");
+			
+			char sKey[128];
+			Format(sKey, sizeof(sKey), "%s/contract", sSteamID);
+			hMsg.SetNum(sKey, m_hQuest[i].m_iIndex);
+			
+			Format(sKey, sizeof(sKey), "%s/objective_%d", sSteamID, j);
+			hMsg.SetNum(sKey, hObj.m_iProgress);
+			
+			hObj.m_bUpdated = false;
+			m_hQuest[i].m_hObjectives.SetArray(j, hObj);
+		}
 	}
-
-	CESC_SendMessage(hMessage, "quest_progress");
-	delete hMessage;
+	
+	if(hMsg != null)
+	{
+		CESC_SendMessage(hMsg, "quest_progress");
+	}
+	delete hMsg;
 }
 
 public bool CEQuest_IsQuestActive(int client)
