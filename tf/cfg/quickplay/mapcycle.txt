@@ -36,7 +36,6 @@ koth_synthetic_rc6a
 pl_badwater_pro_v9
 pl_barnblitz
 pl_borneo
-pl_camber_rc2
 pl_fifthcurve_rc1
 pl_sludgepit_final4
 pl_stranded_rc5
