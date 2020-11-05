@@ -204,7 +204,6 @@ public any Native_SendAPIRequest(Handle plugin, int numParams)
 			Format(sURL, sizeof(sURL), "http://%s%s", sURL, sUrl);
 		}
 	}
-	LogMessage("URL: %s", sURL);
 
 	System2HTTPRequest httpMessage = new System2HTTPRequest(httpRequestCallback, sURL);
 
@@ -230,8 +229,8 @@ public any Native_SendAPIRequest(Handle plugin, int numParams)
 	httpMessage.SetHeader("Content-Type", "text/keyvalues");
 	httpMessage.SetHeader("Accept", "text/keyvalues");
 
-	//Format(sHeaderAuth, sizeof(sHeaderAuth), "Creators.TF Server/1.0 (Server #%d)", iServerID);
-	//httpMessage.SetHeader("User-Agent", sHeaderAuth);
+	Format(sHeaderAuth, sizeof(sHeaderAuth), "Creators.TF Server/1.0 (Server #%d)", iServerID);
+	httpMessage.SetHeader("User-Agent", sHeaderAuth);
 
 	// Setting data of the request.
 	if(!StrEqual(sData, ""))
