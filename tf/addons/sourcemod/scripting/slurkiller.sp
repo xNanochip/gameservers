@@ -14,11 +14,11 @@
 
 public Plugin myinfo =
 {
-    name        = "Slur Killer",
-    author      = "stephanie",
-    description = ".",
-    version     = "1.0.5",
-    url         = "https://steph.anie.dev/"
+    name             = "Slur Killer",
+    author           = "steph&nie",
+    description      = ".",
+    version          = "1.1.0",
+    url              = "https://steph.anie.dev/"
 };
 
 // REGEX
@@ -34,11 +34,11 @@ public void OnPluginStart()
 {
     // set up regex
     // regex modified from: https://github.com/Blank-Cheque/Slurs
-    nword  = new Regex("n[!il1][gq]{2}+([e3]r)?s?",             PCRE_CASELESS | PCRE_MULTILINE);
-    fslur  = new Regex("f+[a@4]+(g|qq)+",                       PCRE_CASELESS | PCRE_MULTILINE);
-    tslur  = new Regex("t+r+[a4@]+n+([il1][e3]+|y+|[e3]r+)s?",  PCRE_CASELESS | PCRE_MULTILINE);
-    chslur = new Regex("c+h+[i1l]+n+k+",                        PCRE_CASELESS | PCRE_MULTILINE);
-    cslur  = new Regex("\bc[o0]{2}ns?\b",                       PCRE_CASELESS | PCRE_MULTILINE);
+    nword  = new Regex("n[!\\|\\\\ila4o10][gq]{2}+([e3]r)?s?", PCRE_CASELESS | PCRE_MULTILINE);
+    fslur  = new Regex("f+[a@4]+(g|q)+", PCRE_CASELESS | PCRE_MULTILINE);
+    tslur  = new Regex("(tran{2})|t+r+[a4@]+n+([il1][e3]+|y+|[e3]r+)s?", PCRE_CASELESS | PCRE_MULTILINE);
+    chslur = new Regex("c+h+[i\\|1l]+n+k+", PCRE_CASELESS | PCRE_MULTILINE);
+    cslur  = new Regex("\\bc[o0]{2}ns?\\b", PCRE_CASELESS | PCRE_MULTILINE);
 }
 
 public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArgs)
@@ -51,11 +51,11 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
 
     if
     (
-        MatchRegex(nword,  sArgs)  > 0 ||
-        MatchRegex(fslur,  sArgs)  > 0 ||
-        MatchRegex(tslur,  sArgs)  > 0 ||
-        MatchRegex(chslur, sArgs)  > 0 ||
-        MatchRegex(cslur,  sArgs)  > 0
+            MatchRegex(nword,  sArgs) > 0
+         || MatchRegex(fslur,  sArgs) > 0
+         || MatchRegex(tslur,  sArgs) > 0
+         || MatchRegex(chslur, sArgs) > 0
+         || MatchRegex(cslur,  sArgs) > 0
     )
     {
         if (!hasClientBeenWarned[Cl])
@@ -76,7 +76,7 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
 }
 
 // player join (includes rejoins at map changes)
-public void OnClientPostAdminCheck(int Cl)
+public void OnClientPutInServer(int Cl)
 {
     if (IsValidClient(Cl))
     {
@@ -94,7 +94,7 @@ void clearWarning(int userid)
 stock bool IsValidClient(int client)
 {
     if  (
-            client <= 0
+                client <= 0
              || client > MaxClients
              || !IsClientConnected(client)
              || IsFakeClient(client)
