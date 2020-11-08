@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.5.1b"
+#define PLUGIN_VERSION  "3.5.2b"
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 public Plugin myinfo =
@@ -48,12 +48,10 @@ int bhopConsecDetects       [MAXPLAYERS+1];
 float timeSinceSpawn        [MAXPLAYERS+1];
 float timeSinceTaunt        [MAXPLAYERS+1];
 float timeSinceTeled        [MAXPLAYERS+1];
-// STORED NET SETTINGS PER CLIENT
-float loss;
-float choke;
-float ping;
 // STORED ANGLES PER CLIENT
 float clangles              [3][MAXPLAYERS+1][2];
+// STORED POS PER CLIENT
+float clpos                 [2][MAXPLAYERS+1][3];
 // STORED cmdnum PER CLIENT
 int clcmdnum                [3][MAXPLAYERS+1];
 // STORED BUTTONS PER CLIENT
@@ -62,12 +60,15 @@ int buttonsPrev             [MAXPLAYERS+1];
 bool highGrav               [MAXPLAYERS+1];
 // STORED MISC VARS PER CLIENT
 bool playerTaunting         [MAXPLAYERS+1];
+int playerInBadCond         [MAXPLAYERS+1];
 bool userBanQueued          [MAXPLAYERS+1];
 // STORED SENS PER CLIENT
 float sensFor               [MAXPLAYERS+1];
 
 // get last 6 ticks
 float engineTime[6][MAXPLAYERS+1];
+
+
 //float maxEngineTimeFor[MAXPLAYERS+1];
 //
 //// debug
@@ -765,6 +766,22 @@ public void TF2_OnConditionAdded(int Cl, TFCond condition)
         {
             playerTaunting[Cl] = true;
         }
+        else if (
+                    condition == TFCond_HalloweenKart
+                 || condition == TFCond_HalloweenKartDash
+                 || condition == TFCond_HalloweenThriller
+                 || condition == TFCond_HalloweenBombHead
+                 || condition == TFCond_HalloweenGiant
+                 || condition == TFCond_HalloweenTiny
+                 || condition == TFCond_HalloweenInHell
+                 || condition == TFCond_HalloweenGhostMode
+                 || condition == TFCond_HalloweenKartNoTurn
+                 || condition == TFCond_HalloweenKartCage
+                 || condition == TFCond_SwimmingCurse
+            )
+        {
+            playerInBadCond[Cl]++;
+        }
     }
 }
 
@@ -776,6 +793,25 @@ public void TF2_OnConditionRemoved(int Cl, TFCond condition)
         {
             timeSinceTaunt[Cl] = GetEngineTime();
             playerTaunting[Cl] = false;
+        }
+        else if (
+                    condition == TFCond_HalloweenKart
+                 || condition == TFCond_HalloweenKartDash
+                 || condition == TFCond_HalloweenThriller
+                 || condition == TFCond_HalloweenBombHead
+                 || condition == TFCond_HalloweenGiant
+                 || condition == TFCond_HalloweenTiny
+                 || condition == TFCond_HalloweenInHell
+                 || condition == TFCond_HalloweenGhostMode
+                 || condition == TFCond_HalloweenKartNoTurn
+                 || condition == TFCond_HalloweenKartCage
+                 || condition == TFCond_SwimmingCurse
+            )
+        {
+            if (playerInBadCond[Cl] > 0)
+            {
+                playerInBadCond[Cl]--;
+            }
         }
     }
 }
@@ -853,26 +889,29 @@ void ClearClBasedVars(int userid)
     // get fresh cli id
     int Cl = GetClientOfUserId(userid);
     // clear all old values for cli id based stuff
-    buttonsPrev[Cl]             = 0;
-    turnTimes[Cl]               = 0;
-    aimsnapDetects[Cl]          = 0;
-    pSilentDetects[Cl]          = 0;
-    bhopDetects[Cl]             = -1;
-    isConsecStringOfBhops[Cl]   = false;
-    bhopConsecDetects[Cl]       = 0;
-    fakeAngDetects[Cl]          = 0;
-    timeSinceSpawn[Cl]          = 0.0;
-    timeSinceTaunt[Cl]          = 0.0;
-    timeSinceTeled[Cl]          = 0.0;
-    userBanQueued[Cl]           = false;
-    if (highGrav[Cl])
-    {
-        highGrav[Cl] = false;
-        if (IsValidEntity(Cl))
-        {
-            SetEntityGravity(Cl, 1.0);
-        }
-    }
+    turnTimes               [Cl] = 0;
+    fovDesired              [Cl] = 0;
+    fakeAngDetects          [Cl] = 0;
+    aimsnapDetects          [Cl] = 0;
+    pSilentDetects          [Cl] = 0;
+    bhopDetects             [Cl] = -1; // set to -1 to ignore single jumps
+    isConsecStringOfBhops   [Cl] = false;
+    bhopConsecDetects       [Cl] = 0;
+    timeSinceSpawn          [Cl] = 0.0;
+    timeSinceTaunt          [Cl] = 0.0;
+    timeSinceTeled          [Cl] = 0.0;
+    // STORED BUTTONS PER CLIENT
+    buttonsPrev             [Cl] = 0;
+    // STORED GRAVITY STATE PER CLIENT
+    highGrav                [Cl] = false;
+    // STORED MISC VARS PER CLIENT
+    playerTaunting          [Cl] = false;
+    playerInBadCond         [Cl] = 0;
+    userBanQueued           [Cl] = false;
+    // STORED SENS PER CLIENT
+    sensFor                 [Cl] = 0.0;
+
+    // don't bother clearing arrays
 }
 
 public void OnClientPutInServer(int Cl)
@@ -884,8 +923,6 @@ public void OnClientPutInServer(int Cl)
         ClearClBasedVars(userid);
         // clear timer
         QueryTimer[Cl] = null;
-        // hook settransmit
-        //SDKHook(Cl, SDKHook_SetTransmit, hookSetTransmit);
         // query convars on player connect
         if (DEBUG)
         {
@@ -913,6 +950,7 @@ public Action ForceCheckAll(int client, int args)
     ReplyToCommand(client, "[StAC] Checking cvars on all clients.");
 }
 
+
 /*
     in OnPlayerRunCmd, we check for:
     - SILENT AIM
@@ -938,6 +976,10 @@ public Action OnPlayerRunCmd
     // make sure client is real & not a bot.
     if (IsValidClient(Cl))
     {
+        //LogMessage("[sSAC-]: OnPlayerRunCmd Debug\nbuttons = \"%i\".\nint &impulse = \"%i\".\nint &cmdnum = \"%i\".\nint &tickcount = \"%i\".\nint &seed, = \"%i\".\nint mouse[2] [1] = \"%i\", [2] = \"%i\".\n", buttons, impulse, cmdnum, tickcount, seed, mouse[0], mouse[1]);
+        //LogMessage("cmdnum = \"%i\"", cmdnum);
+        //LogMessage("playercond = \"%i\"", playerInBadCond[Cl]);
+
 
         // from ssac - block invalid cmds
         if (cmdnum <= 0)
@@ -956,65 +998,24 @@ public Action OnPlayerRunCmd
 
         // grab current time to compare to time since last spawn/taunt/tele
         // convert to percentages
-        loss = GetClientAvgLoss(Cl, NetFlow_Both) * 100.0;
-        choke = GetClientAvgChoke(Cl, NetFlow_Both) * 100.0;
+        float loss = GetClientAvgLoss(Cl, NetFlow_Both) * 100.0;
+        float choke = GetClientAvgChoke(Cl, NetFlow_Both) * 100.0;
         // convert to ms
-        ping = GetClientAvgLatency(Cl, NetFlow_Both) * 1000.0;
-
+        float ping = GetClientAvgLatency(Cl, NetFlow_Both) * 1000.0;
         /*
             AIMSNAP DETECTION
         */
-        if  (
-                // if both anglesnap detection cvars are -1, don't bother even going past this point.
-                (
-                    maxAimsnapDetections != -1
-                     ||
-                    maxPsilentDetections != -1
-                )
-                &&
-                // we have to do all these annoying checks to make sure we get as few false positives as possible.
-                (
-                    // make sure client is on a team & alive,
-                        IsClientPlaying(Cl)
-                    // ...isn't taunting,
-                     && !playerTaunting[Cl]
-                    // ...didn't recently spawn,
-                     && engineTime[0][Cl] - 1.0 > timeSinceSpawn[Cl]
-                    // ...didn't recently taunt,
-                     && engineTime[0][Cl] - 1.0 > timeSinceTaunt[Cl]
-                    // ...didn't recently teleport,
-                     && engineTime[0][Cl] - 1.0 > timeSinceTeled[Cl]
-                    // ...isn't already queued to be banned,
-                     && !userBanQueued[Cl]
-                    // ...doesn't have 5% or more packet loss,
-                     && loss <= 5.0
-                    //// ...doesn't have 51% or more packet choke,
-                     && choke <= 51.0
-                    // ...and isn't timing out.
-                     && !IsClientTimingOut(Cl)
-                    // check difference between client ticks to make sure client has been relatively unlaggy
-                     && engineTime[0][Cl] - engineTime[1][Cl] < 0.1
-                     && engineTime[0][Cl] - engineTime[1][Cl] > 0.0
-                     && engineTime[1][Cl] - engineTime[2][Cl] < 0.1
-                     && engineTime[1][Cl] - engineTime[2][Cl] > 0.0
-                     && engineTime[2][Cl] - engineTime[3][Cl] < 0.1
-                     && engineTime[2][Cl] - engineTime[3][Cl] > 0.0
-                     && engineTime[3][Cl] - engineTime[4][Cl] < 0.1
-                     && engineTime[3][Cl] - engineTime[4][Cl] > 0.0
-                     && engineTime[4][Cl] - engineTime[5][Cl] < 0.1
-                     && engineTime[4][Cl] - engineTime[5][Cl] > 0.0
-                )
-            )
+        if  // if both anglesnap detection cvars are -1, don't bother even going past this point.
+        (
+            maxAimsnapDetections != -1
+             ||
+            maxPsilentDetections != -1
+        )
         {
-            // we need this later for decrimenting psilent detections after 20 minutes!
-            int userid = GetClientUserId(Cl);
-
             // grab angles
             // thanks to nosoop from the sm discord for some help with this
-            clangles[2][Cl][0] = clangles[1][Cl][0];
-            clangles[2][Cl][1] = clangles[1][Cl][1];
-            clangles[1][Cl][0] = clangles[0][Cl][0];
-            clangles[1][Cl][1] = clangles[0][Cl][1];
+            clangles[2][Cl] = clangles[1][Cl];
+            clangles[1][Cl] = clangles[0][Cl];
             clangles[0][Cl][0] = angles[0];
             clangles[0][Cl][1] = angles[1];
 
@@ -1022,6 +1023,17 @@ public Action OnPlayerRunCmd
             clcmdnum[2][Cl] = clcmdnum[1][Cl];
             clcmdnum[1][Cl] = clcmdnum[0][Cl];
             clcmdnum[0][Cl] = cmdnum;
+
+            // grab positions
+            clpos[1][Cl] = clpos[0][Cl];
+            GetClientEyePosition(Cl, clpos[0][Cl]);
+
+            // detect trigger teleports
+            if (GetVectorDistance(clpos[0][Cl], clpos[1][Cl], false) > 500)
+            {
+                // reuse this variable
+                timeSinceTeled[Cl] = GetEngineTime();
+            }
 
             // R O U N D ( fuzzy psilent detection to detect lmaobox silent+ and better detect other forms of silent aim )
             float fuzzyClangles[3][2];
@@ -1033,192 +1045,233 @@ public Action OnPlayerRunCmd
             fuzzyClangles[0][0] = RoundFloat(clangles[0][Cl][0] * 10.0) / 10.0;
             fuzzyClangles[0][1] = RoundFloat(clangles[0][Cl][1] * 10.0) / 10.0;
 
-            if  (
-                AreAnglesUnlaggyAndValid(Cl)
-                &&  // don't run these check if client is currently using a spin bind
-                    !(
-                        buttons & IN_LEFT
-                         ||
-                        buttons & IN_RIGHT
-                    )
-                )
+            // we need this later for decrimenting psilent detections after 20 minutes!
+            int userid = GetClientUserId(Cl);
+
+            // we have to do all these annoying checks to make sure we get as few false positives as possible.
+            if
+            (
+                // make sure client is on a team & alive,
+                    IsClientPlaying(Cl)
+                // ...isn't taunting,
+                 && !playerTaunting[Cl]
+                // ...didn't recently spawn,
+                 && engineTime[0][Cl] - 1.0 > timeSinceSpawn[Cl]
+                // ...didn't recently taunt,
+                 && engineTime[0][Cl] - 1.0 > timeSinceTaunt[Cl]
+                // ...didn't recently teleport,
+                 && engineTime[0][Cl] - 1.0 > timeSinceTeled[Cl]
+                // ...isn't already queued to be banned,
+                 && !userBanQueued[Cl]
+                // ...doesn't have 5% or more packet loss,
+                 && loss <= 5.0
+                //// ...doesn't have 51% or more packet choke,
+                 && choke <= 51.0
+                // ...and isn't timing out.
+                 && !IsClientTimingOut(Cl)
+                // this is just for halloween shit
+                 && playerInBadCond[Cl] == 0
+                // check difference between client ticks to make sure client has been relatively unlaggy
+                 && engineTime[0][Cl] - engineTime[1][Cl] < 0.1
+                 && engineTime[1][Cl] - engineTime[2][Cl] < 0.1
+                 && engineTime[2][Cl] - engineTime[3][Cl] < 0.1
+                 && engineTime[3][Cl] - engineTime[4][Cl] < 0.1
+                 && engineTime[4][Cl] - engineTime[5][Cl] < 0.1
+            )
             {
-                /*
-                    SILENT AIM DETECTION
-                    silent aim (in this context) works by aimbotting for 1 tick and then snapping your viewangle back to what it was
-                    example snap:
-                        L 03/25/2020 - 06:03:50: [stac.smx] [StAC] pSilent detection: angles0  angles: x 5.120096 y 9.763162
-                        L 03/25/2020 - 06:03:50: [stac.smx] [StAC] pSilent detection: angles1  angles: x 1.635611 y 12.876886
-                        L 03/25/2020 - 06:03:50: [stac.smx] [StAC] pSilent detection: angles2  angles: x 5.120096 y 9.763162
-                    we can just look for these snaps and log them as detections!
-                    note that this won't detect some snaps when a player is moving their strafe keys and mouse @ the same time while they are aimlocking.
-                    i'll *try* to work mouse movement into this function at SOME point but it works reasonably well for right now.
-                */
-                // is this a fuzzy detect or not
-                int fuzzy = -1;
-                // don't run this check if silent aim cvar is -1
-                if (maxPsilentDetections != -1)
+                //LogMessage("valid");
+
+                if  (
+                    AreAnglesUnlaggyAndValid(Cl)
+                    &&  // don't run these checks if client is currently using a spin bind
+                        !(
+                            buttons & IN_LEFT
+                             ||
+                            buttons & IN_RIGHT
+                        )
+                    )
                 {
-                    if
-                    (
-                        // so the current and 2nd previous angles match...
-                        (
-                                clangles[0][Cl][0] == clangles[2][Cl][0]
-                             && clangles[0][Cl][1] == clangles[2][Cl][1]
-                        )
-                        &&
-                        // BUT the 1st previous (in between) angle doesnt?
-                        (
-                                clangles[1][Cl][0] != clangles[0][Cl][0]
-                             && clangles[1][Cl][1] != clangles[0][Cl][1]
-                             && clangles[1][Cl][0] != clangles[2][Cl][0]
-                             && clangles[1][Cl][1] != clangles[2][Cl][1]
-                        )
-                    )
+                    /*
+                        SILENT AIM DETECTION
+                        silent aim (in this context) works by aimbotting for 1 tick and then snapping your viewangle back to what it was
+                        example snap:
+                            L 03/25/2020 - 06:03:50: [stac.smx] [StAC] pSilent detection: angles0  angles: x 5.120096 y 9.763162
+                            L 03/25/2020 - 06:03:50: [stac.smx] [StAC] pSilent detection: angles1  angles: x 1.635611 y 12.876886
+                            L 03/25/2020 - 06:03:50: [stac.smx] [StAC] pSilent detection: angles2  angles: x 5.120096 y 9.763162
+                        we can just look for these snaps and log them as detections!
+                        note that this won't detect some snaps when a player is moving their strafe keys and mouse @ the same time while they are aimlocking.
+                        i'll *try* to work mouse movement into this function at SOME point but it works reasonably well for right now.
+                    */
+                    // is this a fuzzy detect or not
+                    int fuzzy = -1;
+                    // don't run this check if silent aim cvar is -1
+                    if (maxPsilentDetections != -1)
                     {
-                        fuzzy = 0;
+                        if
+                        (
+                            // so the current and 2nd previous angles match...
+                            (
+                                    clangles[0][Cl][0] == clangles[2][Cl][0]
+                                 && clangles[0][Cl][1] == clangles[2][Cl][1]
+                            )
+                            &&
+                            // BUT the 1st previous (in between) angle doesnt?
+                            (
+                                    clangles[1][Cl][0] != clangles[0][Cl][0]
+                                 && clangles[1][Cl][1] != clangles[0][Cl][1]
+                                 && clangles[1][Cl][0] != clangles[2][Cl][0]
+                                 && clangles[1][Cl][1] != clangles[2][Cl][1]
+                            )
+                        )
+                        {
+                            fuzzy = 0;
+                        }
+                        else if
+                        (
+                            // etc
+                            (
+                                    fuzzyClangles[0][0] == fuzzyClangles[2][0]
+                                 && fuzzyClangles[0][1] == fuzzyClangles[2][1]
+                            )
+                            &&
+                            // etc
+                            (
+                                    fuzzyClangles[1][0] != fuzzyClangles[0][0]
+                                 && fuzzyClangles[1][1] != fuzzyClangles[0][1]
+                                 && fuzzyClangles[1][0] != fuzzyClangles[2][0]
+                                 && fuzzyClangles[1][1] != fuzzyClangles[2][1]
+                            )
+                        )
+                        {
+                            fuzzy = 1;
+                        }
+                        if (fuzzy > -1)
+                        {
+                            /*
+                                ok - lets make sure there's a difference of at least 1 degree on either axis to avoid most fake detections
+                                these are probably caused by packets arriving out of order but i'm not a fucking network engineer (yet) so idk
+                                examples of fake detections we want to avoid:
+                                    03/25/2020 - 18:18:11: [stac.smx] [StAC] pSilent detection on [redacted]: curang angles: x 14.871331 y 154.979812
+                                    03/25/2020 - 18:18:11: [stac.smx] [StAC] pSilent detection on [redacted]: prev1  angles: x 14.901910 y 155.010391
+                                    03/25/2020 - 18:18:11: [stac.smx] [StAC] pSilent detection on [redacted]: prev2  angles: x 14.871331 y 154.979812
+                                and
+                                    03/25/2020 - 22:16:36: [stac.smx] [StAC] pSilent detection on [redacted2]: curang angles: x 21.516006 y -140.723709
+                                    03/25/2020 - 22:16:36: [stac.smx] [StAC] pSilent detection on [redacted2]: prev1  angles: x 21.560007 y -140.943710
+                                    03/25/2020 - 22:16:36: [stac.smx] [StAC] pSilent detection on [redacted2]: prev2  angles: x 21.516006 y -140.723709
+                                doing this might make it harder to detect legitcheaters but like. legitcheating in a 12 yr old dead game OMEGALUL who fucking cares
+                            */
+                            // actual angle calculation here
+                            float aDiffReal = CalcAngDeg(clangles[0][Cl], clangles[1][Cl]);
+                            // refactored from smac - make sure we don't fuck up angles near the x/y axes!
+                            if (aDiffReal > 180.0)
+                            {
+                                aDiffReal = FloatAbs(aDiffReal - 360.0);
+                            }
+                            if  (
+                                    (
+                                        // needs to be more than a degree if not fuzzy
+                                        aDiffReal >= 1.0 && fuzzy == 0
+                                    )
+                                    ||
+                                    (
+                                        // needs to be more a degree if fuzzy (futureproofing)
+                                        aDiffReal >= 1.0 && fuzzy == 1
+                                    )
+                                )
+                            {
+                                pSilentDetects[Cl]++;
+                                // have this detection expire in 20 minutes
+                                CreateTimer(1200.0, Timer_decr_pSilent, userid);
+                                // print a bunch of bullshit
+                                PrintToImportant("{hotpink}[StAC]{white} SilentAim detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}. fuzzy = {blue}%i", aDiffReal, Cl,  pSilentDetects[Cl], fuzzy);
+                                PrintToImportant("{white}User Net Info: {palegreen}%.2f{white}%% loss, {palegreen}%.2f{white}%% choke, {palegreen}%.2f{white} ms ping", loss, choke, ping);
+                                CPrintToSTV("clangles0: x %.2f y %.2f clangles1: x %.2f y %.2f clangles2: x %.2f y %.2f", clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1], clangles[2][Cl][0], clangles[2][Cl][1]);
+                                CPrintToSTV("clcmdnum0: %i clcmdnum1: %i clcmdnum2: %i", clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
+                                PrintToImportant("Time between last 5 client ticks (most recent first):\n1 %f 2 %f 3 %f 4 %f 5 %f", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
+                                StacLog("[StAC] SilentAim detection of %.2f° on \n%L.\nDetections so far: %i.\nfuzzy = %i", aDiffReal, Cl,  pSilentDetects[Cl], fuzzy);
+                                StacLog("\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\n angles2: x %.2f y %.2f\nCmdnum:\n clcmdnum[0]: %i\n clcmdnum[1]: %i\n clcmdnum[2]: %i", loss, choke, ping, clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1], clangles[2][Cl][0], clangles[2][Cl][1], clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
+                                StacLog("\nTime between last 5 client ticks (most recent first):\n1 %f\n2 %f\n3 %f\n4 %f\n5 %f\n", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
+                                // BAN USER if they trigger too many detections
+                                if (pSilentDetects[Cl] >= maxPsilentDetections && maxPsilentDetections > 0)
+                                {
+                                    char reason[128];
+                                    Format(reason, sizeof(reason), "%t", "pSilentBanMsg", pSilentDetects[Cl]);
+                                    BanUser(userid, reason);
+                                    MC_PrintToChatAll("%t", "pSilentBanAllChat", Cl, pSilentDetects[Cl]);
+                                    StacLog("%t", "pSilentBanMsg", pSilentDetects[Cl]);
+                                }
+                            }
+                        }
                     }
-                    else if
-                    (
-                        // etc
-                        (
-                                fuzzyClangles[0][0] == fuzzyClangles[2][0]
-                             && fuzzyClangles[0][1] == fuzzyClangles[2][1]
-                        )
-                        &&
-                        // etc
-                        (
-                                fuzzyClangles[1][0] != fuzzyClangles[0][0]
-                             && fuzzyClangles[1][1] != fuzzyClangles[0][1]
-                             && fuzzyClangles[1][0] != fuzzyClangles[2][0]
-                             && fuzzyClangles[1][1] != fuzzyClangles[2][1]
-                        )
-                    )
+                    /*
+                        AIMSNAP DETECTION
+                        Now lets be fair here - this also detects silent aim a lot too, but it's more for checking plain snaps.
+                    */
+                    if (maxAimsnapDetections != -1)
                     {
-                        fuzzy = 1;
-                    }
-                    if (fuzzy > -1)
-                    {
-                        /*
-                            ok - lets make sure there's a difference of at least 1 degree on either axis to avoid most fake detections
-                            these are probably caused by packets arriving out of order but i'm not a fucking network engineer (yet) so idk
-                            examples of fake detections we want to avoid:
-                                03/25/2020 - 18:18:11: [stac.smx] [StAC] pSilent detection on [redacted]: curang angles: x 14.871331 y 154.979812
-                                03/25/2020 - 18:18:11: [stac.smx] [StAC] pSilent detection on [redacted]: prev1  angles: x 14.901910 y 155.010391
-                                03/25/2020 - 18:18:11: [stac.smx] [StAC] pSilent detection on [redacted]: prev2  angles: x 14.871331 y 154.979812
-                            and
-                                03/25/2020 - 22:16:36: [stac.smx] [StAC] pSilent detection on [redacted2]: curang angles: x 21.516006 y -140.723709
-                                03/25/2020 - 22:16:36: [stac.smx] [StAC] pSilent detection on [redacted2]: prev1  angles: x 21.560007 y -140.943710
-                                03/25/2020 - 22:16:36: [stac.smx] [StAC] pSilent detection on [redacted2]: prev2  angles: x 21.516006 y -140.723709
-                            doing this might make it harder to detect legitcheaters but like. legitcheating in a 12 yr old dead game OMEGALUL who fucking cares
-                        */
-                        // actual angle calculation here
+                        // calculate 1 tick angle snap
                         float aDiffReal = CalcAngDeg(clangles[0][Cl], clangles[1][Cl]);
                         // refactored from smac - make sure we don't fuck up angles near the x/y axes!
                         if (aDiffReal > 180.0)
                         {
                             aDiffReal = FloatAbs(aDiffReal - 360.0);
                         }
-                        if  (
-                                (
-                                    // needs to be more than a degree if not fuzzy
-                                    aDiffReal >= 1.0 && fuzzy == 0
-                                )
-                                ||
-                                (
-                                    // needs to be more a degree if fuzzy (futureproofing)
-                                    aDiffReal >= 1.0 && fuzzy == 1
-                                )
-                            )
+                        // 30 seems reasonable, considering that we're working mouse movement into this as well
+                        if (aDiffReal >= 30.0)
                         {
-                            pSilentDetects[Cl]++;
-                            // have this detection expire in 20 minutes
-                            CreateTimer(1200.0, Timer_decr_pSilent, userid);
-                            // print a bunch of bullshit
-                            PrintToImportant("{hotpink}[StAC]{white} SilentAim detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}. fuzzy = {blue}%i", aDiffReal, Cl,  pSilentDetects[Cl], fuzzy);
-                            PrintToImportant("{white}User Net Info: {palegreen}%.2f{white}%% loss, {palegreen}%.2f{white}%% choke, {palegreen}%.2f{white} ms ping", loss, choke, ping);
-                            CPrintToSTV("clangles0: x %.2f y %.2f clangles1: x %.2f y %.2f clangles2: x %.2f y %.2f", clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1], clangles[2][Cl][0], clangles[2][Cl][1]);
-                            CPrintToSTV("clcmdnum0: %i clcmdnum1: %i clcmdnum2: %i", clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
-                            PrintToImportant("Time between last 5 client ticks (most recent first):\n1 %f 2 %f 3 %f 4 %f 5 %f", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
-                            StacLog("[StAC] SilentAim detection of %.2f° on \n%L.\nDetections so far: %i.\nfuzzy = %i", aDiffReal, Cl,  pSilentDetects[Cl], fuzzy);
-                            StacLog("\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\n angles2: x %.2f y %.2f\nCmdnum:\n clcmdnum[0]: %i\n clcmdnum[1]: %i\n clcmdnum[2]: %i", loss, choke, ping, clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1], clangles[2][Cl][0], clangles[2][Cl][1], clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
-                            StacLog("\nTime between last 5 client ticks (most recent first):\n1 %f\n2 %f\n3 %f\n4 %f\n5 %f\n", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
-                            // BAN USER if they trigger too many detections
-                            if (pSilentDetects[Cl] >= maxPsilentDetections && maxPsilentDetections > 0)
+                            // only go further if sens is definitely valid
+                            if (6.0 <= sensFor[Cl] > 0.0)
                             {
-                                char reason[128];
-                                Format(reason, sizeof(reason), "%t", "pSilentBanMsg", pSilentDetects[Cl]);
-                                BanUser(userid, reason);
-                                MC_PrintToChatAll("%t", "pSilentBanAllChat", Cl, pSilentDetects[Cl]);
-                                StacLog("%t", "pSilentBanMsg", pSilentDetects[Cl]);
-                            }
-                        }
-                    }
-                }
-                /*
-                    AIMSNAP DETECTION
-                    Now lets be fair here - this also detects silent aim a lot too, but it's more for checking plain snaps.
-                */
-                if (maxAimsnapDetections != -1)
-                {
-                    // calculate 1 tick angle snap
-                    float aDiffReal = CalcAngDeg(clangles[0][Cl], clangles[1][Cl]);
-                    // refactored from smac - make sure we don't fuck up angles near the x/y axes!
-                    if (aDiffReal > 180.0)
-                    {
-                        aDiffReal = FloatAbs(aDiffReal - 360.0);
-                    }
-                    // 30 seems reasonable, considering that we're working mouse movement into this as well
-                    if (aDiffReal >= 30.0)
-                    {
-                        // only go further if sens is definitely valid
-                        if (sensFor[Cl] != 0.0)
-                        {
-                            // TODO: MAKE SURE sensFor IS AS ACC AS POSSIBLE
-                            int wx = abs(RoundFloat(mouse[0] * ( 1 / sensFor[Cl])));
-                            int wy = abs(RoundFloat(mouse[1] * ( 1 / sensFor[Cl])));
-                            if
-                                (   // stupidly small amts of mouse movement on both axes
-                                    (
-                                        wx <= 5
-                                         &&
-                                        wy <= 5
+                                // TODO: MAKE SURE sensFor IS AS ACC AS POSSIBLE
+                                int wx = abs(RoundFloat(mouse[0] * ( 1 / sensFor[Cl])));
+                                int wy = abs(RoundFloat(mouse[1] * ( 1 / sensFor[Cl])));
+                                if
+                                    (   // stupidly small amts of mouse movement on both axes
+                                        (
+                                            wx <= 5
+                                             &&
+                                            wy <= 5
+                                        )
+                                        ||
+                                        // stupidly big amts of mouse movement on either axis
+                                        (
+                                            wx >= 5000
+                                             ||
+                                            wy >= 5000
+                                        )
                                     )
-                                    ||
-                                    // stupidly big amts of mouse movement on either axis
-                                    (
-                                        wx >= 5000
-                                         ||
-                                        wy >= 5000
-                                    )
-                                )
-                                {
-                                aimsnapDetects[Cl]++;
-                                // have this detection expire in 20 minutes
-                                CreateTimer(1200.0, Timer_decr_aimsnaps, userid);
-                                PrintToImportant("{hotpink}[StAC]{white} Aimsnap detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.", aDiffReal, Cl,  aimsnapDetects[Cl]);
-                                PrintToImportant("{white}User Net Info: {palegreen}%.2f{white}%% loss, {palegreen}%.2f{white}%% choke, {palegreen}%.2f{white} ms ping", loss, choke, ping);
-                                CPrintToSTV("clangles0: x %.2f y %.2f clangles1: x %.2f y %.2f", clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1]);
-                                CPrintToSTV("clcmdnum0: %i clcmdnum1: %i clcmdnum2: %i", clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
-                                PrintToImportant("Time between last 5 client ticks (most recent first):\n1 %f 2 %f 3 %f 4 %f 5 %f", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
-                                StacLog("[StAC] Aimsnap detection of %.2f° on \n%L.\nDetections so far: %i.", aDiffReal, Cl,  aimsnapDetects[Cl]);
-                                StacLog("\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\n\nCmdnum:\n clcmdnum[0]: %i\n clcmdnum[1]: %i\n clcmdnum[2]: %i", loss, choke, ping, clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1], clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
-                                StacLog("\nTime between last 5 client ticks (most recent first):\n1 %f\n2 %f\n3 %f\n4 %f\n5 %f\n", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
-                                StacLog("User Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i.", wx, wy);
-                                // BAN USER if they trigger too many detections
-                                if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
-                                {
-                                    char reason[128];
-                                    Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
-                                    BanUser(userid, reason);
-                                    MC_PrintToChatAll("%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
-                                    StacLog("%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
+                                    {
+                                    aimsnapDetects[Cl]++;
+                                    // have this detection expire in 20 minutes
+                                    CreateTimer(1200.0, Timer_decr_aimsnaps, userid);
+                                    PrintToImportant("{hotpink}[StAC]{white} Aimsnap detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.", aDiffReal, Cl,  aimsnapDetects[Cl]);
+                                    PrintToImportant("{white}User Net Info: {palegreen}%.2f{white}%% loss, {palegreen}%.2f{white}%% choke, {palegreen}%.2f{white} ms ping", loss, choke, ping);
+                                    PrintToImportant("User Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i. sens: %f", wx, wy, sensFor[Cl]);
+                                    PrintToImportant("User Mouse Movement (unweighted): x: %i, y: %i.", mouse[0], mouse[1]);
+                                    CPrintToSTV("clangles0: x %.2f y %.2f clangles1: x %.2f y %.2f", clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1]);
+                                    CPrintToSTV("clcmdnum0: %i clcmdnum1: %i clcmdnum2: %i", clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
+                                    PrintToImportant("Time between last 5 client ticks (most recent first):\n1 %f 2 %f 3 %f 4 %f 5 %f", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
+                                    StacLog("[StAC] Aimsnap detection of %.2f° on \n%L.\nDetections so far: %i.", aDiffReal, Cl,  aimsnapDetects[Cl]);
+                                    StacLog("\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\n\nCmdnum:\n clcmdnum[0]: %i\n clcmdnum[1]: %i\n clcmdnum[2]: %i", loss, choke, ping, clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1], clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
+                                    StacLog("\nTime between last 5 client ticks (most recent first):\n1 %f\n2 %f\n3 %f\n4 %f\n5 %f\n", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
+                                    StacLog("User Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i.", wx, wy);
+                                    StacLog("User Mouse Movement (unweighted): x: %i, y: %i.", mouse[0], mouse[1]);
+                                    // BAN USER if they trigger too many detections
+                                    if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
+                                    {
+                                        char reason[128];
+                                        Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
+                                        BanUser(userid, reason);
+                                        MC_PrintToChatAll("%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
+                                        StacLog("%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+
             /*
                 BHOP DETECTION - using lilac and ssac as reference, this one's better tho
             */
@@ -1632,7 +1685,7 @@ void NetPropCheck(int userid)
         if  (
                 !TF2_IsPlayerInCondition(Cl, TFCond_Zoomed)
                  &&
-                !TF2_IsPlayerInCondition(Cl, TFCond_HalloweenKart)
+                playerInBadCond[Cl] == 0
             )
         {
             // double check fov just in case
