@@ -22,20 +22,15 @@ public void TF2_OnWaitingForPlayersStart()
 
     if (mode == TF2_GameMode_PL || mode == TF2_GameMode_ADCP)
     {
-        CreateTimer(0.1, openDoorsTimer, _, TIMER_FLAG_NO_MAPCHANGE);
+        CreateTimer(0.25, openDoorsTimer, _, TIMER_FLAG_NO_MAPCHANGE);
     }
 }
 
-public Action openDoorsTimer(Handle timer)
-{
-    OpenDoors();
-}
-
-/* OpenDoors() - from SOAP-TF2DM - https://github.com/Lange/SOAP-TF2DM/blob/master/addons/sourcemod/scripting/soap_tf2dm.sp#L1181-L1207
+/* OpenDoors - from SOAP-TF2DM - https://github.com/Lange/SOAP-TF2DM/blob/master/addons/sourcemod/scripting/soap_tf2dm.sp#L1181-L1207
  *
  * Initially forces all doors open and keeps them unlocked even when they close.
  * -------------------------------------------------------------------------- */
-void OpenDoors()
+public Action openDoorsTimer(Handle timer)
 {
     int ent = -1;
     // search for all func doors
