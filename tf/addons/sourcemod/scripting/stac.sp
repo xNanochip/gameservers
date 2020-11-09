@@ -179,28 +179,9 @@ public void OnPluginStart()
         StacLog("[StAC] sv_cheats set to 1 - unloading plugin!!!");
         ServerCommand("sm plugins unload stac");
     }
-    //for (int Cl = 1; Cl <= MaxClients; Cl++)
-    //{
-    //    if (IsValidClient(Cl))
-    //    {
-    //        SDKHook(Cl, SDKHook_SetTransmit, hookSetTransmit);
-    //    }
-    //}
 
     StacLog("[StAC] Plugin vers. ---- %s ---- loaded", PLUGIN_VERSION);
 }
-
-
-
-//public Action hookSetTransmit(int entity, int client)
-//{
-//    //if (entity == client || IsClientPlaying(client))
-//    //{
-//    //    return Plugin_Continue;
-//    //}
-//    //return Plugin_Handled;
-//}
-
 
 void initCvars()
 {
@@ -592,11 +573,11 @@ public Action ShowDetections(int callingCl, int args)
         if (IsValidClient(Cl))
         {
             if  (
-                        turnTimes[Cl]           >= 1
-                     || aimsnapDetects[Cl]      >= 1
-                     || pSilentDetects[Cl]      >= 1
-                     || fakeAngDetects[Cl]      >= 1
-                     || bhopConsecDetects[Cl]   >= 1
+                       turnTimes[Cl]           >= 1
+                    || aimsnapDetects[Cl]      >= 1
+                    || pSilentDetects[Cl]      >= 1
+                    || fakeAngDetects[Cl]      >= 1
+                    || bhopConsecDetects[Cl]   >= 1
                 )
             {
                 ReplyToCommand(callingCl, "Detections for %L", Cl);
@@ -767,17 +748,17 @@ public void TF2_OnConditionAdded(int Cl, TFCond condition)
             playerTaunting[Cl] = true;
         }
         else if (
-                    condition == TFCond_HalloweenKart
-                 || condition == TFCond_HalloweenKartDash
-                 || condition == TFCond_HalloweenThriller
-                 || condition == TFCond_HalloweenBombHead
-                 || condition == TFCond_HalloweenGiant
-                 || condition == TFCond_HalloweenTiny
-                 || condition == TFCond_HalloweenInHell
-                 || condition == TFCond_HalloweenGhostMode
-                 || condition == TFCond_HalloweenKartNoTurn
-                 || condition == TFCond_HalloweenKartCage
-                 || condition == TFCond_SwimmingCurse
+                   condition == TFCond_HalloweenKart
+                || condition == TFCond_HalloweenKartDash
+                || condition == TFCond_HalloweenThriller
+                || condition == TFCond_HalloweenBombHead
+                || condition == TFCond_HalloweenGiant
+                || condition == TFCond_HalloweenTiny
+                || condition == TFCond_HalloweenInHell
+                || condition == TFCond_HalloweenGhostMode
+                || condition == TFCond_HalloweenKartNoTurn
+                || condition == TFCond_HalloweenKartCage
+                || condition == TFCond_SwimmingCurse
             )
         {
             playerInBadCond[Cl]++;
@@ -795,17 +776,17 @@ public void TF2_OnConditionRemoved(int Cl, TFCond condition)
             playerTaunting[Cl] = false;
         }
         else if (
-                    condition == TFCond_HalloweenKart
-                 || condition == TFCond_HalloweenKartDash
-                 || condition == TFCond_HalloweenThriller
-                 || condition == TFCond_HalloweenBombHead
-                 || condition == TFCond_HalloweenGiant
-                 || condition == TFCond_HalloweenTiny
-                 || condition == TFCond_HalloweenInHell
-                 || condition == TFCond_HalloweenGhostMode
-                 || condition == TFCond_HalloweenKartNoTurn
-                 || condition == TFCond_HalloweenKartCage
-                 || condition == TFCond_SwimmingCurse
+                   condition == TFCond_HalloweenKart
+                || condition == TFCond_HalloweenKartDash
+                || condition == TFCond_HalloweenThriller
+                || condition == TFCond_HalloweenBombHead
+                || condition == TFCond_HalloweenGiant
+                || condition == TFCond_HalloweenTiny
+                || condition == TFCond_HalloweenInHell
+                || condition == TFCond_HalloweenGhostMode
+                || condition == TFCond_HalloweenKartNoTurn
+                || condition == TFCond_HalloweenKartCage
+                || condition == TFCond_SwimmingCurse
             )
         {
             if (playerInBadCond[Cl] > 0)
@@ -1052,45 +1033,58 @@ public Action OnPlayerRunCmd
             if
             (
                 // make sure client is on a team & alive,
-                    IsClientPlaying(Cl)
+                   IsClientPlaying(Cl)
                 // ...isn't taunting,
-                 && !playerTaunting[Cl]
+                && !playerTaunting[Cl]
                 // ...didn't recently spawn,
-                 && engineTime[0][Cl] - 1.0 > timeSinceSpawn[Cl]
+                && engineTime[0][Cl] - 1.0 > timeSinceSpawn[Cl]
                 // ...didn't recently taunt,
-                 && engineTime[0][Cl] - 1.0 > timeSinceTaunt[Cl]
+                && engineTime[0][Cl] - 1.0 > timeSinceTaunt[Cl]
                 // ...didn't recently teleport,
-                 && engineTime[0][Cl] - 1.0 > timeSinceTeled[Cl]
+                && engineTime[0][Cl] - 1.0 > timeSinceTeled[Cl]
                 // ...isn't already queued to be banned,
-                 && !userBanQueued[Cl]
-                // ...doesn't have 5% or more packet loss,
-                 && loss <= 5.0
-                //// ...doesn't have 51% or more packet choke,
-                 && choke <= 51.0
+                && !userBanQueued[Cl]
                 // ...and isn't timing out.
-                 && !IsClientTimingOut(Cl)
+                && !IsClientTimingOut(Cl)
                 // this is just for halloween shit
-                 && playerInBadCond[Cl] == 0
-                // check difference between client ticks to make sure client has been relatively unlaggy
-                 && engineTime[0][Cl] - engineTime[1][Cl] < 0.1
-                 && engineTime[1][Cl] - engineTime[2][Cl] < 0.1
-                 && engineTime[2][Cl] - engineTime[3][Cl] < 0.1
-                 && engineTime[3][Cl] - engineTime[4][Cl] < 0.1
-                 && engineTime[4][Cl] - engineTime[5][Cl] < 0.1
+                && playerInBadCond[Cl] == 0
             )
             {
-                //LogMessage("valid");
+                    /*
+                        EYE ANGLES TEST
+                        if clients are outside of allowed angles in tf2, which are
+                          +/- 89.0 x (up / down)
+                          +/- 180 y (left / right, but we don't check this atm because there's things that naturally fuck up y angles, such as taunts)
+                          +/- 50 z (roll / tilt)
+                        while they are not in spec & on a map camera, we should log it.
+                        we would fix them but cheaters can just ignore server-enforced viewangle changes so there's no point
 
+                        these bounds were lifted from lilac. Thanks lilac
+                    */
                 if  (
-                    AreAnglesUnlaggyAndValid(Cl)
-                    &&  // don't run these checks if client is currently using a spin bind
-                        !(
-                            buttons & IN_LEFT
-                             ||
-                            buttons & IN_RIGHT
+                        // don't bother checking if fakeang detection is off
+                        maxFakeAngDetections != -1
+                        &&
+                        (
+                               angles[0] < -89.01
+                            || angles[0] > 89.01
+                            || angles[2] < -50.01
+                            || angles[2] > 50.01
                         )
                     )
-                {
+                    {
+                        fakeAngDetects[Cl]++;
+                        PrintToImportant("{hotpink}[StAC]{white} Player %N has {mediumpurple}invalid eye angles{white}!\nCurrent angles: {mediumpurple}%.2f %.2f %.2f{white}.\nDetections so far: {palegreen}%i", Cl, angles[0], angles[1], angles[2], fakeAngDetects[Cl]);
+                        StacLog("[StAC] Player %N has invalid eye angles!\nCurrent angles: %.2f %.2f %.2f.\nDetections so far: %i", Cl, angles[0], angles[1], angles[2], fakeAngDetects[Cl]);
+                        if (fakeAngDetects[Cl] >= maxFakeAngDetections && maxFakeAngDetections > 0)
+                        {
+                            char reason[128];
+                            Format(reason, sizeof(reason), "%t", "fakeangBanMsg", fakeAngDetects[Cl]);
+                            BanUser(userid, reason);
+                            MC_PrintToChatAll("%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
+                            StacLog("%t", "fakeangBanMsg", fakeAngDetects[Cl]);
+                        }
+                    }
                     /*
                         SILENT AIM DETECTION
                         silent aim (in this context) works by aimbotting for 1 tick and then snapping your viewangle back to what it was
@@ -1102,6 +1096,27 @@ public Action OnPlayerRunCmd
                         note that this won't detect some snaps when a player is moving their strafe keys and mouse @ the same time while they are aimlocking.
                         i'll *try* to work mouse movement into this function at SOME point but it works reasonably well for right now.
                     */
+                    // we have to do EXTRA checks because a lot of things can fuck up silent aim detection
+                if  (
+                        AreAnglesUnlaggyAndValid(Cl)
+                        &&  // don't run these checks if client is currently using a spin bind
+                            !(
+                                buttons & IN_LEFT
+                                ||
+                                buttons & IN_RIGHT
+                            )
+                        // ...doesn't have 5% or more packet loss,
+                        && loss <= 5.0
+                        // ...doesn't have 51% or more packet choke,
+                        && choke <= 51.0
+                        // check difference between client ticks to make sure client has been relatively unlaggy
+                        && engineTime[0][Cl] - engineTime[1][Cl] < 0.1
+                        && engineTime[1][Cl] - engineTime[2][Cl] < 0.1
+                        && engineTime[2][Cl] - engineTime[3][Cl] < 0.1
+                        && engineTime[3][Cl] - engineTime[4][Cl] < 0.1
+                        && engineTime[4][Cl] - engineTime[5][Cl] < 0.1
+                    )
+                {
                     // is this a fuzzy detect or not
                     int fuzzy = -1;
                     // don't run this check if silent aim cvar is -1
@@ -1111,16 +1126,16 @@ public Action OnPlayerRunCmd
                         (
                             // so the current and 2nd previous angles match...
                             (
-                                    clangles[0][Cl][0] == clangles[2][Cl][0]
-                                 && clangles[0][Cl][1] == clangles[2][Cl][1]
+                                   clangles[0][Cl][0] == clangles[2][Cl][0]
+                                && clangles[0][Cl][1] == clangles[2][Cl][1]
                             )
                             &&
                             // BUT the 1st previous (in between) angle doesnt?
                             (
-                                    clangles[1][Cl][0] != clangles[0][Cl][0]
-                                 && clangles[1][Cl][1] != clangles[0][Cl][1]
-                                 && clangles[1][Cl][0] != clangles[2][Cl][0]
-                                 && clangles[1][Cl][1] != clangles[2][Cl][1]
+                                   clangles[1][Cl][0] != clangles[0][Cl][0]
+                                && clangles[1][Cl][1] != clangles[0][Cl][1]
+                                && clangles[1][Cl][0] != clangles[2][Cl][0]
+                                && clangles[1][Cl][1] != clangles[2][Cl][1]
                             )
                         )
                         {
@@ -1130,16 +1145,16 @@ public Action OnPlayerRunCmd
                         (
                             // etc
                             (
-                                    fuzzyClangles[0][0] == fuzzyClangles[2][0]
-                                 && fuzzyClangles[0][1] == fuzzyClangles[2][1]
+                                   fuzzyClangles[0][0] == fuzzyClangles[2][0]
+                                && fuzzyClangles[0][1] == fuzzyClangles[2][1]
                             )
                             &&
                             // etc
                             (
-                                    fuzzyClangles[1][0] != fuzzyClangles[0][0]
-                                 && fuzzyClangles[1][1] != fuzzyClangles[0][1]
-                                 && fuzzyClangles[1][0] != fuzzyClangles[2][0]
-                                 && fuzzyClangles[1][1] != fuzzyClangles[2][1]
+                                   fuzzyClangles[1][0] != fuzzyClangles[0][0]
+                                && fuzzyClangles[1][1] != fuzzyClangles[0][1]
+                                && fuzzyClangles[1][0] != fuzzyClangles[2][0]
+                                && fuzzyClangles[1][1] != fuzzyClangles[2][1]
                             )
                         )
                         {
@@ -1219,8 +1234,8 @@ public Action OnPlayerRunCmd
                         // 30 seems reasonable, considering that we're working mouse movement into this as well
                         if (aDiffReal >= 30.0)
                         {
-                            // only go further if sens is definitely valid
-                            if (6.0 <= sensFor[Cl] > 0.0)
+                            // only go further if sens is definitely valid and not crazy high
+                            if (5.0 < sensFor[Cl] > 0.0)
                             {
                                 // TODO: MAKE SURE sensFor IS AS ACC AS POSSIBLE
                                 int wx = abs(RoundFloat(mouse[0] * ( 1 / sensFor[Cl])));
@@ -1229,14 +1244,14 @@ public Action OnPlayerRunCmd
                                     (   // stupidly small amts of mouse movement on both axes
                                         (
                                             wx <= 5
-                                             &&
+                                            &&
                                             wy <= 5
                                         )
                                         ||
                                         // stupidly big amts of mouse movement on either axis
                                         (
                                             wx >= 5000
-                                             ||
+                                            ||
                                             wy >= 5000
                                         )
                                     )
@@ -1292,7 +1307,7 @@ public Action OnPlayerRunCmd
 
                     if  (
                             !(buttons & IN_JUMP)  // player didn't press jump
-                             &&
+                            &&
                             (flags & FL_ONGROUND) // player is on the ground
                         )
                     // RESET COUNT!
@@ -1353,46 +1368,11 @@ public Action OnPlayerRunCmd
                 }
             }
             /*
-                EYE ANGLES TEST
-                if clients are outside of allowed angles in tf2, which are
-                  +/- 89.0 x (up / down)
-                  +/- 180 y (left / right, but we don't check this atm because there's things that naturally fuck up y angles, such as taunts)
-                  +/- 50 z (roll / tilt)
-                while they are not in spec & on a map camera, we should log it.
-                we would fix them but cheaters can just ignore server-enforced viewangle changes so there's no point
-
-                these bounds were lifted from lilac. Thanks lilac
-            */
-            if  (
-                    // don't bother checking if fakeang detection is off
-                    maxFakeAngDetections != -1
-                    &&
-                    (
-                            angles[0] < -89.01
-                         || angles[0] > 89.01
-                         || angles[2] < -50.01
-                         || angles[2] > 50.01
-                    )
-                )
-            {
-                fakeAngDetects[Cl]++;
-                PrintToImportant("{hotpink}[StAC]{white} Player %N has {mediumpurple}invalid eye angles{white}!\nCurrent angles: {mediumpurple}%.2f %.2f %.2f{white}.\nDetections so far: {palegreen}%i", Cl, angles[0], angles[1], angles[2], fakeAngDetects[Cl]);
-                StacLog("[StAC] Player %N has invalid eye angles!\nCurrent angles: %.2f %.2f %.2f.\nDetections so far: %i", Cl, angles[0], angles[1], angles[2], fakeAngDetects[Cl]);
-                if (fakeAngDetects[Cl] >= maxFakeAngDetections && maxFakeAngDetections > 0)
-                {
-                    char reason[128];
-                    Format(reason, sizeof(reason), "%t", "fakeangBanMsg", fakeAngDetects[Cl]);
-                    BanUser(userid, reason);
-                    MC_PrintToChatAll("%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
-                    StacLog("%t", "fakeangBanMsg", fakeAngDetects[Cl]);
-                }
-            }
-            /*
                 TURN BIND TEST
             */
             if  (
                     buttons & IN_LEFT
-                     ||
+                    ||
                     buttons & IN_RIGHT
                 )
             {
@@ -1577,7 +1557,6 @@ Action tvRecordListener(int client, const char[] command, int argc)
         if (SOURCEBANS)
         {
             // null out old info
-            demoname = "";
             demoname[0] = '\0';
             // get the recording name
             GetCmdArg(1, demoname, sizeof(demoname));
@@ -1603,6 +1582,8 @@ public void BanUser(int userid, char[] reason)
             {
                 char tvStatus[512];
                 ServerCommandEx(tvStatus, sizeof(tvStatus), "tv_status");
+
+                // is there a demo recording?
                 if (StrContains(tvStatus, "Recording to", false) != -1)
                 {
                     Format(demoname, sizeof(demoname), ". Demo file: %s.dem", demoname);
@@ -1612,14 +1593,14 @@ public void BanUser(int userid, char[] reason)
                 else
                 {
                     StacLog("[StAC] No STV demo is being recorded! No STV info will be printed to SourceBans!");
-                    // null out old info (just in case)
-                    demoname = "";
+                    // clear demoname
                     demoname[0] = '\0';
                 }
             }
             else
             {
                 StacLog("[StAC] Null string returned for demoname. No STV info will be printed to SourceBans!");
+                // don't need to clear, it's already null
             }
         }
 
@@ -1646,13 +1627,13 @@ void NameCheck(int userid)
             // might look into kicking for combining chars but who honestly cares
             // apparently other cheats use these:
             // thanks pazer
-                    StrContains(curName, "\xE2\x80\x8F", false) != -1
-                 || StrContains(curName, "\xE2\x80\x8E", false) != -1
-                 // cathook uses this
-                 || StrContains(curName, "\x1B", false)         != -1
-                 // just in case
-                 || StrContains(curName, "\n", false)           != -1
-                 || StrContains(curName, "\r", false)           != -1
+                   StrContains(curName, "\xE2\x80\x8F", false) != -1
+                || StrContains(curName, "\xE2\x80\x8E", false) != -1
+                // cathook uses this
+                || StrContains(curName, "\x1B", false)         != -1
+                // just in case
+                || StrContains(curName, "\n", false)           != -1
+                || StrContains(curName, "\r", false)           != -1
             )
         {
             if (banForMiscCheats)
@@ -1684,7 +1665,7 @@ void NetPropCheck(int userid)
         // we don't want to touch fov if a client is zoomed in while sniping or if they're in a bumper car
         if  (
                 !TF2_IsPlayerInCondition(Cl, TFCond_Zoomed)
-                 &&
+                &&
                 playerInBadCond[Cl] == 0
             )
         {
@@ -1716,7 +1697,7 @@ void NetPropCheck(int userid)
             }
             if  (
                     lerp < min_interp_ms && min_interp_ms != -1
-                     ||
+                    ||
                     lerp > max_interp_ms && max_interp_ms != -1
                 )
             {
@@ -1772,12 +1753,12 @@ void NetPropCheck(int userid)
                 int slot3wearable = TF2_GetWearable(Cl, 2);
                 // check that the ents are valid and have the correct entprops
                 if  (
-                            IsValidEntity(slot1wearable)
-                         && IsValidEntity(slot2wearable)
-                         && IsValidEntity(slot3wearable)
-                         && HasEntProp(slot1wearable, Prop_Send, "m_iItemDefinitionIndex")
-                         && HasEntProp(slot2wearable, Prop_Send, "m_iItemDefinitionIndex")
-                         && HasEntProp(slot3wearable, Prop_Send, "m_iItemDefinitionIndex")
+                           IsValidEntity(slot1wearable)
+                        && IsValidEntity(slot2wearable)
+                        && IsValidEntity(slot3wearable)
+                        && HasEntProp(slot1wearable, Prop_Send, "m_iItemDefinitionIndex")
+                        && HasEntProp(slot2wearable, Prop_Send, "m_iItemDefinitionIndex")
+                        && HasEntProp(slot3wearable, Prop_Send, "m_iItemDefinitionIndex")
                     )
                 {
                     int slot1itemdef = GetEntProp(slot1wearable, Prop_Send, "m_iItemDefinitionIndex");
@@ -1786,23 +1767,23 @@ void NetPropCheck(int userid)
                     if  (
                             // frontline field recorder
                             (
-                                    slot1itemdef == 302
-                                 || slot2itemdef == 302
-                                 || slot3itemdef == 302
+                                   slot1itemdef == 302
+                                || slot2itemdef == 302
+                                || slot3itemdef == 302
                             )
                             // gibus
                             &&
                             (
-                                    slot1itemdef == 940
-                                 || slot2itemdef == 940
-                                 || slot3itemdef == 940
+                                   slot1itemdef == 940
+                                || slot2itemdef == 940
+                                || slot3itemdef == 940
                             )
                             &&
                             // skull topper
                             (
-                                    slot1itemdef == 941
-                                 || slot2itemdef == 941
-                                 || slot3itemdef == 941
+                                   slot1itemdef == 941
+                                || slot2itemdef == 941
+                                || slot3itemdef == 941
                             )
                         )
                     {
@@ -2000,7 +1981,7 @@ stock bool IsClientPlaying(int client)
             &&
             (
                 team != TFTeam_Unassigned
-                 &&
+                &&
                 team != TFTeam_Spectator
             )
         )
@@ -2017,12 +1998,12 @@ stock bool AreAnglesUnlaggyAndValid(int Cl)
             (
                 // OK lets make sure we dont get any fake detections on startup
                 // this also ignores weird angle resets in mge / dm
-                    clangles[0][Cl][0] != 0.00
-                 && clangles[0][Cl][1] != 0.00
-                 && clangles[1][Cl][0] != 0.00
-                 && clangles[1][Cl][1] != 0.00
-                 && clangles[2][Cl][0] != 0.00
-                 && clangles[2][Cl][1] != 0.00
+                   clangles[0][Cl][0] != 0.00
+                && clangles[0][Cl][1] != 0.00
+                && clangles[1][Cl][0] != 0.00
+                && clangles[1][Cl][1] != 0.00
+                && clangles[2][Cl][0] != 0.00
+                && clangles[2][Cl][1] != 0.00
             )
             &&
             // make sure ticks are sequential, hopefully avoid laggy players
@@ -2081,11 +2062,11 @@ stock int FindSTV()
 {
     if  (!
             (
-                    CachedSTV >= 1
-                 && CachedSTV <= MaxClients
-                 && IsClientConnected(CachedSTV)
-                 && IsClientInGame(CachedSTV)
-                 && IsClientSourceTV(CachedSTV)
+                   CachedSTV >= 1
+                && CachedSTV <= MaxClients
+                && IsClientConnected(CachedSTV)
+                && IsClientInGame(CachedSTV)
+                && IsClientSourceTV(CachedSTV)
             )
         )
     {
@@ -2093,9 +2074,9 @@ stock int FindSTV()
         for (int client = 1; client <= MaxClients; client++)
         {
             if  (
-                        IsClientConnected(client)
-                     && IsClientInGame(client)
-                     && IsClientSourceTV(client)
+                       IsClientConnected(client)
+                    && IsClientInGame(client)
+                    && IsClientSourceTV(client)
                 )
             {
                 CachedSTV = client;
