@@ -33,56 +33,7 @@ public Action StuckSpecCalled(int client, int args)
         return;
     }
 
-    int redPlayers;
-    int bluPlayers;
-
-    for (int i = 1; i <= MaxClients; i++)
-    {
-        if (IsValidClient(i))
-        {
-            TFTeam iTeam = TF2_GetClientTeam(i);
-            if (iTeam == TFTeam_Red)
-            {
-                redPlayers++;
-            }
-            else if (iTeam == TFTeam_Blue )
-            {
-                bluPlayers++;
-            }
-        }
-    }
-
-    if (TF2_GetPlayerClass(client) == TFClass_Unknown)
-    {
-        TF2_SetPlayerClass(client, TFClass_Scout, true, true);
-        ReplyToCommand(client, "Your most recent player class was unknown. Defaulting to Scout to avoid bugs!");
-    }
-
-    if (redPlayers > bluPlayers)
-    {
-        TF2_ChangeClientTeam(client, TFTeam_Blue);
-    }
-    else if (redPlayers < bluPlayers)
-    {
-        TF2_ChangeClientTeam(client, TFTeam_Red);
-    }
-    // flip a coin
-    else
-    {
-        if (GetURandomFloat() > 0.5)
-        {
-            TF2_ChangeClientTeam(client, TFTeam_Red);
-        }
-        else
-        {
-            TF2_ChangeClientTeam(client, TFTeam_Blue);
-        }
-    }
+    ClientCommand(client, "autoteam");
 
     ReplyToCommand(client, "You have been freed from spectator!");
-}
-
-stock bool IsValidClient(int client)
-{
-    return ((0 < client <= MaxClients) && IsClientInGame(client) && !IsFakeClient(client));
 }
