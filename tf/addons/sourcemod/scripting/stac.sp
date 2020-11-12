@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.5.2b"
+#define PLUGIN_VERSION  "3.5.3b"
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 public Plugin myinfo =
@@ -1222,7 +1222,17 @@ public Action OnPlayerRunCmd
                         AIMSNAP DETECTION
                         Now lets be fair here - this also detects silent aim a lot too, but it's more for checking plain snaps.
                     */
-                    if (maxAimsnapDetections != -1)
+                    if  (
+                            // don't check if disabled
+                            (
+                                maxAimsnapDetections != -1
+                            )
+                            &&
+                            // only go further if sens is definitely valid and not crazy high
+                            (
+                                5.0 > sensFor[Cl] > 0.0
+                            )
+                        )
                     {
                         // calculate 1 tick angle snap
                         float aDiffReal = CalcAngDeg(clangles[0][Cl], clangles[1][Cl]);
@@ -1234,8 +1244,6 @@ public Action OnPlayerRunCmd
                         // 30 seems reasonable, considering that we're working mouse movement into this as well
                         if (aDiffReal >= 30.0)
                         {
-                            // only go further if sens is definitely valid and not crazy high
-                            if (5.0 < sensFor[Cl] > 0.0)
                             {
                                 // TODO: MAKE SURE sensFor IS AS ACC AS POSSIBLE
                                 int wx = abs(RoundFloat(mouse[0] * ( 1 / sensFor[Cl])));
@@ -1306,9 +1314,15 @@ public Action OnPlayerRunCmd
                     }
 
                     if  (
-                            !(buttons & IN_JUMP)  // player didn't press jump
+                            // player didn't press jump
+                            !(
+                                buttons & IN_JUMPw
+                            )
+                            // player is on the ground
                             &&
-                            (flags & FL_ONGROUND) // player is on the ground
+                            (
+                                flags & FL_ONGROUND
+                            )
                         )
                     // RESET COUNT!
                     {
@@ -1328,9 +1342,20 @@ public Action OnPlayerRunCmd
                     }
                     // if a client didn't trigger the reset conditions above, they bhopped
                     else if (
-                                !(buttonsPrev[Cl] & IN_JUMP) // last input didn't have a jump - include to prevent legits holding spacebar from triggering detections
-                                 && (buttons & IN_JUMP)      // player pressed jump
-                                 && (flags & FL_ONGROUND)    // they were on the ground when they pressed space
+                                // last input didn't have a jump - include to prevent legits holding spacebar from triggering detections
+                                !(
+                                    buttonsPrev[Cl] & IN_JUMP
+                                )
+                                &&
+                                // player pressed jump
+                                (
+                                    buttons & IN_JUMP
+                                )
+                                // they were on the ground when they pressed space
+                                &&
+                                (
+                                    flags & FL_ONGROUND
+                                )
                             )
                     {
                         bhopDetects[Cl]++;
