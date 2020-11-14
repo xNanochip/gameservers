@@ -1786,10 +1786,10 @@ void NetPropCheck(int userid)
                 {
                     if (banForMiscCheats)
                     {
-                        char reason[128];
-                        Format(reason, sizeof(reason), "%t", "illegalPingPropBanMsg", pingprop);
-                        BanUser(userid, reason);
-                        MC_PrintToChatAll("%t", "illegalPingPropBanAllChat", Cl);
+                        //char reason[128];
+                        //Format(reason, sizeof(reason), "%t", "illegalPingPropBanMsg", pingprop);
+                        //BanUser(userid, reason);
+                        //MC_PrintToChatAll("%t", "illegalPingPropBanAllChat", Cl);
                         StacLog("%t", "illegalPingPropBanMsg");
                     }
                     else
