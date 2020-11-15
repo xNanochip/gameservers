@@ -21,24 +21,26 @@ stages:
                 CI_REMOTE_REMOTE=`echo $CI_REMOTE_REMOTE | tr : /`
 
                 echo "Comparing remotes $CI_LOCAL_REMOTE and $CI_REMOTE_REMOTE."
-                if [ $CI_LOCAL_REMOTE != $CI_REMOTE_REMOTE ]; then continue; fi;
+                if [ $CI_LOCAL_REMOTE == $CI_REMOTE_REMOTE ]; then
 
-                echo "Comparing branches `git rev-parse --abbrev-ref HEAD` and $CI_COMMIT_REF_NAME."
-                if [ `git rev-parse --abbrev-ref HEAD` != $CI_COMMIT_REF_NAME ]; then continue; fi;
+                    echo "Comparing branches `git rev-parse --abbrev-ref HEAD` and $CI_COMMIT_REF_NAME."
+                    if [ `git rev-parse --abbrev-ref HEAD` == $CI_COMMIT_REF_NAME ]; then
 
-                git config --global user.email "support@creators.tf"
-                git config --global user.name "Creators.TF Production"
+                        git config --global user.email "support@creators.tf"
+                        git config --global user.name "Creators.TF Production"
 
-                COMMIT_OLD=`git rev-parse HEAD`;
-                git stash;
+                        COMMIT_OLD=`git rev-parse HEAD`;
+                        git stash;
 
-                git fetch origin $CI_COMMIT_REF_NAME;
-                git reset --hard origin/$CI_COMMIT_REF_NAME;
+                        git fetch origin $CI_COMMIT_REF_NAME;
+                        git reset --hard origin/$CI_COMMIT_REF_NAME;
 
-                chmod 744 build.sh;
-                chmod 744 start.sh;
-                ./build.sh $COMMIT_OLD;
+                        chmod 744 build.sh;
+                        chmod 744 start.sh;
+                        ./build.sh $COMMIT_OLD;
 
+                    fi;
+                fi;
             fi;
             cd ../;
         done
