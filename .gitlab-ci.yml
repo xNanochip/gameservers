@@ -16,9 +16,11 @@ stages:
                 CI_LOCAL_REMOTE=`git remote get-url origin`;
                 CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE##*@}";
                 CI_LOCAL_REMOTE=`echo $CI_LOCAL_REMOTE | tr : /`
+                CI_LOCAL_REMOTE=${CI_LOCAL_REMOTE%.git}
 
                 CI_REMOTE_REMOTE="$CI_SERVER_HOST/$CI_PROJECT_PATH.git"
                 CI_REMOTE_REMOTE=`echo $CI_REMOTE_REMOTE | tr : /`
+                CI_REMOTE_REMOTE=${CI_REMOTE_REMOTE%.git}
 
                 echo "Comparing remotes $CI_LOCAL_REMOTE and $CI_REMOTE_REMOTE."
                 if [ $CI_LOCAL_REMOTE == $CI_REMOTE_REMOTE ]; then
