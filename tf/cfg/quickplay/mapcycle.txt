@@ -47,3 +47,7 @@ pl_vigil_rc7
 plr_bananabay
 plr_nightfall_final
 plr_pipeline
+cp_fulgur_rc2
+koth_ramjam_rc1
+koth_daenam_b9
+koth_ashville_rc2b
