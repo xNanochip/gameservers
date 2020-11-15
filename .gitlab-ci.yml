@@ -9,7 +9,7 @@ stages:
     - cd /srv/daemon-data
     - >
         for d in ./*/ ; do
-
+            cd "$d";
             echo "Checking: $d"
             if [ -d ".git" ]; then
 
