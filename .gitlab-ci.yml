@@ -10,8 +10,7 @@ stages:
     - >
         for d in ./*/ ; do
 
-            $CI_LOCAL_BRANCH
-
+            echo "Checking: $d"
             if [ -d ".git" ]; then
 
                 CI_LOCAL_REMOTE=`git remote get-url origin`;
