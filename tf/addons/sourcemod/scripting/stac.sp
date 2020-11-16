@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.5.4b"
+#define PLUGIN_VERSION  "3.5.5b"
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 public Plugin myinfo =
@@ -64,10 +64,8 @@ int playerInBadCond         [MAXPLAYERS+1];
 bool userBanQueued          [MAXPLAYERS+1];
 // STORED SENS PER CLIENT
 float sensFor               [MAXPLAYERS+1];
-
 // get last 6 ticks
 float engineTime[6][MAXPLAYERS+1];
-
 
 //float maxEngineTimeFor[MAXPLAYERS+1];
 //
@@ -84,6 +82,7 @@ ConVar stac_verbose_info;
 ConVar stac_max_allowed_turn_secs;
 ConVar stac_kick_for_pingmasking;
 ConVar stac_ban_for_misccheats;
+ConVar stac_optimize_cvars;
 ConVar stac_max_aimsnap_detections;
 ConVar stac_max_psilent_detections;
 ConVar stac_max_bhop_detections;
@@ -100,6 +99,7 @@ bool DEBUG                  = false;
 float maxAllowedTurnSecs    = -1.0;
 bool kickForPingMasking     = false;
 bool banForMiscCheats       = true;
+bool optimizeCvars          = true;
 int maxAimsnapDetections    = 25;
 int maxPsilentDetections    = 15;
 int maxFakeAngDetections    = 10;
@@ -139,9 +139,6 @@ public void OnPluginStart()
     }
     // open log
     OpenStacLog();
-    // get rid of any possible exploits by using teleporters and fov
-    SetConVarInt(FindConVar("tf_teleporter_fov_start"), 90);
-    SetConVarFloat(FindConVar("tf_teleporter_fov_time"), 0.0);
     // reg admin commands
     RegAdminCmd("sm_stac_checkall", ForceCheckAll, ADMFLAG_GENERIC, "Force check all client convars (ALL CLIENTS) for anticheat stuff");
     RegAdminCmd("sm_stac_detections", ShowDetections, ADMFLAG_GENERIC, "Show all current detections on all connected clients");
@@ -188,6 +185,7 @@ public void OnPluginStart()
             ClearClBasedVars(GetClientUserId(Cl));
         }
     }
+
 
     StacLog("[StAC] Plugin vers. ---- %s ---- loaded", PLUGIN_VERSION);
 }
@@ -298,6 +296,29 @@ void initCvars()
         1.0
     );
     HookConVarChange(stac_ban_for_misccheats, stacVarChanged);
+
+    // cheatvars ban bool
+    if (optimizeCvars)
+    {
+        buffer = "1";
+    }
+    else
+    {
+        buffer = "0";
+    }
+    stac_optimize_cvars =
+    AutoExecConfig_CreateConVar
+    (
+        "stac_optimize_cvars",
+        buffer,
+        "[StAC] optimize cvars related to patching backtracking, mostly patching doubletap, limiting fakelag, patching any possible tele expoits, etc.\n(defaults to 1)",
+        FCVAR_NONE,
+        true,
+        0.0,
+        true,
+        1.0
+    );
+    HookConVarChange(stac_optimize_cvars, stacVarChanged);
 
     // aimsnap detections
     IntToString(maxAimsnapDetections, buffer, sizeof(buffer));
@@ -504,6 +525,14 @@ void setStacVars()
     }
     // pingmasking var
     kickForPingMasking = GetConVarBool(stac_kick_for_pingmasking);
+    // misccheats
+    banForMiscCheats = GetConVarBool(stac_ban_for_misccheats);
+    // optimizecvars
+    optimizeCvars = GetConVarBool(stac_optimize_cvars);
+    if (optimizeCvars)
+    {
+        RunOptimizeCvars();
+    }
     // aimsnap var
     maxAimsnapDetections = GetConVarInt(stac_max_aimsnap_detections);
     // psilent var
@@ -547,6 +576,19 @@ void GenericCvarChanged(ConVar convar, const char[] oldValue, const char[] newVa
             ServerCommand("sm plugins unload stac");
         }
     }
+}
+
+void RunOptimizeCvars()
+{
+    // attempt to patch doubletap
+    SetConVarInt(FindConVar("sv_maxusrcmdprocessticks"), 16);
+    // limit fakelag abuse
+    SetConVarFloat(FindConVar("sv_maxunlag"), 0.2);
+    // fix backtracking
+    SetConVarInt(FindConVar("backtrack_behavior"), 1);
+    // get rid of any possible exploits by using teleporters and fov
+    SetConVarInt(FindConVar("tf_teleporter_fov_start"), 90);
+    SetConVarFloat(FindConVar("tf_teleporter_fov_time"), 0.0);
 }
 
 public Action checkNatives(Handle timer)
@@ -610,6 +652,10 @@ public Action ShowDetections(int callingCl, int args)
                 {
                     ReplyToCommand(callingCl, "- %i consecutive bhop strings for %N", bhopConsecDetects[Cl], Cl);
                 }
+            }
+            else
+            {
+                ReplyToCommand(callingCl, "No detectionss! :)");
             }
         }
     }
@@ -856,6 +902,10 @@ public void OnMapStart()
     ActuallySetRandomSeed();
     DoTPSMath();
     ResetTimers();
+    if (optimizeCvars)
+    {
+        RunOptimizeCvars();
+    }
 }
 
 public void OnMapEnd()
@@ -1563,10 +1613,6 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
     // cl_cmdrate
     else if (StrEqual(cvarName, "cl_cmdrate"))
     {
-        if (!kickForPingMasking)
-        {
-            return;
-        }
         if (!cvarValue[0])
         {
             StacLog("[StAC] Null string returned as cvar result when querying cvar %s on %N", cvarName, Cl);
@@ -1575,9 +1621,12 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
         // cl_cmdrate needs to not have any non numerical chars (xcept the . sign if its a float) in it because otherwise player ping gets messed up on the scoreboard
         else if (MatchRegex(pingmaskRegex, cvarValue) <= 0)
         {
-            KickClient(Cl, "%t", "pingmaskingKickMsg", cvarValue);
-            StacLog("%t", "pingmaskingLogMsg", Cl, cvarValue);
-            MC_PrintToChatAll("%t", "pingmaskingAllChat", Cl, cvarValue);
+            if (kickForPingMasking)
+            {
+                KickClient(Cl, "%t", "pingmaskingKickMsg", cvarValue);
+                StacLog("%t", "pingmaskingLogMsg", Cl, cvarValue);
+                MC_PrintToChatAll("%t", "pingmaskingAllChat", Cl, cvarValue);
+            }
         }
     }
     if (DEBUG)
@@ -1591,7 +1640,7 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
 {
     if  (
             StrContains(sArgs, "\n", false) != -1
-             ||
+            ||
             StrContains(sArgs, "\r", false) != -1
         )
     {
@@ -1767,40 +1816,6 @@ void NetPropCheck(int userid)
                 KickClient(Cl, "%t", "interpKickMsg", lerp, min_interp_ms, max_interp_ms);
                 StacLog("%t", "interpLogMsg",  Cl, lerp);
                 MC_PrintToChatAll("%t", "interpAllChat", Cl, lerp);
-            }
-            /*
-                ping netprop check. some cheats can set this to below 5 by fucking up their m_iPing netprop, but it's clamped here:
-                    https://github.com/TheAlePower/TeamFortress2/blob/1b81dded673d49adebf4d0958e52236ecc28a956/tf2_src/game/server/util.cpp#L708
-                this is nested under the tps check because there's something about cmdrate fuckery in the UTIL_GetPlayerConnectionInfo and i don't trust it to NOT be dependant on tickrate somehow.
-                further, although the ping prop gets set here:
-                    https://github.com/TheAlePower/TeamFortress2/blob/1b81dded673d49adebf4d0958e52236ecc28a956/tf2_src/game/server/player_resource.cpp#L137-L148
-                the ping on scoreboard should theoretically __never__ be below 5 or above 1000 because there should never be a value below 5 or above 1000 to throw the average off.
-                ---> THIS IS AN EXPERIMENTAL CHECK <---
-            */
-            int pingprop = GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iPing", _, Cl);
-
-            // check that client has valid net info
-            if (GetClientAvgLatency(Cl, NetFlow_Outgoing) != -1)
-            {
-                if (pingprop < 5 || pingprop > 1000)
-                {
-                    if (banForMiscCheats)
-                    {
-                        //char reason[128];
-                        //Format(reason, sizeof(reason), "%t", "illegalPingPropBanMsg", pingprop);
-                        //BanUser(userid, reason);
-                        //MC_PrintToChatAll("%t", "illegalPingPropBanAllChat", Cl);
-                        StacLog("%t", "illegalPingPropBanMsg");
-                    }
-                    else
-                    {
-                        StacLog("[StAC] [Detection] Player %L has an illegal scoreboard ping of %i!", Cl, pingprop);
-                    }
-                }
-            }
-            else
-            {
-                StacLog("[StAC] Client %N had no valid network info!", Cl);
             }
         }
         if (IsClientPlaying(Cl))
