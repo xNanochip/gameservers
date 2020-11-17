@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.5.5b"
+#define PLUGIN_VERSION  "3.5.6b"
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 public Plugin myinfo =
@@ -529,10 +529,6 @@ void setStacVars()
     banForMiscCheats = GetConVarBool(stac_ban_for_misccheats);
     // optimizecvars
     optimizeCvars = GetConVarBool(stac_optimize_cvars);
-    if (optimizeCvars)
-    {
-        RunOptimizeCvars();
-    }
     // aimsnap var
     maxAimsnapDetections = GetConVarInt(stac_max_aimsnap_detections);
     // psilent var
