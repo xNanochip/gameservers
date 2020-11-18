@@ -3,6 +3,8 @@
 #endif
 #define _cw3_attributes_included_
 
+
+
 // Global define a la AW2~
 // Slots : Primary(0), Secondary(1), Melee(2), PDA(3), PDA2(4) only. From 0 to 4
 #define MAXSLOTS  4
@@ -14,10 +16,10 @@
 
 // .inc Version: Beta 2
 
-/*  ______ ____  _______          __     _____  _____   _____ 
+/*  ______ ____  _______          __     _____  _____   _____
   |  ____/ __ \|  __ \ \        / /\   |  __ \|  __ \ / ____|
-  | |__ | |  | | |__) \ \  /\  / /  \  | |__) | |  | | (___  
-  |  __|| |  | |  _  / \ \/  \/ / /\ \ |  _  /| |  | |\___ \ 
+  | |__ | |  | | |__) \ \  /\  / /  \  | |__) | |  | | (___
+  |  __|| |  | |  _  / \ \/  \/ / /\ \ |  _  /| |  | |\___ \
   | |   | |__| | | \ \  \  /\  / ____ \| | \ \| |__| |____) |
   |_|    \____/|_|  \_\  \/  \/_/    \_\_|  \_\_____/|_____/  */
 // Well, there's only one; which is crucially important and has been here since the beginning...
@@ -45,10 +47,10 @@ forward Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Str
  */
 forward CW3_OnWeaponRemoved(slot, client);
 
-/*   _____ _      _____ ______ _   _ _______ _____ 
+/*   _____ _      _____ ______ _   _ _______ _____
    / ____| |    |_   _|  ____| \ | |__   __/ ____|
-  | |    | |      | | | |__  |  \| |  | | | (___  
-  | |    | |      | | |  __| | . ` |  | |  \___ \ 
+  | |    | |      | | | |__  |  \| |  | | | (___
+  | |    | |      | | |  __| | . ` |  | |  \___ \
   | |____| |____ _| |_| |____| |\  |  | |  ____) |
    \_____|______|_____|______|_| \_|  |_| |_____/  */
  // Getting/setting clients' custom attributes.
@@ -75,10 +77,10 @@ native bool:CW3_AddAttribute(slot, client, const String:attrib[], const String:p
 native CW3_ResetAttribute(client, slot);
 
 /*
-   _____ _______ ____   _____ _  __ _____ 
+   _____ _______ ____   _____ _  __ _____
   / ____|__   __/ __ \ / ____| |/ // ____|
- | (___    | | | |  | | |    | ' /| (___  
-  \___ \   | | | |  | | |    |  <  \___ \ 
+ | (___    | | | |  | | |    | ' /| (___
+  \___ \   | | | |  | | |    |  <  \___ \
   ____) |  | | | |__| | |____| . \ ____) |
  |_____/   |_|  \____/ \_____|_|\_\_____/  */
  // Stuff that could be useful for attribute devs.
@@ -122,7 +124,7 @@ stock bool:IsValidClient(client, bool:replaycheck = true)
 stock bool:HasAttribute(client, slot = -1, const attribute[][] = m_bHasAttribute, bool:active = false)
 {
 	if(!IsValidClient(client)) return false;
-	
+
 	if(!active)
 	{
 		for(new i = 0; i <= 4; i++)
@@ -136,7 +138,7 @@ stock bool:HasAttribute(client, slot = -1, const attribute[][] = m_bHasAttribute
 			}
 		}
 	}
-	
+
 	if(active)
 	{
 		if(!IsPlayerAlive(client)) return false;
@@ -150,7 +152,7 @@ stock bool:HasAttribute(client, slot = -1, const attribute[][] = m_bHasAttribute
 			}
 		}
 	}
-	
+
 	return false;
 }
 
@@ -159,7 +161,7 @@ stock bool:HasAttribute(client, slot = -1, const attribute[][] = m_bHasAttribute
  *
  * @param client			Client index.
  * @param slot				Which slot to check. Pass _ to check all slots.
- * @param baseAttribute		Which attribute to search for. 
+ * @param baseAttribute		Which attribute to search for.
  * @param attribute			Which value to fetch. Must be an integer.
  * @param active			Whether or not the attribute should only be checked on the active weapon. Optional.
  *
@@ -168,7 +170,7 @@ stock bool:HasAttribute(client, slot = -1, const attribute[][] = m_bHasAttribute
 stock GetAttributeValueI(client, slot = -1, const bool:baseAttribute[][], const attribute[][], bool:active = false)
 {
 	if(!IsValidClient(client)) return 0;
-	
+
 	if(!active)
 	{
 		for(new i = 0; i <= 4; i++)
@@ -182,7 +184,7 @@ stock GetAttributeValueI(client, slot = -1, const bool:baseAttribute[][], const 
 			}
 		}
 	}
-	
+
 	if(active)
 	{
 		if(!IsPlayerAlive(client)) return 0;
@@ -196,7 +198,7 @@ stock GetAttributeValueI(client, slot = -1, const bool:baseAttribute[][], const 
 			}
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -205,7 +207,7 @@ stock GetAttributeValueI(client, slot = -1, const bool:baseAttribute[][], const 
  *
  * @param client			Client index.
  * @param slot				Which slot to check. Pass _ to check all slots.
- * @param baseAttribute		Which attribute to search for. 
+ * @param baseAttribute		Which attribute to search for.
  * @param attribute			Which value to fetch. Must be a Float.
  * @param active			Whether or not the attribute should only be checked on the active weapon. Optional.
  *
@@ -214,7 +216,7 @@ stock GetAttributeValueI(client, slot = -1, const bool:baseAttribute[][], const 
 stock Float:GetAttributeValueF(client, slot = -1, const bool:baseAttribute[][], const Float:attribute[][], bool:active = false)
 {
 	if(!IsValidClient(client)) return 0.0;
-	
+
 	if(!active)
 	{
 		for(new i = 0; i <= 4; i++)
@@ -228,7 +230,7 @@ stock Float:GetAttributeValueF(client, slot = -1, const bool:baseAttribute[][], 
 			}
 		}
 	}
-	
+
 	if(active)
 	{
 		if(!IsPlayerAlive(client)) return 0.0;
@@ -242,11 +244,11 @@ stock Float:GetAttributeValueF(client, slot = -1, const bool:baseAttribute[][], 
 			}
 		}
 	}
-	
+
 	return 0.0;
 }
 
-public SharedPlugin:__pl_cw3_attributes = 
+public SharedPlugin:__pl_cw3_attributes =
 {
 	name = "cw3-attributes",
 	file = "cw3-attributes.smx",
