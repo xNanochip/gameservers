@@ -349,16 +349,9 @@ public void CESC_SendStrangeEaterMessage(int client, int iEntity, int part_id, i
 	int iIndex = CE_GetEntityEconIndex(iEntity);
 	if (!IsClientReady(client) || iIndex <= 0)return;
 
-	KeyValues hMessage = new KeyValues("content");
-
-	char sSteamID[64];
-	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-
-	hMessage.SetString("steamid", sSteamID);
-	hMessage.SetNum("item", iIndex);
-	hMessage.SetNum("part_id", part_id);
-	hMessage.SetNum("increment_value", increment_value);
-
-	CESC_SendMessage(hMessage, "strange_eater_increment");
-	delete hMessage;
+	KeyValues hMessage;
+	char sMessage[125];
+	Format(sMessage, sizeof(sMessage), "strange_increment:client=%d,item=%d,part=%d,delta=%d", client, iIndex, part_id, increment_value);
+	
+	CESC_SendMessage(hMessage, sMessage);
 }

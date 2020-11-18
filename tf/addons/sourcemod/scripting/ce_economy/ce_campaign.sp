@@ -27,12 +27,6 @@ public void OnPluginStart()
 {
 	ce_campaign_force_activate = CreateConVar("ce_campaign_force_activate", "", "Force activates a campaign, ignores the time limit.", FCVAR_PROTECTED);
 	HookConVarChange(ce_campaign_force_activate, ce_campaign_force_activate__CHANGED);
-	CreateTimer(CAMPAIGN_PROGRESS_INTERVAL, Timer_SaveProgress, _, TIMER_REPEAT);
-}
-
-public Action Timer_SaveProgress(Handle timer, any data)
-{
-	CESC_SendCampaignProgressMessage();
 }
 
 public void OnAllPluginsLoaded()
@@ -138,48 +132,14 @@ public void CEEvents_OnSendEvent(int client, CELogicEvents event, int add)
 		for (int j = 0; j < MAX_HOOKS; j++)
 		{
 			if (hCampaign.m_nEvents[j] != event)continue;
-			hCampaign.m_iDelta[client] += add;
+
+			char sMessage[125];
+			Format(sMessage, sizeof(sMessage), "campaign_increment:campaign=%s,delta=%d,client=%d", hCampaign.m_sTitle, add, client);
+
+			KeyValues a;
+			CESC_SendMessage(a, sMessage);
+
 			break;
 		}
-		m_hCampaigns.SetArray(i, hCampaign);
 	}
-}
-
-public void CESC_SendCampaignProgressMessage()
-{
-	KeyValues hMsg;
-	
-	for (int i = 0; i < m_hCampaigns.Length; i++)
-	{
-		CECampaign hCampaign;
-		m_hCampaigns.GetArray(i, hCampaign);
-
-		for (int j = 1; j <= MaxClients; j++)
-		{
-			if (!IsClientReady(j))continue;
-			
-			char sSteamID[64];
-			GetClientAuthId(j, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-			if (hCampaign.m_iDelta[j] == 0)continue;
-			
-			if (hMsg == null)hMsg = new KeyValues("Message");
-			
-			char sKey[128];
-			Format(sKey, sizeof(sKey), "%s/campaign", sSteamID);
-			hMsg.SetString(sKey, hCampaign.m_sTitle);
-			
-			Format(sKey, sizeof(sKey), "%s/delta", sSteamID);
-			hMsg.SetNum(sKey, hCampaign.m_iDelta[j]);
-			
-			hCampaign.m_iDelta[j] = 0;
-		}
-
-		m_hCampaigns.SetArray(i, hCampaign);
-	}
-	
-	if(hMsg != null)
-	{
-		CESC_SendMessage(hMsg, "campaign_increment");
-	}
-	delete hMsg;
 }

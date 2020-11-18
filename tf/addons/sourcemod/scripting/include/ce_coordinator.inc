@@ -4,6 +4,29 @@ enum RequestTypes
 	RequestType_POST
 }
 
+enum WebsocketFrameType
+{
+	FrameType_Continuation = 0,
+	FrameType_Text = 1,
+	FrameType_Binary = 2,
+	FrameType_Close = 8,
+	FrameType_Ping = 9,
+	FrameType_Pong = 10
+}
+
+enum WebsocketFrame
+{
+	FIN,
+	RSV1,
+	RSV2,
+	RSV3,
+	WebsocketFrameType:OPCODE,
+	MASK,
+	PAYLOAD_LEN,
+	String:MASKINGKEY[5],
+	CLOSE_REASON
+}
+
 #define StatusCode_Success 200
 
 typeset APIRequestCallback

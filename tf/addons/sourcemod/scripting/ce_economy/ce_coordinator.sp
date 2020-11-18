@@ -6,41 +6,199 @@
 #include <ce_coordinator>
 #include <ce_util>
 #include <system2>
+#include <socket>
 
-#define MESSAGE_DELAY 5
-#define JOB_FETCH_INTERVAL 5.0
 #define MAX_RESPONSE_LENGTH 8192
-#define MAX_BODY_REQUEST_SIZE 1000
+#define FRAGMENT_MAX_LENGTH 32768
 
 public Plugin myinfo =
 {
 	name = "Creators.TF Economy - Server System",
-	author = "Creators.TF Team",
+	author = "Creators.TF Team, Peace-Maker",
 	description = "Creators.TF Economy Server System",
 	version = "1.00",
 	url = "https://creators.tf"
 };
 
-bool g_CoreEnabled;
+bool m_bCoreEnabled;
+bool m_bCoordinatorConnected;
 
-ArrayList m_hMsgQueue;
-
+ConVar ce_economy_coordinator_domain;
+ConVar ce_economy_coordinator_port;
 ConVar ce_economy_backend_domain;
 ConVar ce_economy_backend_secure;
 ConVar ce_economy_backend_auth;
 ConVar ce_server_index;
-ConVar ce_coordinator_log;
+
+Handle m_hSocket;
+Handle m_hReconnectTimer;
+ArrayList m_hFragmentedPayload;
 
 public void OnPluginStart()
 {
-	m_hMsgQueue = new ArrayList();
-	CreateTimer(JOB_FETCH_INTERVAL, Timer_JobFetch, _, TIMER_REPEAT);
-
+	ce_economy_coordinator_domain = CreateConVar("ce_economy_coordinator_domain", "localhost", "Creators Economy coordinator domain.", FCVAR_PROTECTED);
+	ce_economy_coordinator_port = CreateConVar("ce_economy_coordinator_port", "4563", "Creators Economy coordinator port.", FCVAR_PROTECTED);
+	
 	ce_economy_backend_domain = CreateConVar("ce_economy_backend_domain", "creators.tf", "Creators Economy backend domain.", FCVAR_PROTECTED);
 	ce_economy_backend_auth = CreateConVar("ce_economy_backend_auth", "", "", FCVAR_PROTECTED);
 	ce_economy_backend_secure = CreateConVar("ce_economy_backend_secure", "1", "", FCVAR_PROTECTED);
 	ce_server_index = CreateConVar("ce_server_index", "-1", "", FCVAR_PROTECTED);
-	ce_coordinator_log = CreateConVar("ce_coordinator_log", "0", "", FCVAR_PROTECTED);
+	
+	m_hFragmentedPayload = new ArrayList();
+	
+	StartCoordinatorReconnectTimer();
+}
+
+public void OnClientPostAdminCheck(int client)
+{
+	NotifyPlayerJoin(client);
+}
+
+public void OnClientDisconnect(int client)
+{
+	NotifyPlayerLeave(client);
+}
+
+public void NotifyPlayerJoin(int client)
+{
+	KeyValues hMessage = new KeyValues("Message");
+
+	char sSteamID[64];
+	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
+	if (StrEqual(sSteamID, "STEAM_ID_STOP_IGNORING_RETVALS"))return;
+
+	hMessage.SetString("steamid", sSteamID);
+	
+	char sMessage[125];
+	Format(sMessage, sizeof(sMessage), "player_join:steamid=%s,id=%d,userid=%d", sSteamID, client, GetClientUserId(client));
+
+	CESC_SendMessage(hMessage, sMessage);
+	delete hMessage;
+}
+
+public void NotifyPlayerLeave(int client)
+{
+	KeyValues hMessage = new KeyValues("Message");
+	
+	char sMessage[125];
+	Format(sMessage, sizeof(sMessage), "player_left:id=%d", client);
+
+	CESC_SendMessage(hMessage, sMessage);
+	delete hMessage;
+}
+
+public void OnSocketError(Handle socket, const int errorType, const int errorNum, any hFile)
+{
+}
+
+public void OnSocketConnected(Handle socket, any arg)
+{
+	m_bCoordinatorConnected = true;
+	
+	char sURL[64];
+	ce_economy_coordinator_domain.GetString(sURL, sizeof(sURL));
+	Format(sURL, sizeof(sURL), "%s:%d", sURL, ce_economy_coordinator_port.IntValue);
+	
+	// Access Header
+	char sHeaderAuth[PLATFORM_MAX_PATH];
+	CESC_GetServerAccessKey(sHeaderAuth, sizeof(sHeaderAuth));
+	Format(sHeaderAuth, sizeof(sHeaderAuth), "server %s %d", sHeaderAuth, CESC_GetServerID());
+	
+	char sRequest[512];
+	Format(sRequest, sizeof(sRequest), "GET / HTTP/1.1\r\n");
+	Format(sRequest, sizeof(sRequest), "%sHost: %s\r\n", sRequest, sURL);
+	Format(sRequest, sizeof(sRequest), "%sOrigin: SRCDS\r\n", sRequest);
+	Format(sRequest, sizeof(sRequest), "%sConnection: Upgrade\r\n", sRequest);
+	Format(sRequest, sizeof(sRequest), "%sUpgrade: websocket\r\n", sRequest);
+	Format(sRequest, sizeof(sRequest), "%sSec-WebSocket-Key: IRhw449z7G0Mov9CahJ+Ow==\r\n", sRequest);
+	Format(sRequest, sizeof(sRequest), "%sSec-WebSocket-Version: 13\r\n", sRequest);
+	Format(sRequest, sizeof(sRequest), "%sAccess: %s\r\n\r\n", sRequest, sHeaderAuth);
+	
+	SocketSend(socket, sRequest);
+}
+
+public void OnSocketReceive(Handle socket, char[] data, const int dataSize, any hFile)
+{
+	if (StrContains(data, "HTTP/1.1 101 Switching Protocols", true) == 0)
+	{
+		char sKey[29];
+		Format(sKey, 29, "%s", data[StrContains(data, "Sec-WebSocket-Accept: ", true) + 22]);
+		LogMessage("Accept Key: %s", sKey);
+		
+		NotifyAllConnectedPlayers();
+	} else {
+		
+		int vFrame[WebsocketFrame];
+		char[] sPayLoad = new char[dataSize - 1];
+		ParseFrame(vFrame, data, dataSize, sPayLoad);
+		
+		KeyValues hJob = new KeyValues("Job");
+		hJob.ImportFromString(sPayLoad);
+		
+		ProcessJob(hJob);
+		
+		delete hJob;
+	}
+}
+
+public void NotifyAllConnectedPlayers()
+{
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientValid(i))continue;
+		
+		NotifyPlayerJoin(i);
+	}
+}
+
+public void StartCoordinatorReconnectTimer()
+{
+	if(m_hReconnectTimer == null)
+	{
+		ConnectCoordinator();
+		m_hReconnectTimer = CreateTimer(2.0, Timer_SocketReconnect, _, TIMER_REPEAT);
+	}
+}
+
+public void ConnectCoordinator()
+{
+	char sURL[64];
+	ce_economy_coordinator_domain.GetString(sURL, sizeof(sURL));
+	int iPort = ce_economy_coordinator_port.IntValue;
+	
+	m_hSocket = SocketCreate(SOCKET_TCP, OnSocketError);
+	SocketConnect(m_hSocket, OnSocketConnected, OnSocketReceive, OnSocketDisconnected, sURL, iPort);
+}
+
+public Action Timer_SocketReconnect(Handle timer, any data)
+{
+	if(m_bCoordinatorConnected)
+	{
+		KillTimer(timer);
+		m_hReconnectTimer = null;
+		return Plugin_Stop;
+	}
+	
+	ConnectCoordinator();
+	
+	return Plugin_Continue;
+}
+
+public void ProcessJob(KeyValues job)
+{
+	char sCommand[64];
+	job.GetString("command", sCommand, sizeof(sCommand));
+	if(!StrEqual(sCommand, ""))
+	{
+		ServerCommand(sCommand);
+	}
+}
+
+public void OnSocketDisconnected(Handle socket, any arg)
+{
+	LogMessage("Socket disconnect");
+	m_bCoordinatorConnected = false;
+	StartCoordinatorReconnectTimer();
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -52,96 +210,11 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("CESC_GetServerAccessKey", Native_GetServerAccessKey);
 }
 
-public Action Timer_JobFetch(Handle timer, any data)
-{
-	int iServerID = CESC_GetServerID();
-	if(iServerID == -1) return;
-
-	char sURL[128];
-	Format(sURL, sizeof(sURL), "/api/IServers/GServerCoordinator?server=%d", iServerID);
-
-	int j = 0;
-	KeyValues hConf = new KeyValues("messages");
-	if(hConf.JumpToKey("messages", true))
-	{
-		for (int i = 0; i < m_hMsgQueue.Length; i++)
-		{
-			char sId[11];
-			IntToString(j, sId, sizeof(sId));
-
-			KeyValues hMsg = m_hMsgQueue.Get(i);
-			if(hConf.JumpToKey(sId, true))
-			{
-				hConf.Import(hMsg);
-				hConf.GoBack();
-			}
-
-			delete hMsg;
-			m_hMsgQueue.Erase(i);
-			i--;
-			j++;
-
-			int size = hConf.ExportLength;
-			if(size > MAX_BODY_REQUEST_SIZE)
-			{
-				break;
-			}
-		}
-		hConf.GoBack();
-	}
-
-	int size = hConf.ExportLength;
-	char[] sName = new char[size + 1];
-	hConf.ExportToString(sName, size);
-	delete hConf;
-	
-	if(ce_coordinator_log.BoolValue)
-	{
-		LogMessage("=== PRE REQUEST ===");
-		PrintToServer(sName);
-	}
-
-	CESC_SendAPIRequest(sURL, RequestType_POST, httpJobCallback, _, sName);
-}
-
-public void httpJobCallback(const char[] content, int size, int status, any value)
-{
-	
-	if(ce_coordinator_log.BoolValue)
-	{
-		PrintToServer(content);
-		LogMessage("=== POST REQUEST (%d) ===", status);
-	}
-	
-	if(status == StatusCode_Success)
-	{
-		KeyValues kvResponse = new KeyValues("Jobs");
-		kvResponse.ImportFromString(content);
-
-		if(kvResponse.JumpToKey("jobs", false))
-		{
-			for (int i = 0; i < 512; i++)
-			{
-				char sName[11];
-				IntToString(i, sName, sizeof(sName));
-				char sCommand[512];
-				kvResponse.GetString(sName, sCommand, sizeof(sCommand));
-				if (StrEqual(sCommand, ""))break;
-				ReplaceString(sCommand, sizeof(sCommand), "&quot;", "\"");
-
-				LogMessage("[CE Jobs] Executing command: %s", sCommand);
-				ServerCommand(sCommand);
-			}
-		}
-		delete kvResponse;
-	}
-}
-
 public void OnLibraryAdded(const char[] name)
 {
 	if (StrEqual(name, "ce_core"))
 	{
-		g_CoreEnabled = true;
+		m_bCoreEnabled = true;
 	}
 }
 
@@ -149,15 +222,15 @@ public void OnLibraryRemoved(const char[] name)
 {
 	if (StrEqual(name, "ce_core"))
 	{
-		g_CoreEnabled = false;
+		m_bCoreEnabled = false;
 	}
 }
 
 public any Native_SendAPIRequest(Handle plugin, int numParams)
 {
-	char sUrl[128], sOutput[256], sData[4096];
+	char sBaseUrl[128], sOutput[256], sData[4096];
 	// Getting URL that we have to send req to.
-	GetNativeString(1, sUrl, sizeof(sUrl));
+	GetNativeString(1, sBaseUrl, sizeof(sBaseUrl));
 
 	// Request type of the request.
 	RequestTypes nType = GetNativeCell(2);
@@ -187,21 +260,21 @@ public any Native_SendAPIRequest(Handle plugin, int numParams)
 	// If we don't have :// in the URL that means this is
 	// not the full URL. We add base domain name
 	// in the beginning.
-	if(StrContains(sURL, "://") == -1)
+	if(StrContains(sBaseUrl, "://") == -1)
 	{
-		if(sURL[0] != '/')
+		if(sBaseUrl[0] != '/')
 		{
 			// We need to make sure we have a slash before URL, so we
 			// can form a proper link in the end.
-			Format(sURL, sizeof(sURL), "/%s", sURL);
+			Format(sBaseUrl, sizeof(sBaseUrl), "/%s", sBaseUrl);
 		}
 		ce_economy_backend_domain.GetString(sURL, sizeof(sURL));
 
 		if(ce_economy_backend_secure.BoolValue)
 		{
-			Format(sURL, sizeof(sURL), "https://%s%s", sURL, sUrl);
+			Format(sURL, sizeof(sURL), "https://%s%s", sURL, sBaseUrl);
 		} else {
-			Format(sURL, sizeof(sURL), "http://%s%s", sURL, sUrl);
+			Format(sURL, sizeof(sURL), "http://%s%s", sURL, sBaseUrl);
 		}
 	}
 
@@ -297,34 +370,13 @@ public void httpRequestCallback(bool success, const char[] error, System2HTTPReq
 */
 public any Native_SendMessage(Handle plugin, int numParams)
 {
-	if (!g_CoreEnabled)return;
+	if (!m_bCoreEnabled)return;
 
-	// Getting content of a message.
-	KeyValues hContent = GetNativeCell(1);
 	// Name of the message.
-	char sName[128];
-	GetNativeString(2, sName, sizeof(sName));
+	char sContent[125];
+	GetNativeString(2, sContent, sizeof(sContent));
 
-	// Create message KeyValue.
-	KeyValues hMessage = new KeyValues("Message");
-
-	// Set message name.
-	hMessage.SetString("msg_name", sName);
-
-	// If we have a valid content KeyValues provided, we import the content to
-	// msg_content subkey.
-	if(hMessage.JumpToKey("msg_content", true))
-	{
-		if(UTIL_IsValidHandle(hContent))
-		{
-			hMessage.Import(hContent);
-		}
-	}
-	// Rewind the KeyValues to prepare for execution.
-	hMessage.Rewind();
-
-	// Add the message intot the queue.
-	m_hMsgQueue.Push(hMessage);
+	WebSocketSend(m_hSocket, sContent, sizeof(sContent));
 }
 
 /**
@@ -351,4 +403,406 @@ public any Native_GetServerAccessKey(Handle plugin, int numParams)
 	delete kv;
 
 	SetNativeString(1, buffer, length);
+}
+
+public bool WebSocketSend(Handle socket, char[] payload, int length)
+{
+	int vFrame[WebsocketFrame];
+	vFrame[OPCODE] = FrameType_Text;	
+
+	vFrame[PAYLOAD_LEN] = length;
+	
+	vFrame[FIN] = 1;
+	vFrame[CLOSE_REASON] = -1;
+	vFrame[MASK] = 1;
+	
+	if(SendWebsocketFrame(socket, payload, vFrame))
+	{
+		return true;
+	}
+	return false;
+}
+
+public bool SendWebsocketFrame(Handle socket, char[] payload, vFrame[WebsocketFrame])
+{
+	int length = vFrame[PAYLOAD_LEN];
+	
+	// Force RSV bits to 0
+	vFrame[RSV1] = 0;
+	vFrame[RSV2] = 0;
+	vFrame[RSV3] = 0;
+	
+	char[] sFrame = new char[length + 18];
+	if(CreateFrame(payload, sFrame, vFrame))
+	{
+		
+		if(length > 65535)
+		{
+			length += 10;
+		} else if(length > 125)
+		{
+			length += 4;
+		} else
+		{
+			length += 2;
+		}
+		
+		if(vFrame[CLOSE_REASON] != -1)
+		{
+			length += 2;
+		}
+		
+		SocketSend(socket, sFrame);
+		return true;
+	}
+	
+	return false;
+}
+
+public void ParseFrame(int vFrame[WebsocketFrame], const char[] receiveDataLong, const int dataSize, char[] sPayLoad)
+{
+	int[] receiveData = new int[dataSize];
+	for (int i = 0; i < dataSize; i++)
+	{
+		receiveData[i] = receiveDataLong[i] & 0xff;
+	}
+	
+	char sByte[9];
+	Format(sByte, sizeof(sByte), "%08b", receiveData[0]);
+	
+	vFrame[FIN] = sByte[0] == '1' ? 1:0;
+	vFrame[RSV1] = sByte[1] == '1' ? 1:0;
+	vFrame[RSV2] = sByte[2] == '1' ? 1:0;
+	vFrame[RSV3] = sByte[3] == '1' ? 1:0;
+	vFrame[OPCODE] = view_as<WebsocketFrameType>(bindec(sByte[4]));
+	
+	Format(sByte, sizeof(sByte), "%08b", receiveData[1]);
+	
+	vFrame[MASK] = sByte[0] == '1' ? 1:0;
+	vFrame[PAYLOAD_LEN] = bindec(sByte[1]);
+	
+	int iOffset = 2;
+	
+	vFrame[MASKINGKEY][0] = '\0';
+	if(vFrame[PAYLOAD_LEN] > 126)
+	{
+		char sLoongLength[49];
+		for (int i = 2; i < 8; i++)
+		{
+			Format(sLoongLength, sizeof(sLoongLength), "%s%08b", sLoongLength, receiveData[i]);
+		}
+		
+		vFrame[PAYLOAD_LEN] = bindec(sLoongLength);
+		iOffset += 6;
+	} else if(vFrame[PAYLOAD_LEN] > 125)
+	{
+		char sLongLength[17];
+		for (int i = 2; i < 4; i++)
+		{
+			Format(sLongLength, sizeof(sLongLength), "%s%08b", sLongLength, receiveData[i]);
+		}
+		
+		vFrame[PAYLOAD_LEN] = bindec(sLongLength);
+		iOffset += 2;
+	}
+	
+	if(vFrame[MASK])
+	{
+		for (int i = iOffset, j = 0; j < 4; i++, j++)
+		{
+			vFrame[MASKINGKEY][j] = receiveData[i];
+		}
+		
+		vFrame[MASKINGKEY][4] = '\0';
+		iOffset += 4;
+		
+		int[] iPayLoad = new int[vFrame[PAYLOAD_LEN]];
+		for (int i = iOffset, j = 0; j < vFrame[PAYLOAD_LEN]; i++, j++)
+		{
+			iPayLoad[j] = receiveData[i];
+		}
+			
+		for (int i = 0; i < vFrame[PAYLOAD_LEN]; i++)
+		{
+			Format(sPayLoad, vFrame[PAYLOAD_LEN] + 1, "%s%c", sPayLoad, iPayLoad[i] ^ vFrame[MASKINGKEY][i % 4]);
+		}
+	}
+	
+	strcopy(sPayLoad, vFrame[PAYLOAD_LEN] + 1, receiveDataLong[iOffset]);
+	
+	if(vFrame[OPCODE] == FrameType_Close)
+	{
+		char sCloseReason[65];
+		for (int i = 0; i < 2; i++)
+		{
+			Format(sCloseReason, sizeof(sCloseReason), "%s%08b", sCloseReason, sPayLoad[i] & 0xff);
+		}
+		
+		vFrame[CLOSE_REASON] = bindec(sCloseReason);
+		
+		strcopy(sPayLoad, dataSize - 1, sPayLoad[2]);
+		vFrame[PAYLOAD_LEN] -= 2;
+	} else {
+		vFrame[CLOSE_REASON] = -1;
+	}
+}
+
+public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayLoad)
+{
+	// This is a fragmented frame
+	if(vFrame[FIN] == 0)
+	{
+		// This is a control frame. Those cannot be fragmented!
+		if(vFrame[OPCODE] >= FrameType_Close)
+		{
+			LogError("Received fragmented control frame. %d", vFrame[OPCODE]);
+			return true;
+		}
+		
+		int iPayloadLength = m_hFragmentedPayload.Get(0);
+		
+		// This is the first frame of a serie of fragmented ones.
+		if(iPayloadLength == 0)
+		{
+			if(vFrame[OPCODE] == FrameType_Continuation)
+			{
+				LogError("Received first fragmented frame with opcode 0. The first fragment MUST have a different opcode set.");
+				return true;
+			}
+			
+			// Remember which type of message this fragmented one is.
+			SetArrayCell(m_hFragmentedPayload, 1, vFrame[OPCODE]);
+		} else
+		{
+			if(vFrame[OPCODE] != FrameType_Continuation)
+			{
+				LogError("Received second or later frame of fragmented message with opcode %d. opcode must be 0.", vFrame[OPCODE]);
+				return true;
+			}
+		}
+		
+		// Keep track of the overall payload length of the fragmented message.
+		// This is used to create the buffer of the right size when passing it to the listening plugin.
+		iPayloadLength += vFrame[PAYLOAD_LEN];
+		SetArrayCell(m_hFragmentedPayload, 0, iPayloadLength);
+		
+		// This doesn't fit inside one array cell? Split it up.
+		if(vFrame[PAYLOAD_LEN] > FRAGMENT_MAX_LENGTH)
+		{
+			for (int i = 0; i < vFrame[PAYLOAD_LEN]; i += FRAGMENT_MAX_LENGTH)
+			{
+				PushArrayString(m_hFragmentedPayload, sPayLoad[i]);
+			}
+		}
+		else
+		{
+			PushArrayString(m_hFragmentedPayload, sPayLoad);
+		}
+		
+		return true;
+	}
+	
+	// The FIN bit is set if we reach here.
+	switch(vFrame[OPCODE])
+	{
+		case FrameType_Continuation:
+		{
+			int iPayloadLength = m_hFragmentedPayload.Get(0);
+			WebsocketFrameType iOpcode = m_hFragmentedPayload.Get(1);
+			
+			// We don't know what type of data that is.
+			if(iOpcode == FrameType_Continuation)
+			{
+				LogError("Received last frame of a series of fragmented ones without any fragments with payload first.");
+				return true;
+			}
+			
+			// Add the payload of the last frame to the buffer too.
+			
+			// Keep track of the overall payload length of the fragmented message.
+			// This is used to create the buffer of the right size when passing it to the listening plugin.
+			iPayloadLength += vFrame[PAYLOAD_LEN];
+			m_hFragmentedPayload.Set(0, iPayloadLength);
+			
+			// This doesn't fit inside one array cell? Split it up.
+			if(vFrame[PAYLOAD_LEN] > FRAGMENT_MAX_LENGTH)
+			{
+				for (int i = 0; i < vFrame[PAYLOAD_LEN]; i += FRAGMENT_MAX_LENGTH)
+				{
+					PushArrayString(m_hFragmentedPayload, sPayLoad[i]);
+				}
+			}
+			else
+			{
+				PushArrayString(m_hFragmentedPayload, sPayLoad);
+			}
+			
+			return false;
+		}
+		case FrameType_Text:
+		{
+			return false;
+		}
+		case FrameType_Binary:
+		{
+			return false;
+		}
+		case FrameType_Close:
+		{
+			// TODO
+		}
+		case FrameType_Ping:
+		{
+			vFrame[OPCODE] = FrameType_Pong;
+			return true;
+		}
+		case FrameType_Pong:
+		{
+			return true;
+		}
+	}
+	
+	LogError("Received invalid opcode = %d", vFrame[OPCODE]);
+	return true;
+}
+
+public bool CreateFrame(char[] sPayLoad, char[] sFrame, vFrame[WebsocketFrame])
+{
+	int length = vFrame[PAYLOAD_LEN];
+	
+	switch(vFrame[OPCODE])
+	{
+		case FrameType_Text:
+		{
+			sFrame[0] = (1<<0)|(1<<7); //  - Text-Frame (1000 0001):
+		}
+		case FrameType_Close:
+		{
+			sFrame[0] = (1<<3)|(1<<7); //  -  Close-Frame (1000 1000):
+			length += 2; // Remember the 2byte close reason
+		}
+		case FrameType_Ping:
+		{
+			sFrame[0] = (1<<0)|(1<<3)|(1<<7); //  -  Ping-Frame (1000 1001):
+		}
+		case FrameType_Pong:
+		{
+			sFrame[0] = (1<<1)|(1<<3)|(1<<7); //  -  Pong-Frame (1000 1010):
+		}
+		default:
+		{
+			LogError("Trying to send frame with unknown opcode = %d", view_as<int>(vFrame[OPCODE]));
+			return false;
+		}
+	}
+	
+	int iOffset;
+	
+	if (length > 65535)
+	{
+		LogMessage("1");
+		sFrame[1] = 128;
+		char sLengthBin[65], sByte[9];
+		Format(sLengthBin, 65, "%064b", length);
+		for (int i = 0, j = 2; j <= 10; i++)
+		{
+			if (i && !(i % 8))
+			{
+				sFrame[j] = bindec(sByte);
+				Format(sByte, 9, "");
+				j++;
+			}
+			Format(sByte, 9, "%s%s", sByte, sLengthBin[i]);
+		}
+		
+		// the most significant bit MUST be 0
+		if (sFrame[2] > 127)
+		{
+			LogError("Can't send frame. Too much data.");
+			return false;
+		}
+		iOffset = 9;
+	} else if (length > 125)
+	{
+		LogMessage("2");
+		sFrame[1] = 254;
+		if (length < 256)
+		{
+			sFrame[2] = 0;
+			sFrame[3] = length;
+		} else {
+			char sLengthBin[17], sByte[9];
+			Format(sLengthBin, 17, "%016b", length);
+			for (int i = 0, j = 2; i <= 16; i++)
+			{
+				if (i && !(i % 8))
+				{
+					sFrame[j] = bindec(sByte);
+					Format(sByte, 9, "");
+					j++;
+				}
+				Format(sByte, 9, "%s%s", sByte, sLengthBin[i]);
+			}
+		}
+		iOffset = 4;
+	} else {
+		sFrame[1] = length;
+		iOffset = 2;
+	}
+	
+	sFrame[1] |= (1 << 7);
+	
+	int iMaskingKey[4];
+	iMaskingKey[0] = 255; //GetRandomInt(0, 255);
+	iMaskingKey[1] = 254; //GetRandomInt(0, 255);
+	iMaskingKey[2] = 253; //GetRandomInt(0, 255);
+	iMaskingKey[3] = 252; //GetRandomInt(0, 255);
+	
+	sFrame[iOffset] = iMaskingKey[0];
+	sFrame[iOffset+1] = iMaskingKey[1];
+	sFrame[iOffset+2] = iMaskingKey[2];
+	sFrame[iOffset+3] = iMaskingKey[3];
+	iOffset += 4;
+	length += 4;
+	
+	// We got a closing reason. Add it right in front of the payload.
+	if(vFrame[OPCODE] == FrameType_Close && vFrame[CLOSE_REASON] != -1)
+	{
+		char sCloseReasonBin[17], sByte[9];
+		Format(sCloseReasonBin, 17, "%016b", vFrame[CLOSE_REASON]);
+		for (int i = 0, j = iOffset; i <= 16; i++)
+		{
+			if (i && !(i % 8))
+			{
+				sFrame[j] = bindec(sByte);
+				Format(sByte, 9, "");
+				j++;
+			}
+			Format(sByte, 9, "%s%s", sByte, sCloseReasonBin[i]);
+		}
+		iOffset += 2;
+	}
+	
+	char[] masked = new char[vFrame[PAYLOAD_LEN] + 1];
+	for (int i = 0; i < vFrame[PAYLOAD_LEN]; i++)
+	{
+		Format(masked, vFrame[PAYLOAD_LEN] + 1, "%s%c", masked, (sPayLoad[i] & 0xff) ^ iMaskingKey[i % 4]);
+	}
+	Format(sFrame, length + iOffset, "%s%s", sFrame, masked);
+	
+	return true;
+}
+
+public int bindec(const char[] sBinary)
+{
+	int ret, len = strlen(sBinary);
+	for (int i = 0; i < len; i++)
+	{
+		ret = ret << 1;
+		if (sBinary[i] == '1')
+		{
+			ret |= 1;
+		}
+	}
+	return ret;
 }

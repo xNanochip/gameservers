@@ -42,7 +42,6 @@ public void OnPluginStart()
 	}
 
 	CreateTimer(QUEST_HUD_REFRESH_RATE, Timer_HudRefresh, _, TIMER_REPEAT);
-	CreateTimer(QUEST_PROGRESS_INTERVAL, Timer_SaveProgress, _, TIMER_REPEAT);
 
 	RegConsoleCmd("sm_quest", cQuest, "Check your Contract progress");
 	RegConsoleCmd("sm_q", cQuest, "Check your Contract progress");
@@ -118,11 +117,6 @@ public void httpFetchFriends(const char[] content, int size, int status, any cli
 public void CEQuest_SetPlayerActiveQuest(int client)
 {
 	CEQuest_SetPlayerQuest(client, QUEST_INDEX_ACTIVE);
-}
-
-public Action Timer_SaveProgress(Handle timer, any data)
-{
-	CESC_SendContractProgressMessage();
 }
 
 public Action Timer_HudRefresh(Handle timer, any data)
@@ -675,6 +669,19 @@ public bool CEQuest_AddObjectiveProgress(int client, int source, int objective, 
 
 	if(bChanged)
 	{
+		char sMessage[125];
+		Format(sMessage, sizeof(sMessage), "quest_progress:client=%d,contract=%d", client, m_hQuest[client].m_iIndex);
+		if(iPrimaryDiff > 0)
+		{
+			Format(sMessage, sizeof(sMessage), "%s,obj_0=%d", sMessage, hPrimary.m_iProgress);
+		}
+		if(iBonusDiff > 0)
+		{
+			Format(sMessage, sizeof(sMessage), "%s,obj_%d=%d", sMessage, objective, hPrimary.m_iProgress);
+		}
+		KeyValues dummy;
+		CESC_SendMessage(dummy, sMessage);
+
 		char sSound[128];
 		Format(sSound, sizeof(sSound), "Quest.StatusTick");
 
@@ -816,45 +823,6 @@ public any Native_FindQuestByIndex(Handle plugin, int numParams)
 	KeyValues hReturn = view_as<KeyValues>(UTIL_ChangeHandleOwner(plugin, hQuest));
 	delete hQuest;
 	return hReturn;
-}
-
-public void CESC_SendContractProgressMessage()
-{
-	KeyValues hMsg;
-	
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if (!IsClientReady(i))continue;
-		if (m_hQuest[i].m_iIndex == 0)continue;
-		
-		char sSteamID[64];
-		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-		
-		for (int j = 0; j < m_hQuest[i].m_hObjectives.Length; j++)
-		{
-			CEObjective hObj;
-			m_hQuest[i].m_hObjectives.GetArray(j, hObj);
-			if (!hObj.m_bUpdated)continue;
-			
-			if (hMsg == null)hMsg = new KeyValues("Message");
-			
-			char sKey[128];
-			Format(sKey, sizeof(sKey), "%s/contract", sSteamID);
-			hMsg.SetNum(sKey, m_hQuest[i].m_iIndex);
-			
-			Format(sKey, sizeof(sKey), "%s/objective_%d", sSteamID, j);
-			hMsg.SetNum(sKey, hObj.m_iProgress);
-			
-			hObj.m_bUpdated = false;
-			m_hQuest[i].m_hObjectives.SetArray(j, hObj);
-		}
-	}
-	
-	if(hMsg != null)
-	{
-		CESC_SendMessage(hMsg, "quest_progress");
-	}
-	delete hMsg;
 }
 
 public bool CEQuest_IsQuestActive(int client)
