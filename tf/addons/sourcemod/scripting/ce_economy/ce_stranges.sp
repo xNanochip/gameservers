@@ -10,7 +10,6 @@
 #include <ce_manager_attributes>
 #include <ce_manager_items>
 #include <ce_coordinator>
-#include <ce_complex_conditions>
 #include <tf2_stocks>
 
 int m_iLevel[MAX_ENTITY_LIMIT + 1];
@@ -349,9 +348,8 @@ public void CESC_SendStrangeEaterMessage(int client, int iEntity, int part_id, i
 	int iIndex = CE_GetEntityEconIndex(iEntity);
 	if (!IsClientReady(client) || iIndex <= 0)return;
 
-	KeyValues hMessage;
 	char sMessage[125];
 	Format(sMessage, sizeof(sMessage), "strange_increment:client=%d,item=%d,part=%d,delta=%d", client, iIndex, part_id, increment_value);
 	
-	CESC_SendMessage(hMessage, sMessage);
+	CESC_SendMessage(sMessage);
 }

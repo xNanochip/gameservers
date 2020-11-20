@@ -5,7 +5,6 @@
 #include <ce_core>
 #include <ce_events>
 #include <ce_campaign>
-#include <ce_complex_conditions>
 #include <ce_coordinator>
 
 #define CAMPAIGN_PROGRESS_INTERVAL 10.0
@@ -136,8 +135,7 @@ public void CEEvents_OnSendEvent(int client, CELogicEvents event, int add)
 			char sMessage[125];
 			Format(sMessage, sizeof(sMessage), "campaign_increment:campaign=%s,delta=%d,client=%d", hCampaign.m_sTitle, add, client);
 
-			KeyValues a;
-			CESC_SendMessage(a, sMessage);
+			CESC_SendMessage(sMessage);
 
 			break;
 		}

@@ -38,14 +38,14 @@ public void OnPluginStart()
 {
 	ce_economy_coordinator_domain = CreateConVar("ce_economy_coordinator_domain", "localhost", "Creators Economy coordinator domain.", FCVAR_PROTECTED);
 	ce_economy_coordinator_port = CreateConVar("ce_economy_coordinator_port", "4563", "Creators Economy coordinator port.", FCVAR_PROTECTED);
-	
+
 	ce_economy_backend_domain = CreateConVar("ce_economy_backend_domain", "creators.tf", "Creators Economy backend domain.", FCVAR_PROTECTED);
 	ce_economy_backend_auth = CreateConVar("ce_economy_backend_auth", "", "", FCVAR_PROTECTED);
 	ce_economy_backend_secure = CreateConVar("ce_economy_backend_secure", "1", "", FCVAR_PROTECTED);
 	ce_server_index = CreateConVar("ce_server_index", "-1", "", FCVAR_PROTECTED);
-	
+
 	m_hFragmentedPayload = new ArrayList();
-	
+
 	StartCoordinatorReconnectTimer();
 }
 
@@ -59,32 +59,35 @@ public void OnClientDisconnect(int client)
 	NotifyPlayerLeave(client);
 }
 
+public void NotifyMapChange()
+{
+	char sMap[32];
+	GetCurrentMap(sMap, sizeof(sMap));
+
+	char sMessage[125];
+	Format(sMessage, sizeof(sMessage), "map_update:map=%s", sMap);
+
+	CESC_SendMessage(sMessage);
+}
+
 public void NotifyPlayerJoin(int client)
 {
-	KeyValues hMessage = new KeyValues("Message");
-
 	char sSteamID[64];
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
 	if (StrEqual(sSteamID, "STEAM_ID_STOP_IGNORING_RETVALS"))return;
 
-	hMessage.SetString("steamid", sSteamID);
-	
 	char sMessage[125];
 	Format(sMessage, sizeof(sMessage), "player_join:steamid=%s,id=%d,userid=%d", sSteamID, client, GetClientUserId(client));
 
-	CESC_SendMessage(hMessage, sMessage);
-	delete hMessage;
+	CESC_SendMessage(sMessage);
 }
 
 public void NotifyPlayerLeave(int client)
 {
-	KeyValues hMessage = new KeyValues("Message");
-	
 	char sMessage[125];
 	Format(sMessage, sizeof(sMessage), "player_left:id=%d", client);
 
-	CESC_SendMessage(hMessage, sMessage);
-	delete hMessage;
+	CESC_SendMessage(sMessage);
 }
 
 public void OnSocketError(Handle socket, const int errorType, const int errorNum, any hFile)
@@ -94,16 +97,16 @@ public void OnSocketError(Handle socket, const int errorType, const int errorNum
 public void OnSocketConnected(Handle socket, any arg)
 {
 	m_bCoordinatorConnected = true;
-	
+
 	char sURL[64];
 	ce_economy_coordinator_domain.GetString(sURL, sizeof(sURL));
 	Format(sURL, sizeof(sURL), "%s:%d", sURL, ce_economy_coordinator_port.IntValue);
-	
+
 	// Access Header
 	char sHeaderAuth[PLATFORM_MAX_PATH];
 	CESC_GetServerAccessKey(sHeaderAuth, sizeof(sHeaderAuth));
 	Format(sHeaderAuth, sizeof(sHeaderAuth), "server %s %d", sHeaderAuth, CESC_GetServerID());
-	
+
 	char sRequest[512];
 	Format(sRequest, sizeof(sRequest), "GET / HTTP/1.1\r\n");
 	Format(sRequest, sizeof(sRequest), "%sHost: %s\r\n", sRequest, sURL);
@@ -113,7 +116,7 @@ public void OnSocketConnected(Handle socket, any arg)
 	Format(sRequest, sizeof(sRequest), "%sSec-WebSocket-Key: IRhw449z7G0Mov9CahJ+Ow==\r\n", sRequest);
 	Format(sRequest, sizeof(sRequest), "%sSec-WebSocket-Version: 13\r\n", sRequest);
 	Format(sRequest, sizeof(sRequest), "%sAccess: %s\r\n\r\n", sRequest, sHeaderAuth);
-	
+
 	SocketSend(socket, sRequest);
 }
 
@@ -124,19 +127,20 @@ public void OnSocketReceive(Handle socket, char[] data, const int dataSize, any 
 		char sKey[29];
 		Format(sKey, 29, "%s", data[StrContains(data, "Sec-WebSocket-Accept: ", true) + 22]);
 		LogMessage("Accept Key: %s", sKey);
-		
+
+		NotifyMapChange();
 		NotifyAllConnectedPlayers();
 	} else {
-		
+
 		int vFrame[WebsocketFrame];
 		char[] sPayLoad = new char[dataSize - 1];
 		ParseFrame(vFrame, data, dataSize, sPayLoad);
-		
+
 		KeyValues hJob = new KeyValues("Job");
 		hJob.ImportFromString(sPayLoad);
-		
+
 		ProcessJob(hJob);
-		
+
 		delete hJob;
 	}
 }
@@ -146,7 +150,7 @@ public void NotifyAllConnectedPlayers()
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientValid(i))continue;
-		
+
 		NotifyPlayerJoin(i);
 	}
 }
@@ -165,7 +169,7 @@ public void ConnectCoordinator()
 	char sURL[64];
 	ce_economy_coordinator_domain.GetString(sURL, sizeof(sURL));
 	int iPort = ce_economy_coordinator_port.IntValue;
-	
+
 	m_hSocket = SocketCreate(SOCKET_TCP, OnSocketError);
 	SocketConnect(m_hSocket, OnSocketConnected, OnSocketReceive, OnSocketDisconnected, sURL, iPort);
 }
@@ -178,9 +182,9 @@ public Action Timer_SocketReconnect(Handle timer, any data)
 		m_hReconnectTimer = null;
 		return Plugin_Stop;
 	}
-	
+
 	ConnectCoordinator();
-	
+
 	return Plugin_Continue;
 }
 
@@ -374,7 +378,7 @@ public any Native_SendMessage(Handle plugin, int numParams)
 
 	// Name of the message.
 	char sContent[125];
-	GetNativeString(2, sContent, sizeof(sContent));
+	GetNativeString(1, sContent, sizeof(sContent));
 
 	WebSocketSend(m_hSocket, sContent, sizeof(sContent));
 }
@@ -408,14 +412,14 @@ public any Native_GetServerAccessKey(Handle plugin, int numParams)
 public bool WebSocketSend(Handle socket, char[] payload, int length)
 {
 	int vFrame[WebsocketFrame];
-	vFrame[OPCODE] = FrameType_Text;	
+	vFrame[OPCODE] = FrameType_Text;
 
 	vFrame[PAYLOAD_LEN] = length;
-	
+
 	vFrame[FIN] = 1;
 	vFrame[CLOSE_REASON] = -1;
 	vFrame[MASK] = 1;
-	
+
 	if(SendWebsocketFrame(socket, payload, vFrame))
 	{
 		return true;
@@ -426,16 +430,16 @@ public bool WebSocketSend(Handle socket, char[] payload, int length)
 public bool SendWebsocketFrame(Handle socket, char[] payload, vFrame[WebsocketFrame])
 {
 	int length = vFrame[PAYLOAD_LEN];
-	
+
 	// Force RSV bits to 0
 	vFrame[RSV1] = 0;
 	vFrame[RSV2] = 0;
 	vFrame[RSV3] = 0;
-	
+
 	char[] sFrame = new char[length + 18];
 	if(CreateFrame(payload, sFrame, vFrame))
 	{
-		
+
 		if(length > 65535)
 		{
 			length += 10;
@@ -446,16 +450,16 @@ public bool SendWebsocketFrame(Handle socket, char[] payload, vFrame[WebsocketFr
 		{
 			length += 2;
 		}
-		
+
 		if(vFrame[CLOSE_REASON] != -1)
 		{
 			length += 2;
 		}
-		
+
 		SocketSend(socket, sFrame);
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -466,23 +470,23 @@ public void ParseFrame(int vFrame[WebsocketFrame], const char[] receiveDataLong,
 	{
 		receiveData[i] = receiveDataLong[i] & 0xff;
 	}
-	
+
 	char sByte[9];
 	Format(sByte, sizeof(sByte), "%08b", receiveData[0]);
-	
+
 	vFrame[FIN] = sByte[0] == '1' ? 1:0;
 	vFrame[RSV1] = sByte[1] == '1' ? 1:0;
 	vFrame[RSV2] = sByte[2] == '1' ? 1:0;
 	vFrame[RSV3] = sByte[3] == '1' ? 1:0;
 	vFrame[OPCODE] = view_as<WebsocketFrameType>(bindec(sByte[4]));
-	
+
 	Format(sByte, sizeof(sByte), "%08b", receiveData[1]);
-	
+
 	vFrame[MASK] = sByte[0] == '1' ? 1:0;
 	vFrame[PAYLOAD_LEN] = bindec(sByte[1]);
-	
+
 	int iOffset = 2;
-	
+
 	vFrame[MASKINGKEY][0] = '\0';
 	if(vFrame[PAYLOAD_LEN] > 126)
 	{
@@ -491,7 +495,7 @@ public void ParseFrame(int vFrame[WebsocketFrame], const char[] receiveDataLong,
 		{
 			Format(sLoongLength, sizeof(sLoongLength), "%s%08b", sLoongLength, receiveData[i]);
 		}
-		
+
 		vFrame[PAYLOAD_LEN] = bindec(sLoongLength);
 		iOffset += 6;
 	} else if(vFrame[PAYLOAD_LEN] > 125)
@@ -501,35 +505,35 @@ public void ParseFrame(int vFrame[WebsocketFrame], const char[] receiveDataLong,
 		{
 			Format(sLongLength, sizeof(sLongLength), "%s%08b", sLongLength, receiveData[i]);
 		}
-		
+
 		vFrame[PAYLOAD_LEN] = bindec(sLongLength);
 		iOffset += 2;
 	}
-	
+
 	if(vFrame[MASK])
 	{
 		for (int i = iOffset, j = 0; j < 4; i++, j++)
 		{
 			vFrame[MASKINGKEY][j] = receiveData[i];
 		}
-		
+
 		vFrame[MASKINGKEY][4] = '\0';
 		iOffset += 4;
-		
+
 		int[] iPayLoad = new int[vFrame[PAYLOAD_LEN]];
 		for (int i = iOffset, j = 0; j < vFrame[PAYLOAD_LEN]; i++, j++)
 		{
 			iPayLoad[j] = receiveData[i];
 		}
-			
+
 		for (int i = 0; i < vFrame[PAYLOAD_LEN]; i++)
 		{
 			Format(sPayLoad, vFrame[PAYLOAD_LEN] + 1, "%s%c", sPayLoad, iPayLoad[i] ^ vFrame[MASKINGKEY][i % 4]);
 		}
 	}
-	
+
 	strcopy(sPayLoad, vFrame[PAYLOAD_LEN] + 1, receiveDataLong[iOffset]);
-	
+
 	if(vFrame[OPCODE] == FrameType_Close)
 	{
 		char sCloseReason[65];
@@ -537,9 +541,9 @@ public void ParseFrame(int vFrame[WebsocketFrame], const char[] receiveDataLong,
 		{
 			Format(sCloseReason, sizeof(sCloseReason), "%s%08b", sCloseReason, sPayLoad[i] & 0xff);
 		}
-		
+
 		vFrame[CLOSE_REASON] = bindec(sCloseReason);
-		
+
 		strcopy(sPayLoad, dataSize - 1, sPayLoad[2]);
 		vFrame[PAYLOAD_LEN] -= 2;
 	} else {
@@ -558,9 +562,9 @@ public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayL
 			LogError("Received fragmented control frame. %d", vFrame[OPCODE]);
 			return true;
 		}
-		
+
 		int iPayloadLength = m_hFragmentedPayload.Get(0);
-		
+
 		// This is the first frame of a serie of fragmented ones.
 		if(iPayloadLength == 0)
 		{
@@ -569,7 +573,7 @@ public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayL
 				LogError("Received first fragmented frame with opcode 0. The first fragment MUST have a different opcode set.");
 				return true;
 			}
-			
+
 			// Remember which type of message this fragmented one is.
 			SetArrayCell(m_hFragmentedPayload, 1, vFrame[OPCODE]);
 		} else
@@ -580,12 +584,12 @@ public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayL
 				return true;
 			}
 		}
-		
+
 		// Keep track of the overall payload length of the fragmented message.
 		// This is used to create the buffer of the right size when passing it to the listening plugin.
 		iPayloadLength += vFrame[PAYLOAD_LEN];
 		SetArrayCell(m_hFragmentedPayload, 0, iPayloadLength);
-		
+
 		// This doesn't fit inside one array cell? Split it up.
 		if(vFrame[PAYLOAD_LEN] > FRAGMENT_MAX_LENGTH)
 		{
@@ -598,10 +602,10 @@ public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayL
 		{
 			PushArrayString(m_hFragmentedPayload, sPayLoad);
 		}
-		
+
 		return true;
 	}
-	
+
 	// The FIN bit is set if we reach here.
 	switch(vFrame[OPCODE])
 	{
@@ -609,21 +613,21 @@ public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayL
 		{
 			int iPayloadLength = m_hFragmentedPayload.Get(0);
 			WebsocketFrameType iOpcode = m_hFragmentedPayload.Get(1);
-			
+
 			// We don't know what type of data that is.
 			if(iOpcode == FrameType_Continuation)
 			{
 				LogError("Received last frame of a series of fragmented ones without any fragments with payload first.");
 				return true;
 			}
-			
+
 			// Add the payload of the last frame to the buffer too.
-			
+
 			// Keep track of the overall payload length of the fragmented message.
 			// This is used to create the buffer of the right size when passing it to the listening plugin.
 			iPayloadLength += vFrame[PAYLOAD_LEN];
 			m_hFragmentedPayload.Set(0, iPayloadLength);
-			
+
 			// This doesn't fit inside one array cell? Split it up.
 			if(vFrame[PAYLOAD_LEN] > FRAGMENT_MAX_LENGTH)
 			{
@@ -636,7 +640,7 @@ public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayL
 			{
 				PushArrayString(m_hFragmentedPayload, sPayLoad);
 			}
-			
+
 			return false;
 		}
 		case FrameType_Text:
@@ -661,7 +665,7 @@ public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayL
 			return true;
 		}
 	}
-	
+
 	LogError("Received invalid opcode = %d", vFrame[OPCODE]);
 	return true;
 }
@@ -669,7 +673,7 @@ public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayL
 public bool CreateFrame(char[] sPayLoad, char[] sFrame, vFrame[WebsocketFrame])
 {
 	int length = vFrame[PAYLOAD_LEN];
-	
+
 	switch(vFrame[OPCODE])
 	{
 		case FrameType_Text:
@@ -695,9 +699,9 @@ public bool CreateFrame(char[] sPayLoad, char[] sFrame, vFrame[WebsocketFrame])
 			return false;
 		}
 	}
-	
+
 	int iOffset;
-	
+
 	if (length > 65535)
 	{
 		LogMessage("1");
@@ -714,7 +718,7 @@ public bool CreateFrame(char[] sPayLoad, char[] sFrame, vFrame[WebsocketFrame])
 			}
 			Format(sByte, 9, "%s%s", sByte, sLengthBin[i]);
 		}
-		
+
 		// the most significant bit MUST be 0
 		if (sFrame[2] > 127)
 		{
@@ -749,22 +753,22 @@ public bool CreateFrame(char[] sPayLoad, char[] sFrame, vFrame[WebsocketFrame])
 		sFrame[1] = length;
 		iOffset = 2;
 	}
-	
+
 	sFrame[1] |= (1 << 7);
-	
+
 	int iMaskingKey[4];
 	iMaskingKey[0] = 255; //GetRandomInt(0, 255);
 	iMaskingKey[1] = 254; //GetRandomInt(0, 255);
 	iMaskingKey[2] = 253; //GetRandomInt(0, 255);
 	iMaskingKey[3] = 252; //GetRandomInt(0, 255);
-	
+
 	sFrame[iOffset] = iMaskingKey[0];
 	sFrame[iOffset+1] = iMaskingKey[1];
 	sFrame[iOffset+2] = iMaskingKey[2];
 	sFrame[iOffset+3] = iMaskingKey[3];
 	iOffset += 4;
 	length += 4;
-	
+
 	// We got a closing reason. Add it right in front of the payload.
 	if(vFrame[OPCODE] == FrameType_Close && vFrame[CLOSE_REASON] != -1)
 	{
@@ -782,14 +786,14 @@ public bool CreateFrame(char[] sPayLoad, char[] sFrame, vFrame[WebsocketFrame])
 		}
 		iOffset += 2;
 	}
-	
+
 	char[] masked = new char[vFrame[PAYLOAD_LEN] + 1];
 	for (int i = 0; i < vFrame[PAYLOAD_LEN]; i++)
 	{
 		Format(masked, vFrame[PAYLOAD_LEN] + 1, "%s%c", masked, (sPayLoad[i] & 0xff) ^ iMaskingKey[i % 4]);
 	}
 	Format(sFrame, length + iOffset, "%s%s", sFrame, masked);
-	
+
 	return true;
 }
 

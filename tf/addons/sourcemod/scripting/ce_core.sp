@@ -34,7 +34,6 @@ char m_sPlugins[][] = {
 	"ce_manager_items",
 	"ce_manager_responses",
 	"ce_manager_schema",
-	"ce_manager_users",
 
 	// Econ Item Subplugins
 	"ce_item_cosmetic",

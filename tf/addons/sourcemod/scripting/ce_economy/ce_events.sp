@@ -8,7 +8,6 @@
 #include <sdkhooks>
 #include <ce_util>
 #include <ce_events>
-#include <ce_complex_conditions>
 #include <tf2>
 #include <tf2_stocks>
 

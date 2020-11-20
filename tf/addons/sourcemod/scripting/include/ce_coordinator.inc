@@ -49,7 +49,7 @@ native int CESC_GetServerID();
 *
 * @return					Nothing.
 */
-native void CESC_SendMessage(KeyValues hHandle, char[] sName);
+native void CESC_SendMessage(char[] sName);
 
 /**
 * Sends an API request.

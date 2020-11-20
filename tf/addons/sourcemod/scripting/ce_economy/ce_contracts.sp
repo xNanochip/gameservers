@@ -677,10 +677,9 @@ public bool CEQuest_AddObjectiveProgress(int client, int source, int objective, 
 		}
 		if(iBonusDiff > 0)
 		{
-			Format(sMessage, sizeof(sMessage), "%s,obj_%d=%d", sMessage, objective, hPrimary.m_iProgress);
+			Format(sMessage, sizeof(sMessage), "%s,obj_%d=%d", sMessage, objective, hObjective.m_iProgress);
 		}
-		KeyValues dummy;
-		CESC_SendMessage(dummy, sMessage);
+		CESC_SendMessage(sMessage);
 
 		char sSound[128];
 		Format(sSound, sizeof(sSound), "Quest.StatusTick");
