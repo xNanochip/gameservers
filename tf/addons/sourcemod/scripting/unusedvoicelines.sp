@@ -349,7 +349,15 @@ void PlaySound(const char[] sound, int team = -1) //-1 = all, 2 = red, 3 = blu
 		else Format(path, sizeof(path), "vo/compmode/cm_admin_compbegins10_rare_0%d.mp3", GetRandomInt(1, 3));
 	}
 	// "#" before the sound path will tell source engine to play the music at a volume based on the client's music slider in their audio options
-	if (strcmp(sound, "7") == 0) Format(path, sizeof(path), "#creators/music/mm_start_round_music_halloween.wav");
+	if (strcmp(sound, "7") == 0)
+	{
+		if(TF2_IsHolidayActive(TFHoliday_HalloweenOrFullMoon))
+		{
+			Format(path, sizeof(path), "#creators/music/mm_start_round_music_halloween.wav");
+		} else {
+			Format(path, sizeof(path), "#ui/mm_round_start_casual.wav");
+		}
+	}
 	if (strcmp(sound, "5") == 0) Format(path, sizeof(path), "vo/compmode/cm_admin_compbegins05.mp3");
 	if (strcmp(sound, "4") == 0) Format(path, sizeof(path), "vo/compmode/cm_admin_compbegins04.mp3");
 	if (strcmp(sound, "3") == 0) Format(path, sizeof(path), "vo/compmode/cm_admin_compbegins03.mp3");
