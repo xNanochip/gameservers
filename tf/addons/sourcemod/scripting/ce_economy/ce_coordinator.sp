@@ -36,8 +36,8 @@ ArrayList m_hFragmentedPayload;
 
 public void OnPluginStart()
 {
-	ce_economy_coordinator_domain = CreateConVar("ce_economy_coordinator_domain", "localhost", "Creators Economy coordinator domain.", FCVAR_PROTECTED);
-	ce_economy_coordinator_port = CreateConVar("ce_economy_coordinator_port", "4563", "Creators Economy coordinator port.", FCVAR_PROTECTED);
+	ce_economy_coordinator_domain = CreateConVar("ce_economy_coordinator_domain", "sc.creators.tf", "Creators Economy coordinator domain.", FCVAR_PROTECTED);
+	ce_economy_coordinator_port = CreateConVar("ce_economy_coordinator_port", "80", "Creators Economy coordinator port.", FCVAR_PROTECTED);
 
 	ce_economy_backend_domain = CreateConVar("ce_economy_backend_domain", "creators.tf", "Creators Economy backend domain.", FCVAR_PROTECTED);
 	ce_economy_backend_auth = CreateConVar("ce_economy_backend_auth", "", "", FCVAR_PROTECTED);
@@ -92,12 +92,11 @@ public void NotifyPlayerLeave(int client)
 
 public void OnSocketError(Handle socket, const int errorType, const int errorNum, any hFile)
 {
+	LogMessage("%d %d", errorType, errorNum);
 }
 
 public void OnSocketConnected(Handle socket, any arg)
 {
-	m_bCoordinatorConnected = true;
-
 	char sURL[64];
 	ce_economy_coordinator_domain.GetString(sURL, sizeof(sURL));
 	Format(sURL, sizeof(sURL), "%s:%d", sURL, ce_economy_coordinator_port.IntValue);
@@ -107,17 +106,37 @@ public void OnSocketConnected(Handle socket, any arg)
 	CESC_GetServerAccessKey(sHeaderAuth, sizeof(sHeaderAuth));
 	Format(sHeaderAuth, sizeof(sHeaderAuth), "server %s %d", sHeaderAuth, CESC_GetServerID());
 
+	char sKey[16];
+	GenerateWebSocketKey(sKey, sizeof(sKey));
+
 	char sRequest[512];
-	Format(sRequest, sizeof(sRequest), "GET / HTTP/1.1\r\n");
+	Format(sRequest, sizeof(sRequest), "GET / HTTP/1.0\r\n");
 	Format(sRequest, sizeof(sRequest), "%sHost: %s\r\n", sRequest, sURL);
 	Format(sRequest, sizeof(sRequest), "%sOrigin: SRCDS\r\n", sRequest);
 	Format(sRequest, sizeof(sRequest), "%sConnection: Upgrade\r\n", sRequest);
 	Format(sRequest, sizeof(sRequest), "%sUpgrade: websocket\r\n", sRequest);
-	Format(sRequest, sizeof(sRequest), "%sSec-WebSocket-Key: IRhw449z7G0Mov9CahJ+Ow==\r\n", sRequest);
+	Format(sRequest, sizeof(sRequest), "%sSec-WebSocket-Key: %sCahJ+Ow==\r\n", sRequest, sKey);
 	Format(sRequest, sizeof(sRequest), "%sSec-WebSocket-Version: 13\r\n", sRequest);
 	Format(sRequest, sizeof(sRequest), "%sAccess: %s\r\n\r\n", sRequest, sHeaderAuth);
 
 	SocketSend(socket, sRequest);
+}
+
+public void GenerateWebSocketKey(char[] buffer, int size)
+{
+	char[] string = new char[size + 1];
+
+	char TOKEN_CHARACTERS[128];
+	Format(TOKEN_CHARACTERS, sizeof(TOKEN_CHARACTERS), "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
+
+	for (int i = 0; i < size; i++)
+	{
+	    int iRandom = GetRandomInt(0, strlen(TOKEN_CHARACTERS) - 1);
+	    char sChar = TOKEN_CHARACTERS[iRandom];
+
+	    Format(string, size, "%s%c", string, sChar);
+	}
+	strcopy(buffer, size, string);
 }
 
 public void OnSocketReceive(Handle socket, char[] data, const int dataSize, any hFile)
@@ -126,8 +145,10 @@ public void OnSocketReceive(Handle socket, char[] data, const int dataSize, any 
 	{
 		char sKey[29];
 		Format(sKey, 29, "%s", data[StrContains(data, "Sec-WebSocket-Accept: ", true) + 22]);
+		LogMessage("Socket connected.");
 		LogMessage("Accept Key: %s", sKey);
-
+		
+		m_bCoordinatorConnected = true;
 		NotifyMapChange();
 		NotifyAllConnectedPlayers();
 	} else {
@@ -200,7 +221,10 @@ public void ProcessJob(KeyValues job)
 
 public void OnSocketDisconnected(Handle socket, any arg)
 {
-	LogMessage("Socket disconnect");
+	if(m_bCoordinatorConnected)
+	{
+		LogMessage("Socket disconnect");
+	}
 	m_bCoordinatorConnected = false;
 	StartCoordinatorReconnectTimer();
 }
@@ -704,7 +728,6 @@ public bool CreateFrame(char[] sPayLoad, char[] sFrame, vFrame[WebsocketFrame])
 
 	if (length > 65535)
 	{
-		LogMessage("1");
 		sFrame[1] = 128;
 		char sLengthBin[65], sByte[9];
 		Format(sLengthBin, 65, "%064b", length);
