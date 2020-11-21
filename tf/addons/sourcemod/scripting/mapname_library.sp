@@ -20,7 +20,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	return APLRes_Success;
 }
 
-public void OnPluginStart()
+public void OnMapStart()
 {
     char sLoc[96];
     BuildPath(Path_SM, sLoc, 96, "configs/mapname_library.cfg");
