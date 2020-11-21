@@ -211,7 +211,7 @@ public Action Timer_SocketReconnect(Handle timer, any data)
 
 public void ProcessJob(KeyValues job)
 {
-	char sCommand[64];
+	char sCommand[1024];
 	job.GetString("command", sCommand, sizeof(sCommand));
 	if(!StrEqual(sCommand, ""))
 	{
