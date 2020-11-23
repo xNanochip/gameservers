@@ -156,13 +156,9 @@ public void OnSocketReceive(Handle socket, char[] data, const int dataSize, any 
 		int vFrame[WebsocketFrame];
 		char[] sPayLoad = new char[dataSize - 1];
 		ParseFrame(vFrame, data, dataSize, sPayLoad);
+		ReplaceString(sPayLoad, dataSize, "&quot;", "\"");
 
-		KeyValues hJob = new KeyValues("Job");
-		hJob.ImportFromString(sPayLoad);
-
-		ProcessJob(hJob);
-
-		delete hJob;
+		ServerCommand(sPayLoad);
 	}
 }
 
@@ -207,16 +203,6 @@ public Action Timer_SocketReconnect(Handle timer, any data)
 	ConnectCoordinator();
 
 	return Plugin_Continue;
-}
-
-public void ProcessJob(KeyValues job)
-{
-	char sCommand[1024];
-	job.GetString("command", sCommand, sizeof(sCommand));
-	if(!StrEqual(sCommand, ""))
-	{
-		ServerCommand(sCommand);
-	}
 }
 
 public void OnSocketDisconnected(Handle socket, any arg)
