@@ -118,7 +118,6 @@ public void ParseEconomySchema(KeyValues hConf)
 					hConf.GetString(sKey, sEvent, sizeof(sEvent));
 					if (StrEqual(sEvent, ""))continue;
 					
-					LogMessage(sEvent);
 					strcopy(m_sPartsEvents[iPart][j], sizeof(m_sPartsEvents[][]), sEvent);
 				}
 
