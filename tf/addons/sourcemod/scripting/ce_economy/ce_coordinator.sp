@@ -59,13 +59,27 @@ public void OnClientDisconnect(int client)
 	NotifyPlayerLeave(client);
 }
 
-public void NotifyMapChange()
+public void NotifyMetaInfoChange()
 {
 	char sMap[32];
 	GetCurrentMap(sMap, sizeof(sMap));
+	
+	char sHostName[64];
+	FindConVar("hostname").GetString(sHostName, sizeof(sHostName));
+	
+	int iPlayers = MaxClients;
+	if (FindConVar("tv_enable").BoolValue)iPlayers--;
 
 	char sMessage[125];
-	Format(sMessage, sizeof(sMessage), "map_update:map=%s", sMap);
+	Format(sMessage, sizeof(sMessage), "info:map=%s,host=%s,maxp=%d", sMap, sHostName, iPlayers);
+
+	CESC_SendMessage(sMessage);
+}
+
+public void NotifyIndexChange()
+{
+	char sMessage[125];
+	Format(sMessage, sizeof(sMessage), "index_update:index=%d", CESC_GetServerID());
 
 	CESC_SendMessage(sMessage);
 }
@@ -149,7 +163,8 @@ public void OnSocketReceive(Handle socket, char[] data, const int dataSize, any 
 		LogMessage("Accept Key: %s", sKey);
 		
 		m_bCoordinatorConnected = true;
-		NotifyMapChange();
+		NotifyIndexChange();
+		NotifyMetaInfoChange();
 		NotifyAllConnectedPlayers();
 	} else {
 
