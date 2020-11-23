@@ -1,6 +1,6 @@
 cp_fulgur_rc2
 koth_ramjam_rc1
-koth_daenam_b9
+koth_daenam_b10
 koth_ashville_rc2b
 cp_glassworks_rc6a
 cp_gorge
