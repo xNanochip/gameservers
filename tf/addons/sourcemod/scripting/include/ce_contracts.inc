@@ -26,7 +26,6 @@ enum struct CEObjective
 	bool m_bUpdated;
 
 	CEQuestActions m_nActions[MAX_HOOKS];
-	CELogicEvents m_nEvent[MAX_HOOKS];
 
 	int m_iCEWeaponIndex;
 }

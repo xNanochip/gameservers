@@ -16,6 +16,8 @@ int m_iLevel[MAX_ENTITY_LIMIT + 1];
 CEStrangePart m_hParts[MAX_ENTITY_LIMIT + 1][MAX_STRANGE_PARTS + 1];
 ArrayList m_hPartsList;
 
+char m_sPartsEvents[512][MAX_HOOKS][128];
+
 public Plugin myinfo =
 {
 	name = "Creators.TF Economy - Stranges Handler",
@@ -102,6 +104,7 @@ public void ParseEconomySchema(KeyValues hConf)
 			do {
 				char sIndex[11];
 				hConf.GetSectionName(sIndex, sizeof(sIndex));
+				int iPart = StringToInt(sIndex);
 
 				CEStrangePart hPart;
 				hPart.m_iIndex = StringToInt(sIndex);
@@ -114,12 +117,8 @@ public void ParseEconomySchema(KeyValues hConf)
 					char sEvent[32];
 					hConf.GetString(sKey, sEvent, sizeof(sEvent));
 					if (StrEqual(sEvent, ""))continue;
-
-					CELogicEvents nEvent = CEEvents_GetEventIndex(sEvent);
-					if(nEvent > LOGIC_NULL)
-					{
-						hPart.m_nEvents[j] = nEvent;
-					}
+					
+					strcopy(m_sPartsEvents[iPart][j], sizeof(m_sPartsEvents[][]), sEvent);
 				}
 
 				AddPartToMemoryList(hPart);
@@ -133,6 +132,14 @@ public void ParseEconomySchema(KeyValues hConf)
 public void FlushPartsMemory()
 {
 	delete m_hPartsList;
+	
+	for (int i = 0; i < sizeof(m_sPartsEvents); i++)
+	{
+		for (int j = 0; j < sizeof(m_sPartsEvents[]); j++)
+		{
+			strcopy(m_sPartsEvents[i][j], sizeof(m_sPartsEvents[][]), "");
+		}
+	}
 }
 
 public void AddPartToMemoryList(CEStrangePart hPart)
@@ -170,7 +177,6 @@ public void FlushEntityData(int entity)
 		for (int j = 0; j < MAX_HOOKS; j++)
 		{
 			m_hParts[entity][i].m_iIndex = 0;
-			m_hParts[entity][i].m_nEvents[j] = LOGIC_NULL;
 		}
 	}
 }
@@ -187,7 +193,7 @@ public void OnEntityDestroyed(int entity)
 	FlushEntityData(entity);
 }
 
-public void CEEvents_OnSendEvent(int client, CELogicEvents event, int add)
+public void CEEvents_OnSendEvent(int client, const char[] event, int add)
 {
 	if (!IsClientValid(client))return;
 	
@@ -323,13 +329,16 @@ public any Native_FindLevelDataByName(Handle plugin, int numParams)
 }
 
 
-public void CEStranges_TickleStrangeParts(int client, int entity, CELogicEvents event, int add)
+public void CEStranges_TickleStrangeParts(int client, int entity, const char[] event, int add)
 {
 	for (int i = 0; i < MAX_STRANGE_PARTS; i++)
 	{
+		int iPart = m_hParts[entity][i].m_iIndex;
+		if (iPart == 0)continue;
 		for (int j = 0; j < MAX_HOOKS; j++)
 		{
-			if (m_hParts[entity][i].m_nEvents[j] != event)continue;
+			if (StrEqual(m_sPartsEvents[iPart][j], ""))continue;
+			if (!StrEqual(m_sPartsEvents[iPart][j], event))continue;
 
 			char sAttribute[96];
 			CEEaters_GetAttributeByPartIndex(i, sAttribute, sizeof(sAttribute));
