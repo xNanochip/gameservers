@@ -226,7 +226,7 @@ public any Native_LastUsedWeapon(Handle plugin, int numParams)
 public any Native_SendEventToClient(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
-	char event[128]; 
+	char event[128];
 	GetNativeString(2, event, sizeof(event));
 	int add = GetNativeCell(3);
 	int unique_id = GetNativeCell(4);
@@ -818,8 +818,9 @@ public Action killed_capping_player(Handle hEvent, const char[] szName, bool bDo
 {
 	if (!g_CoreEnabled)return Plugin_Continue;
 	int attacker = GetEventInt(hEvent, "killer");
+	int victim = GetEventInt(hEvent, "victim");
 
-	if(IsClientValid(attacker))
+	if(IsClientValid(attacker) && attacker != victim)
 	{
 		CEEvents_SendEventToClient(attacker, "LOGIC_DEFEND_POINT", 1, view_as<int>(hEvent));
 		CEEvents_SendEventToClient(attacker, "LOGIC_OBJECTIVE_DEFEND", 1, view_as<int>(hEvent));
