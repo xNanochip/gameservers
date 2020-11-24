@@ -170,6 +170,8 @@ public void OnSocketReceive(Handle socket, char[] data, const int dataSize, any 
 		char[] sPayLoad = new char[dataSize - 1];
 		ParseFrame(vFrame, data, dataSize, sPayLoad);
 		ReplaceString(sPayLoad, dataSize, "&quot;", "\"");
+		
+		ServerCommand(sPayLoad);
 	}
 }
 
