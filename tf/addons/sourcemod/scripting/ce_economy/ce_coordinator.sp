@@ -68,7 +68,6 @@ public void NotifyMetaInfoChange()
 	FindConVar("hostname").GetString(sHostName, sizeof(sHostName));
 	
 	int iPlayers = MaxClients;
-	if (FindConVar("tv_enable").BoolValue)iPlayers--;
 
 	char sMessage[125];
 	Format(sMessage, sizeof(sMessage), "info:map=%s,host=%s,maxp=%d", sMap, sHostName, iPlayers);
@@ -106,7 +105,6 @@ public void NotifyPlayerLeave(int client)
 
 public void OnSocketError(Handle socket, const int errorType, const int errorNum, any hFile)
 {
-	LogMessage("%d %d", errorType, errorNum);
 }
 
 public void OnSocketConnected(Handle socket, any arg)
@@ -172,8 +170,6 @@ public void OnSocketReceive(Handle socket, char[] data, const int dataSize, any 
 		char[] sPayLoad = new char[dataSize - 1];
 		ParseFrame(vFrame, data, dataSize, sPayLoad);
 		ReplaceString(sPayLoad, dataSize, "&quot;", "\"");
-
-		ServerCommand(sPayLoad);
 	}
 }
 
