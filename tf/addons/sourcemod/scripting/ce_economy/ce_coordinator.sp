@@ -68,6 +68,7 @@ public void NotifyMetaInfoChange()
 	FindConVar("hostname").GetString(sHostName, sizeof(sHostName));
 	
 	int iPlayers = MaxClients;
+	if (FindConVar("tv_enable").BoolValue)iPlayers--;
 
 	char sMessage[125];
 	Format(sMessage, sizeof(sMessage), "info:map=%s,host=%s,maxp=%d", sMap, sHostName, iPlayers);
