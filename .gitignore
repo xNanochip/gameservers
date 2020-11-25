@@ -6,7 +6,6 @@
 !.gitlab-ci.yml
 !tf
 tf/*
-!tf/cfg
 !tf/addons
 !tf/custom
 tf/addons/sourcemod/configs/items.cfg
@@ -154,6 +153,11 @@ tf/maps/pl_hasslecastle.bsp
 !tf/models
 !tf/sound
 
+!tf/scripts
+tf/scripts/*
+!tf/scripts/population
+
+!tf/cfg
 tf/cfg/*
 !tf/cfg/quickplay
 !tf/cfg/items.cfg

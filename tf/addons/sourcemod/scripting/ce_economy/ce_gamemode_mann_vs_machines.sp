@@ -23,12 +23,47 @@ public Plugin myinfo =
 
 ConVar ce_mvm_check_itemname_cvar;
 
+int m_iCurrentWave;
+int m_iMissionStartTime;
+
+
 public void OnPluginStart()
 {
 	RegServerCmd("ce_mvm_equip_itemname", cMvMEquipItemName, "");
 	RegServerCmd("ce_mvm_get_itemdef_id", cMvMGetItemDefID, "");
 	RegServerCmd("ce_mvm_set_attribute", cMvMSetEntityAttribute, "");
 	ce_mvm_check_itemname_cvar = CreateConVar("ce_mvm_check_itemname_cvar", "-1", "", FCVAR_PROTECTED);
+	
+	HookEvent("mvm_begin_wave", mvm_begin_wave);
+	HookEvent("mvm_wave_complete", mvm_wave_complete);
+	HookEvent("mvm_wave_failed", mvm_wave_failed);
+	HookEvent("teamplay_waiting_begins", teamplay_waiting_begins);
+}
+
+public Action teamplay_waiting_begins(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	PrintToServer("teamplay_waiting_begins");
+}
+
+public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int iWave = GetEventInt(hEvent, "wave_index");
+	int iMaxWaves = GetEventInt(hEvent, "max_waves");
+	int iAdvanced = GetEventInt(hEvent, "advanced");
+	
+	PrintToChatAll("mvm_begin_wave (wave_index %d) (max_waves %d) (advanced %d)", iWave, iMaxWaves, iAdvanced);
+}
+
+public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int iAdvanced = GetEventInt(hEvent, "advanced");
+	
+	PrintToChatAll("mvm_wave_complete (advanced %d)", iAdvanced);
+}
+
+public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	PrintToChatAll("mvm_wave_failed");
 }
 
 public bool TF2MvM_IsPlayingMvM()

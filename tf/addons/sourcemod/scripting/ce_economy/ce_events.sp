@@ -48,11 +48,17 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart()
 {
+	g_hOnSendEvent = CreateGlobalForward("CEEvents_OnSendEvent", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_Cell);
+
+	CreateTimer(0.5, Timer_EscordProgressUpdate, _, TIMER_REPEAT);
+	RegAdminCmd("ce_test_event", cTestEvnt, ADMFLAG_ROOT, "");
+	
 	// Misc Events
 	HookEvent("payload_pushed", payload_pushed);
 	HookEvent("killed_capping_player", killed_capping_player);
 	HookEvent("environmental_death", environmental_death);
 	HookEvent("medic_death", medic_death);
+	HookEvent("team_leader_killed", team_leader_killed);
 
 	// Teamplay Events
 	HookEvent("teamplay_point_captured", teamplay_point_captured);
@@ -93,166 +99,67 @@ public void OnPluginStart()
 	HookEvent("eyeball_boss_killer", eyeball_boss_killer);
 	HookEvent("escaped_loot_island", escaped_loot_island);
 	HookEvent("escape_hell", escape_hell);
-
-	HookEvent("team_leader_killed", team_leader_killed);
-
-	g_hOnSendEvent = CreateGlobalForward("CEEvents_OnSendEvent", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_Cell);
-
-	CreateTimer(0.5, Timer_EscordProgressUpdate, _, TIMER_REPEAT);
-	RegAdminCmd("ce_test_event", cTestEvnt, ADMFLAG_ROOT, "");
+	
+	// MvM Events
+	
+	HookEvent("mvm_begin_wave", mvm_begin_wave);
+	HookEvent("mvm_wave_complete", mvm_wave_complete);
+	HookEvent("mvm_wave_failed", mvm_wave_failed);
+	// mvm_begin_wave
+	// mvm_wave_complete
+	// mvm_wave_failed
+	
+	// mvm_mission_update
+	// mvm_creditbonus_wave
+	// mvm_creditbonus_all
+	// mvm_creditbonus_all_advanced
+	// mvm_quick_sentry_upgrade
+	// mvm_tank_destroyed_by_players
+	// mvm_kill_robot_delivering_bomb
+	// mvm_pickup_currency
+	// mvm_bomb_carrier_killed
+	// mvm_sentrybuster_detonate
+	// mvm_scout_marked_for_death
+	// mvm_medic_powerup_shared
+	// mvm_mission_complete
+	// mvm_bomb_reset_by_player
+	// mvm_bomb_alarm_triggered
+	// mvm_bomb_deploy_reset_by_player
+	// mvm_reset_stats
+	// mvm_adv_wave_complete_no_gates
+	// mvm_sniper_headshot_currency
+	// mvm_mannhattan_pit
+	// mvm_adv_wave_killed_stun_radio
+	// mvm_sentrybuster_killed
 
 	LateHooking();
-}
-
-public void OnEntityCreated(int entity, const char[] classname)
-{
-	if(StrContains(classname, "obj_") != -1)
-	{
-		SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
-	}
-	if(StrEqual(classname, "player"))
-	{
-		SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
-	}
-	if(StrContains(classname, "item_healthkit") != -1)
-	{
-		SDKHook(entity, SDKHook_Touch, OnTouch);
-	}
-}
-
-public void LateHooking()
-{
-	int ent = -1;
-	while ((ent = FindEntityByClassname(ent, "obj_*")) != -1)
-	{
-		SDKHook(ent, SDKHook_OnTakeDamage, OnTakeDamage);
-	}
-
-	ent = -1;
-	while ((ent = FindEntityByClassname(ent, "item_healthkit_*")) != -1)
-	{
-		SDKHook(ent, SDKHook_Touch, OnTouch);
-	}
-
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if(IsClientValid(i))
-		{
-			SDKHook(i, SDKHook_OnTakeDamage, OnTakeDamage);
-		}
-	}
-}
-
-public Action OnTouch(int entity, int toucher)
-{
-	if (!IsClientValid(toucher))return Plugin_Continue;
-
-	int hOwner = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
-	if (hOwner == toucher)return Plugin_Continue;
-
-	// If someone touched a sandvich, mark heavy's secondary weapon as last used.
-	if(IsClientValid(hOwner))
-	{
-		if(TF2_GetPlayerClass(hOwner) == TFClass_Heavy)
-		{
-			int iLunchBox = GetPlayerWeaponSlot(hOwner, 1);
-			if(IsValidEntity(iLunchBox))
-			{
-				m_hLastWeapon[hOwner] = iLunchBox;
-			}
-		}
-	}
-
-	return Plugin_Continue;
-}
-
-public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3])
-{
-	if(IsClientValid(attacker))
-	{
-		if(IsValidEntity(inflictor))
-		{
-			// If inflictor entity has a "m_hBuilder" prop, that means we've killed with a building.
-			// Setting our wrench as last weapon.
-			if(HasEntProp(inflictor, Prop_Send, "m_hBuilder"))
-			{
-				if(TF2_GetPlayerClass(attacker) == TFClass_Engineer)
-				{
-					int iWrench = GetPlayerWeaponSlot(attacker, 2);
-					if(IsValidEntity(iWrench))
-					{
-						m_hLastWeapon[attacker] = iWrench;
-					}
-				}
-			} else {
-				// Player killed someone with a hitscan weapon. Saving the one.
-				m_hLastWeapon[attacker] = weapon;
-			}
-		}
-	}
-}
-
-public Action cTestEvnt(int client, int args)
-{
-	if(IsClientValid(client))
-	{
-		char sArg1[128], sArg2[11];
-		GetCmdArg(1, sArg1, sizeof(sArg1));
-		GetCmdArg(2, sArg2, sizeof(sArg2));
-
-		CEEvents_SendEventToClient(client, sArg1, MAX(StringToInt(sArg2), 1), MakeRandomEventIndex());
-	}
-
-	return Plugin_Handled;
-}
-
-public void OnLibraryAdded(const char[] name)
-{
-	if (StrEqual(name, "ce_core"))g_CoreEnabled = true;
-}
-
-public void OnLibraryRemoved(const char[] name)
-{
-	if (StrEqual(name, "ce_core"))g_CoreEnabled = false;
-}
-
-public any Native_LastUsedWeapon(Handle plugin, int numParams)
-{
-	int client = GetNativeCell(1);
-
-	return m_hLastWeapon[client];
-}
-
-public any Native_SendEventToClient(Handle plugin, int numParams)
-{
-	int client = GetNativeCell(1);
-	char event[128];
-	GetNativeString(2, event, sizeof(event));
-	int add = GetNativeCell(3);
-	int unique_id = GetNativeCell(4);
-
-	Call_StartForward(g_hOnSendEvent);
-	Call_PushCell(client);
-	Call_PushString(event);
-	Call_PushCell(add);
-	Call_PushCell(unique_id);
-	Call_Finish();
-}
-
-public Action Timer_EscordProgressUpdate(Handle timer, any data)
-{
-	float flCart = Payload_GetProgress();
-
-	if(flCart != m_flEscortProgress)
-	{
-		m_flEscortProgress = flCart;
-	}
 }
 
 /**
 *	NATIVE EVENTS ARE HANDLED HERE.
 		-- Event
 */
+
+public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int iWave = GetEventInt(hEvent, "wave_index");
+	int iMaxWaves = GetEventInt(hEvent, "max_waves");
+	int iAdvanced = GetEventInt(hEvent, "advanced");
+	
+	PrintToChatAll("mvm_begin_wave (wave_index %d) (max_waves %d) (advanced %d)", iWave, iMaxWaves, iAdvanced);
+}
+
+public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int iAdvanced = GetEventInt(hEvent, "advanced");
+	
+	PrintToChatAll("mvm_wave_complete (advanced %d)", iAdvanced);
+}
+
+public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	PrintToChatAll("mvm_wave_failed");
+}
 
 public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
@@ -891,6 +798,16 @@ public Action teamplay_point_captured(Handle hEvent, const char[] szName, bool b
 *	MISC FUNCTIONS
 */
 
+public Action Timer_EscordProgressUpdate(Handle timer, any data)
+{
+	float flCart = Payload_GetProgress();
+
+	if(flCart != m_flEscortProgress)
+	{
+		m_flEscortProgress = flCart;
+	}
+}
+
 public float Payload_GetProgress()
 {
 	int iEnt = -1;
@@ -943,4 +860,139 @@ public void TF2_OnConditionRemoved(int client, TFCond cond)
 public int MakeRandomEventIndex()
 {
 	return GetRandomInt(0, MAX_EVENT_UNIQUE_INDEX_INT);
+}
+
+public void OnEntityCreated(int entity, const char[] classname)
+{
+	if(StrContains(classname, "obj_") != -1)
+	{
+		SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
+	}
+	if(StrEqual(classname, "player"))
+	{
+		SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
+	}
+	if(StrContains(classname, "item_healthkit") != -1)
+	{
+		SDKHook(entity, SDKHook_Touch, OnTouch);
+	}
+}
+
+public void LateHooking()
+{
+	int ent = -1;
+	while ((ent = FindEntityByClassname(ent, "obj_*")) != -1)
+	{
+		SDKHook(ent, SDKHook_OnTakeDamage, OnTakeDamage);
+	}
+
+	ent = -1;
+	while ((ent = FindEntityByClassname(ent, "item_healthkit_*")) != -1)
+	{
+		SDKHook(ent, SDKHook_Touch, OnTouch);
+	}
+
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if(IsClientValid(i))
+		{
+			SDKHook(i, SDKHook_OnTakeDamage, OnTakeDamage);
+		}
+	}
+}
+
+public Action OnTouch(int entity, int toucher)
+{
+	if (!IsClientValid(toucher))return Plugin_Continue;
+
+	int hOwner = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
+	if (hOwner == toucher)return Plugin_Continue;
+
+	// If someone touched a sandvich, mark heavy's secondary weapon as last used.
+	if(IsClientValid(hOwner))
+	{
+		if(TF2_GetPlayerClass(hOwner) == TFClass_Heavy)
+		{
+			int iLunchBox = GetPlayerWeaponSlot(hOwner, 1);
+			if(IsValidEntity(iLunchBox))
+			{
+				m_hLastWeapon[hOwner] = iLunchBox;
+			}
+		}
+	}
+
+	return Plugin_Continue;
+}
+
+public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3])
+{
+	if(IsClientValid(attacker))
+	{
+		if(IsValidEntity(inflictor))
+		{
+			// If inflictor entity has a "m_hBuilder" prop, that means we've killed with a building.
+			// Setting our wrench as last weapon.
+			if(HasEntProp(inflictor, Prop_Send, "m_hBuilder"))
+			{
+				if(TF2_GetPlayerClass(attacker) == TFClass_Engineer)
+				{
+					int iWrench = GetPlayerWeaponSlot(attacker, 2);
+					if(IsValidEntity(iWrench))
+					{
+						m_hLastWeapon[attacker] = iWrench;
+					}
+				}
+			} else {
+				// Player killed someone with a hitscan weapon. Saving the one.
+				m_hLastWeapon[attacker] = weapon;
+			}
+		}
+	}
+}
+
+public Action cTestEvnt(int client, int args)
+{
+	if(IsClientValid(client))
+	{
+		char sArg1[128], sArg2[11];
+		GetCmdArg(1, sArg1, sizeof(sArg1));
+		GetCmdArg(2, sArg2, sizeof(sArg2));
+
+		CEEvents_SendEventToClient(client, sArg1, MAX(StringToInt(sArg2), 1), MakeRandomEventIndex());
+	}
+
+	return Plugin_Handled;
+}
+
+public void OnLibraryAdded(const char[] name)
+{
+	if (StrEqual(name, "ce_core"))g_CoreEnabled = true;
+}
+
+public void OnLibraryRemoved(const char[] name)
+{
+	if (StrEqual(name, "ce_core"))g_CoreEnabled = false;
+}
+
+public any Native_LastUsedWeapon(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+
+	return m_hLastWeapon[client];
+}
+
+public any Native_SendEventToClient(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	char event[128];
+	GetNativeString(2, event, sizeof(event));
+	int add = GetNativeCell(3);
+	int unique_id = GetNativeCell(4);
+
+	Call_StartForward(g_hOnSendEvent);
+	Call_PushCell(client);
+	Call_PushString(event);
+	Call_PushCell(add);
+	Call_PushCell(unique_id);
+	Call_Finish();
 }
