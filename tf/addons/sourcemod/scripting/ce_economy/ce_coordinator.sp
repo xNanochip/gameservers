@@ -152,6 +152,13 @@ public void GenerateWebSocketKey(char[] buffer, int size)
 	strcopy(buffer, size, string);
 }
 
+public void NotifyHeaderInfo()
+{
+	NotifyIndexChange();
+	NotifyMetaInfoChange();
+	NotifyAllConnectedPlayers();
+}
+
 public void OnSocketReceive(Handle socket, char[] data, const int dataSize, any hFile)
 {
 	if (StrContains(data, "HTTP/1.1 101 Switching Protocols", true) == 0)
@@ -162,9 +169,7 @@ public void OnSocketReceive(Handle socket, char[] data, const int dataSize, any 
 		LogMessage("Accept Key: %s", sKey);
 		
 		m_bCoordinatorConnected = true;
-		NotifyIndexChange();
-		NotifyMetaInfoChange();
-		NotifyAllConnectedPlayers();
+		NotifyHeaderInfo();
 	} else {
 
 		int vFrame[WebsocketFrame];
@@ -174,6 +179,14 @@ public void OnSocketReceive(Handle socket, char[] data, const int dataSize, any 
 		if (sPayLoad[0] == '/')return;
 		
 		ServerCommand(sPayLoad);
+	}
+}
+
+public void OnMapStart()
+{
+	if(m_bCoordinatorConnected)
+	{
+		NotifyHeaderInfo();
 	}
 }
 
