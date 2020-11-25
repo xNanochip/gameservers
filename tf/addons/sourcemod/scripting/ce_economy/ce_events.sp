@@ -146,19 +146,19 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 	int iMaxWaves = GetEventInt(hEvent, "max_waves");
 	int iAdvanced = GetEventInt(hEvent, "advanced");
 	
-	PrintToChatAll("mvm_begin_wave (wave_index %d) (max_waves %d) (advanced %d)", iWave, iMaxWaves, iAdvanced);
+	//PrintToChatAll("mvm_begin_wave (wave_index %d) (max_waves %d) (advanced %d)", iWave, iMaxWaves, iAdvanced);
 }
 
 public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int iAdvanced = GetEventInt(hEvent, "advanced");
 	
-	PrintToChatAll("mvm_wave_complete (advanced %d)", iAdvanced);
+	//PrintToChatAll("mvm_wave_complete (advanced %d)", iAdvanced);
 }
 
 public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	PrintToChatAll("mvm_wave_failed");
+	//PrintToChatAll("mvm_wave_failed");
 }
 
 public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadcast)
