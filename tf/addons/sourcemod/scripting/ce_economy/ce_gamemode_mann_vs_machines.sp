@@ -11,6 +11,8 @@
 #include <ce_manager_attributes>
 
 #define Q_UNIQUE 6
+#define TF_TEAM_DEFENDERS 2
+#define TF_TEAM_INVADERS 3
 
 public Plugin myinfo =
 {
@@ -27,6 +29,10 @@ int m_iCurrentWave;
 int m_iLastPlayerCount;
 
 float m_flMissionStartTime;
+float m_flWaveStartTime;
+float m_flSuccessTime;
+
+bool m_bWaitForGameRestart;
 
 public void OnPluginStart()
 {
@@ -38,29 +44,79 @@ public void OnPluginStart()
 	HookEvent("mvm_begin_wave", mvm_begin_wave);
 	HookEvent("mvm_wave_complete", mvm_wave_complete);
 	HookEvent("mvm_wave_failed", mvm_wave_failed);
+	HookEvent("teamplay_round_win", teamplay_round_win);
 	HookEvent("teamplay_round_start", teamplay_round_start);
 }
 
 public void PrintGameStats()
 {
-	PrintToChatAll("\x01Total time spent in mission: \x03%f", GetTotalMissionTime());
+	int iTimeInMission = GetTotalMissionTime();
+	if (iTimeInMission == -1)return;
+	
+	char sTimeInMission[32];
+	TimeToStopwatchTimer(iTimeInMission, sTimeInMission, sizeof(sTimeInMission));
+	
+	PrintToChatAll("\x01Total time spent in mission: \x03%s", sTimeInMission);
 }
 
 public Action teamplay_round_start(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
+	m_bWaitForGameRestart = false;
+	PrintGameStats();
+}
+
+public Action teamplay_round_win(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!TF2MvM_IsPlayingMvM())return Plugin_Continue;
+	
 	// Clear mission time if we restart the game. 
-	PrintToChatAll("teamplay_round_start");
-	ClearMissionStartTime();
+	PrintToChatAll("teamplay_round_win");
+	
+	int iTeam = GetEventInt(hEvent, "team");
+	switch(iTeam)
+	{
+		case TF_TEAM_DEFENDERS:
+		{
+			OnDefendersWon();
+		}
+		case TF_TEAM_INVADERS:
+		{
+			OnDefendersLost();
+		}
+	}
+	
+	SetWaveStartTime();
+	return Plugin_Continue;
+}
+
+public void OnDefendersWon()
+{
+	PrintGameStats();
+}
+
+public void OnDefendersLost()
+{
+	PrintGameStats();
 }
 
 /*
 * 	Purpose: 	Returns delta of current time and mission start time.
 *				Or -1 if mission start time is not set.
 */
-public float GetTotalMissionTime()
+public int GetTotalMissionTime()
 {
-	if (m_flMissionStartTime == 0.0)return -1.0;
-	return GetEngineTime() - m_flMissionStartTime;
+	if (m_flMissionStartTime == 0.0)return -1;
+	return RoundToFloor(GetEngineTime() - m_flMissionStartTime);
+}
+
+/*
+* 	Purpose: 	Returns delta of current time and mission start time.
+*				Or -1 if mission start time is not set.
+*/
+public int GetTotalWaveTime()
+{
+	if (m_flWaveStartTime == 0.0)return -1;
+	return RoundToFloor(GetEngineTime() - m_flWaveStartTime);
 }
 
 /*
@@ -88,6 +144,39 @@ public void TrySetMissionStartTime()
 public void ClearMissionStartTime()
 {
 	m_flMissionStartTime = 0.0;
+}
+
+/*
+* 	Purpose: Forcefuly set wave start time to current time.
+*/
+public void SetWaveStartTime()
+{
+	m_flWaveStartTime = GetEngineTime();
+}
+
+/*
+* 	Purpose: Set wave start time to current value only if it is not already set.
+*/
+public void TrySetWaveStartTime()
+{
+	if (m_flWaveStartTime == 0.0)
+	{
+		SetWaveStartTime();
+	}
+}
+
+public void ResetStats()
+{
+	ClearMissionStartTime();
+	ClearWaveStartTime();
+}
+
+/*
+* 	Purpose: Clear wave time. This gives us possibility to set base time again.
+*/
+public void ClearMissionStartTime()
+{
+	m_flWaveStartTime = 0.0;
 }
 
 public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroadcast)
@@ -121,8 +210,13 @@ public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBr
 
 public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	//PrintToChatAll("mvm_wave_failed");
-	PrintGameStats();
+	if(m_bWaitForGameRestart)
+	{
+		m_bWaitForGameRestart = false;
+		ClearMissionStartTime();
+	} else {
+		m_bWaitForGameRestart = true;
+	}
 }
 
 public void OnMvMGameStart()
@@ -278,4 +372,30 @@ public int GetRealClientCount()
     }
 
     return count;
+}
+
+public void TimeToStopwatchTimer(int time, char[] buffer, int size)
+{
+	char[] timer = new char[size + 1];
+	
+	int iForHours = time;
+	int iSecsInHour = 60 * 60;
+	int iHours = iForHours / iSecsInHour;
+	if(iHours > 0)
+	{
+		Format(timer, size, "%d hr ", iHours);
+	}
+	
+	int iSecInMins = 60;
+	int iForMins = iForHours % iSecsInHour;
+	int iMinutes = iForMins / iSecInMins;
+	if(iMinutes > 0)
+	{
+		Format(timer, size, "%s%d min ", timer, iMinutes);
+	}
+	
+	int iSeconds = iForMins % iSecInMins;
+	Format(timer, size, "%s%d sec", timer, iSeconds);
+	
+	strcopy(buffer, size, timer);
 }
