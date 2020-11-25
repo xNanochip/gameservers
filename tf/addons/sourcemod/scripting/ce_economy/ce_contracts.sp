@@ -402,7 +402,6 @@ public Action cQuestActivate(int client, int args)
 
 }
 
-
 public Action cQuest(int client, int args)
 {
 	if(m_hQuest[client].m_iIndex == 0)
@@ -414,7 +413,6 @@ public Action cQuest(int client, int args)
 	ClientShowQuestPanel(client);
 	return Plugin_Handled;
 }
-
 
 public void ClientShowQuestPanel(int client)
 {
