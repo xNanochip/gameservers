@@ -261,6 +261,7 @@ public void RequestPlayerLoadout(int client, bool apply)
 
 public void httpPlayerLoadout(const char[] content, int size, int status, any pack)
 {
+	PrintToServer(content);
 	DataPack hPack = pack;
 	int client = hPack.ReadCell();
 	bool apply = hPack.ReadCell();
