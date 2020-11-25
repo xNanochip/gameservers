@@ -261,7 +261,6 @@ public void RequestPlayerLoadout(int client, bool apply)
 
 public void httpPlayerLoadout(const char[] content, int size, int status, any pack)
 {
-	PrintToServer(content);
 	DataPack hPack = pack;
 	int client = hPack.ReadCell();
 	bool apply = hPack.ReadCell();
@@ -368,7 +367,9 @@ public bool HasClassLoadoutChanged(int client, TFClassType class, KeyValues kv)
 
 public void ClearLoadoutCache(int client)
 {
+	m_bWaitingForLoadout[client] = false;
 	delete m_hLoadout[client];
+	delete m_hMyItems[client];
 }
 
 public bool HasCachedLoadout(int client)
