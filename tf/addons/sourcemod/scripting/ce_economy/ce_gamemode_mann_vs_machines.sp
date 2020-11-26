@@ -28,11 +28,12 @@ ConVar ce_mvm_check_itemname_cvar;
 int m_iCurrentWave;
 int m_iLastPlayerCount;
 
-float m_flMissionStartTime;
 float m_flWaveStartTime;
-float m_flSuccessTime;
+int m_iTotalTime;
+int m_iSuccessTime;
 
 bool m_bWaitForGameRestart;
+bool m_bDefendersWon;
 
 public void OnPluginStart()
 {
@@ -51,28 +52,54 @@ public void OnPluginStart()
 public void PrintGameStats()
 {
 	int iTimeInMission = GetTotalMissionTime();
-	if (iTimeInMission == -1)return;
+	if (iTimeInMission > -1)
+	{
+		char sTimeInMission[32];
+		TimeToStopwatchTimer(iTimeInMission, sTimeInMission, sizeof(sTimeInMission));
+		
+		PrintToChatAll("\x01Total time spent in mission: \x03%s", sTimeInMission);
+	}
 	
-	char sTimeInMission[32];
-	TimeToStopwatchTimer(iTimeInMission, sTimeInMission, sizeof(sTimeInMission));
-	
-	PrintToChatAll("\x01Total time spent in mission: \x03%s", sTimeInMission);
+	int iWaveTime = GetTotalWaveTime();
+	if(iWaveTime > -1)
+	{
+		char sTimer[32];
+		TimeToStopwatchTimer(iWaveTime, sTimer, sizeof(sTimer));
+		
+		PrintToChatAll("\x01Total time spent in Wave %d: \x03%s", m_iCurrentWave, sTimer	);
+	}
 }
 
 public Action teamplay_round_start(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	m_bWaitForGameRestart = false;
+	
+	int iTimer = GetTotalWaveTime();
+	if(iTimer > -1)
+	{
+		AddTimeToTotalTimer(iTimer);
+		if(m_bDefendersWon)
+		{
+			m_bDefendersWon = false;
+			AddTimeToSuccessTimer(iTimer);
+		}
+	}
 	PrintGameStats();
 }
 
 public Action teamplay_round_win(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	if (!TF2MvM_IsPlayingMvM())return Plugin_Continue;
+	int iTeam = GetEventInt(hEvent, "team");
 	
 	// Clear mission time if we restart the game. 
 	PrintToChatAll("teamplay_round_win");
 	
-	int iTeam = GetEventInt(hEvent, "team");
+	if(iTeam == TF_TEAM_DEFENDERS)
+	{
+		m_bDefendersWon = true;
+	}
+	
 	switch(iTeam)
 	{
 		case TF_TEAM_DEFENDERS:
@@ -85,18 +112,25 @@ public Action teamplay_round_win(Handle hEvent, const char[] szName, bool bDontB
 		}
 	}
 	
-	SetWaveStartTime();
 	return Plugin_Continue;
 }
 
 public void OnDefendersWon()
 {
-	PrintGameStats();
 }
 
 public void OnDefendersLost()
 {
-	PrintGameStats();
+}
+
+public void AddTimeToTotalTimer(int time)
+{
+	m_iTotalTime += time;
+}
+
+public void AddTimeToSuccessTimer(int time)
+{
+	m_iSuccessTime += time;
 }
 
 /*
@@ -105,12 +139,20 @@ public void OnDefendersLost()
 */
 public int GetTotalMissionTime()
 {
-	if (m_flMissionStartTime == 0.0)return -1;
-	return RoundToFloor(GetEngineTime() - m_flMissionStartTime);
+	return m_iTotalTime;
 }
 
 /*
 * 	Purpose: 	Returns delta of current time and mission start time.
+*				Or -1 if mission start time is not set.
+*/
+public int GetSuccessMissionTime()
+{
+	return m_iSuccessTime;
+}
+
+/*
+* 	Purpose: 	Returns delta of current time and wave start time.
 *				Or -1 if mission start time is not set.
 */
 public int GetTotalWaveTime()
@@ -120,37 +162,11 @@ public int GetTotalWaveTime()
 }
 
 /*
-* 	Purpose: Forcefuly set mission start time to current time.
-*/
-public void SetMissionStartTime()
-{
-	m_flMissionStartTime = GetEngineTime();
-}
-
-/*
-* 	Purpose: Set mission start time to current value only if it is not already set.
-*/
-public void TrySetMissionStartTime()
-{
-	if (m_flMissionStartTime == 0.0)
-	{
-		SetMissionStartTime();
-	}
-}
-
-/*
-* 	Purpose: Clear mission start time. This gives us possibility to set base time again.
-*/
-public void ClearMissionStartTime()
-{
-	m_flMissionStartTime = 0.0;
-}
-
-/*
 * 	Purpose: Forcefuly set wave start time to current time.
 */
 public void SetWaveStartTime()
 {
+	PrintToChatAll("Wave Start Time Set");
 	m_flWaveStartTime = GetEngineTime();
 }
 
@@ -161,20 +177,24 @@ public void TrySetWaveStartTime()
 {
 	if (m_flWaveStartTime == 0.0)
 	{
+		PrintToChatAll("Setting Wave Time Start");
 		SetWaveStartTime();
 	}
 }
 
 public void ResetStats()
 {
-	ClearMissionStartTime();
+	PrintToChatAll("Game Restarted. Resetting stats...");
+	m_iTotalTime = 0;
+	m_iSuccessTime = 0;
+	m_iCurrentWave = 0;
 	ClearWaveStartTime();
 }
 
 /*
 * 	Purpose: Clear wave time. This gives us possibility to set base time again.
 */
-public void ClearMissionStartTime()
+public void ClearWaveStartTime()
 {
 	m_flWaveStartTime = 0.0;
 }
@@ -185,15 +205,15 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 	int iMaxWaves = GetEventInt(hEvent, "max_waves");
 	int iAdvanced = GetEventInt(hEvent, "advanced");
 	
-	// Let's start with 1 and not zero.
-	m_iCurrentWave = iWave + 1;
+	int iRealWave = iWave + 1;
 	
-	if(m_iCurrentWave == 1)
+	if(m_iCurrentWave != iRealWave)
 	{
-		// If this is first wave, reset mission start time.
-		// But only if it's not already set.
-		TrySetMissionStartTime();
+		TrySetWaveStartTime();
 	}
+	
+	// Let's start with 1 and not zero.
+	m_iCurrentWave = iRealWave;
 	
 	PrintGameStats();
 
@@ -213,7 +233,7 @@ public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroa
 	if(m_bWaitForGameRestart)
 	{
 		m_bWaitForGameRestart = false;
-		ClearMissionStartTime();
+		ResetStats();
 	} else {
 		m_bWaitForGameRestart = true;
 	}
@@ -222,15 +242,13 @@ public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroa
 public void OnMvMGameStart()
 {
 	// Someone joined the game.
-	
+	ResetStats();
 }
 
 public void OnMvMGameEnd()
 {
 	// Everyone left the game.
-	
-	// Reset the start time to zero.
-	m_flMissionStartTime = 0.0;
+	ResetStats();
 }
 
 public void OnMapStart()
