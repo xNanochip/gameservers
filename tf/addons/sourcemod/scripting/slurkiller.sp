@@ -25,7 +25,6 @@ public Plugin myinfo =
 Regex nword;
 Regex fslur;
 Regex tslur;
-Regex chslur;
 Regex cslur;
 
 bool hasClientBeenWarned[MAXPLAYERS+1];
@@ -37,7 +36,6 @@ public void OnPluginStart()
     nword  = new Regex("n[!\\|\\\\ila4o10][gq]{2}+([e3]r)?s?", PCRE_CASELESS | PCRE_MULTILINE);
     fslur  = new Regex("f+[a@4]+(g|q)+", PCRE_CASELESS | PCRE_MULTILINE);
     tslur  = new Regex("(tran{2})|t+r+[a4@]+n+([il1][e3]+|y+|[e3]r+)s?", PCRE_CASELESS | PCRE_MULTILINE);
-    chslur = new Regex("c+h+[i\\|1l]+n+k+", PCRE_CASELESS | PCRE_MULTILINE);
     cslur  = new Regex("\\bc[o0]{2}ns?\\b", PCRE_CASELESS | PCRE_MULTILINE);
 }
 
@@ -54,7 +52,6 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
             MatchRegex(nword,  sArgs) > 0
          || MatchRegex(fslur,  sArgs) > 0
          || MatchRegex(tslur,  sArgs) > 0
-         || MatchRegex(chslur, sArgs) > 0
          || MatchRegex(cslur,  sArgs) > 0
     )
     {
