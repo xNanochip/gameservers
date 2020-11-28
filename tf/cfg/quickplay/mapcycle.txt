@@ -1,4 +1,4 @@
-cp_fulgur_rc2
+cp_fulgur_rc2a
 koth_ramjam_rc1
 koth_daenam_b10
 koth_ashville_rc2c
