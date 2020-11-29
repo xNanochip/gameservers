@@ -13,6 +13,7 @@
 #define Q_UNIQUE 6
 #define TF_TEAM_DEFENDERS 2
 #define TF_TEAM_INVADERS 3
+#define TF_MVM_MAX_WAVES 12
 
 public Plugin myinfo =
 {
@@ -31,9 +32,10 @@ int m_iLastPlayerCount;
 float m_flWaveStartTime;
 int m_iTotalTime;
 int m_iSuccessTime;
+int m_iWaveTime;
 
 bool m_bWaitForGameRestart;
-bool m_bDefendersWon;
+bool m_bWeJustFailed;
 
 public void OnPluginStart()
 {
@@ -50,186 +52,160 @@ public void OnPluginStart()
 }
 
 public void PrintGameStats()
-{
-	int iTimeInMission = GetTotalMissionTime();
-	if (iTimeInMission > -1)
-	{
-		char sTimeInMission[32];
-		TimeToStopwatchTimer(iTimeInMission, sTimeInMission, sizeof(sTimeInMission));
-		
-		PrintToChatAll("\x01Total time spent in mission: \x03%s", sTimeInMission);
-	}
+{	
+	char sTimer[32];
+	int iMissionTime = GetTotalMissionTime();
+	TimeToStopwatchTimer(iMissionTime, sTimer, sizeof(sTimer));
+	PrintToChatAll("\x01Total time spent in mission: \x03%s", sTimer);
+	
+	int iSuccessTime = GetTotalSuccessTime();
+	int iPercentage = RoundToFloor(float(iSuccessTime) / float(iMissionTime) * 100.0);
+	TimeToStopwatchTimer(iSuccessTime, sTimer, sizeof(sTimer));
+	PrintToChatAll("\x01Total success time in mission: \x03%s (%d%%)", sTimer, iPercentage);
 	
 	int iWaveTime = GetTotalWaveTime();
-	if(iWaveTime > -1)
-	{
-		char sTimer[32];
-		TimeToStopwatchTimer(iWaveTime, sTimer, sizeof(sTimer));
-		
-		PrintToChatAll("\x01Total time spent in Wave %d: \x03%s", m_iCurrentWave, sTimer	);
-	}
+	TimeToStopwatchTimer(iWaveTime, sTimer, sizeof(sTimer));
+	PrintToChatAll("\x01Time spent on Wave %d: \x03%s", m_iCurrentWave, sTimer);
 }
 
 public Action teamplay_round_start(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	m_bWaitForGameRestart = false;
-	
-	int iTimer = GetTotalWaveTime();
-	if(iTimer > -1)
+	// This is usually fired after we lost a round.
+	if(m_bWeJustFailed)
 	{
-		AddTimeToTotalTimer(iTimer);
-		if(m_bDefendersWon)
-		{
-			m_bDefendersWon = false;
-			AddTimeToSuccessTimer(iTimer);
-		}
+		OnDefendersLost();
+		m_bWeJustFailed = false;
 	}
-	PrintGameStats();
+	
+	m_bWaitForGameRestart = false;
+}
+
+public void ProcessTime(int time, bool success)
+{
+	AddTimeToTotalWaveTime(time);
+	AddTimeToTotalTime(time);
+	if(success)
+	{
+		AddTimeToSuccessTime(time);
+	}
 }
 
 public Action teamplay_round_win(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
+	// This is usually fired when we lose.
 	if (!TF2MvM_IsPlayingMvM())return Plugin_Continue;
 	int iTeam = GetEventInt(hEvent, "team");
 	
-	// Clear mission time if we restart the game. 
-	PrintToChatAll("teamplay_round_win");
-	
-	if(iTeam == TF_TEAM_DEFENDERS)
+	if(iTeam == TF_TEAM_INVADERS)
 	{
-		m_bDefendersWon = true;
-	}
-	
-	switch(iTeam)
-	{
-		case TF_TEAM_DEFENDERS:
-		{
-			OnDefendersWon();
-		}
-		case TF_TEAM_INVADERS:
-		{
-			OnDefendersLost();
-		}
+		m_bWeJustFailed = true;
 	}
 	
 	return Plugin_Continue;
 }
 
+public bool IsValidWave(int index)
+{
+	return index > 0 && index < TF_MVM_MAX_WAVES;
+}
+
 public void OnDefendersWon()
 {
+	int time = GetCurrentWaveTime();
+	ProcessTime(time, true);
+	PrintGameStats();
+	ClearWaveStartTime();
 }
 
 public void OnDefendersLost()
 {
-}
-
-public void AddTimeToTotalTimer(int time)
-{
-	m_iTotalTime += time;
-}
-
-public void AddTimeToSuccessTimer(int time)
-{
-	m_iSuccessTime += time;
-}
-
-/*
-* 	Purpose: 	Returns delta of current time and mission start time.
-*				Or -1 if mission start time is not set.
-*/
-public int GetTotalMissionTime()
-{
-	return m_iTotalTime;
-}
-
-/*
-* 	Purpose: 	Returns delta of current time and mission start time.
-*				Or -1 if mission start time is not set.
-*/
-public int GetSuccessMissionTime()
-{
-	return m_iSuccessTime;
-}
-
-/*
-* 	Purpose: 	Returns delta of current time and wave start time.
-*				Or -1 if mission start time is not set.
-*/
-public int GetTotalWaveTime()
-{
-	if (m_flWaveStartTime == 0.0)return -1;
-	return RoundToFloor(GetEngineTime() - m_flWaveStartTime);
-}
-
-/*
-* 	Purpose: Forcefuly set wave start time to current time.
-*/
-public void SetWaveStartTime()
-{
-	PrintToChatAll("Wave Start Time Set");
-	m_flWaveStartTime = GetEngineTime();
-}
-
-/*
-* 	Purpose: Set wave start time to current value only if it is not already set.
-*/
-public void TrySetWaveStartTime()
-{
-	if (m_flWaveStartTime == 0.0)
-	{
-		PrintToChatAll("Setting Wave Time Start");
-		SetWaveStartTime();
-	}
-}
-
-public void ResetStats()
-{
-	PrintToChatAll("Game Restarted. Resetting stats...");
-	m_iTotalTime = 0;
-	m_iSuccessTime = 0;
-	m_iCurrentWave = 0;
+	int time = GetCurrentWaveTime();
+	ProcessTime(time, false);
+	PrintGameStats();
 	ClearWaveStartTime();
 }
 
-/*
-* 	Purpose: Clear wave time. This gives us possibility to set base time again.
-*/
+public void SetWaveStartTime()
+{
+	m_flWaveStartTime = GetEngineTime();
+}
+
 public void ClearWaveStartTime()
 {
 	m_flWaveStartTime = 0.0;
 }
 
+public int GetCurrentWaveTime()
+{
+	if (m_flWaveStartTime == 0.0)return 0;
+	return RoundToFloor(GetEngineTime() - m_flWaveStartTime);
+}
+
+public void AddTimeToTotalWaveTime(int time)
+{
+	m_iWaveTime += time;
+}
+
+public void AddTimeToTotalTime(int time)
+{
+	m_iTotalTime += time;
+}
+
+public void AddTimeToSuccessTime(int time)
+{
+	m_iSuccessTime += time;
+}
+
+public int GetTotalSuccessTime()
+{
+	return m_iSuccessTime;
+}
+
+public int GetTotalWaveTime()
+{
+	return m_iWaveTime;
+}
+
+public int GetTotalMissionTime()
+{
+	return m_iTotalTime;
+}
+
+public void ResetStats()
+{
+	PrintToChatAll("Game Restarted. Resetting stats...");
+	m_iSuccessTime = 0;
+	m_iWaveTime = 0;
+	m_iTotalTime = 0;
+	ClearWaveStartTime();
+}
+
 public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int iWave = GetEventInt(hEvent, "wave_index");
-	int iMaxWaves = GetEventInt(hEvent, "max_waves");
-	int iAdvanced = GetEventInt(hEvent, "advanced");
-	
 	int iRealWave = iWave + 1;
 	
-	if(m_iCurrentWave != iRealWave)
+	if(iRealWave != m_iCurrentWave)
 	{
-		TrySetWaveStartTime();
+		m_iWaveTime = 0;
 	}
 	
 	// Let's start with 1 and not zero.
 	m_iCurrentWave = iRealWave;
-	
-	PrintGameStats();
-
-	//PrintToChatAll("mvm_begin_wave (wave_index %d) (max_waves %d) (advanced %d)", iWave, iMaxWaves, iAdvanced);
+	SetWaveStartTime();
 }
 
 public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int iAdvanced = GetEventInt(hEvent, "advanced");
 
-	//PrintToChatAll("mvm_wave_complete (advanced %d)", iAdvanced);
-	PrintGameStats();
+	PrintToChatAll("mvm_wave_complete (advanced %d)", iAdvanced);
+	OnDefendersWon();
 }
 
 public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
+	PrintToChatAll("mvm_wave_failed");
 	if(m_bWaitForGameRestart)
 	{
 		m_bWaitForGameRestart = false;
