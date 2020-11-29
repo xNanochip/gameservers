@@ -80,7 +80,7 @@ public void ApplyTagsClient(int client)
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
 
 	char sURL[128];
-	Format(sURL, sizeof(sURL), "%s/IDonations/GUserDonations?steamid=%s", sURL, sSteamID);
+	Format(sURL, sizeof(sURL), "/api/IDonations/GUserDonations?steamid=%s", sSteamID);
 	
 	CESC_SendAPIRequest(sURL, RequestType_GET, httpPlayerDonation, client, _, _, client);
 }
