@@ -5,7 +5,7 @@
 #include <ce_core>
 #include <tf2>
 #include <tf2_stocks>
-#include <color_literals>
+#include <morecolors>
 
 bool m_bIsMOTDOpen[MAXPLAYERS + 1];
 
@@ -148,9 +148,7 @@ public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult r
 	{
 		if (StringToInt(cvarValue) != 0)
 		{
-			char nick[32];
-			GetClientName(client, nick, sizeof(nick));
-			PrintColoredChat(client, "\x07CA712D" ... "[Creators.TF]" ... COLOR_MEDIUMSPRINGGREEN ... " %s" ... COLOR_WHITE ... ", to use this command, you need to set " ... COLOR_MEDIUMPURPLE ... "cl_disablehtmlmotd 0" ... COLOR_WHITE ... " in your console.", nick);
+			MC_PrintToChatEx(client, "[{creators}Creators.TF{default}] {teamcolor}%N{default}, to use this command, you'll need to set {lightgreen}cl_disablehtmlmotd 0 {default}in your console.", client);
 			return;
 		}
 		else
@@ -164,9 +162,15 @@ public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult r
 			hConf.SetNum("customsvr", 1);
 			ShowVGUIPanel(client, "info", hConf);
 			delete hConf;
+			m_bIsMOTDOpen[client] = true;
 		}
 	}
 	delete dPack;
+}
+
+public void OnClientDisconnect(int client)
+{
+	m_bIsMOTDOpen[client] = false;
 }
 
 public void CloseMOTD(int client)

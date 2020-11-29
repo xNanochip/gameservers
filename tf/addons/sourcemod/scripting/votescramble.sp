@@ -110,12 +110,12 @@ void AttemptVoteScramble(int client)
 {
 	if (g_bScrambleTeams)
 	{
-		MC_ReplyToCommand(client, "[{green}SM{default}] A previous vote scramble has succeeded. Teams will be scrambled next round.");
+		MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] A previous vote scramble has succeeded. Teams will be scrambled next round.");
 		return;
 	}
 	if (g_bVoteCooldown)
 	{
-		MC_ReplyToCommand(client, "[{green}SM{default}] Sorry, votescramble is currently on cool-down.");
+		MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] Sorry, votescramble is currently on cool-down.");
 		return;
 	}
 
@@ -124,13 +124,13 @@ void AttemptVoteScramble(int client)
 
 	if (g_bVoted[client])
 	{
-		MC_ReplyToCommandEx(client, client, "[{green}SM{default}] {teamcolor}You {default}have already voted for a team scramble. [{lightgreen}%d{default}/{lightgreen}%d {default}votes required]", g_iVotes, g_iVotesNeeded);
+		MC_ReplyToCommandEx(client, client, "[{creators}Creators.TF{default}] {teamcolor}You {default}have already voted for a team scramble. [{lightgreen}%d{default}/{lightgreen}%d {default}votes required]", g_iVotes, g_iVotesNeeded);
 		return;
 	}
 
 	g_iVotes++;
 	g_bVoted[client] = true;
-	MC_PrintToChatAllEx(client, "[{green}SM{default}] {teamcolor}%s {default}wants to scramble teams. [{lightgreen}%d{default}/{lightgreen}%d {default}votes required]", name, g_iVotes, g_iVotesNeeded);
+	MC_PrintToChatAllEx(client, "[{creators}Creators.TF{default}] {teamcolor}%s {default}wants to scramble teams. [{lightgreen}%d{default}/{lightgreen}%d {default}votes required]", name, g_iVotes, g_iVotesNeeded);
 
 	if (g_iVotes >= g_iVotesNeeded)
 	{
@@ -264,7 +264,7 @@ public Action Timer_Scramble(Handle timer)
 		mins = mins+1;
 	}
 	CreateTimer(10.0, Timer_DelayRTS, mins);
-	MC_PrintToChatAll("[{green}SM{default}] Scrambling the teams due to vote.");
+	MC_PrintToChatAll("[{creators}Creators.TF{default}] Scrambling the teams due to vote.");
 }
 
 public Action Timer_DelayRTS(Handle timer, any mins)
