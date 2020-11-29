@@ -148,7 +148,7 @@ public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult r
 	{
 		if (StringToInt(cvarValue) != 0)
 		{
-			MC_PrintToChatEx(client, "[{creators}Creators.TF{default}] {teamcolor}%N{default}, to use this command, you'll need to set {lightgreen}cl_disablehtmlmotd 0 {default}in your console.", client);
+			MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] {teamcolor}%N{default}, to use this command, you'll need to set {lightgreen}cl_disablehtmlmotd 0 {default}in your console.", client);
 			return;
 		}
 		else
