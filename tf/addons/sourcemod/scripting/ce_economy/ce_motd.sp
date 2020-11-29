@@ -14,7 +14,7 @@ public Plugin myinfo =
 	name = "Creators.TF Economy - MotD",
 	author = "Creators.TF Team",
 	description = "Creators.TF MotD",
-	version = "1.01",
+	version = "1.02",
 	url = "https://creators.tf"
 }
 
