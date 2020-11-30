@@ -31,7 +31,7 @@
     }
     "4"
     {
-        "chat"                  "{fullred}Seeing red errors? {lightgreen}creators.tf/assetpack {green}\n{green}You can also use the following console commands:\n{lightgreen}cl_downloadfilter all; cl_allowdownload 1; retry"
+        "chat"                  "{fullred}Seeing red errors? {lightgreen}creators.tf/assetpack {green}"
     }
     "5"
     {
@@ -39,7 +39,7 @@
     }
     "6"
     {
-        "chat"                  "{gold}Tired of fighting? Join the {yellow}Creators.TF Events/Silly Servers{gold}! More informations on our Discord."
+        "chat"                  "{gold}Tired of fighting? Join the {yellow}Creators.TF Silly Servers{gold}! More information on our Discord: {lightgreen}creators.tf/discord""
     }
     "7"
     {
