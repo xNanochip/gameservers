@@ -31,7 +31,7 @@
     }
     "4"
     {
-        "chat"                  "{fullred}Seeing red errors? {lightgreen}creators.tf/assetpack {green}"
+        "chat"                  "{fullred}Seeing red errors? {lightgreen}creators.tf/assetpack"
     }
     "5"
     {
