@@ -54,6 +54,15 @@ native bool CE_IsEntityCustomEcomItem(int entity);
 native bool CE_EquipItem(int client, int index, int def, int quality, ArrayList attributes);
 
 /*
+* Request to holster an item on player.
+
+* @param client	Client to holster item from.
+* @param index Index of the item.
+* @param def Definition index of the item.
+*/
+native bool CE_HolsterItem(int client, int index, int def, const char[] type);
+
+/*
 * Returns if this entity is custom econ entity.
 
 * @return True if custom.

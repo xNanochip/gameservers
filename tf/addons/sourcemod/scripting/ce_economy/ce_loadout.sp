@@ -369,7 +369,6 @@ public void ClearLoadoutCache(int client)
 {
 	m_bWaitingForLoadout[client] = false;
 	delete m_hLoadout[client];
-	delete m_hMyItems[client];
 }
 
 public bool HasCachedLoadout(int client)
@@ -412,6 +411,7 @@ public void ApplyLoadout(int client, KeyValues loadout)
 
 			if(!HasLoadoutItemIndex(kv, hItem.m_iIndex))
 			{
+				CE_HolsterItem(client, hItem.m_iIndex, hItem.m_iDefinitionIndex, hItem.m_sType);
 				RemoveWearableItem(client, hItem);
 				i--;
 			}

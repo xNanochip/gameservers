@@ -13,11 +13,11 @@
 
 ArrayList m_hKits;
 
-int m_iMusicKit[MAXPLAYERS + 1] =  { -1, ... };
-
 int m_iNextEvent[MAXPLAYERS + 1] =  { -1, ... };
 int m_iCurrentEvent[MAXPLAYERS + 1] =  { -1, ... };
 int m_iCurrentSample[MAXPLAYERS + 1];
+
+int m_iMusicKit[MAXPLAYERS + 1];
 
 bool m_bIsPlaying[MAXPLAYERS + 1];
 bool m_bShouldStop[MAXPLAYERS + 1];
@@ -26,7 +26,7 @@ bool m_bForceNextEvent[MAXPLAYERS + 1];
 Handle m_hTimer[MAXPLAYERS + 1];
 
 ArrayList m_hSampleQueue[MAXPLAYERS + 1];
-
+	
 Sample_t m_hPreSample[MAXPLAYERS + 1];
 Sample_t m_hPostSample[MAXPLAYERS + 1];
 
@@ -42,6 +42,8 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	HookEvent("teamplay_broadcast_audio", evBroadcast, EventHookMode_Pre);
+	HookEvent("teamplay_round_win", teamplay_round_win);
+	HookEvent("teamplay_round_start", teamplay_round_start, EventHookMode_Pre);
 }
 
 public void OnAllPluginsLoaded()
@@ -55,6 +57,7 @@ public void OnAllPluginsLoaded()
 public void ParseEconomySchema(KeyValues hConf)
 {
 	//FlushSoundtrackMemory();
+	int iIndex = 0;
 	if(hConf.JumpToKey("Items", false))
 	{
 		if(hConf.GotoFirstSubKey())
@@ -62,24 +65,24 @@ public void ParseEconomySchema(KeyValues hConf)
 			// ===================
 			// || Checking Item ||
 			// ===================
-			
+
 			m_hKits = new ArrayList(sizeof(Soundtrack_t));
 			do {
 				char sType[32];
 				hConf.GetString("type", sType, sizeof(sType));
 				if (!StrEqual(sType, "soundtrack"))continue;
-				
+
 				char sIndex[11];
 				hConf.GetSectionName(sIndex, sizeof(sIndex));
 				int iDefIndex = StringToInt(sIndex);
-				
+
 				Soundtrack_t hKit;
 				hKit.m_iDefIndex = iDefIndex;
 				if(hConf.JumpToKey("logic", false))
 				{
 					hConf.GetString("broadcast/win", hKit.m_sWinMusic, sizeof(hKit.m_sWinMusic));
 					hConf.GetString("broadcast/loss", hKit.m_sLossMusic, sizeof(hKit.m_sLossMusic));
-					
+
 					if(hConf.JumpToKey("events", false))
 					{
 						if(hConf.GotoFirstSubKey())
@@ -87,7 +90,7 @@ public void ParseEconomySchema(KeyValues hConf)
 							// ====================
 							// || Checking Event ||
 							// ====================
-							
+
 							hKit.m_hEvents = new ArrayList(sizeof(Event_t));
 							do {
 								Event_t hEvent;
@@ -96,7 +99,7 @@ public void ParseEconomySchema(KeyValues hConf)
 								hConf.GetString("start_hook", hEvent.m_sStartHook, sizeof(hEvent.m_sStartHook));
 								hConf.GetString("stop_hook", hEvent.m_sStopHook, sizeof(hEvent.m_sStopHook));
 								hConf.GetString("id", hEvent.m_sID, sizeof(hEvent.m_sID));
-								
+
 								if(hConf.JumpToKey("samples", false))
 								{
 									if(hConf.GotoFirstSubKey())
@@ -104,43 +107,78 @@ public void ParseEconomySchema(KeyValues hConf)
 										// =====================
 										// || Checking Sample ||
 										// =====================
-										
+
 										hEvent.m_hSamples = new ArrayList(sizeof(Sample_t));
 										do {
 											Sample_t hSample;
-											
+
 											hSample.m_flDuration = hConf.GetFloat("duration");
 											hSample.m_flVolume = hConf.GetFloat("volume");
-											
+
 											hConf.GetString("move_to_event", hSample.m_sMoveToEvent, sizeof(hSample.m_sMoveToEvent));
 											hConf.GetString("sound", hSample.m_sSound, sizeof(hSample.m_sSound));
-											
+
 											hSample.m_nIterations = hConf.GetNum("iterations", 1);
 											hSample.m_nMoveToSample = hConf.GetNum("move_to_sample", -1);
-											
+
 											hSample.m_bPreserveSample = hConf.GetNum("preserve_sample", 0) == 1;
-											
-											hEvent.m_hSamples.PushArray(hSample);
+
 										} while (hConf.GotoNextKey());
 										hConf.GoBack();
 									}
 									hConf.GoBack();
 								}
-								hKit.m_hEvents.PushArray(hEvent);
 							} while (hConf.GotoNextKey());
 							hConf.GoBack();
 						}
 						hConf.GoBack();
 					}
+
+
 					hConf.GoBack();
 				}
-				m_hKits.PushArray(hKit);
+
+				iIndex++;
 			} while (hConf.GotoNextKey());
 		}
 	}
 	hConf.Rewind();
 }
 
+/**
+*	Purpose: Stop all events if we start a new round.
+*/
+public Action teamplay_round_start(Event hEvent, const char[] szName, bool bDontBroadcast)
+{
+	StopEventsForAll();
+}
+
+/**
+*	Purpose: Stop all events if we end a round. (A tick after.);
+*/
+public Action teamplay_round_win(Event hEvent, const char[] szName, bool bDontBroadcast)
+{
+	RequestFrame(RF_StopEventsForAll);
+}
+
+public void RF_StopEventsForAll(any forced)
+{
+	StopEventsForAll();
+}
+
+public void StopEventsForAll()
+{
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientValid(i))continue;
+		if(m_bIsPlaying[i])
+		{
+			// Otherwise, queue a stop.
+			m_bShouldStop[i] = true;
+		}
+		m_iNextEvent[i] = -1;
+	}
+}
 
 public Action evBroadcast(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
@@ -154,28 +192,26 @@ public Action evBroadcast(Event hEvent, const char[] szName, bool bDontBroadcast
 		if (GetClientTeam(i) != iTeam)continue;
 
 		char sSound[MAX_SOUND_NAME];
-		
 		if(m_iMusicKit[i] > -1)
 		{
 			int iMusicKit = m_iMusicKit[i];
-			Soundtrack_t hKit;
-			m_hKits.GetArray(iMusicKit, hKit);
-			
+
 			if(StrContains(sOldSound, "YourTeamWon") != -1)
 			{
-				strcopy(sSound, sizeof(sSound), hKit.m_sWinMusic);
+				strcopy(sSound, sizeof(sSound), m_hKits[iMusicKit].m_sWinMusic);
 			}
 
 			if(StrContains(sOldSound, "YourTeamLost") != -1)
 			{
-				strcopy(sSound, sizeof(sSound), hKit.m_sLossMusic);
+				strcopy(sSound, sizeof(sSound), m_hKits[iMusicKit].m_sLossMusic);
 			}
 		}
-		
+
+
 		if(StrEqual(sSound, ""))
 		{
 			hEvent.FireToClient(i);
-			
+
 		} else {
 			Event hNewEvent = CreateEvent("teamplay_broadcast_audio");
 			if (hNewEvent == null)continue;
@@ -191,31 +227,32 @@ public Action evBroadcast(Event hEvent, const char[] szName, bool bDontBroadcast
 
 public void CEEvents_OnSendEvent(int client, const char[] event, int add, int unique)
 {
-	Soundtrack_t hKit;
-	bool bFound = GetClientKit(client, hKit);
-	if (!bFound)return;
-	
-	for (int i = 0; i < hKit.m_hEvents.Length; i++)
+	int iMusicKit = m_iMusicKit[client];
+	if (iMusicKit == -1)return;
+
+	for (int i = 0; i < OST_MAX_EVENTS; i++)
 	{
 		int iEvent = i;
-		
+
 		Event_t hEvent;
-		hKit.m_hEvents.GetArray(i, hEvent);
-		
+		hEvent = m_hEvents[iMusicKit][i];
+
 		if(m_iCurrentEvent[client] != iEvent)
 		{
 			// Start Sample playing.
-			if(StrContains(hEvent.m_sStartHook, event) != -1)
+			if(StrEqual(m_hEvents[iMusicKit][i].m_sStartHook, event))
 			{
 				if (hEvent.m_bFireOnce && m_iCurrentEvent[client] == iEvent)continue;
-	
+
 				PrintToChatAll("%s said we need to start.", event);
 				m_iNextEvent[client] = iEvent;
 				m_bForceNextEvent[client] = hEvent.m_bForceStart;
 			}
+
 		} else {
-			// Start Sample playing.
-			if(StrContains(hEvent.m_sStopHook, event) != -1)
+
+			// Stop playing sample.
+			if(StrEqual(m_hEvents[iMusicKit][i].m_sStartHook, event))
 			{
 				if(m_bIsPlaying[client] && !m_bShouldStop[client])
 				{
@@ -225,8 +262,125 @@ public void CEEvents_OnSendEvent(int client, const char[] event, int add, int un
 			}
 		}
 	}
-	
+
 	PlayNextSample(client);
+}
+
+/*
+public void CEEvents_OnBroadcastToAll(Handle event, bool isKV)
+{
+	for (int client = 1; client < MaxClients; client++)
+	{
+		if (!IsClientValid(client))continue;
+		if (m_hKitLogic[client] == null)continue;
+
+		// Getting event name.
+		char sEventName[64];
+		if(isKV) {
+			KvGetSectionName(event, sEventName, sizeof(sEventName));
+		} else {
+			GetEventName(event, sEventName, sizeof(sEventName));
+		}
+
+		KeyValues kv = m_hKitLogic[client];
+
+		// Loop through each event.
+		if(kv.JumpToKey("events/0", false))
+		{
+			do {
+				bool bFound = false;
+				char sEvent[11];
+				kv.GetSectionName(sEvent, sizeof(sEvent));
+				int iEvent = StringToInt(sEvent);
+
+				// Check if start_hooks has any hooks with events of this name.
+				if(kv.JumpToKey("start_hooks/0", false))
+				{
+					do {
+
+						if (kv.GetNum("fire_once", 0) == 1 && m_iCurrentEvent[client] == iEvent)continue;
+
+						char sType[32], sName[64];
+						kv.GetString("type", sType, sizeof(sType));
+						kv.GetString("event_name", sName, sizeof(sName));
+
+						if (!StrEqual(sType, "event_listener"))continue;
+						if (!StrEqual(sName, sEventName))continue;
+
+						if (kv.JumpToKey("logic", false))
+						{
+							if (!CECCS_ParseLogic(client, kv, event, null, isKV))
+							{
+								kv.GoBack();
+								continue;
+							}
+							kv.GoBack();
+						}
+
+						m_iNextEvent[client] = iEvent;
+						m_bForceNextEvent[client] = kv.GetNum("force_start", 0) == 1;
+						bFound = true;
+
+						break;
+
+					} while (kv.GotoNextKey());
+					kv.GoBack();
+				}
+
+				// See if we need to stop current event.
+				if(m_iCurrentEvent[client] == iEvent)
+				{
+					if(kv.JumpToKey("stop_hooks/0", false))
+					{
+						do {
+							char sType[32], sName[64];
+							kv.GetString("type", sType, sizeof(sType));
+							kv.GetString("event_name", sName, sizeof(sName));
+
+							if (!StrEqual(sType, "event_listener"))continue;
+							if (!StrEqual(sName, sEventName))continue;
+
+							if (kv.JumpToKey("logic", false))
+							{
+								if (!CECCS_ParseLogic(client, kv, event, null, isKV))
+								{
+									kv.GoBack();
+									continue;
+								}
+								kv.GoBack();
+							}
+
+							if(m_bIsPlaying[client] && !m_bShouldStop[client])
+							{
+								PrintToConsole(client, "%s said we need to stop.", sEventName);
+								m_bShouldStop[client] = true;
+							}
+
+							break;
+
+						} while (kv.GotoNextKey());
+						kv.GoBack();
+					}
+				}
+
+				if(bFound) break;
+			} while (kv.GotoNextKey());
+			kv.GoBack();
+		}
+
+		kv.Rewind();
+		PlayNextSample(client);
+	}
+}*/
+
+public void CE_OnPostEquip(int entity, int client, int index, int defid, int quality, KeyValues hAttributes, char[] type)
+{
+	if (!StrEqual(type, "soundtrack"))return;
+
+	int iKitID = GetKitIndexByDefID(defid);
+	m_iMusicKit[client] = iKitID;
+
+	return;
 }
 
 public void PlayNextSample(int client)
@@ -234,12 +388,13 @@ public void PlayNextSample(int client)
 	if(m_bForceNextEvent[client])
 	{
 		// Stop everything if we have Force tag set.
+
 		if(m_hTimer[client] != null)
 		{
 			KillTimer(m_hTimer[client]);
 			m_hTimer[client] = null;
 		}
-		BufferFlush(client);
+		//BufferFlush(client);
 
 		m_bForceNextEvent[client] = false;
 		m_bIsPlaying[client] = false;
@@ -275,6 +430,11 @@ public void PlayNextSample(int client)
 	}
 }
 
+public bool GetClientSoundtrack(int client, Soundtrack_t kit)
+{
+
+}
+
 public Action Timer_PlayNextSample(Handle timer, any client)
 {
 	// Play next sample from here only if this timer is the active one.
@@ -285,16 +445,6 @@ public Action Timer_PlayNextSample(Handle timer, any client)
 		PlayNextSample(client);
 	}
 
-}
-
-public float GetClientSoundInterp(int client)
-{
-	return float(TF2_GetNativePing(client)) / 2000.0;
-}
-
-public int TF2_GetNativePing(int client)
-{
-	return GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iPing", _, client);
 }
 
 public void GetNextSample(int client, Sample_t hSample)
@@ -326,7 +476,7 @@ public void GetNextSample(int client, Sample_t hSample)
 		if(StrEqual(m_hPostSample[client].m_sSound, ""))
 		{
 			PrintToConsole(client, "m_iNextEvent, true");
-			BufferLoadEvent(client, m_iNextEvent[client]);
+			//BufferLoadEvent(client, m_iNextEvent[client]);
 			m_iNextEvent[client] = -1;
 		} else {
 			PrintToConsole(client, "m_iNextEvent, false");
@@ -373,15 +523,13 @@ public void GetNextSample(int client, Sample_t hSample)
 		// Move to next sample if we reached our limit.
 		if(sample.m_nCurrentIteration == sample.m_nIterations)
 		{
-			/*
-			Event_t hEvent;
-			if(GetEventByID())
+			if(sample.m_nMoveToEvent > -1)
 			{
 				m_iNextEvent[client] = sample.m_nMoveToEvent;
 			} else if(sample.m_nMoveToSample > -1 && sample.m_nMoveToSample < m_hSampleQueue[client].Length)
 			{
 				m_iCurrentSample[client] = sample.m_nMoveToSample;
-			} else */m_iCurrentSample[client]++;
+			} else m_iCurrentSample[client]++;
 		}
 
 		hSample = sample;
@@ -400,12 +548,41 @@ public void GetNextSample(int client, Sample_t hSample)
 	BufferFlush(client);
 }
 
+public int GetKitIndexByDefID(int defid)
+{
+	for (int i = 0; i < OST_MAX_KITS; i++)
+	{
+		if (m_hKits[i].m_iDefIndex == defid)return i;
+	}
+	return -1;
+}
+
+public int GetEventIndexByID(int kit, const char[] id)
+{
+	for (int i = 0; i < OST_MAX_EVENTS; i++)
+	{
+		if (StrEqual(m_hEvents[kit][i].m_sID, id))return i;
+	}
+	return -1;
+}
+/*
+public void BufferFlush(int client)
+{
+	if(IsHandleValid(m_hSampleQueue[client]))
+	{
+		m_hSampleQueue[client].Clear();
+	}
+	strcopy(m_hPostSample[client].m_sSound, MAX_SOUND_NAME, "");
+	strcopy(m_hPreSample[client].m_sSound, MAX_SOUND_NAME, "");
+
+	m_iCurrentEvent[client] = -1;
+}*/
+
+	/*
 public void BufferLoadEvent(int client, int event)
 {
 	if (!IsClientValid(client))return;
-	
-	Soundtrack_t hKit;
-	if (!GetClientKit(client, hKit))return;
+	if (m_hKitLogic[client] == null)return;
 
 	// Set up an array list if not exists.
 	if (m_hSampleQueue[client] == null)
@@ -418,26 +595,76 @@ public void BufferLoadEvent(int client, int event)
 	{
 		m_hSampleQueue[client].Clear();
 	}
-	
-	Event_t hEvent;
-	hKit.m_hEvents.GetArray(event, hEvent);
 
-	m_hSampleQueue[client] = hEvent.m_hSamples.Clone();
+	KeyValues kv = new KeyValues("Logic");
+	kv.Import(m_hKitLogic[client]);
+
+	char sKey[32];
+	Sample_t hPost, hPre;
+
+	// Load Post Sample.
+	Format(sKey, sizeof(sKey), "events/%d/samples/post", event);
+	if(kv.JumpToKey(sKey, false))
+	{
+		kv.GetString("sound", hPost.m_sSound, MAX_SOUND_NAME);
+		hPost.m_flDuration = kv.GetFloat("duration", 0.0);
+		kv.GoBack();
+	}
+	m_hPostSample[client] = hPost;
+
+	// Load Pre Sample.
+	Format(sKey, sizeof(sKey), "events/%d/samples/pre", event);
+	if(kv.JumpToKey(sKey, false))
+	{
+		kv.GetString("sound", hPre.m_sSound, MAX_SOUND_NAME);
+		hPre.m_flDuration = kv.GetFloat("duration", 0.0);
+		kv.GoBack();
+	}
+	m_hPreSample[client] = hPre;
+
+	Format(sKey, sizeof(sKey), "events/%d/samples/0", event);
+
+	// Load other samples.
+	if(kv.JumpToKey(sKey, false))
+	{
+		do {
+			char sName[6];
+			kv.GetSectionName(sName, sizeof(sName));
+			if (StrEqual(sName, "post") || StrEqual(sName, "pre"))continue;
+
+			Sample_t hSample;
+
+			kv.GetString("sound", hSample.m_sSound, MAX_SOUND_NAME);
+			hSample.m_flDuration = kv.GetFloat("duration", 0.0);
+			hSample.m_nIterations = kv.GetNum("iterations", 1);
+			hSample.m_nMoveToSample = kv.GetNum("move_to_sample", -1);
+			hSample.m_bPreserveSample = kv.GetNum("preserve_sample", -1) == 1;
+
+			char sIndex[MAX_EVENT_NAME];
+			kv.GetString("move_to_event", sIndex, sizeof(sIndex));
+
+			hSample.m_nMoveToEvent = GetClientEventIndexByID(client, event, sIndex);
+
+			m_hSampleQueue[client].PushArray(hSample);
+
+		} while (kv.GotoNextKey());
+		kv.GoBack();
+	}
+
+	delete kv;
 
 	m_iCurrentEvent[client] = event;
 	m_iCurrentSample[client] = 0;
+}*/
+
+public float GetClientSoundInterp(int client)
+{
+	return float(TF2_GetNativePing(client)) / 2000.0;
 }
 
-public void BufferFlush(int client)
+public int TF2_GetNativePing(int client)
 {
-	if(UTIL_IsValidHandle(m_hSampleQueue[client]))
-	{
-		m_hSampleQueue[client].Clear();
-	}
-	strcopy(m_hPostSample[client].m_sSound, MAX_SOUND_NAME, "");
-	strcopy(m_hPreSample[client].m_sSound, MAX_SOUND_NAME, "");
-
-	m_iCurrentEvent[client] = -1;
+	return GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iPing", _, client);
 }
 
 public void OnClientConnected(int client)
@@ -453,96 +680,22 @@ public void OnClientDisconnect(int client)
 public void ClearData(int client)
 {
 	delete m_hSampleQueue[client];
-	
+
 	m_iNextEvent[client] = -1;
 	m_iCurrentEvent[client] = -1;
-	m_iCurrentSample[client] = -1;
+	m_iCurrentSample[client] = 0;
+
+	Format(m_hPreSample[client].m_sSound, MAX_SOUND_NAME, "");
+	Format(m_hPostSample[client].m_sSound, MAX_SOUND_NAME, "");
 
 	m_bIsPlaying[client] = false;
 	m_bShouldStop[client] = false;
 	m_bForceNextEvent[client] = false;
-	
-	if(m_hTimer[client] != null)
-	{
-		KillTimer(m_hTimer[client]);
-		m_hTimer[client] = null;
-	}
+
+	delete m_hTimer[client];
 }
 
-public void CE_OnPostEquip(int client, int entity, int index, int defid, int quality, ArrayList hAttributes, char[] type)
+public bool IsHandleValid(Handle hHandle)
 {
-	if (!StrEqual(type, "soundtrack"))return;
-
-	int iKitID = GetKitIndexByDefID(defid);
-	m_iMusicKit[client] = iKitID;
-
-	return;
-}
-
-public void CE_OnItemHoster(int client, int index, int defid, const char[] type)
-{
-	if (!StrEqual(type, "soundtrack"))return;
-	m_iMusicKit[client] = -1;
-}
-
-public bool GetEventByID(int kit, const char[] sId, Event_t event)
-{
-	Soundtrack_t hKit;
-	bool bFound = GetKitByIndex(kit, hKit);
-	if (!bFound)return false;
-	
-	for (int i = 0; i < hKit.m_hEvents.Length; i++)
-	{
-		Event_t hEvent;
-		hKit.m_hEvents.GetArray(kit, hEvent);
-		if (StrEqual(hEvent.m_sID, sId))
-		{
-			event = hEvent;
-			return true;
-		}
-	}
-	return false;
-}
-
-public bool GetKitByIndex(int index, Soundtrack_t kit)
-{
-	if (!UTIL_IsValidHandle(m_hKits))return false;
-	if (index >= m_hKits.Length)return false;
-	
-	m_hKits.GetArray(index, kit);
-	
-	return true;
-}
-
-public bool GetKitEventByIndex(int kit, int index, Event_t event)
-{
-	Soundtrack_t hKit;
-	if (!GetKitByIndex(kit, hKit))return false;
-	
-	hKit.m_hEvents.GetArray(index, event);
-	
-	return true;
-}
-
-public int GetKitIndexByDefID(int defid)
-{
-	if (!UTIL_IsValidHandle(m_hKits))return -1;
-	
-	for (int i = 0; i < m_hKits.Length; i++)
-	{
-		Soundtrack_t hKit;
-		m_hKits.GetArray(i, hKit);
-		
-		if (hKit.m_iDefIndex == defid)return i;
-	}
-	return -1;
-}
-
-public bool GetClientKit(int client, Soundtrack_t hKit)
-{
-	if (m_iMusicKit[client] == -1)return false;
-	int iMusicKit = m_iMusicKit[client];
-	
-	if (!GetKitByIndex(iMusicKit, hKit))return false;
-	return true;
+	return hHandle != null && hHandle != INVALID_HANDLE;
 }
