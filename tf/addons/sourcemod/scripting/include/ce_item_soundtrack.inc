@@ -12,19 +12,6 @@ enum struct Soundtrack_t
 	ArrayList m_hEvents;
 }
 
-enum struct Event_t
-{
-	char m_sStartHook[128];
-	char m_sStopHook[128];
-
-    char m_sID[32];
-
-	bool m_bForceStart;
-    bool m_bFireOnce;
-
-	ArrayList m_hSamples;
-}
-
 enum struct Sample_t
 {
 	char m_sSound[MAX_SOUND_NAME];
@@ -39,4 +26,20 @@ enum struct Sample_t
 	float m_flVolume;
 
 	bool m_bPreserveSample;
+}
+
+enum struct Event_t
+{
+	char m_sStartHook[128];
+	char m_sStopHook[128];
+
+    char m_sID[32];
+
+	bool m_bForceStart;
+    bool m_bFireOnce;
+
+	Sample_t m_hPre;
+	Sample_t m_hPost;
+
+	ArrayList m_hSamples;
 }

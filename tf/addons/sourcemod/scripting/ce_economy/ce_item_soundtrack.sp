@@ -22,13 +22,13 @@ int m_iCurrentSample[MAXPLAYERS + 1];
 bool m_bIsPlaying[MAXPLAYERS + 1];
 bool m_bShouldStop[MAXPLAYERS + 1];
 bool m_bForceNextEvent[MAXPLAYERS + 1];
+	
+Sample_t m_hPreSample[MAXPLAYERS + 1];
+Sample_t m_hPostSample[MAXPLAYERS + 1];
 
 Handle m_hTimer[MAXPLAYERS + 1];
 
 ArrayList m_hSampleQueue[MAXPLAYERS + 1];
-
-Sample_t m_hPreSample[MAXPLAYERS + 1];
-Sample_t m_hPostSample[MAXPLAYERS + 1];
 
 public Plugin myinfo =
 {
@@ -97,6 +97,24 @@ public void ParseEconomySchema(KeyValues hConf)
 								hConf.GetString("stop_hook", hEvent.m_sStopHook, sizeof(hEvent.m_sStopHook));
 								hConf.GetString("id", hEvent.m_sID, sizeof(hEvent.m_sID));
 								
+								if(hConf.JumpToKey("pre_sample", false))
+								{
+									/*
+									Sample_t hPreSample;
+									KeyValuesToSample(hConf, hPreSample);
+									hEvent.m_hPre = hPreSample;
+									hConf.GoBack();*/
+								}
+								
+								if(hConf.JumpToKey("post_sample", false))
+								{
+									/*
+									Sample_t hPostSample;
+									KeyValuesToSample(hConf, hPostSample);
+									hEvent.m_hPost = hPostSample;
+									hConf.GoBack();*/
+								}
+								
 								if(hConf.JumpToKey("samples", false))
 								{
 									if(hConf.GotoFirstSubKey())
@@ -107,20 +125,12 @@ public void ParseEconomySchema(KeyValues hConf)
 										
 										hEvent.m_hSamples = new ArrayList(sizeof(Sample_t));
 										do {
+											
 											Sample_t hSample;
-											
-											hSample.m_flDuration = hConf.GetFloat("duration");
-											hSample.m_flVolume = hConf.GetFloat("volume");
-											
-											hConf.GetString("move_to_event", hSample.m_sMoveToEvent, sizeof(hSample.m_sMoveToEvent));
-											hConf.GetString("sound", hSample.m_sSound, sizeof(hSample.m_sSound));
-											
-											hSample.m_nIterations = hConf.GetNum("iterations", 1);
-											hSample.m_nMoveToSample = hConf.GetNum("move_to_sample", -1);
-											
-											hSample.m_bPreserveSample = hConf.GetNum("preserve_sample", 0) == 1;
+											KeyValuesToSample(hConf, hSample);
 											
 											hEvent.m_hSamples.PushArray(hSample);
+											
 										} while (hConf.GotoNextKey());
 										hConf.GoBack();
 									}
@@ -141,6 +151,19 @@ public void ParseEconomySchema(KeyValues hConf)
 	hConf.Rewind();
 }
 
+public void KeyValuesToSample(KeyValues hConf, Sample_t hSample)
+{							
+	hSample.m_flDuration = hConf.GetFloat("duration");
+	hSample.m_flVolume = hConf.GetFloat("volume");
+	
+	hConf.GetString("move_to_event", hSample.m_sMoveToEvent, sizeof(hSample.m_sMoveToEvent));
+	hConf.GetString("sound", hSample.m_sSound, sizeof(hSample.m_sSound));
+	
+	hSample.m_nIterations = hConf.GetNum("iterations", 1);
+	hSample.m_nMoveToSample = hConf.GetNum("move_to_sample", -1);
+	
+	hSample.m_bPreserveSample = hConf.GetNum("preserve_sample", 0) == 1;
+}
 
 public Action evBroadcast(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
@@ -301,15 +324,14 @@ public void GetNextSample(int client, Sample_t hSample)
 {
 	// Make sure client exists.
 	if (!IsClientValid(client))return;
-
+	
 	// First, we check if we need to switch to next sample.
 	// We only do that if post and pre are not set and queue is empty.
-
 	if(m_bShouldStop[client])
 	{
 		if(StrEqual(m_hPostSample[client].m_sSound, ""))
 		{
-			//BufferFlush(client);
+			BufferFlush(client);
 			m_bShouldStop[client] = false;
 			PrintToConsole(client, "m_bShouldStop, true");
 		} else {
@@ -319,7 +341,6 @@ public void GetNextSample(int client, Sample_t hSample)
 			return;
 		}
 	}
-
 
 	if(m_iNextEvent[client] > -1)
 	{
@@ -373,15 +394,15 @@ public void GetNextSample(int client, Sample_t hSample)
 		// Move to next sample if we reached our limit.
 		if(sample.m_nCurrentIteration == sample.m_nIterations)
 		{
-			/*
-			Event_t hEvent;
-			if(GetEventByID())
+			int iMoveToEvent = GetEventIndexByID(m_iMusicKit[client], sample.m_sMoveToEvent);
+			PrintToChatAll("%d %s", iMoveToEvent, sample.m_sMoveToEvent);
+			if(iMoveToEvent > -1)
 			{
-				m_iNextEvent[client] = sample.m_nMoveToEvent;
+				m_iNextEvent[client] = iMoveToEvent;
 			} else if(sample.m_nMoveToSample > -1 && sample.m_nMoveToSample < m_hSampleQueue[client].Length)
 			{
 				m_iCurrentSample[client] = sample.m_nMoveToSample;
-			} else */m_iCurrentSample[client]++;
+			} else m_iCurrentSample[client]++;
 		}
 
 		hSample = sample;
@@ -423,6 +444,8 @@ public void BufferLoadEvent(int client, int event)
 	hKit.m_hEvents.GetArray(event, hEvent);
 
 	m_hSampleQueue[client] = hEvent.m_hSamples.Clone();
+	//m_hPreSample[client] = hEvent.m_hPre;
+	//m_hPostSample[client] = hEvent.m_hPost;
 
 	m_iCurrentEvent[client] = event;
 	m_iCurrentSample[client] = 0;
@@ -485,23 +508,23 @@ public void CE_OnItemHoster(int client, int index, int defid, const char[] type)
 	m_iMusicKit[client] = -1;
 }
 
-public bool GetEventByID(int kit, const char[] sId, Event_t event)
+public int GetEventIndexByID(int kit, const char[] sId)
 {
 	Soundtrack_t hKit;
 	bool bFound = GetKitByIndex(kit, hKit);
-	if (!bFound)return false;
+	if (!bFound)return -1;
 	
 	for (int i = 0; i < hKit.m_hEvents.Length; i++)
 	{
 		Event_t hEvent;
 		hKit.m_hEvents.GetArray(kit, hEvent);
+		if (StrEqual(hEvent.m_sID, ""))continue;
 		if (StrEqual(hEvent.m_sID, sId))
 		{
-			event = hEvent;
-			return true;
+			return i;
 		}
 	}
-	return false;
+	return -1;
 }
 
 public bool GetKitByIndex(int index, Soundtrack_t kit)
