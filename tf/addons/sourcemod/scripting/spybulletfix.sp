@@ -1,3 +1,6 @@
+#pragma semicolon 1
+#pragma newdecls required
+
 #include <sourcemod>
 #include <sdktools>
 
@@ -6,7 +9,7 @@ public Plugin myinfo =
     name             =  "Spy Disguise Blockbullet Fix",
     author           =  "steph&nie",
     description      =  "Fix Spy Disguise weapons blocking bullets / hitscan - originally seen here: https://youtu.be/bDlgOUOJqWk . Thanks shounic!",
-    version          =  "0.0.1",
+    version          =  "0.0.2",
     url              =  "https://sappho.io"
 }
 
@@ -18,7 +21,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 }
 
 // ^
-waitFrame(entity)
+void waitFrame(int entity)
 {
     // make sure actual entity itself is still valid
     if (IsValidEntity(entity))
@@ -40,4 +43,3 @@ waitFrame(entity)
         }
     }
 }
-
