@@ -39,6 +39,5 @@ pl_vigil_rc7
 plr_bananabay
 plr_nightfall_final
 plr_pipeline
-pl_wutville_event
 pl_pier
 pd_snowville_event
