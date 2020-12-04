@@ -5,6 +5,7 @@
 #include <ce_core>
 #include <tf2>
 #include <tf2_stocks>
+#include <morecolors>
 
 bool m_bIsMOTDOpen[MAXPLAYERS + 1];
 
@@ -13,7 +14,7 @@ public Plugin myinfo =
 	name = "Creators.TF Economy - MotD",
 	author = "Creators.TF Team",
 	description = "Creators.TF MotD",
-	version = "1.00",
+	version = "1.02",
 	url = "https://creators.tf"
 }
 
@@ -30,7 +31,7 @@ public void OnPluginStart()
 
 	RegConsoleCmd("sm_contracker", cOpenContracker, "Opens your Creators.TF ConTracker");
 	RegConsoleCmd("sm_c", cOpenContracker, "Opens your Creators.TF ConTracker");
-	
+
 	RegConsoleCmd("sm_campaign", cOpenCampaign, "Opens active Creators.TF Campaign");
 	RegConsoleCmd("sm_ca", cOpenCampaign, "Opens active Creators.TF Campaign");
 
@@ -49,7 +50,7 @@ public Action cOpenWebsite(int client, int args)
 }
 
 /**
-*	Purpose: 	sm_loadout / sm_l command.
+*	Purpose: sm_loadout / sm_l command.
 */
 public Action cOpenLoadout(int client, int args)
 {
@@ -77,16 +78,17 @@ public Action cOpenLoadout(int client, int args)
 }
 
 /**
-*	Purpose: 	sm_servers / sm_s command.
+*	Purpose: sm_servers / sm_s command.
 */
 public Action cOpenServers(int client, int args)
 {
+
 	OpenURL(client, "https://creators.tf/servers");
 	return Plugin_Handled;
 }
 
 /**
-*	Purpose: 	sm_contracker / sm_c command.
+*	Purpose: sm_contracker / sm_c command.
 */
 public Action cOpenContracker(int client, int args)
 {
@@ -95,7 +97,7 @@ public Action cOpenContracker(int client, int args)
 }
 
 /**
-*	Purpose: 	sm_contracker / sm_c command.
+*	Purpose: sm_contracker / sm_c command.
 */
 public Action cOpenCampaign(int client, int args)
 {
@@ -104,7 +106,7 @@ public Action cOpenCampaign(int client, int args)
 }
 
 /**
-*	Purpose: 	sm_inventory / sm_i command.
+*	Purpose: sm_inventory / sm_i command.
 */
 public Action cOpenInventory(int client, int args)
 {
@@ -118,7 +120,7 @@ public Action cOpenInventory(int client, int args)
 }
 
 /**
-*	Purpose: 	sm_profile / sm_p command.
+*	Purpose: sm_profile / sm_p command.
 */
 public Action cOpenProfile(int client, int args)
 {
@@ -133,17 +135,42 @@ public Action cOpenProfile(int client, int args)
 
 public Action OpenURL(int client, const char[] url)
 {
-	KeyValues hConf = new KeyValues("data");
-	hConf.SetNum("type", 2);
-	hConf.SetString("msg", url);
-	hConf.SetNum("customsvr", 1);
-
-	ShowVGUIPanel(client, "info", hConf);
-	delete hConf;
-
-	m_bIsMOTDOpen[client] = true;
+	DataPack dPack = new DataPack();
+	WritePackString(dPack, url);
+	QueryClientConVar(client, "cl_disablehtmlmotd", QueryConVar_Motd, dPack);
 
 	return Plugin_Handled;
+}
+
+public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue, DataPack dPack)
+{
+	if (result == ConVarQuery_Okay)
+	{
+		if (StringToInt(cvarValue) != 0)
+		{
+			MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] {teamcolor}%N{default}, to use this command, you'll need to set {lightgreen}cl_disablehtmlmotd 0 {default}in your console.", client);
+			return;
+		}
+		else
+		{
+			ResetPack(dPack);
+			char url[PLATFORM_MAX_PATH];
+			ReadPackString(dPack, url, sizeof(url));
+			KeyValues hConf = new KeyValues("data");
+			hConf.SetNum("type", 2);
+			hConf.SetString("msg", url);
+			hConf.SetNum("customsvr", 1);
+			ShowVGUIPanel(client, "info", hConf);
+			delete hConf;
+			m_bIsMOTDOpen[client] = true;
+		}
+	}
+	delete dPack;
+}
+
+public void OnClientDisconnect(int client)
+{
+	m_bIsMOTDOpen[client] = false;
 }
 
 public void CloseMOTD(int client)
@@ -170,5 +197,3 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 		}
 	}
 }
-
-

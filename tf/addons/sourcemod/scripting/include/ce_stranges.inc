@@ -3,7 +3,6 @@
 enum struct CEStrangePart
 {
     int m_iIndex;
-    CELogicEvents m_nEvents[MAX_HOOKS];
 }
 
 native KeyValues CEEaters_FindLevelDataByName(const char[] name);

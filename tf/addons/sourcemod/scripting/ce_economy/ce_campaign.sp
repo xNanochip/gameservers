@@ -11,6 +11,8 @@
 
 ArrayList m_hCampaigns;
 
+char m_sCampaignEventList[128][MAX_HOOKS][128];
+
 public Plugin myinfo =
 {
 	name = "Creators.TF Economy - Campaign Manager",
@@ -41,6 +43,7 @@ public void ce_campaign_force_activate__CHANGED(ConVar convar, const char[] oldV
 public void ParseCampaignList()
 {
 	if (UTIL_IsValidHandle(m_hCampaigns))delete m_hCampaigns;
+	FlushCampaignEventsLists();
 
 	KeyValues hConf = CE_GetEconomyConfig();
 	if (!UTIL_IsValidHandle(hConf))return;
@@ -86,6 +89,8 @@ public void AddCampaignToTrackList(KeyValues hConf)
 
 	hConf.GetString("end_time", sTime, sizeof(sTime));
 	hCampaign.m_iEndTime = TimeFromString("YYYY-MM-DD hh:mm:ss", sTime);
+	
+	int iIndex = m_hCampaigns.Length;
 
 	for (int j = 0; j < MAX_HOOKS; j++)
 	{
@@ -96,11 +101,7 @@ public void AddCampaignToTrackList(KeyValues hConf)
 		hConf.GetString(sKey, sEvent, sizeof(sEvent));
 		if (StrEqual(sEvent, ""))continue;
 
-		CELogicEvents nEvent = CEEvents_GetEventIndex(sEvent);
-		if(nEvent > LOGIC_NULL)
-		{
-			hCampaign.m_nEvents[j] = nEvent;
-		}
+		strcopy(m_sCampaignEventList[iIndex][j], sizeof(m_sCampaignEventList[][]), sEvent);
 	}
 
 	m_hCampaigns.PushArray(hCampaign);
@@ -117,9 +118,22 @@ public void FlushCampaignTrackList()
 		m_hCampaigns.Erase(i);
 		i--;
 	}
+	
+	FlushCampaignEventsLists();
 }
 
-public void CEEvents_OnSendEvent(int client, CELogicEvents event, int add)
+public void FlushCampaignEventsLists()
+{
+	for (int i = 0; i < sizeof(m_sCampaignEventList); i++)
+	{
+		for (int j = 0; j < sizeof(m_sCampaignEventList[]); j++)
+		{
+			strcopy(m_sCampaignEventList[i][j], sizeof(m_sCampaignEventList[][]), "");
+		}
+	}
+}
+
+public void CEEvents_OnSendEvent(int client, const char[] event, int add)
 {
 	if (!UTIL_IsValidHandle(m_hCampaigns))return;
 
@@ -130,7 +144,8 @@ public void CEEvents_OnSendEvent(int client, CELogicEvents event, int add)
 
 		for (int j = 0; j < MAX_HOOKS; j++)
 		{
-			if (hCampaign.m_nEvents[j] != event)continue;
+			if (StrEqual(m_sCampaignEventList[i][j], ""))continue;
+			if (!StrEqual(m_sCampaignEventList[i][j], event))continue;
 
 			char sMessage[125];
 			Format(sMessage, sizeof(sMessage), "campaign_increment:campaign=%s,delta=%d,client=%d", hCampaign.m_sTitle, add, client);

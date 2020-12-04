@@ -1,7 +1,7 @@
-cp_fulgur_rc2
+cp_fulgur_rc2a
 koth_ramjam_rc1
-koth_daenam_b9
-koth_ashville_rc2b
+koth_daenam_b10
+koth_ashville_rc2c
 cp_glassworks_rc6a
 cp_gorge
 cp_gravelpit
@@ -39,3 +39,6 @@ pl_vigil_rc7
 plr_bananabay
 plr_nightfall_final
 plr_pipeline
+pl_wutville_event
+pl_pier
+pd_snowville_event

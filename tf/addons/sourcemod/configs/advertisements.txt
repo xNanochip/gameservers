@@ -39,13 +39,17 @@
     }
     "6"
     {
-        "chat"                  "{green}Want to report a problem or leave some feedback? Contact us at {lightgreen}support@creators.tf {green}or simply leave a message on the {lightgreen}#feedback {green}channel on our Discord server."
+        "chat"                  "{gold}Tired of fighting? Join the {yellow}Creators.TF Silly Servers{gold}! More information on our Discord: {lightgreen}creators.tf/discord""
     }
     "7"
     {
+        "chat"                  "{green}Want to report a problem or leave some feedback? Contact us at {lightgreen}support@creators.tf {green}or simply leave a message on the {lightgreen}#feedback {green}channel on our Discord server."
+    }
+    "8"
+    {
         "chat"                  "{green}See any hate speech or prohibited content in chat or on decals? Screenshot it and send it directly to {lightgreen}@ModMail {green}on our Discord."
     }
-	"8"
+	  "9"
     {
         "chat"                  "{green}Don't forget to {lightgreen}!nominate {green}the next map you want to play!"
     }

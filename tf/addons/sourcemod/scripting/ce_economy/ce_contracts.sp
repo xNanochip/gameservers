@@ -32,6 +32,8 @@ CEQuest m_hQuest[MAXPLAYERS + 1];
 ArrayList m_hFriends[MAXPLAYERS + 1];
 int m_iWaitingForQuest[MAXPLAYERS + 1];
 
+char m_sQuestEvents[MAXPLAYERS + 1][16][MAX_HOOKS][128];
+
 public void OnPluginStart()
 {
 	for (int i = 1; i <= MaxClients; i++) // just in case plugin late loads
@@ -273,6 +275,7 @@ public void httpFetchContracker(const char[] content, int size, int status, any 
 					do {
 						char sIndex[11];
 						hQuest.GetSectionName(sIndex, sizeof(sIndex));
+						int iObjective = StringToInt(sIndex);
 
 						CEObjective hObjective;
 						hQuest.GetString("name", hObjective.m_sName, 64);
@@ -310,7 +313,7 @@ public void httpFetchContracker(const char[] content, int size, int status, any 
 								else if (StrEqual(sAction, "set"))hObjective.m_nActions[i] = ACTION_SET;
 								else hObjective.m_nActions[i] = ACTION_SINGLEFIRE;
 
-								hObjective.m_nEvent[i] = CEEvents_GetEventIndex(sEvent);
+								strcopy(m_sQuestEvents[client][iObjective][i], sizeof(m_sQuestEvents[][][]), sEvent);
 
 								hQuest.GoBack();
 							} else {
@@ -368,6 +371,14 @@ public void FlushClientCache(int client)
 	m_hQuest[client].m_iCEWeaponIndex = 0;
 
 	delete m_hQuest[client].m_hObjectives;
+	
+	for (int i = 0; i < sizeof(m_sQuestEvents[]); i++)
+	{
+		for (int j = 0; j < sizeof(m_sQuestEvents[][]); j++)
+		{
+			strcopy(m_sQuestEvents[client][i][j], sizeof(m_sQuestEvents[][][]), "");
+		}
+	}
 }
 
 public void FlushFriendsCache(int client)
@@ -482,12 +493,12 @@ public int mQuestMenu(Menu menu, MenuAction action, int param1, int param2)
 	}
 }
 
-public void CEEvents_OnSendEvent(int client, CELogicEvents event, int add, int unique)
+public void CEEvents_OnSendEvent(int client, const char[] event, int add, int unique)
 {
 	CEQuest_TickleObjectives(client, client, event, add, unique);
 }
 
-public void CEQuest_TickleObjectives(int client, int source, CELogicEvents event, int add, int unique)
+public void CEQuest_TickleObjectives(int client, int source, const char[] event, int add, int unique)
 {
 	if (!CEQuest_CanUseQuest(client))return;
 
@@ -513,9 +524,8 @@ public void CEQuest_TickleObjectives(int client, int source, CELogicEvents event
 
 		for (int j = 0; j < MAX_HOOKS; j++)
 		{
-			if (hObjective.m_nEvent[j] == LOGIC_NULL)continue;
-
-			if(hObjective.m_nEvent[j] == event)
+			if (StrEqual(m_sQuestEvents[client][i][j], ""))continue;
+			if(StrEqual(m_sQuestEvents[client][i][j], event))
 			{
 				if(client == source)
 				{
@@ -567,7 +577,7 @@ public void CEQuest_TickleObjectives(int client, int source, CELogicEvents event
 	}
 }
 
-public void CEQuest_SendProgressToFriends(int client, CELogicEvents event, int add, int unique)
+public void CEQuest_SendProgressToFriends(int client, const char[] event, int add, int unique)
 {
 	for (int i = 1; i <= MaxClients; i++)
 	{

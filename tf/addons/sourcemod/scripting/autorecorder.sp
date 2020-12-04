@@ -29,7 +29,9 @@
 */
 
 #include <sourcemod>
-#include <ce_coordinator>
+#undef REQUIRE_PLUGIN
+#tryinclude <ce_coordinator>
+#define REQUIRE_PLUGIN
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -56,6 +58,8 @@ ConVar g_hDemoPath = null;
 
 bool g_bIsRecording = false;
 bool g_bIsManual = false;
+
+bool ce_core = false;
 
 public void OnPluginStart()
 {
@@ -93,6 +97,16 @@ public void OnPluginStart()
 
 	StopRecord();
 	CheckStatus();
+}
+
+public void OnLibraryAdded(const char[] name)
+{
+	if (strcmp(name, "ce_coordinator") == 0) ce_core = true;
+}
+
+public void OnLibraryRemoved(const char[] name)
+{
+	if (strcmp(name, "ce_coordinator") == 0) ce_core = false;
 }
 
 public void OnConVarChanged(ConVar convar, const char[] oldValue, const char [] newValue)
@@ -230,8 +244,9 @@ void StartRecord()
 		GetCurrentMap(sMap, sizeof(sMap));
 
 		// replace slashes in map path name with dashes, to prevent fail on workshop maps
-		ReplaceString(sMap, sizeof(sMap), "/", "-", false);		
-		int id = CESC_GetServerID();
+		ReplaceString(sMap, sizeof(sMap), "/", "-", false);
+		int id = 0;
+		if (ce_core) id = CESC_GetServerID();
 		ServerCommand("tv_record \"%s/%d-%s-%s\"", sPath, id, sTime, sMap);
 		g_bIsRecording = true;
 

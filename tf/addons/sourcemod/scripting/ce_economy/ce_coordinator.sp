@@ -59,13 +59,27 @@ public void OnClientDisconnect(int client)
 	NotifyPlayerLeave(client);
 }
 
-public void NotifyMapChange()
+public void NotifyMetaInfoChange()
 {
 	char sMap[32];
 	GetCurrentMap(sMap, sizeof(sMap));
+	
+	char sHostName[64];
+	FindConVar("hostname").GetString(sHostName, sizeof(sHostName));
+	
+	int iPlayers = MaxClients;
+	if (FindConVar("tv_enable").BoolValue)iPlayers--;
 
 	char sMessage[125];
-	Format(sMessage, sizeof(sMessage), "map_update:map=%s", sMap);
+	Format(sMessage, sizeof(sMessage), "info:map=%s,host=%s,maxp=%d", sMap, sHostName, iPlayers);
+
+	CESC_SendMessage(sMessage);
+}
+
+public void NotifyIndexChange()
+{
+	char sMessage[125];
+	Format(sMessage, sizeof(sMessage), "index_update:index=%d", CESC_GetServerID());
 
 	CESC_SendMessage(sMessage);
 }
@@ -92,7 +106,6 @@ public void NotifyPlayerLeave(int client)
 
 public void OnSocketError(Handle socket, const int errorType, const int errorNum, any hFile)
 {
-	LogMessage("%d %d", errorType, errorNum);
 }
 
 public void OnSocketConnected(Handle socket, any arg)
@@ -139,6 +152,13 @@ public void GenerateWebSocketKey(char[] buffer, int size)
 	strcopy(buffer, size, string);
 }
 
+public void NotifyHeaderInfo()
+{
+	NotifyIndexChange();
+	NotifyMetaInfoChange();
+	NotifyAllConnectedPlayers();
+}
+
 public void OnSocketReceive(Handle socket, char[] data, const int dataSize, any hFile)
 {
 	if (StrContains(data, "HTTP/1.1 101 Switching Protocols", true) == 0)
@@ -149,20 +169,24 @@ public void OnSocketReceive(Handle socket, char[] data, const int dataSize, any 
 		LogMessage("Accept Key: %s", sKey);
 		
 		m_bCoordinatorConnected = true;
-		NotifyMapChange();
-		NotifyAllConnectedPlayers();
+		NotifyHeaderInfo();
 	} else {
 
 		int vFrame[WebsocketFrame];
 		char[] sPayLoad = new char[dataSize - 1];
 		ParseFrame(vFrame, data, dataSize, sPayLoad);
+		ReplaceString(sPayLoad, dataSize, "&quot;", "\"");
+		if (sPayLoad[0] == '/')return;
+		
+		ServerCommand(sPayLoad);
+	}
+}
 
-		KeyValues hJob = new KeyValues("Job");
-		hJob.ImportFromString(sPayLoad);
-
-		ProcessJob(hJob);
-
-		delete hJob;
+public void OnMapStart()
+{
+	if(m_bCoordinatorConnected)
+	{
+		NotifyHeaderInfo();
 	}
 }
 
@@ -207,16 +231,6 @@ public Action Timer_SocketReconnect(Handle timer, any data)
 	ConnectCoordinator();
 
 	return Plugin_Continue;
-}
-
-public void ProcessJob(KeyValues job)
-{
-	char sCommand[1024];
-	job.GetString("command", sCommand, sizeof(sCommand));
-	if(!StrEqual(sCommand, ""))
-	{
-		ServerCommand(sCommand);
-	}
 }
 
 public void OnSocketDisconnected(Handle socket, any arg)
