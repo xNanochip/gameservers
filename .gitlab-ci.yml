@@ -52,11 +52,6 @@ deploy-europe:
     - eupub
     <<: *deploy_template
 
-deploy-oregon:
-    tags:
-    - oregonpub
-    <<: *deploy_template
-
 deploy-virginia:
     tags:
     - virginiapub
