@@ -5,7 +5,7 @@ koth_ashville_rc2c
 cp_glassworks_rc6a
 cp_gorge
 cp_gravelpit
-cp_gullywash_final1
+cp_gullywash_f1a
 cp_kalinka_rc6a
 cp_mountainlab
 cp_process_f6
