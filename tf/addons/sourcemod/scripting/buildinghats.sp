@@ -382,7 +382,7 @@ public Action:Event_PickupObject(Handle:event, const String:name[], bool:dontBro
 			}
 		}
 	}
-	return Plugin_Changed;
+	return Plugin_Continue;
 }
 
 public Action:Event_DropObject(Handle:event, const String:name[], bool:dontBroadcast)
@@ -419,7 +419,7 @@ public Action:Event_DropObject(Handle:event, const String:name[], bool:dontBroad
 			}
 		}
 	}
-	return Plugin_Changed;
+	return Plugin_Continue;
 }
 
 public Action:Event_UpgradeObject(Handle:event, const String:name[], bool:dontBroadcast)
@@ -471,7 +471,7 @@ public Action:Event_UpgradeObject(Handle:event, const String:name[], bool:dontBr
 			CreateTimer(2.0, Timer_ReHat, iBuilding);
 		}
 	}
-	return Plugin_Changed;
+	return Plugin_Continue;
 }
 
 public Action:Timer_ReHat(Handle:timer, any:iBuilding)
