@@ -8,6 +8,7 @@
 #include <ce_events>
 #include <ce_manager_responses>
 #include <ce_manager_attributes>
+#include <tf2_stocks>
 
 int m_hTarget[MAX_ENTITY_LIMIT + 1];
 bool m_bTargetLock[MAX_ENTITY_LIMIT + 1];
@@ -36,18 +37,23 @@ public void OnPluginStart()
 public void OnMapStart()
 {
 	PrecacheModel(TF_GIFT_MODEL);
-	PrecacheModel("models/weapons/c_models/c_balloon_default.mdl");
 }
 
-public void Gift_CreateForPlayer(int client)
+public void Gift_CreateForPlayer(int client, int origin)
 {
 	float vecPos[3];
-	GetClientAbsOrigin(client, vecPos);
+	GetClientAbsOrigin(origin, vecPos);
 	
 	vecPos[2] += 60.0;
 	
 	int iGift = Gift_Create(client, vecPos);
 	m_hTarget[iGift] = client;
+	
+	switch(TF2_GetClientTeam(client))
+	{
+		case TFTeam_Red: TF_StartAttachedParticle("peejar_trail_red", iGift, 4.0);
+		case TFTeam_Blue: TF_StartAttachedParticle("peejar_trail_blu", iGift, 4.0);
+	}
 }
 
 public int Gift_Create(int client, float pos[3])
@@ -68,13 +74,11 @@ public int Gift_Create(int client, float pos[3])
 		SetEntProp(iEnt, Prop_Data, "m_nSolidType", 6);
 		SetEntProp(iEnt, Prop_Send, "m_usSolidFlags", 0x0008 | 0x0200);
 		SetEntProp(iEnt, Prop_Send, "m_CollisionGroup", 2);
-		SetEntPropFloat(iEnt, Prop_Send, "m_flModelScale", 0.7);
+		SetEntPropFloat(iEnt, Prop_Send, "m_flModelScale", 0.85);
 						
 		SDKHook(iEnt, SDKHook_StartTouch, Gift_OnTouch);
-
-		TF_StartAttachedParticle("peejar_trail_blu", iEnt, 2.0);
 		
-		CreateTimer(1.0, Timer_Gift_StartTargetMovement, iEnt);
+		CreateTimer(1.5, Timer_Gift_StartTargetMovement, iEnt);
 		m_bTargetLock[iEnt] = false;
 	}
 	return iEnt;
@@ -89,10 +93,11 @@ public Action Timer_Gift_StartTargetMovement(Handle timer, any gift)
 
 public void Gift_StartTargetMovement(int ent)
 {
+	if (!IsValidEntity(ent))return;
 	Gift_InitSplineData(ent);
 	AcceptEntityInput(ent, "DisableMotion");
 	TF_StartAttachedParticle("soul_trail", ent, 2.0);
-	SetEntPropFloat(ent, Prop_Send, "m_flModelScale", 0.5);
+	SetEntPropFloat(ent, Prop_Send, "m_flModelScale", 0.1);
 	m_bTargetLock[ent] = true;
 }
 
@@ -113,6 +118,7 @@ public Action Gift_OnTouch(int entity, int other)
 
 public void Gift_InitSplineData(int iEnt)
 {
+	if (!IsValidEntity(iEnt))return;
 	m_flCreationTime[iEnt] = GetEngineTime();
 	GetEntPropVector(iEnt, Prop_Send, "m_vecOrigin", m_vecStartCurvePos[iEnt]);
 	
@@ -158,7 +164,7 @@ public void Gift_FlyTowardsTargetEntity(any iEnt)
 		m_hTarget[iEnt] = -1;
 		m_bTargetLock[iEnt] = false;
 		AcceptEntityInput(iEnt, "EnableMotion");
-		SetEntPropFloat(iEnt, Prop_Send, "m_flModelScale", 0.7);
+		SetEntPropFloat(iEnt, Prop_Send, "m_flModelScale", 0.85);
 	}
 	
 	const float flBiasAmt = 0.2;
@@ -196,16 +202,22 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 {
 	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
 	int attacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"));
+	int assister = GetClientOfUserId(GetEventInt(hEvent, "assister"));
 	
-	if(IsClientValid(attacker) && attacker != client)
+	if(IsClientReady(attacker) && attacker != client)
 	{
 		float vecPos[3];
 		GetClientAbsOrigin(client, vecPos);
 		
 		vecPos[2] += 60.0;
 		
-		int iGift = Gift_Create(client, vecPos);
-		m_hTarget[iGift] = attacker;
+		Gift_CreateForPlayer(attacker, client);
+		
+	}
+	
+	if(IsClientReady(assister))
+	{
+		Gift_CreateForPlayer(assister, client);
 	}
 }
 

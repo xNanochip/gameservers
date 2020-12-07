@@ -34,7 +34,6 @@ public bool ShouldSchemaUpdate()
 
 public Action cUpdateSchema(int args)
 {
-	LogMessage("Forcing schema update");
 	CE_UpdateScheme(true);
 }
 

@@ -90,9 +90,12 @@ public any Native_FlushSchema(Handle plugin, int numParams)
 
 public void NotifySchemaUpdated()
 {
+	KeyValues hSchema = CE_GetEconomyConfig();
 	Call_StartForward(g_hOnSchemaUpdate);
-	Call_PushCell(CE_GetEconomyConfig());
+	Call_PushCell(hSchema);
 	Call_Finish();
+	delete hSchema;
+	
 }
 
 public Action cBroadcast(int args)

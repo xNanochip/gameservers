@@ -1,6 +1,5 @@
-#define OST_MAX_KITS 24
+#define OST_MAX_KITS 32
 #define OST_MAX_EVENTS 16
-#define OST_MAX_SAMPLES 16
 
 enum struct Soundtrack_t
 {
@@ -37,6 +36,7 @@ enum struct Event_t
 
 	bool m_bForceStart;
     bool m_bFireOnce;
+    bool m_bSkipPost;
 
 	Sample_t m_hPre;
 	Sample_t m_hPost;

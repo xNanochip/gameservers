@@ -23,12 +23,17 @@ bool m_bIsPlaying[MAXPLAYERS + 1];
 bool m_bShouldStop[MAXPLAYERS + 1];
 bool m_bForceNextEvent[MAXPLAYERS + 1];
 	
-Sample_t m_hPreSample[MAXPLAYERS + 1];
-Sample_t m_hPostSample[MAXPLAYERS + 1];
+Sample_t m_hClientPreSample[MAXPLAYERS + 1];
+Sample_t m_hClientPostSample[MAXPLAYERS + 1];
+
+Sample_t m_hPreSamples[OST_MAX_KITS][OST_MAX_EVENTS];
+Sample_t m_hPostSamples[OST_MAX_KITS][OST_MAX_EVENTS];
 
 Handle m_hTimer[MAXPLAYERS + 1];
 
 ArrayList m_hSampleQueue[MAXPLAYERS + 1];
+
+
 
 public Plugin myinfo =
 {
@@ -42,6 +47,16 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	HookEvent("teamplay_broadcast_audio", evBroadcast, EventHookMode_Pre);
+	HookEvent("teamplay_round_start", teamplay_round_start, EventHookMode_Pre);
+	HookEvent("teamplay_round_win", teamplay_round_win);
+	HookEvent("teamplay_point_captured", teamplay_point_captured);
+	CreateTimer(0.5, Timer_EscordProgressUpdate, _, TIMER_REPEAT);
+}
+
+public void CE_OnSchemaUpdated(KeyValues hSchema)
+{
+	LogMessage("Schema updated");
+	ParseEconomySchema(hSchema);
 }
 
 public void OnAllPluginsLoaded()
@@ -54,11 +69,11 @@ public void OnAllPluginsLoaded()
 
 public void ParseEconomySchema(KeyValues hConf)
 {
-	//FlushSoundtrackMemory();
 	if(hConf.JumpToKey("Items", false))
 	{
 		if(hConf.GotoFirstSubKey())
 		{
+			LogMessage("pog");
 			// ===================
 			// || Checking Item ||
 			// ===================
@@ -72,6 +87,8 @@ public void ParseEconomySchema(KeyValues hConf)
 				char sIndex[11];
 				hConf.GetSectionName(sIndex, sizeof(sIndex));
 				int iDefIndex = StringToInt(sIndex);
+				
+				int iKitIndex = m_hKits.Length;
 				
 				Soundtrack_t hKit;
 				hKit.m_iDefIndex = iDefIndex;
@@ -90,29 +107,26 @@ public void ParseEconomySchema(KeyValues hConf)
 							
 							hKit.m_hEvents = new ArrayList(sizeof(Event_t));
 							do {
+								int iEventIndex = hKit.m_hEvents.Length;
+								
 								Event_t hEvent;
-								hEvent.m_bFireOnce = hConf.GetNum("fire_once") == 1;
-								hEvent.m_bForceStart = hConf.GetNum("force_start") == 1;
+								hEvent.m_bFireOnce = hConf.GetNum("fire_once") >= 1;
+								hEvent.m_bForceStart = hConf.GetNum("force_start") >= 1;
+								hEvent.m_bSkipPost = hConf.GetNum("skip_post") >= 1;
 								hConf.GetString("start_hook", hEvent.m_sStartHook, sizeof(hEvent.m_sStartHook));
 								hConf.GetString("stop_hook", hEvent.m_sStopHook, sizeof(hEvent.m_sStopHook));
 								hConf.GetString("id", hEvent.m_sID, sizeof(hEvent.m_sID));
 								
 								if(hConf.JumpToKey("pre_sample", false))
 								{
-									/*
-									Sample_t hPreSample;
-									KeyValuesToSample(hConf, hPreSample);
-									hEvent.m_hPre = hPreSample;
-									hConf.GoBack();*/
+									KeyValuesToSample(hConf, m_hPreSamples[iKitIndex][iEventIndex]);
+									hConf.GoBack();
 								}
 								
 								if(hConf.JumpToKey("post_sample", false))
 								{
-									/*
-									Sample_t hPostSample;
-									KeyValuesToSample(hConf, hPostSample);
-									hEvent.m_hPost = hPostSample;
-									hConf.GoBack();*/
+									KeyValuesToSample(hConf, m_hPostSamples[iKitIndex][iEventIndex]);
+									hConf.GoBack();
 								}
 								
 								if(hConf.JumpToKey("samples", false))
@@ -212,6 +226,36 @@ public Action evBroadcast(Event hEvent, const char[] szName, bool bDontBroadcast
 	return Plugin_Handled;
 }
 
+public Action teamplay_round_start(Event hEvent, const char[] szName, bool bDontBroadcast)
+{
+	StopEventsForAll();
+}
+
+public Action teamplay_round_win(Event hEvent, const char[] szName, bool bDontBroadcast)
+{
+	RequestFrame(RF_StopEventsForAll);
+}
+
+public void RF_StopEventsForAll(any forced)
+{
+	StopEventsForAll();
+}
+
+public void StopEventsForAll()
+{
+	PrintToChatAll("stop everyone");
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientValid(i))continue;
+		if(m_bIsPlaying[i])
+		{
+			// Otherwise, queue a stop.
+			m_bShouldStop[i] = true;
+		}
+		m_iNextEvent[i] = -1;
+	}
+}
+
 public void CEEvents_OnSendEvent(int client, const char[] event, int add, int unique)
 {
 	Soundtrack_t hKit;
@@ -232,9 +276,9 @@ public void CEEvents_OnSendEvent(int client, const char[] event, int add, int un
 			{
 				if (hEvent.m_bFireOnce && m_iCurrentEvent[client] == iEvent)continue;
 	
-				PrintToChatAll("%s said we need to start.", event);
 				m_iNextEvent[client] = iEvent;
 				m_bForceNextEvent[client] = hEvent.m_bForceStart;
+				m_bShouldStop[client] = false;
 			}
 		} else {
 			// Start Sample playing.
@@ -242,7 +286,6 @@ public void CEEvents_OnSendEvent(int client, const char[] event, int add, int un
 			{
 				if(m_bIsPlaying[client] && !m_bShouldStop[client])
 				{
-					PrintToChatAll("%s said we need to stop.", event);
 					m_bShouldStop[client] = true;
 				}
 			}
@@ -329,14 +372,14 @@ public void GetNextSample(int client, Sample_t hSample)
 	// We only do that if post and pre are not set and queue is empty.
 	if(m_bShouldStop[client])
 	{
-		if(StrEqual(m_hPostSample[client].m_sSound, ""))
+		if(StrEqual(m_hClientPostSample[client].m_sSound, ""))
 		{
 			BufferFlush(client);
 			m_bShouldStop[client] = false;
 			PrintToConsole(client, "m_bShouldStop, true");
 		} else {
-			hSample = m_hPostSample[client];
-			strcopy(m_hPostSample[client].m_sSound, MAX_SOUND_NAME, "");
+			hSample = m_hClientPostSample[client];
+			strcopy(m_hClientPostSample[client].m_sSound, MAX_SOUND_NAME, "");
 			PrintToConsole(client, "m_bShouldStop, false");
 			return;
 		}
@@ -344,15 +387,24 @@ public void GetNextSample(int client, Sample_t hSample)
 
 	if(m_iNextEvent[client] > -1)
 	{
-		if(StrEqual(m_hPostSample[client].m_sSound, ""))
+		bool bSkipPost = false;
+		Soundtrack_t hKit;
+		if(GetClientKit(client, hKit))
+		{
+			Event_t hEvent;
+			hKit.m_hEvents.GetArray(m_iNextEvent[client], hEvent);
+			bSkipPost = hEvent.m_bSkipPost;
+		}
+		
+		if(StrEqual(m_hClientPostSample[client].m_sSound, "") || bSkipPost)
 		{
 			PrintToConsole(client, "m_iNextEvent, true");
 			BufferLoadEvent(client, m_iNextEvent[client]);
 			m_iNextEvent[client] = -1;
 		} else {
 			PrintToConsole(client, "m_iNextEvent, false");
-			hSample = m_hPostSample[client];
-			strcopy(m_hPostSample[client].m_sSound, MAX_SOUND_NAME, "");
+			hSample = m_hClientPostSample[client];
+			strcopy(m_hClientPostSample[client].m_sSound, MAX_SOUND_NAME, "");
 			return;
 		}
 	}
@@ -360,11 +412,11 @@ public void GetNextSample(int client, Sample_t hSample)
 	// Make sure queue handle exists.
 	if (m_hSampleQueue[client] == null)return;
 
-	if(!StrEqual(m_hPreSample[client].m_sSound, ""))
+	if(!StrEqual(m_hClientPreSample[client].m_sSound, ""))
 	{
-		PrintToConsole(client, "m_hPreSample");
-		hSample = m_hPreSample[client];
-		strcopy(m_hPreSample[client].m_sSound, MAX_SOUND_NAME, "");
+		PrintToConsole(client, "m_hClientPreSample");
+		hSample = m_hClientPreSample[client];
+		strcopy(m_hClientPreSample[client].m_sSound, MAX_SOUND_NAME, "");
 		return;
 	}
 
@@ -395,7 +447,6 @@ public void GetNextSample(int client, Sample_t hSample)
 		if(sample.m_nCurrentIteration == sample.m_nIterations)
 		{
 			int iMoveToEvent = GetEventIndexByID(m_iMusicKit[client], sample.m_sMoveToEvent);
-			PrintToChatAll("%d %s", iMoveToEvent, sample.m_sMoveToEvent);
 			if(iMoveToEvent > -1)
 			{
 				m_iNextEvent[client] = iMoveToEvent;
@@ -409,11 +460,11 @@ public void GetNextSample(int client, Sample_t hSample)
 		return;
 	}
 
-	if(!StrEqual(m_hPostSample[client].m_sSound, ""))
+	if(!StrEqual(m_hClientPostSample[client].m_sSound, ""))
 	{
-		PrintToConsole(client, "m_hPostSample");
-		hSample = m_hPostSample[client];
-		strcopy(m_hPostSample[client].m_sSound, MAX_SOUND_NAME, "");
+		PrintToConsole(client, "m_hClientPostSample");
+		hSample = m_hClientPostSample[client];
+		strcopy(m_hClientPostSample[client].m_sSound, MAX_SOUND_NAME, "");
 		return;
 	}
 
@@ -444,8 +495,8 @@ public void BufferLoadEvent(int client, int event)
 	hKit.m_hEvents.GetArray(event, hEvent);
 
 	m_hSampleQueue[client] = hEvent.m_hSamples.Clone();
-	//m_hPreSample[client] = hEvent.m_hPre;
-	//m_hPostSample[client] = hEvent.m_hPost;
+	m_hClientPreSample[client] = m_hPreSamples[m_iMusicKit[client]][event];
+	m_hClientPostSample[client] = m_hPostSamples[m_iMusicKit[client]][event];
 
 	m_iCurrentEvent[client] = event;
 	m_iCurrentSample[client] = 0;
@@ -457,8 +508,8 @@ public void BufferFlush(int client)
 	{
 		m_hSampleQueue[client].Clear();
 	}
-	strcopy(m_hPostSample[client].m_sSound, MAX_SOUND_NAME, "");
-	strcopy(m_hPreSample[client].m_sSound, MAX_SOUND_NAME, "");
+	strcopy(m_hClientPostSample[client].m_sSound, MAX_SOUND_NAME, "");
+	strcopy(m_hClientPreSample[client].m_sSound, MAX_SOUND_NAME, "");
 
 	m_iCurrentEvent[client] = -1;
 }
@@ -517,7 +568,7 @@ public int GetEventIndexByID(int kit, const char[] sId)
 	for (int i = 0; i < hKit.m_hEvents.Length; i++)
 	{
 		Event_t hEvent;
-		hKit.m_hEvents.GetArray(kit, hEvent);
+		hKit.m_hEvents.GetArray(i, hEvent);
 		if (StrEqual(hEvent.m_sID, ""))continue;
 		if (StrEqual(hEvent.m_sID, sId))
 		{
@@ -568,4 +619,105 @@ public bool GetClientKit(int client, Soundtrack_t hKit)
 	
 	if (!GetKitByIndex(iMusicKit, hKit))return false;
 	return true;
+}
+
+public Action Timer_EscordProgressUpdate(Handle timer, any data)
+{
+	static float flOld = 0.0;
+	float flNew = Payload_GetProgress();
+	
+	const float flStage1 = 0.85;
+	const float flStage2 = 0.93;
+	const float flFinish = 0.99;
+	
+	if(flOld != flNew)
+	{
+		PrintToChatAll("%f", flNew);
+		// It has changed.
+		if(flNew >= flFinish && flOld < flFinish)
+		{
+			PrintToChatAll("Climax");
+			for (int i = 1; i <= MaxClients; i++)
+			{
+				if(IsClientReady(i))
+				{
+					CEEvents_SendEventToClient(i, "OST_PAYLOAD_CLIMAX", 1, GetRandomInt(1, 10000));
+				}
+			}
+		
+		}else if(flNew >= flStage2 && flOld < flStage2)
+		{
+			PrintToChatAll("Stage 2 just started");
+			// Stage 2 just started.
+			for (int i = 1; i <= MaxClients; i++)
+			{
+				if(IsClientReady(i))
+				{
+					CEEvents_SendEventToClient(i, "OST_PAYLOAD_S2_START", 1, GetRandomInt(1, 10000));
+				}
+			}
+			
+		} else if (flNew < flStage2 && flOld >= flStage2)
+		{
+			PrintToChatAll("Stage 2 just cancelled");
+			// Stage 2 just cancelled.
+			for (int i = 1; i <= MaxClients; i++)
+			{
+				if(IsClientReady(i))
+				{
+					CEEvents_SendEventToClient(i, "OST_PAYLOAD_S2_CANCEL", 1, GetRandomInt(1, 10000));
+				}
+			}
+		} else if(flNew >= flStage1 && flOld < flStage1)
+		{
+			PrintToChatAll("Stage 1 just started");
+			// Stage 1 just started.
+			for (int i = 1; i <= MaxClients; i++)
+			{
+				if(IsClientReady(i))
+				{
+					CEEvents_SendEventToClient(i, "OST_PAYLOAD_S1_START", 1, GetRandomInt(1, 10000));
+				}
+			}
+		} else if(flNew < flStage1 && flOld >= flStage1)
+		{
+			PrintToChatAll("Stage 1 just cancelled");
+			// Stage 1 just cancelled.
+			for (int i = 1; i <= MaxClients; i++)
+			{
+				if(IsClientReady(i))
+				{
+					CEEvents_SendEventToClient(i, "OST_PAYLOAD_S1_CANCEL", 1, GetRandomInt(1, 10000));
+				}
+			}
+		}
+		
+		flOld = flNew;
+	}
+}
+
+public float Payload_GetProgress()
+{
+	int iEnt = -1;
+	float flProgress = 0.0;
+	while((iEnt = FindEntityByClassname(iEnt, "team_train_watcher")) != -1 )
+	{
+		if (IsValidEntity(iEnt))
+		{
+			// If cart is of appropriate team.
+			float flProgress2 = GetEntPropFloat(iEnt, Prop_Send, "m_flTotalProgress");
+			if (flProgress < flProgress2)flProgress = flProgress2;
+		}
+	}
+	return flProgress;
+}
+
+public Action teamplay_point_captured(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	for (int i = 0; i <= MaxClients; i++)
+	{
+		if (!IsClientReady(i))continue;
+		
+		CEEvents_SendEventToClient(i, "OST_POINT_CAPTURE", 1, view_as<int>(hEvent));
+	}
 }
