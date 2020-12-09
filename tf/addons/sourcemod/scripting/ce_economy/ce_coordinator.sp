@@ -106,6 +106,7 @@ public void NotifyPlayerLeave(int client)
 
 public void OnSocketError(Handle socket, const int errorType, const int errorNum, any hFile)
 {
+	StartCoordinatorCheckTimer();
 }
 
 public void OnSocketConnected(Handle socket, any arg)
@@ -213,7 +214,6 @@ public void ConnectCoordinator()
 
 	m_hSocket = SocketCreate(SOCKET_TCP, OnSocketError);
 	SocketConnect(m_hSocket, OnSocketConnected, OnSocketReceive, OnSocketDisconnected, sURL, iPort);
-	StartCoordinatorCheckTimer();
 }
 
 public Action Timer_CheckSocketReconnect(Handle timer, any data)
