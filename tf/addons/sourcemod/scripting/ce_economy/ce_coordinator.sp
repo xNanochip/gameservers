@@ -31,7 +31,6 @@ ConVar ce_economy_backend_auth;
 ConVar ce_server_index;
 
 Handle m_hSocket;
-Handle m_hReconnectTimer;
 ArrayList m_hFragmentedPayload;
 
 public void OnPluginStart()
@@ -167,13 +166,12 @@ public void OnSocketReceive(Handle socket, char[] data, const int dataSize, any 
 		char sKey[29];
 		Format(sKey, 29, "%s", data[StrContains(data, "Sec-WebSocket-Accept: ", true) + 22]);
 		LogMessage("Socket connected.");
-		LogMessage("Accept Key: %s", sKey);
 		
 		m_bCoordinatorConnected = true;
 		NotifyHeaderInfo();
 	} else {
 
-		int vFrame[WebsocketFrame];
+		WebsocketFrame vFrame;
 		char[] sPayLoad = new char[dataSize - 1];
 		ParseFrame(vFrame, data, dataSize, sPayLoad);
 		ReplaceString(sPayLoad, dataSize, "&quot;", "\"");
@@ -443,14 +441,14 @@ public any Native_GetServerAccessKey(Handle plugin, int numParams)
 
 public bool WebSocketSend(Handle socket, char[] payload, int length)
 {
-	int vFrame[WebsocketFrame];
-	vFrame[OPCODE] = FrameType_Text;
+	WebsocketFrame vFrame;
+	vFrame.OPCODE = FrameType_Text;
 
-	vFrame[PAYLOAD_LEN] = length;
+	vFrame.PAYLOAD_LEN = length;
 
-	vFrame[FIN] = 1;
-	vFrame[CLOSE_REASON] = -1;
-	vFrame[MASK] = 1;
+	vFrame.FIN = 1;
+	vFrame.CLOSE_REASON = -1;
+	vFrame.MASK = 1;
 
 	if(SendWebsocketFrame(socket, payload, vFrame))
 	{
@@ -459,14 +457,14 @@ public bool WebSocketSend(Handle socket, char[] payload, int length)
 	return false;
 }
 
-public bool SendWebsocketFrame(Handle socket, char[] payload, vFrame[WebsocketFrame])
+public bool SendWebsocketFrame(Handle socket, char[] payload, WebsocketFrame vFrame)
 {
-	int length = vFrame[PAYLOAD_LEN];
+	int length = vFrame.PAYLOAD_LEN;
 
 	// Force RSV bits to 0
-	vFrame[RSV1] = 0;
-	vFrame[RSV2] = 0;
-	vFrame[RSV3] = 0;
+	vFrame.RSV1 = 0;
+	vFrame.RSV2 = 0;
+	vFrame.RSV3 = 0;
 
 	char[] sFrame = new char[length + 18];
 	if(CreateFrame(payload, sFrame, vFrame))
@@ -483,7 +481,7 @@ public bool SendWebsocketFrame(Handle socket, char[] payload, vFrame[WebsocketFr
 			length += 2;
 		}
 
-		if(vFrame[CLOSE_REASON] != -1)
+		if(vFrame.CLOSE_REASON != -1)
 		{
 			length += 2;
 		}
@@ -495,7 +493,7 @@ public bool SendWebsocketFrame(Handle socket, char[] payload, vFrame[WebsocketFr
 	return false;
 }
 
-public void ParseFrame(int vFrame[WebsocketFrame], const char[] receiveDataLong, const int dataSize, char[] sPayLoad)
+public void ParseFrame(WebsocketFrame vFrame, const char[] receiveDataLong, const int dataSize, char[] sPayLoad)
 {
 	int[] receiveData = new int[dataSize];
 	for (int i = 0; i < dataSize; i++)
@@ -506,21 +504,21 @@ public void ParseFrame(int vFrame[WebsocketFrame], const char[] receiveDataLong,
 	char sByte[9];
 	Format(sByte, sizeof(sByte), "%08b", receiveData[0]);
 
-	vFrame[FIN] = sByte[0] == '1' ? 1:0;
-	vFrame[RSV1] = sByte[1] == '1' ? 1:0;
-	vFrame[RSV2] = sByte[2] == '1' ? 1:0;
-	vFrame[RSV3] = sByte[3] == '1' ? 1:0;
-	vFrame[OPCODE] = view_as<WebsocketFrameType>(bindec(sByte[4]));
+	vFrame.FIN = sByte[0] == '1' ? 1:0;
+	vFrame.RSV1 = sByte[1] == '1' ? 1:0;
+	vFrame.RSV2 = sByte[2] == '1' ? 1:0;
+	vFrame.RSV3 = sByte[3] == '1' ? 1:0;
+	vFrame.OPCODE = view_as<WebsocketFrameType>(bindec(sByte[4]));
 
 	Format(sByte, sizeof(sByte), "%08b", receiveData[1]);
 
-	vFrame[MASK] = sByte[0] == '1' ? 1:0;
-	vFrame[PAYLOAD_LEN] = bindec(sByte[1]);
+	vFrame.MASK = sByte[0] == '1' ? 1:0;
+	vFrame.PAYLOAD_LEN = bindec(sByte[1]);
 
 	int iOffset = 2;
 
-	vFrame[MASKINGKEY][0] = '\0';
-	if(vFrame[PAYLOAD_LEN] > 126)
+	vFrame.MASKINGKEY[0] = '\0';
+	if(vFrame.PAYLOAD_LEN > 126)
 	{
 		char sLoongLength[49];
 		for (int i = 2; i < 8; i++)
@@ -528,9 +526,9 @@ public void ParseFrame(int vFrame[WebsocketFrame], const char[] receiveDataLong,
 			Format(sLoongLength, sizeof(sLoongLength), "%s%08b", sLoongLength, receiveData[i]);
 		}
 
-		vFrame[PAYLOAD_LEN] = bindec(sLoongLength);
+		vFrame.PAYLOAD_LEN = bindec(sLoongLength);
 		iOffset += 6;
-	} else if(vFrame[PAYLOAD_LEN] > 125)
+	} else if(vFrame.PAYLOAD_LEN > 125)
 	{
 		char sLongLength[17];
 		for (int i = 2; i < 4; i++)
@@ -538,35 +536,35 @@ public void ParseFrame(int vFrame[WebsocketFrame], const char[] receiveDataLong,
 			Format(sLongLength, sizeof(sLongLength), "%s%08b", sLongLength, receiveData[i]);
 		}
 
-		vFrame[PAYLOAD_LEN] = bindec(sLongLength);
+		vFrame.PAYLOAD_LEN = bindec(sLongLength);
 		iOffset += 2;
 	}
 
-	if(vFrame[MASK])
+	if(vFrame.MASK)
 	{
 		for (int i = iOffset, j = 0; j < 4; i++, j++)
 		{
-			vFrame[MASKINGKEY][j] = receiveData[i];
+			vFrame.MASKINGKEY[j] = receiveData[i];
 		}
 
-		vFrame[MASKINGKEY][4] = '\0';
+		vFrame.MASKINGKEY[4] = '\0';
 		iOffset += 4;
 
-		int[] iPayLoad = new int[vFrame[PAYLOAD_LEN]];
-		for (int i = iOffset, j = 0; j < vFrame[PAYLOAD_LEN]; i++, j++)
+		int[] iPayLoad = new int[vFrame.PAYLOAD_LEN];
+		for (int i = iOffset, j = 0; j < vFrame.PAYLOAD_LEN; i++, j++)
 		{
 			iPayLoad[j] = receiveData[i];
 		}
 
-		for (int i = 0; i < vFrame[PAYLOAD_LEN]; i++)
+		for (int i = 0; i < vFrame.PAYLOAD_LEN; i++)
 		{
-			Format(sPayLoad, vFrame[PAYLOAD_LEN] + 1, "%s%c", sPayLoad, iPayLoad[i] ^ vFrame[MASKINGKEY][i % 4]);
+			Format(sPayLoad, vFrame.PAYLOAD_LEN + 1, "%s%c", sPayLoad, iPayLoad[i] ^ vFrame.MASKINGKEY[i % 4]);
 		}
 	}
 
-	strcopy(sPayLoad, vFrame[PAYLOAD_LEN] + 1, receiveDataLong[iOffset]);
+	strcopy(sPayLoad, vFrame.PAYLOAD_LEN + 1, receiveDataLong[iOffset]);
 
-	if(vFrame[OPCODE] == FrameType_Close)
+	if(vFrame.OPCODE == FrameType_Close)
 	{
 		char sCloseReason[65];
 		for (int i = 0; i < 2; i++)
@@ -574,24 +572,24 @@ public void ParseFrame(int vFrame[WebsocketFrame], const char[] receiveDataLong,
 			Format(sCloseReason, sizeof(sCloseReason), "%s%08b", sCloseReason, sPayLoad[i] & 0xff);
 		}
 
-		vFrame[CLOSE_REASON] = bindec(sCloseReason);
+		vFrame.CLOSE_REASON = bindec(sCloseReason);
 
 		strcopy(sPayLoad, dataSize - 1, sPayLoad[2]);
-		vFrame[PAYLOAD_LEN] -= 2;
+		vFrame.PAYLOAD_LEN -= 2;
 	} else {
-		vFrame[CLOSE_REASON] = -1;
+		vFrame.CLOSE_REASON = -1;
 	}
 }
 
-public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayLoad)
+public bool PreprocessFrame(int iIndex, WebsocketFrame vFrame, char[] sPayLoad)
 {
 	// This is a fragmented frame
-	if(vFrame[FIN] == 0)
+	if(vFrame.FIN == 0)
 	{
 		// This is a control frame. Those cannot be fragmented!
-		if(vFrame[OPCODE] >= FrameType_Close)
+		if(vFrame.OPCODE >= FrameType_Close)
 		{
-			LogError("Received fragmented control frame. %d", vFrame[OPCODE]);
+			LogError("Received fragmented control frame. %d", vFrame.OPCODE);
 			return true;
 		}
 
@@ -600,32 +598,32 @@ public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayL
 		// This is the first frame of a serie of fragmented ones.
 		if(iPayloadLength == 0)
 		{
-			if(vFrame[OPCODE] == FrameType_Continuation)
+			if(vFrame.OPCODE == FrameType_Continuation)
 			{
 				LogError("Received first fragmented frame with opcode 0. The first fragment MUST have a different opcode set.");
 				return true;
 			}
 
 			// Remember which type of message this fragmented one is.
-			SetArrayCell(m_hFragmentedPayload, 1, vFrame[OPCODE]);
+			SetArrayCell(m_hFragmentedPayload, 1, vFrame.OPCODE);
 		} else
 		{
-			if(vFrame[OPCODE] != FrameType_Continuation)
+			if(vFrame.OPCODE != FrameType_Continuation)
 			{
-				LogError("Received second or later frame of fragmented message with opcode %d. opcode must be 0.", vFrame[OPCODE]);
+				LogError("Received second or later frame of fragmented message with opcode %d. opcode must be 0.", vFrame.OPCODE);
 				return true;
 			}
 		}
 
 		// Keep track of the overall payload length of the fragmented message.
 		// This is used to create the buffer of the right size when passing it to the listening plugin.
-		iPayloadLength += vFrame[PAYLOAD_LEN];
+		iPayloadLength += vFrame.PAYLOAD_LEN;
 		SetArrayCell(m_hFragmentedPayload, 0, iPayloadLength);
 
 		// This doesn't fit inside one array cell? Split it up.
-		if(vFrame[PAYLOAD_LEN] > FRAGMENT_MAX_LENGTH)
+		if(vFrame.PAYLOAD_LEN > FRAGMENT_MAX_LENGTH)
 		{
-			for (int i = 0; i < vFrame[PAYLOAD_LEN]; i += FRAGMENT_MAX_LENGTH)
+			for (int i = 0; i < vFrame.PAYLOAD_LEN; i += FRAGMENT_MAX_LENGTH)
 			{
 				PushArrayString(m_hFragmentedPayload, sPayLoad[i]);
 			}
@@ -639,7 +637,7 @@ public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayL
 	}
 
 	// The FIN bit is set if we reach here.
-	switch(vFrame[OPCODE])
+	switch(vFrame.OPCODE)
 	{
 		case FrameType_Continuation:
 		{
@@ -657,13 +655,13 @@ public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayL
 
 			// Keep track of the overall payload length of the fragmented message.
 			// This is used to create the buffer of the right size when passing it to the listening plugin.
-			iPayloadLength += vFrame[PAYLOAD_LEN];
+			iPayloadLength += vFrame.PAYLOAD_LEN;
 			m_hFragmentedPayload.Set(0, iPayloadLength);
 
 			// This doesn't fit inside one array cell? Split it up.
-			if(vFrame[PAYLOAD_LEN] > FRAGMENT_MAX_LENGTH)
+			if(vFrame.PAYLOAD_LEN > FRAGMENT_MAX_LENGTH)
 			{
-				for (int i = 0; i < vFrame[PAYLOAD_LEN]; i += FRAGMENT_MAX_LENGTH)
+				for (int i = 0; i < vFrame.PAYLOAD_LEN; i += FRAGMENT_MAX_LENGTH)
 				{
 					PushArrayString(m_hFragmentedPayload, sPayLoad[i]);
 				}
@@ -689,7 +687,7 @@ public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayL
 		}
 		case FrameType_Ping:
 		{
-			vFrame[OPCODE] = FrameType_Pong;
+			vFrame.OPCODE = FrameType_Pong;
 			return true;
 		}
 		case FrameType_Pong:
@@ -698,15 +696,15 @@ public bool PreprocessFrame(int iIndex, int vFrame[WebsocketFrame], char[] sPayL
 		}
 	}
 
-	LogError("Received invalid opcode = %d", vFrame[OPCODE]);
+	LogError("Received invalid opcode = %d", vFrame.OPCODE);
 	return true;
 }
 
-public bool CreateFrame(char[] sPayLoad, char[] sFrame, vFrame[WebsocketFrame])
+public bool CreateFrame(char[] sPayLoad, char[] sFrame, WebsocketFrame vFrame)
 {
-	int length = vFrame[PAYLOAD_LEN];
+	int length = vFrame.PAYLOAD_LEN;
 
-	switch(vFrame[OPCODE])
+	switch(vFrame.OPCODE)
 	{
 		case FrameType_Text:
 		{
@@ -727,7 +725,7 @@ public bool CreateFrame(char[] sPayLoad, char[] sFrame, vFrame[WebsocketFrame])
 		}
 		default:
 		{
-			LogError("Trying to send frame with unknown opcode = %d", view_as<int>(vFrame[OPCODE]));
+			LogError("Trying to send frame with unknown opcode = %d", view_as<int>(vFrame.OPCODE));
 			return false;
 		}
 	}
@@ -801,10 +799,10 @@ public bool CreateFrame(char[] sPayLoad, char[] sFrame, vFrame[WebsocketFrame])
 	length += 4;
 
 	// We got a closing reason. Add it right in front of the payload.
-	if(vFrame[OPCODE] == FrameType_Close && vFrame[CLOSE_REASON] != -1)
+	if(vFrame.OPCODE == FrameType_Close && vFrame.CLOSE_REASON != -1)
 	{
 		char sCloseReasonBin[17], sByte[9];
-		Format(sCloseReasonBin, 17, "%016b", vFrame[CLOSE_REASON]);
+		Format(sCloseReasonBin, 17, "%016b", vFrame.CLOSE_REASON);
 		for (int i = 0, j = iOffset; i <= 16; i++)
 		{
 			if (i && !(i % 8))
@@ -818,10 +816,10 @@ public bool CreateFrame(char[] sPayLoad, char[] sFrame, vFrame[WebsocketFrame])
 		iOffset += 2;
 	}
 
-	char[] masked = new char[vFrame[PAYLOAD_LEN] + 1];
-	for (int i = 0; i < vFrame[PAYLOAD_LEN]; i++)
+	char[] masked = new char[vFrame.PAYLOAD_LEN + 1];
+	for (int i = 0; i < vFrame.PAYLOAD_LEN; i++)
 	{
-		Format(masked, vFrame[PAYLOAD_LEN] + 1, "%s%c", masked, (sPayLoad[i] & 0xff) ^ iMaskingKey[i % 4]);
+		Format(masked, vFrame.PAYLOAD_LEN + 1, "%s%c", masked, (sPayLoad[i] & 0xff) ^ iMaskingKey[i % 4]);
 	}
 	Format(sFrame, length + iOffset, "%s%s", sFrame, masked);
 

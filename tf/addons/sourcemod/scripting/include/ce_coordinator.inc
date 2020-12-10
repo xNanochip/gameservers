@@ -14,17 +14,17 @@ enum WebsocketFrameType
 	FrameType_Pong = 10
 }
 
-enum WebsocketFrame
+enum struct WebsocketFrame
 {
-	FIN,
-	RSV1,
-	RSV2,
-	RSV3,
-	WebsocketFrameType:OPCODE,
-	MASK,
-	PAYLOAD_LEN,
-	String:MASKINGKEY[5],
-	CLOSE_REASON
+	int FIN;
+	int RSV1;
+	int RSV2;
+	int RSV3;
+	WebsocketFrameType OPCODE;
+	int MASK;
+	int PAYLOAD_LEN;
+	char MASKINGKEY[5];
+	int CLOSE_REASON;
 }
 
 #define StatusCode_Success 200
