@@ -5,7 +5,7 @@ koth_ashville_rc2c
 cp_glassworks_rc6a
 cp_gorge
 cp_gravelpit
-cp_gullywash_final1
+cp_gullywash_f1a
 cp_kalinka_rc6a
 cp_mountainlab
 cp_process_f6
@@ -39,6 +39,5 @@ pl_vigil_rc7
 plr_bananabay
 plr_nightfall_final
 plr_pipeline
-pl_wutville_event
 pl_pier
 pd_snowville_event
