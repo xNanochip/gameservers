@@ -68,31 +68,29 @@ public int Gift_Create(int client, float pos[3])
 		SetEntProp(iEnt, Prop_Data, "m_nSolidType", 6);
 		SetEntProp(iEnt, Prop_Send, "m_usSolidFlags", 0x0008 | 0x0200);
 		SetEntProp(iEnt, Prop_Send, "m_CollisionGroup", 2);
-		SetEntPropFloat(iEnt, Prop_Send, "m_flModelScale", 0.7);
 						
 		SDKHook(iEnt, SDKHook_StartTouch, Gift_OnTouch);
-
 		TF_StartAttachedParticle("peejar_trail_blu", iEnt, 2.0);
 		
-		CreateTimer(1.0, Timer_Gift_StartTargetMovement, iEnt);
-		m_bTargetLock[iEnt] = false;
+		// Gift is not flying to target when spawned.
+		Gift_SetActive(iEnt, false);
+		m_bTargetLock[iEnt] = true;
+		
+		CreateTimer(1.0, Timer_Gift_SetActive, iEnt);
 	}
 	return iEnt;
 }
 
-public Action Timer_Gift_StartTargetMovement(Handle timer, any gift)
+public Action Timer_Gift_SetActive(Handle timer, any gift)
 {
 	if (!IsValidEntity(gift))return Plugin_Handled;
-	Gift_StartTargetMovement(gift);
+	Gift_SetActive(gift, true);
 	return Plugin_Handled;
 }
 
 public void Gift_StartTargetMovement(int ent)
 {
 	Gift_InitSplineData(ent);
-	AcceptEntityInput(ent, "DisableMotion");
-	TF_StartAttachedParticle("soul_trail", ent, 2.0);
-	SetEntPropFloat(ent, Prop_Send, "m_flModelScale", 0.5);
 	m_bTargetLock[ent] = true;
 }
 
@@ -110,6 +108,22 @@ public Action Gift_OnTouch(int entity, int other)
 	return Plugin_Handled;
 }
 
+public void Gift_SetActive(int entity, bool active)
+{
+	if(active)
+	{
+		// Gift is flying to the target.
+		SetEntPropFloat(entity, Prop_Send, "m_flModelScale", 0.3);
+		AcceptEntityInput(entity, "DisableMotion");
+		TF_StartAttachedParticle("soul_trail", entity, 2.0);
+		m_bTargetLock[entity] = true;
+		Gift_StartTargetMovement(entity);
+	} else {
+		SetEntPropFloat(entity, Prop_Send, "m_flModelScale", 0.7);
+		AcceptEntityInput(entity, "EnableMotion");
+		m_bTargetLock[entity] = false;
+	}
+}
 
 public void Gift_InitSplineData(int iEnt)
 {
@@ -179,7 +193,7 @@ public void Gift_FlyTowardsTargetEntity(any iEnt)
 		vecNextCuvePos[i] = vecTargetPos[i] + vecBehindChest[i];
 	}
 	
-	vecTargetPos[2] += 30.0;
+	vecTargetPos[2] += 60.0;
 	
 	float vecOutput[3];
 	Catmull_Rom_Spline(m_vecPreCurvePos[iEnt], m_vecStartCurvePos[iEnt], vecTargetPos, vecNextCuvePos, flT, vecOutput);
