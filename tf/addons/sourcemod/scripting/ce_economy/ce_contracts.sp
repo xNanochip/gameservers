@@ -399,7 +399,6 @@ public Action cQuestActivate(int client, int args)
 
 	CEQuest_SetPlayerQuest(iTarget, iQuest);
 	return Plugin_Handled;
-
 }
 
 public Action cQuest(int client, int args)

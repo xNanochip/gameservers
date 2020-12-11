@@ -287,7 +287,9 @@ public void httpPlayerLoadout(const char[] content, int size, int status, any pa
 		ClearLoadoutCache(client);
 		m_bWaitingForLoadout[client] = false;
 		m_hLoadout[client] = hLoadout;
-
+		
+		ApplyGlobalItems(client);
+		
 		if(bChanged && m_bInRespawn[client])
 		{
 			TF2_RespawnPlayer(client);
@@ -297,6 +299,36 @@ public void httpPlayerLoadout(const char[] content, int size, int status, any pa
 			ApplyLoadout(client, m_hLoadout[client]);
 		}
 	}
+}
+
+public void ApplyGlobalItems(int client)
+{
+	char sSteamID[64];
+	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
+	
+	KeyValues hLoadout = m_hLoadout[client];
+	if(hLoadout.JumpToKey("general"))
+	{
+		if(hLoadout.GotoFirstSubKey())
+		{
+			do {
+				char sSlot[32], sName[128], sColor[10];
+				hLoadout.GetString("slot", sSlot, sizeof(sSlot));
+				hLoadout.GetString("name", sName, sizeof(sName));
+				hLoadout.GetString("quality_color", sColor, sizeof(sColor));
+				ReplaceString(sColor, sizeof(sColor), "#", "");
+				
+				int iDefIndex = hLoadout.GetNum("defid");
+				
+				if(StrEqual(sSlot, "SOUNDTRACK"))
+				{
+					ServerCommand("ce_quest_setkit %s %d", sSteamID, iDefIndex);
+					PrintToChatAll("\x01* Game soundtrack set to: \x07%s%s", sColor, sName);
+				}
+			} while (hLoadout.GotoNextKey());
+		}
+	}
+	hLoadout.Rewind();
 }
 
 public bool HasClassLoadoutChanged(int client, TFClassType class, KeyValues kv)

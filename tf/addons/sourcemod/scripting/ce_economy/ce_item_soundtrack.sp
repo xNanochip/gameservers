@@ -51,6 +51,22 @@ public void OnPluginStart()
 	HookEvent("teamplay_round_win", teamplay_round_win);
 	HookEvent("teamplay_point_captured", teamplay_point_captured);
 	CreateTimer(0.5, Timer_EscordProgressUpdate, _, TIMER_REPEAT);
+	RegServerCmd("ce_quest_setkit", cSetKit, "");
+}
+
+public Action cSetKit(int args)
+{
+	char sArg1[MAX_NAME_LENGTH], sArg2[11];
+	GetCmdArg(1, sArg1, sizeof(sArg1));
+	GetCmdArg(2, sArg2, sizeof(sArg2));
+
+	int iTarget = FindTargetBySteamID(sArg1);
+	if (!IsClientValid(iTarget))return Plugin_Handled;
+
+	int iKit = StringToInt(sArg2);
+
+	MusicKit_SetKit(iTarget, iKit);
+	return Plugin_Handled;
 }
 
 public void CE_OnSchemaUpdated(KeyValues hSchema)
@@ -73,7 +89,6 @@ public void ParseEconomySchema(KeyValues hConf)
 	{
 		if(hConf.GotoFirstSubKey())
 		{
-			LogMessage("pog");
 			// ===================
 			// || Checking Item ||
 			// ===================
@@ -243,14 +258,27 @@ public void RF_StopEventsForAll(any forced)
 
 public void StopEventsForAll()
 {
-	PrintToChatAll("stop everyone");
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientValid(i))continue;
 		if(m_bIsPlaying[i])
 		{
 			// Otherwise, queue a stop.
-			m_bShouldStop[i] = true;
+			
+			// Play null sound to stop current sample.
+			ClientCommand(i, "play misc/null.wav");
+			
+			// Stop everything if we have Force tag set.
+			if(m_hTimer[i] != null)
+			{
+				KillTimer(m_hTimer[i]);
+				m_hTimer[i] = null;
+			}
+			BufferFlush(i);
+	
+			m_bForceNextEvent[i] = false;
+			m_bIsPlaying[i] = false;
+			m_bShouldStop[i] = false;
 		}
 		m_iNextEvent[i] = -1;
 	}
@@ -543,20 +571,10 @@ public void ClearData(int client)
 	}
 }
 
-public void CE_OnPostEquip(int client, int entity, int index, int defid, int quality, ArrayList hAttributes, char[] type)
+public void MusicKit_SetKit(int client, int defid)
 {
-	if (!StrEqual(type, "soundtrack"))return;
-
 	int iKitID = GetKitIndexByDefID(defid);
 	m_iMusicKit[client] = iKitID;
-
-	return;
-}
-
-public void CE_OnItemHoster(int client, int index, int defid, const char[] type)
-{
-	if (!StrEqual(type, "soundtrack"))return;
-	m_iMusicKit[client] = -1;
 }
 
 public int GetEventIndexByID(int kit, const char[] sId)
@@ -636,12 +654,12 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 		// It has changed.
 		if(flNew >= flFinish && flOld < flFinish)
 		{
-			PrintToChatAll("Climax");
+			//PrintToChatAll("Climax");
 			for (int i = 1; i <= MaxClients; i++)
 			{
 				if(IsClientReady(i))
 				{
-					CEEvents_SendEventToClient(i, "OST_PAYLOAD_CLIMAX", 1, GetRandomInt(1, 10000));
+					//CEEvents_SendEventToClient(i, "OST_PAYLOAD_CLIMAX", 1, GetRandomInt(1, 10000));
 				}
 			}
 		
