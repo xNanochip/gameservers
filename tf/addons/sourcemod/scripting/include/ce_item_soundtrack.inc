@@ -37,6 +37,8 @@ enum struct Event_t
 	bool m_bForceStart;
     bool m_bFireOnce;
     bool m_bSkipPost;
+    
+    int m_iPriority;
 
 	Sample_t m_hPre;
 	Sample_t m_hPost;

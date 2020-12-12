@@ -242,6 +242,7 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 // -----------------------------------------------------------------------------------------
 public void Catmull_Rom_Spline(float p1[3], float p2[3], float p3[3], float p4[3], float t, float output[3])
 {
+	
 	float tSqr = t * t * 0.5;
 	float tSqrSqr = t * tSqr;
 

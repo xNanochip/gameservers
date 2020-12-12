@@ -33,7 +33,8 @@ Handle m_hTimer[MAXPLAYERS + 1];
 
 ArrayList m_hSampleQueue[MAXPLAYERS + 1];
 
-
+int m_nPayloadStage = 0;
+int m_iRoundTime = 0;
 
 public Plugin myinfo =
 {
@@ -52,20 +53,87 @@ public void OnPluginStart()
 	HookEvent("teamplay_point_captured", teamplay_point_captured);
 	CreateTimer(0.5, Timer_EscordProgressUpdate, _, TIMER_REPEAT);
 	RegServerCmd("ce_quest_setkit", cSetKit, "");
+	
+	HookEntityOutput("team_round_timer", "On30SecRemain", OnEntityOutput);
+	HookEntityOutput("team_round_timer", "On1MinRemain", OnEntityOutput);
+}
+
+public bool TF2_IsWaitingForPlayers()
+{
+	return GameRules_GetProp("m_bInWaitingForPlayers") == 1;
+}
+
+public bool TF2_IsSetup()
+{
+	return GameRules_GetProp("m_bInSetup") == 1;
+}
+
+public void OnEntityOutput(const char[] output, int caller, int activator, float delay)
+{
+	if (TF2_IsWaitingForPlayers())return;
+	
+	// Round almost over.
+	if (strcmp(output, "On30SecRemain") == 0)
+	{
+		if (TF2_IsSetup())return;
+		
+		m_iRoundTime = 29;
+		CreateTimer(1.0, Timer_Countdown, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	}
+	
+	// Setup
+	if (strcmp(output, "On1MinRemain") == 0)
+	{
+		if (!TF2_IsSetup())return;
+		
+		m_iRoundTime = 59;
+		CreateTimer(1.0, Timer_Countdown, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	}
+}
+
+public Action Timer_Countdown(Handle timer, any data)
+{
+	if (m_iRoundTime < 1) return Plugin_Stop;
+	
+	if(TF2_IsSetup() && m_iRoundTime == 45)
+	{
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if(IsClientReady(i))
+			{
+				CEEvents_SendEventToClient(i, "OST_ROUND_SETUP", 1, GetRandomInt(1, 10000));
+			}
+		}
+	}
+		
+	if(!TF2_IsSetup() && m_iRoundTime == 20)
+	{
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if(IsClientReady(i))
+			{
+				CEEvents_SendEventToClient(i, "OST_ROUND_ALMOST_END", 1, GetRandomInt(1, 10000));
+			}
+		}
+	}
+	
+	m_iRoundTime--;
+	return Plugin_Continue;
 }
 
 public Action cSetKit(int args)
 {
-	char sArg1[MAX_NAME_LENGTH], sArg2[11];
+	char sArg1[MAX_NAME_LENGTH], sArg2[11], sArg3[256];
 	GetCmdArg(1, sArg1, sizeof(sArg1));
 	GetCmdArg(2, sArg2, sizeof(sArg2));
+	GetCmdArg(3, sArg3, sizeof(sArg3));
 
 	int iTarget = FindTargetBySteamID(sArg1);
 	if (!IsClientValid(iTarget))return Plugin_Handled;
 
 	int iKit = StringToInt(sArg2);
 
-	MusicKit_SetKit(iTarget, iKit);
+	MusicKit_SetKit(iTarget, iKit, sArg3);
 	return Plugin_Handled;
 }
 
@@ -125,6 +193,8 @@ public void ParseEconomySchema(KeyValues hConf)
 								int iEventIndex = hKit.m_hEvents.Length;
 								
 								Event_t hEvent;
+								hEvent.m_iPriority = hConf.GetNum("priority", 0);
+								
 								hEvent.m_bFireOnce = hConf.GetNum("fire_once") >= 1;
 								hEvent.m_bForceStart = hConf.GetNum("force_start") >= 1;
 								hEvent.m_bSkipPost = hConf.GetNum("skip_post") >= 1;
@@ -244,11 +314,38 @@ public Action evBroadcast(Event hEvent, const char[] szName, bool bDontBroadcast
 public Action teamplay_round_start(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
 	StopEventsForAll();
+	
+	if(!TF2_IsSetup() && !TF2_IsWaitingForPlayers())
+	{
+		RequestFrame(PlayRoundStartMusic, hEvent);
+	}
+}
+
+public void PlayRoundStartMusic(any hEvent)
+{
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if(IsClientReady(i))
+		{
+			CEEvents_SendEventToClient(i, "OST_ROUND_START", 1, view_as<int>(hEvent));
+		}
+	}
 }
 
 public Action teamplay_round_win(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
-	RequestFrame(RF_StopEventsForAll);
+	int iWinReason = GetEventInt(hEvent, "winreason");
+	if(m_nPayloadStage == 2 && iWinReason == 1)
+	{
+		PrintToChatAll("OST_PAYLOAD_CLIMAX");
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if(IsClientReady(i))
+			{
+				CEEvents_SendEventToClient(i, "OST_PAYLOAD_CLIMAX", 1, view_as<int>(hEvent));
+			}
+		}
+	}
 }
 
 public void RF_StopEventsForAll(any forced)
@@ -302,6 +399,19 @@ public void CEEvents_OnSendEvent(int client, const char[] event, int add, int un
 			// Start Sample playing.
 			if(StrContains(hEvent.m_sStartHook, event) != -1)
 			{
+				if(m_iCurrentEvent[client] > -1)
+				{
+					Event_t hOldEvent;
+					if(GetKitEventByIndex(m_iMusicKit[client], m_iCurrentEvent[client], hOldEvent))
+					{
+						if(hOldEvent.m_iPriority > hEvent.m_iPriority)
+						{
+							PrintToChatAll("New event has lower priority");
+							continue;
+						}
+					}
+				}
+				
 				if (hEvent.m_bFireOnce && m_iCurrentEvent[client] == iEvent)continue;
 	
 				m_iNextEvent[client] = iEvent;
@@ -358,7 +468,7 @@ public void PlayNextSample(int client)
 
 		if(!StrEqual(hSample.m_sSound, ""))
 		{
-			PrecacheSound(sSound);
+			ClientCommand(client, "play misc/null.wav");
 			ClientCommand(client, "play %s", sSound);
 		}
 
@@ -556,6 +666,7 @@ public void ClearData(int client)
 {
 	delete m_hSampleQueue[client];
 	
+	m_iMusicKit[client] = -1;
 	m_iNextEvent[client] = -1;
 	m_iCurrentEvent[client] = -1;
 	m_iCurrentSample[client] = -1;
@@ -571,9 +682,20 @@ public void ClearData(int client)
 	}
 }
 
-public void MusicKit_SetKit(int client, int defid)
+public void MusicKit_SetKit(int client, int defid, char[] name)
 {
 	int iKitID = GetKitIndexByDefID(defid);
+	
+	if(iKitID != m_iMusicKit[client])
+	{
+		if(iKitID == -1)
+		{
+			PrintToChatAll("\x01* Game soundtrack removed.", name);	
+		} else {
+			PrintToChatAll("\x01* Game soundtrack set to: %s", name);	
+		}
+	}
+	
 	m_iMusicKit[client] = iKitID;
 }
 
@@ -650,7 +772,6 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 	
 	if(flOld != flNew)
 	{
-		PrintToChatAll("%f", flNew);
 		// It has changed.
 		if(flNew >= flFinish && flOld < flFinish)
 		{
@@ -674,6 +795,7 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 					CEEvents_SendEventToClient(i, "OST_PAYLOAD_S2_START", 1, GetRandomInt(1, 10000));
 				}
 			}
+			m_nPayloadStage = 2;
 			
 		} else if (flNew < flStage2 && flOld >= flStage2)
 		{
@@ -686,6 +808,7 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 					CEEvents_SendEventToClient(i, "OST_PAYLOAD_S2_CANCEL", 1, GetRandomInt(1, 10000));
 				}
 			}
+			m_nPayloadStage = 0;
 		} else if(flNew >= flStage1 && flOld < flStage1)
 		{
 			PrintToChatAll("Stage 1 just started");
@@ -697,6 +820,7 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 					CEEvents_SendEventToClient(i, "OST_PAYLOAD_S1_START", 1, GetRandomInt(1, 10000));
 				}
 			}
+			m_nPayloadStage = 1;
 		} else if(flNew < flStage1 && flOld >= flStage1)
 		{
 			PrintToChatAll("Stage 1 just cancelled");
@@ -708,6 +832,7 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 					CEEvents_SendEventToClient(i, "OST_PAYLOAD_S1_CANCEL", 1, GetRandomInt(1, 10000));
 				}
 			}
+			m_nPayloadStage = 0;
 		}
 		
 		flOld = flNew;
@@ -732,7 +857,7 @@ public float Payload_GetProgress()
 
 public Action teamplay_point_captured(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	for (int i = 0; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
 		

@@ -306,6 +306,9 @@ public void ApplyGlobalItems(int client)
 	char sSteamID[64];
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
 	
+	int iMusicKit = 0;
+	char sMusicKitName[128];
+	
 	KeyValues hLoadout = m_hLoadout[client];
 	if(hLoadout.JumpToKey("general"))
 	{
@@ -322,13 +325,15 @@ public void ApplyGlobalItems(int client)
 				
 				if(StrEqual(sSlot, "SOUNDTRACK"))
 				{
-					ServerCommand("ce_quest_setkit %s %d", sSteamID, iDefIndex);
-					PrintToChatAll("\x01* Game soundtrack set to: \x07%s%s", sColor, sName);
+					iMusicKit = iDefIndex;
+					Format(sMusicKitName, sizeof(sMusicKitName), "\x07%s%s", sColor, sName);
 				}
 			} while (hLoadout.GotoNextKey());
 		}
 	}
 	hLoadout.Rewind();
+	
+	ServerCommand("ce_quest_setkit %s %d \"%s\"", sSteamID, iMusicKit, sMusicKitName);
 }
 
 public bool HasClassLoadoutChanged(int client, TFClassType class, KeyValues kv)
