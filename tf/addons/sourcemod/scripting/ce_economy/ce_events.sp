@@ -26,8 +26,6 @@ int m_hLastWeapon[MAXPLAYERS + 1];
 bool g_CoreEnabled = false;
 Handle g_hOnSendEvent;
 
-float m_flEscortProgress = -1.0;
-
 public Plugin myinfo =
 {
 	name = "Creators.TF Economy - Events Handler",
@@ -98,7 +96,6 @@ public void OnPluginStart()
 
 	g_hOnSendEvent = CreateGlobalForward("CEEvents_OnSendEvent", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_Cell);
 
-	CreateTimer(0.5, Timer_EscordProgressUpdate, _, TIMER_REPEAT);
 	RegAdminCmd("ce_test_event", cTestEvnt, ADMFLAG_ROOT, "");
 
 	LateHooking();
@@ -237,16 +234,6 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 	Call_PushCell(add);
 	Call_PushCell(unique_id);
 	Call_Finish();
-}
-
-public Action Timer_EscordProgressUpdate(Handle timer, any data)
-{
-	float flCart = Payload_GetProgress();
-
-	if(flCart != m_flEscortProgress)
-	{
-		m_flEscortProgress = flCart;
-	}
 }
 
 /**
@@ -890,22 +877,6 @@ public Action teamplay_point_captured(Handle hEvent, const char[] szName, bool b
 /**
 *	MISC FUNCTIONS
 */
-
-public float Payload_GetProgress()
-{
-	int iEnt = -1;
-	float flProgress = 0.0;
-	while((iEnt = FindEntityByClassname(iEnt, "team_train_watcher")) != -1 )
-	{
-		if (IsValidEntity(iEnt))
-		{
-			// If cart is of appropriate team.
-			float flProgress2 = GetEntPropFloat(iEnt, Prop_Send, "m_flTotalProgress");
-			if (flProgress < flProgress2)flProgress = flProgress2;
-		}
-	}
-	return flProgress;
-}
 
 public void FlushClientInfo(int client)
 {

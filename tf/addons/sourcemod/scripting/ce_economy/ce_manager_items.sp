@@ -18,7 +18,7 @@ public Plugin myinfo =
 	url = "https://creators.tf"
 }
 
-Handle g_hOnShouldEquip, g_hOnItemEquip, g_hOnPostEquip;
+Handle g_hOnShouldEquip, g_hOnHoster, g_hOnItemEquip, g_hOnPostEquip;
 
 bool m_bIsCustomEconItem[MAX_ENTITY_LIMIT + 1];
 int m_iEconIndex[MAX_ENTITY_LIMIT + 1];
@@ -30,6 +30,7 @@ public void OnPluginStart()
 	g_hOnShouldEquip = CreateGlobalForward("CE_OnShouldBlock", ET_Hook, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_String);
 	g_hOnItemEquip = CreateGlobalForward("CE_OnItemEquip", ET_Hook, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_String);
 	g_hOnPostEquip = CreateGlobalForward("CE_OnPostEquip", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_String);
+	g_hOnHoster = CreateGlobalForward("CE_OnItemHoster", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_String);
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -41,12 +42,30 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("CE_FindItemConfigByItemName", Native_FindItemConfigByItemName);
 	CreateNative("CE_ParseEquipRegionString", Native_ParseEquipRegionString);
 	CreateNative("CE_EquipItem", Native_EquipItem);
+	CreateNative("CE_HolsterItem", Native_HolsterItem);
 
 	CreateNative("CE_IsEntityCustomEcomItem", Native_IsEntityCustomEcomItem);
 
 	CreateNative("CE_GetEntityEconIndex", Native_GetEntityEconIndex);
 	CreateNative("CE_GetEntityEconDefinitionIndex", Native_GetEntityEconDefinitionIndex);
 	CreateNative("CE_GetEntityEconQuality", Native_GetEntityEconQuality);
+}
+
+public any Native_HolsterItem(Handle plugin, int numParams)
+{
+	int iClient = GetNativeCell(1);
+	int iIndex = GetNativeCell(2);
+	int iDefID = GetNativeCell(3);
+	char sType[32];
+	GetNativeString(4, sType, sizeof(sType));
+	
+	Call_StartForward(g_hOnHoster);
+	Call_PushCell(iClient);
+	Call_PushCell(iIndex);
+	Call_PushCell(iDefID);
+	Call_PushString(sType);
+	
+	Call_Finish();
 }
 
 public any Native_EquipItem(Handle plugin, int numParams)
