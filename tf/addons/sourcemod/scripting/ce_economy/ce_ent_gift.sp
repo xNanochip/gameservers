@@ -76,7 +76,6 @@ public int Gift_Create(int client, float pos[3])
 		SetEntProp(iEnt, Prop_Send, "m_CollisionGroup", 2);
 						
 		SDKHook(iEnt, SDKHook_StartTouch, Gift_OnTouch);
-		TF_StartAttachedParticle("peejar_trail_blu", iEnt, 2.0);
 
 		// Gift is not flying to target when spawned.
 		Gift_SetActive(iEnt, false);
@@ -303,6 +302,8 @@ public float Bias(float x, float biasAmt)
 
 public int TF_StartAttachedParticle(const char[] system, int entity, float lifetime)
 {
+	PrintToChatAll(system);
+	
 	int iParticle = CreateEntityByName("info_particle_system");
 	if(iParticle > -1)
 	{
