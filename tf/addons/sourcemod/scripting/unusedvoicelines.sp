@@ -351,7 +351,7 @@ void PlaySound(const char[] sound, int team = -1) //-1 = all, 2 = red, 3 = blu
 	// "#" before the sound path will tell source engine to play the music at a volume based on the client's music slider in their audio options
 	if (strcmp(sound, "7") == 0)
 	{
-		if(TF2_IsHolidayActive(TFHoliday_HalloweenOrFullMoon))
+		if(TF2_IsHolidayActive(TFHoliday_Halloween))
 		{
 			Format(path, sizeof(path), "#creators/music/mm_start_round_music_halloween.wav");
 		} else {

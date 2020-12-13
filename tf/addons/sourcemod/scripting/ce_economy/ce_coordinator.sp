@@ -46,7 +46,7 @@ public void OnPluginStart()
 
 	m_hFragmentedPayload = new ArrayList();
 
-	StartCoordinatorReconnectTimer();
+	ConnectCoordinator();
 }
 
 public void OnClientPostAdminCheck(int client)
@@ -106,6 +106,7 @@ public void NotifyPlayerLeave(int client)
 
 public void OnSocketError(Handle socket, const int errorType, const int errorNum, any hFile)
 {
+	StartCoordinatorCheckTimer();
 }
 
 public void OnSocketConnected(Handle socket, any arg)
@@ -200,13 +201,9 @@ public void NotifyAllConnectedPlayers()
 	}
 }
 
-public void StartCoordinatorReconnectTimer()
+public void StartCoordinatorCheckTimer()
 {
-	if(m_hReconnectTimer == null)
-	{
-		ConnectCoordinator();
-		m_hReconnectTimer = CreateTimer(2.0, Timer_SocketReconnect, _, TIMER_REPEAT);
-	}
+	CreateTimer(5.0, Timer_CheckSocketReconnect);
 }
 
 public void ConnectCoordinator()
@@ -219,28 +216,25 @@ public void ConnectCoordinator()
 	SocketConnect(m_hSocket, OnSocketConnected, OnSocketReceive, OnSocketDisconnected, sURL, iPort);
 }
 
-public Action Timer_SocketReconnect(Handle timer, any data)
+public Action Timer_CheckSocketReconnect(Handle timer, any data)
 {
 	if(m_bCoordinatorConnected)
 	{
-		KillTimer(timer);
-		m_hReconnectTimer = null;
-		return Plugin_Stop;
+		LogMessage("Connection with coordinator estabilished.");
+	} else {
+		LogMessage("Connection with coordinator failed. Trying to reconnect...");
+		ConnectCoordinator();
 	}
-
-	ConnectCoordinator();
-
-	return Plugin_Continue;
 }
 
 public void OnSocketDisconnected(Handle socket, any arg)
 {
 	if(m_bCoordinatorConnected)
 	{
-		LogMessage("Socket disconnect");
+		LogMessage("Socket disconnected.");
 	}
 	m_bCoordinatorConnected = false;
-	StartCoordinatorReconnectTimer();
+	ConnectCoordinator();
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)

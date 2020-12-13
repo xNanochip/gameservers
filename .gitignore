@@ -148,6 +148,10 @@ tf/maps/koth_megalo.bsp
 tf/maps/koth_undergrove_event.bsp
 tf/maps/pl_bloodwater.bsp
 tf/maps/pl_hasslecastle.bsp
+tf/maps/ctf_snowfall_final.bsp
+tf/maps/pd_snowville_event.bsp
+tf/maps/pl_pier.bsp
+tf/maps/pl_wutville_event.bsp
 
 !tf/materials
 !tf/models
