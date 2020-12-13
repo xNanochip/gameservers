@@ -39,6 +39,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("CE_FindItemIndexByItemName", Native_FindItemIndexByItemName);
 	CreateNative("CE_FindItemConfigByDefIndex", Native_FindItemConfigByDefIndex);
 	CreateNative("CE_FindItemConfigByItemName", Native_FindItemConfigByItemName);
+	CreateNative("CE_FindItemIndexByName", Native_FindItemIndexByName);
 	CreateNative("CE_ParseEquipRegionString", Native_ParseEquipRegionString);
 	CreateNative("CE_EquipItem", Native_EquipItem);
 

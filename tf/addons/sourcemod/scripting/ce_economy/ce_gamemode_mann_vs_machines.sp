@@ -52,17 +52,17 @@ public void OnPluginStart()
 }
 
 public void PrintGameStats()
-{	
+{
 	char sTimer[32];
 	int iMissionTime = GetTotalMissionTime();
 	TimeToStopwatchTimer(iMissionTime, sTimer, sizeof(sTimer));
 	PrintToChatAll("\x01Total time spent in mission: \x03%s", sTimer);
-	
+
 	int iSuccessTime = GetTotalSuccessTime();
 	int iPercentage = RoundToFloor(float(iSuccessTime) / float(iMissionTime) * 100.0);
 	TimeToStopwatchTimer(iSuccessTime, sTimer, sizeof(sTimer));
 	PrintToChatAll("\x01Total success time in mission: \x03%s (%d%%)", sTimer, iPercentage);
-	
+
 	int iWaveTime = GetTotalWaveTime();
 	TimeToStopwatchTimer(iWaveTime, sTimer, sizeof(sTimer));
 	PrintToChatAll("\x01Time spent on Wave %d: \x03%s", m_iCurrentWave, sTimer);
@@ -76,7 +76,7 @@ public Action teamplay_round_start(Handle hEvent, const char[] szName, bool bDon
 		OnDefendersLost();
 		m_bWeJustFailed = false;
 	}
-	
+
 	m_bWaitForGameRestart = false;
 }
 
@@ -95,12 +95,12 @@ public Action teamplay_round_win(Handle hEvent, const char[] szName, bool bDontB
 	// This is usually fired when we lose.
 	if (!TF2MvM_IsPlayingMvM())return Plugin_Continue;
 	int iTeam = GetEventInt(hEvent, "team");
-	
+
 	if(iTeam == TF_TEAM_INVADERS)
 	{
 		m_bWeJustFailed = true;
 	}
-	
+
 	return Plugin_Continue;
 }
 
@@ -184,12 +184,12 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 {
 	int iWave = GetEventInt(hEvent, "wave_index");
 	int iRealWave = iWave + 1;
-	
+
 	if(iRealWave != m_iCurrentWave)
 	{
 		m_iWaveTime = 0;
 	}
-	
+
 	// Let's start with 1 and not zero.
 	m_iCurrentWave = iRealWave;
 	SetWaveStartTime();
@@ -252,22 +252,15 @@ public Action cMvMEquipItemName(int args)
 
 	if (!StrEqual(sArg2, ""))
 	{
-		KeyValues hConf = CE_FindItemConfigByItemName(sArg2);
-		if(UTIL_IsValidHandle(hConf))
+		int iIndex = CE_FindItemIndexByItemName(sArg2);
+		if(iIndex > 0)
 		{
 			if(IsClientValid(iClient))
 			{
-				ArrayList hAttribs = new ArrayList(sizeof(CEAttribute));
-
-				int iIndex = hConf.GetNum("index");
-				CE_EquipItem(iClient, -1, iIndex, Q_UNIQUE, hAttribs);
-				delete hAttribs;
+				CE_EquipItem(iClient, -1, iIndex, Q_UNIQUE, null);
 			}
-			delete hConf;
-			return Plugin_Handled;
 		}
 	}
-
 
 	return Plugin_Handled;
 }
@@ -339,7 +332,7 @@ public void RF_RecalculatePlayerCount(any data)
 public void RecalculatePlayerCount()
 {
 	if (!TF2MvM_IsPlayingMvM())return;
-	
+
 	int count = GetRealClientCount();
 	int old = m_iLastPlayerCount;
 	m_iLastPlayerCount = count;
@@ -371,7 +364,7 @@ public int GetRealClientCount()
 public void TimeToStopwatchTimer(int time, char[] buffer, int size)
 {
 	char[] timer = new char[size + 1];
-	
+
 	int iForHours = time;
 	int iSecsInHour = 60 * 60;
 	int iHours = iForHours / iSecsInHour;
@@ -379,7 +372,7 @@ public void TimeToStopwatchTimer(int time, char[] buffer, int size)
 	{
 		Format(timer, size, "%d hr ", iHours);
 	}
-	
+
 	int iSecInMins = 60;
 	int iForMins = iForHours % iSecsInHour;
 	int iMinutes = iForMins / iSecInMins;
@@ -387,9 +380,9 @@ public void TimeToStopwatchTimer(int time, char[] buffer, int size)
 	{
 		Format(timer, size, "%s%d min ", timer, iMinutes);
 	}
-	
+
 	int iSeconds = iForMins % iSecInMins;
 	Format(timer, size, "%s%d sec", timer, iSeconds);
-	
+
 	strcopy(buffer, size, timer);
 }

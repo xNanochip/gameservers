@@ -204,6 +204,8 @@ public void ClearWeaponWearables(int client, int weapon)
 
 public void OnDrawWeapon(int client, int iWeapon)
 {
+	PrintToChatAll("OnDrawWeapon (client %N) (weapon %d)", client, iWeapon);
+	
 	ClearWeaponWearables(client, iWeapon);
 	if(ShouldDrawWeaponModel(client, iWeapon))
 	{

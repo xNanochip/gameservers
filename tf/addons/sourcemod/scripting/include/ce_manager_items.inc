@@ -24,6 +24,7 @@ native KeyValues CE_FindItemConfigByDefIndex(int index);
 * @return KeyValues config of the item.
 */
 native KeyValues CE_FindItemConfigByItemName(const char[] name);
+
 native int CE_FindItemIndexByItemName(const char[] name);
 
 /*
