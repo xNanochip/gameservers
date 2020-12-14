@@ -48,19 +48,13 @@ public Action cMvMEquipItemName(int args)
 	
 	if (!StrEqual(sArg2, "")) 
 	{
-		KeyValues hConf = CE_FindItemConfigByItemName(sArg2);
-		if(UTIL_IsValidHandle(hConf))
+		int iIndex = CE_FindItemIndexByItemName(sArg2);
+		if(iIndex > 0)
 		{
-			if(IsClientValid(iClient)) 
+			if(IsClientValid(iClient))
 			{
-				ArrayList hAttribs = new ArrayList(sizeof(CEAttribute));
-				
-				int iIndex = hConf.GetNum("index");
-				CE_EquipItem(iClient, -1, iIndex, Q_UNIQUE, hAttribs);
-				delete hAttribs;
+				CE_EquipItem(iClient, -1, iIndex, Q_UNIQUE, null);
 			}
-			delete hConf;
-			return Plugin_Handled;
 		}
 	}
 	
