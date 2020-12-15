@@ -8,7 +8,7 @@
 #include <system2>
 #include <socket>
 
-#define MAX_RESPONSE_LENGTH 8192
+#define MAX_RESPONSE_LENGTH 50000
 #define FRAGMENT_MAX_LENGTH 32768
 
 public Plugin myinfo =
