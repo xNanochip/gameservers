@@ -1,3 +1,9 @@
+cp_snowlodge_b5
+cp_stoneyridge_rc2
+koth_arctic_b3
+koth_icetower_rc4
+pl_coldrush_rc1
+pl_coldwater_rc3
 cp_fulgur_rc2a
 cp_glassworks_rc6a
 cp_gorge
