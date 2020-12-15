@@ -337,7 +337,6 @@ public Action teamplay_round_win(Event hEvent, const char[] szName, bool bDontBr
 	int iWinReason = GetEventInt(hEvent, "winreason");
 	if(m_nPayloadStage == 2 && iWinReason == 1)
 	{
-		PrintToChatAll("OST_PAYLOAD_CLIMAX");
 		for (int i = 1; i <= MaxClients; i++)
 		{
 			if(IsClientReady(i))
@@ -406,7 +405,6 @@ public void CEEvents_OnSendEvent(int client, const char[] event, int add, int un
 					{
 						if(hOldEvent.m_iPriority > hEvent.m_iPriority)
 						{
-							PrintToChatAll("New event has lower priority");
 							continue;
 						}
 					}
@@ -514,11 +512,11 @@ public void GetNextSample(int client, Sample_t hSample)
 		{
 			BufferFlush(client);
 			m_bShouldStop[client] = false;
-			PrintToConsole(client, "m_bShouldStop, true");
+			//PrintToConsole(client, "m_bShouldStop, true");
 		} else {
 			hSample = m_hClientPostSample[client];
 			strcopy(m_hClientPostSample[client].m_sSound, MAX_SOUND_NAME, "");
-			PrintToConsole(client, "m_bShouldStop, false");
+			//PrintToConsole(client, "m_bShouldStop, false");
 			return;
 		}
 	}
@@ -536,11 +534,11 @@ public void GetNextSample(int client, Sample_t hSample)
 		
 		if(StrEqual(m_hClientPostSample[client].m_sSound, "") || bSkipPost)
 		{
-			PrintToConsole(client, "m_iNextEvent, true");
+			//PrintToConsole(client, "m_iNextEvent, true");
 			BufferLoadEvent(client, m_iNextEvent[client]);
 			m_iNextEvent[client] = -1;
 		} else {
-			PrintToConsole(client, "m_iNextEvent, false");
+			//PrintToConsole(client, "m_iNextEvent, false");
 			hSample = m_hClientPostSample[client];
 			strcopy(m_hClientPostSample[client].m_sSound, MAX_SOUND_NAME, "");
 			return;
@@ -552,7 +550,7 @@ public void GetNextSample(int client, Sample_t hSample)
 
 	if(!StrEqual(m_hClientPreSample[client].m_sSound, ""))
 	{
-		PrintToConsole(client, "m_hClientPreSample");
+		//PrintToConsole(client, "m_hClientPreSample");
 		hSample = m_hClientPreSample[client];
 		strcopy(m_hClientPreSample[client].m_sSound, MAX_SOUND_NAME, "");
 		return;
@@ -570,7 +568,7 @@ public void GetNextSample(int client, Sample_t hSample)
 			sample.m_nCurrentIteration = 0;
 		}
 
-		PrintToConsole(client, "m_hSampleQueue, %d, (%d/%d)", m_iCurrentSample[client], sample.m_nCurrentIteration + 1, sample.m_nIterations);
+		//PrintToConsole(client, "m_hSampleQueue, %d, (%d/%d)", m_iCurrentSample[client], sample.m_nCurrentIteration + 1, sample.m_nIterations);
 
 		// Increase current iteration every time we run through it.
 		if(sample.m_nCurrentIteration < sample.m_nIterations)
@@ -600,7 +598,7 @@ public void GetNextSample(int client, Sample_t hSample)
 
 	if(!StrEqual(m_hClientPostSample[client].m_sSound, ""))
 	{
-		PrintToConsole(client, "m_hClientPostSample");
+		//PrintToConsole(client, "m_hClientPostSample");
 		hSample = m_hClientPostSample[client];
 		strcopy(m_hClientPostSample[client].m_sSound, MAX_SOUND_NAME, "");
 		return;
@@ -690,9 +688,9 @@ public void MusicKit_SetKit(int client, int defid, char[] name)
 	{
 		if(iKitID == -1)
 		{
-			PrintToChatAll("\x01* Game soundtrack removed.", name);	
+			PrintToChat(client, "\x01* Game soundtrack removed.", name);	
 		} else {
-			PrintToChatAll("\x01* Game soundtrack set to: %s", name);	
+			PrintToChat(client, "\x01* Game soundtrack set to: %s", name);	
 		}
 	}
 	
@@ -786,50 +784,50 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 		
 		}else if(flNew >= flStage2 && flOld < flStage2)
 		{
-			PrintToChatAll("Stage 2 just started");
+			//PrintToChatAll("Stage 2 just started");
 			// Stage 2 just started.
 			for (int i = 1; i <= MaxClients; i++)
 			{
 				if(IsClientReady(i))
 				{
-					CEEvents_SendEventToClient(i, "OST_PAYLOAD_S2_START", 1, GetRandomInt(1, 10000));
+					//CEEvents_SendEventToClient(i, "OST_PAYLOAD_S2_START", 1, GetRandomInt(1, 10000));
 				}
 			}
 			m_nPayloadStage = 2;
 			
 		} else if (flNew < flStage2 && flOld >= flStage2)
 		{
-			PrintToChatAll("Stage 2 just cancelled");
+			//PrintToChatAll("Stage 2 just cancelled");
 			// Stage 2 just cancelled.
 			for (int i = 1; i <= MaxClients; i++)
 			{
 				if(IsClientReady(i))
 				{
-					CEEvents_SendEventToClient(i, "OST_PAYLOAD_S2_CANCEL", 1, GetRandomInt(1, 10000));
+					//CEEvents_SendEventToClient(i, "OST_PAYLOAD_S2_CANCEL", 1, GetRandomInt(1, 10000));
 				}
 			}
 			m_nPayloadStage = 0;
 		} else if(flNew >= flStage1 && flOld < flStage1)
 		{
-			PrintToChatAll("Stage 1 just started");
+			//PrintToChatAll("Stage 1 just started");
 			// Stage 1 just started.
 			for (int i = 1; i <= MaxClients; i++)
 			{
 				if(IsClientReady(i))
 				{
-					CEEvents_SendEventToClient(i, "OST_PAYLOAD_S1_START", 1, GetRandomInt(1, 10000));
+					//CEEvents_SendEventToClient(i, "OST_PAYLOAD_S1_START", 1, GetRandomInt(1, 10000));
 				}
 			}
 			m_nPayloadStage = 1;
 		} else if(flNew < flStage1 && flOld >= flStage1)
 		{
-			PrintToChatAll("Stage 1 just cancelled");
+			//PrintToChatAll("Stage 1 just cancelled");
 			// Stage 1 just cancelled.
 			for (int i = 1; i <= MaxClients; i++)
 			{
 				if(IsClientReady(i))
 				{
-					CEEvents_SendEventToClient(i, "OST_PAYLOAD_S1_CANCEL", 1, GetRandomInt(1, 10000));
+					//CEEvents_SendEventToClient(i, "OST_PAYLOAD_S1_CANCEL", 1, GetRandomInt(1, 10000));
 				}
 			}
 			m_nPayloadStage = 0;

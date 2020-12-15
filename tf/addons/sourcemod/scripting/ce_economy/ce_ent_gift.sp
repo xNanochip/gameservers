@@ -302,8 +302,6 @@ public float Bias(float x, float biasAmt)
 
 public int TF_StartAttachedParticle(const char[] system, int entity, float lifetime)
 {
-	PrintToChatAll(system);
-	
 	int iParticle = CreateEntityByName("info_particle_system");
 	if(iParticle > -1)
 	{
