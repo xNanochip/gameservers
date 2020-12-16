@@ -10,6 +10,7 @@
 #include <ce_manager_attributes>
 #include <tf2_stocks>
 
+bool m_bIsGift[MAX_ENTITY_LIMIT + 1];
 int m_hTarget[MAX_ENTITY_LIMIT + 1];
 bool m_bTargetLock[MAX_ENTITY_LIMIT + 1];
 float m_flCreationTime[MAX_ENTITY_LIMIT + 1];
@@ -39,6 +40,38 @@ public void OnMapStart()
 	PrecacheModel(TF_GIFT_MODEL);
 }
 
+public void FlushEntGift(int entity)
+{
+	m_bIsGift[entity] = false;
+	m_hTarget[entity] = 0;
+	m_bTargetLock[entity] = false;
+	m_flCreationTime[entity] = 0.0;
+	
+	for (int i = 0; i < 3; i++)
+	{
+		m_vecStartCurvePos[entity][i] = 0.0;
+		m_vecPreCurvePos[entity][i] = 0.0;
+	}
+	
+	m_flDuration[entity] = 0.0;
+}
+
+public bool IsValidGift(int entity)
+{
+	if (!IsValidEntity(entity))return false;
+	return m_bIsGift[entity];
+}
+
+public void OnEntityCreated(int entity)
+{
+	FlushEntGift(entity);
+}
+
+public void OnEntityDestroyed(int entity)
+{	
+	FlushEntGift(entity);
+}
+
 public void Gift_CreateForPlayer(int client, int origin)
 {
 	float vecPos[3];
@@ -61,6 +94,7 @@ public int Gift_Create(int client, float pos[3])
 	int iEnt = CreateEntityByName("prop_physics_override");
 	if(iEnt > -1)
 	{
+		m_bIsGift[iEnt] = true;
 		SetEntityModel(iEnt, TF_GIFT_MODEL);
 
 		float vecAng[3];
@@ -88,14 +122,14 @@ public int Gift_Create(int client, float pos[3])
 
 public Action Timer_Gift_SetActive(Handle timer, any gift)
 {
-	if (!IsValidEntity(gift))return Plugin_Handled;
+	if (!IsValidGift(gift))return Plugin_Handled;
 	Gift_SetActive(gift, true);
 	return Plugin_Handled;
 }
 
 public void Gift_StartTargetMovement(int ent)
 {
-	if (!IsValidEntity(ent))return;
+	if (!IsValidGift(ent))return;
 	Gift_InitSplineData(ent);
 	m_bTargetLock[ent] = true;
 }
@@ -133,7 +167,7 @@ public void Gift_SetActive(int entity, bool active)
 
 public void Gift_InitSplineData(int iEnt)
 {
-	if (!IsValidEntity(iEnt))return;
+	if (!IsValidGift(iEnt))return;
 	m_flCreationTime[iEnt] = GetEngineTime();
 	GetEntPropVector(iEnt, Prop_Send, "m_vecOrigin", m_vecStartCurvePos[iEnt]);
 
@@ -158,7 +192,7 @@ public void Gift_InitSplineData(int iEnt)
 
 public void Gift_FlyTowardsTargetEntity(any iEnt)
 {
-	if (!IsValidEntity(iEnt))return;
+	if (!IsValidGift(iEnt))return;
 
 	int iTarget = m_hTarget[iEnt];
 	float flLife = GetEngineTime() - m_flCreationTime[iEnt];
