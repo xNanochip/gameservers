@@ -26,7 +26,7 @@ char m_sActiveSound[MAXPLAYERS + 1][MAX_SOUND_NAME];
 bool m_bIsPlaying[MAXPLAYERS + 1];
 bool m_bShouldStop[MAXPLAYERS + 1];
 bool m_bForceNextEvent[MAXPLAYERS + 1];
-	
+
 Sample_t m_hClientPreSample[MAXPLAYERS + 1];
 Sample_t m_hClientPostSample[MAXPLAYERS + 1];
 
@@ -57,7 +57,7 @@ public void OnPluginStart()
 	HookEvent("teamplay_point_captured", teamplay_point_captured);
 	CreateTimer(0.5, Timer_EscordProgressUpdate, _, TIMER_REPEAT);
 	RegServerCmd("ce_quest_setkit", cSetKit, "");
-	
+
 	HookEntityOutput("team_round_timer", "On30SecRemain", OnEntityOutput);
 	HookEntityOutput("team_round_timer", "On1MinRemain", OnEntityOutput);
 }
@@ -75,21 +75,21 @@ public bool TF2_IsSetup()
 public void OnEntityOutput(const char[] output, int caller, int activator, float delay)
 {
 	if (TF2_IsWaitingForPlayers())return;
-	
+
 	// Round almost over.
 	if (strcmp(output, "On30SecRemain") == 0)
 	{
 		if (TF2_IsSetup())return;
-		
+
 		m_iRoundTime = 29;
 		CreateTimer(1.0, Timer_Countdown, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
-	
+
 	// Setup
 	if (strcmp(output, "On1MinRemain") == 0)
 	{
 		if (!TF2_IsSetup())return;
-		
+
 		m_iRoundTime = 59;
 		CreateTimer(1.0, Timer_Countdown, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
@@ -98,7 +98,7 @@ public void OnEntityOutput(const char[] output, int caller, int activator, float
 public Action Timer_Countdown(Handle timer, any data)
 {
 	if (m_iRoundTime < 1) return Plugin_Stop;
-	
+
 	if(TF2_IsSetup() && m_iRoundTime == 45)
 	{
 		for (int i = 1; i <= MaxClients; i++)
@@ -109,7 +109,7 @@ public Action Timer_Countdown(Handle timer, any data)
 			}
 		}
 	}
-		
+
 	if(!TF2_IsSetup() && m_iRoundTime == 20)
 	{
 		for (int i = 1; i <= MaxClients; i++)
@@ -120,7 +120,7 @@ public Action Timer_Countdown(Handle timer, any data)
 			}
 		}
 	}
-	
+
 	m_iRoundTime--;
 	return Plugin_Continue;
 }
@@ -164,26 +164,26 @@ public void ParseEconomySchema(KeyValues hConf)
 			// ===================
 			// || Checking Item ||
 			// ===================
-			
+
 			m_hKits = new ArrayList(sizeof(Soundtrack_t));
 			do {
 				char sType[32];
 				hConf.GetString("type", sType, sizeof(sType));
 				if (!StrEqual(sType, "soundtrack"))continue;
-				
+
 				char sIndex[11];
 				hConf.GetSectionName(sIndex, sizeof(sIndex));
 				int iDefIndex = StringToInt(sIndex);
-				
+
 				int iKitIndex = m_hKits.Length;
-				
+
 				Soundtrack_t hKit;
 				hKit.m_iDefIndex = iDefIndex;
 				if(hConf.JumpToKey("logic", false))
 				{
 					hConf.GetString("broadcast/win", hKit.m_sWinMusic, sizeof(hKit.m_sWinMusic));
 					hConf.GetString("broadcast/loss", hKit.m_sLossMusic, sizeof(hKit.m_sLossMusic));
-					
+
 					if(hConf.JumpToKey("events", false))
 					{
 						if(hConf.GotoFirstSubKey())
@@ -191,33 +191,33 @@ public void ParseEconomySchema(KeyValues hConf)
 							// ====================
 							// || Checking Event ||
 							// ====================
-							
+
 							hKit.m_hEvents = new ArrayList(sizeof(Event_t));
 							do {
 								int iEventIndex = hKit.m_hEvents.Length;
-								
+
 								Event_t hEvent;
 								hEvent.m_iPriority = hConf.GetNum("priority", 0);
-								
+
 								hEvent.m_bFireOnce = hConf.GetNum("fire_once") >= 1;
 								hEvent.m_bForceStart = hConf.GetNum("force_start") >= 1;
 								hEvent.m_bSkipPost = hConf.GetNum("skip_post") >= 1;
 								hConf.GetString("start_hook", hEvent.m_sStartHook, sizeof(hEvent.m_sStartHook));
 								hConf.GetString("stop_hook", hEvent.m_sStopHook, sizeof(hEvent.m_sStopHook));
 								hConf.GetString("id", hEvent.m_sID, sizeof(hEvent.m_sID));
-								
+
 								if(hConf.JumpToKey("pre_sample", false))
 								{
 									KeyValuesToSample(hConf, m_hPreSamples[iKitIndex][iEventIndex]);
 									hConf.GoBack();
 								}
-								
+
 								if(hConf.JumpToKey("post_sample", false))
 								{
 									KeyValuesToSample(hConf, m_hPostSamples[iKitIndex][iEventIndex]);
 									hConf.GoBack();
 								}
-								
+
 								if(hConf.JumpToKey("samples", false))
 								{
 									if(hConf.GotoFirstSubKey())
@@ -225,15 +225,15 @@ public void ParseEconomySchema(KeyValues hConf)
 										// =====================
 										// || Checking Sample ||
 										// =====================
-										
+
 										hEvent.m_hSamples = new ArrayList(sizeof(Sample_t));
 										do {
-											
+
 											Sample_t hSample;
 											KeyValuesToSample(hConf, hSample);
-											
+
 											hEvent.m_hSamples.PushArray(hSample);
-											
+
 										} while (hConf.GotoNextKey());
 										hConf.GoBack();
 									}
@@ -255,16 +255,16 @@ public void ParseEconomySchema(KeyValues hConf)
 }
 
 public void KeyValuesToSample(KeyValues hConf, Sample_t hSample)
-{							
+{
 	hSample.m_flDuration = hConf.GetFloat("duration");
 	hSample.m_flVolume = hConf.GetFloat("volume");
-	
+
 	hConf.GetString("move_to_event", hSample.m_sMoveToEvent, sizeof(hSample.m_sMoveToEvent));
 	hConf.GetString("sound", hSample.m_sSound, sizeof(hSample.m_sSound));
-	
+
 	hSample.m_nIterations = hConf.GetNum("iterations", 1);
 	hSample.m_nMoveToSample = hConf.GetNum("move_to_sample", -1);
-	
+
 	hSample.m_bPreserveSample = hConf.GetNum("preserve_sample", 0) == 1;
 }
 
@@ -280,13 +280,13 @@ public Action evBroadcast(Event hEvent, const char[] szName, bool bDontBroadcast
 		if (GetClientTeam(i) != iTeam)continue;
 
 		char sSound[MAX_SOUND_NAME];
-		
+
 		if(m_iMusicKit[i] > -1)
 		{
 			int iMusicKit = m_iMusicKit[i];
 			Soundtrack_t hKit;
 			m_hKits.GetArray(iMusicKit, hKit);
-			
+
 			if(StrContains(sOldSound, "YourTeamWon") != -1)
 			{
 				strcopy(sSound, sizeof(sSound), hKit.m_sWinMusic);
@@ -297,11 +297,11 @@ public Action evBroadcast(Event hEvent, const char[] szName, bool bDontBroadcast
 				strcopy(sSound, sizeof(sSound), hKit.m_sLossMusic);
 			}
 		}
-		
+
 		if(StrEqual(sSound, ""))
 		{
 			hEvent.FireToClient(i);
-			
+
 		} else {
 			Event hNewEvent = CreateEvent("teamplay_broadcast_audio");
 			if (hNewEvent == null)continue;
@@ -318,7 +318,7 @@ public Action evBroadcast(Event hEvent, const char[] szName, bool bDontBroadcast
 public Action teamplay_round_start(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
 	StopEventsForAll();
-	
+
 	if(!TF2_IsSetup() && !TF2_IsWaitingForPlayers())
 	{
 		RequestFrame(PlayRoundStartMusic, hEvent);
@@ -364,11 +364,11 @@ public void StopEventsForAll()
 		if(m_bIsPlaying[i])
 		{
 			// Otherwise, queue a stop.
-			
+
 			// Play null sound to stop current sample.
 			StopSound(i, SNDCHAN_AUTO, m_sActiveSound[i]);
 			strcopy(m_sActiveSound[i], sizeof(m_sActiveSound[]), "");
-			
+
 			// Stop everything if we have Force tag set.
 			if(m_hTimer[i] != null)
 			{
@@ -376,7 +376,7 @@ public void StopEventsForAll()
 				m_hTimer[i] = null;
 			}
 			BufferFlush(i);
-	
+
 			m_bForceNextEvent[i] = false;
 			m_bIsPlaying[i] = false;
 			m_bShouldStop[i] = false;
@@ -390,20 +390,20 @@ public void CEEvents_OnSendEvent(int client, const char[] event, int add, int un
 	Soundtrack_t hKit;
 	bool bFound = GetClientKit(client, hKit);
 	if (!bFound)return;
-	
+
 	for (int i = 0; i < hKit.m_hEvents.Length; i++)
 	{
 		int iEvent = i;
-		
+
 		Event_t hEvent;
 		hKit.m_hEvents.GetArray(i, hEvent);
-		
+
 		// Check if we need to start an event.
 		if(StrContains(hEvent.m_sStartHook, event) != -1)
 		{
 			// If this event is played only once, we skip this.
 			if (hEvent.m_bFireOnce && m_iCurrentEvent[client] == iEvent)continue;
-			
+
 			if(m_iCurrentEvent[client] > -1)
 			{
 				Event_t hOldEvent;
@@ -412,12 +412,12 @@ public void CEEvents_OnSendEvent(int client, const char[] event, int add, int un
 					if(hOldEvent.m_iPriority > hEvent.m_iPriority) continue;
 				}
 			}
-			
+
 			m_iNextEvent[client] = iEvent;
 			m_bForceNextEvent[client] = hEvent.m_bForceStart;
 			m_bShouldStop[client] = false;
 		}
-		
+
 		// Start Sample playing.
 		if(StrContains(hEvent.m_sStopHook, event) != -1)
 		{
@@ -427,7 +427,7 @@ public void CEEvents_OnSendEvent(int client, const char[] event, int add, int un
 			}
 		}
 	}
-	
+
 	PlayNextSample(client);
 }
 
@@ -468,7 +468,7 @@ public void PlayNextSample(int client)
 			{
 				StopSound(client, SNDCHAN_AUTO, m_sActiveSound[client]);
 			}
-			
+
 			strcopy(m_sActiveSound[client], sizeof(m_sActiveSound[]), hSample.m_sSound);
 			PrecacheSound(hSample.m_sSound);
 			EmitSoundToClient(client, hSample.m_sSound);
@@ -507,7 +507,7 @@ public void GetNextSample(int client, Sample_t hSample)
 {
 	// Make sure client exists.
 	if (!IsClientValid(client))return;
-	
+
 	// First, we check if we need to switch to next sample.
 	// We only do that if post and pre are not set and queue is empty.
 	if(m_bShouldStop[client])
@@ -535,7 +535,7 @@ public void GetNextSample(int client, Sample_t hSample)
 			hKit.m_hEvents.GetArray(m_iNextEvent[client], hEvent);
 			bSkipPost = hEvent.m_bSkipPost;
 		}
-		
+
 		if(StrEqual(m_hClientPostSample[client].m_sSound, "") || bSkipPost)
 		{
 			//PrintToConsole(client, "m_iNextEvent, true");
@@ -615,7 +615,7 @@ public void GetNextSample(int client, Sample_t hSample)
 public void BufferLoadEvent(int client, int event)
 {
 	if (!IsClientValid(client))return;
-	
+
 	Soundtrack_t hKit;
 	if (!GetClientKit(client, hKit))return;
 
@@ -630,7 +630,7 @@ public void BufferLoadEvent(int client, int event)
 	{
 		m_hSampleQueue[client].Clear();
 	}
-	
+
 	Event_t hEvent;
 	hKit.m_hEvents.GetArray(event, hEvent);
 
@@ -667,7 +667,7 @@ public void OnClientDisconnect(int client)
 public void ClearData(int client)
 {
 	delete m_hSampleQueue[client];
-	
+
 	m_iMusicKit[client] = -1;
 	m_iNextEvent[client] = -1;
 	m_iCurrentEvent[client] = -1;
@@ -676,7 +676,7 @@ public void ClearData(int client)
 	m_bIsPlaying[client] = false;
 	m_bShouldStop[client] = false;
 	m_bForceNextEvent[client] = false;
-	
+
 	if(m_hTimer[client] != null)
 	{
 		KillTimer(m_hTimer[client]);
@@ -687,17 +687,17 @@ public void ClearData(int client)
 public void MusicKit_SetKit(int client, int defid, char[] name)
 {
 	int iKitID = GetKitIndexByDefID(defid);
-	
+
 	if(iKitID != m_iMusicKit[client])
 	{
 		if(iKitID == -1)
 		{
-			PrintToChat(client, "\x01* Game soundtrack removed.", name);	
+			PrintToChat(client, "\x01* Game soundtrack removed.", name);
 		} else {
-			PrintToChat(client, "\x01* Game soundtrack set to: %s", name);	
+			PrintToChat(client, "\x01* Game soundtrack set to: %s", name);
 		}
 	}
-	
+
 	m_iMusicKit[client] = iKitID;
 }
 
@@ -706,7 +706,7 @@ public int GetEventIndexByID(int kit, const char[] sId)
 	Soundtrack_t hKit;
 	bool bFound = GetKitByIndex(kit, hKit);
 	if (!bFound)return -1;
-	
+
 	for (int i = 0; i < hKit.m_hEvents.Length; i++)
 	{
 		Event_t hEvent;
@@ -724,9 +724,9 @@ public bool GetKitByIndex(int index, Soundtrack_t kit)
 {
 	if (!UTIL_IsValidHandle(m_hKits))return false;
 	if (index >= m_hKits.Length)return false;
-	
+
 	m_hKits.GetArray(index, kit);
-	
+
 	return true;
 }
 
@@ -734,21 +734,21 @@ public bool GetKitEventByIndex(int kit, int index, Event_t event)
 {
 	Soundtrack_t hKit;
 	if (!GetKitByIndex(kit, hKit))return false;
-	
+
 	hKit.m_hEvents.GetArray(index, event);
-	
+
 	return true;
 }
 
 public int GetKitIndexByDefID(int defid)
 {
 	if (!UTIL_IsValidHandle(m_hKits))return -1;
-	
+
 	for (int i = 0; i < m_hKits.Length; i++)
 	{
 		Soundtrack_t hKit;
 		m_hKits.GetArray(i, hKit);
-		
+
 		if (hKit.m_iDefIndex == defid)return i;
 	}
 	return -1;
@@ -758,7 +758,7 @@ public bool GetClientKit(int client, Soundtrack_t hKit)
 {
 	if (m_iMusicKit[client] == -1)return false;
 	int iMusicKit = m_iMusicKit[client];
-	
+
 	if (!GetKitByIndex(iMusicKit, hKit))return false;
 	return true;
 }
@@ -767,17 +767,15 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 {
 	static float flOld = 0.0;
 	float flNew = Payload_GetProgress();
-	
+
 	if(flOld != flNew)
 	{
 		switch(m_nPayloadStage)
 		{
-			case 0: 
+			case 0:
 			{
 				if(flNew >= PAYLOAD_STAGE_1_START)
 				{
-					PrintToChatAll("Stage 1 Started");
-					
 					for (int i = 1; i <= MaxClients; i++)
 					{
 						if(IsClientReady(i))
@@ -788,12 +786,10 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 					m_nPayloadStage = 1;
 				}
 			}
-			case 1: 
+			case 1:
 			{
 				if(flNew >= PAYLOAD_STAGE_2_START)
 				{
-					PrintToChatAll("Stage 2 Started");
-					
 					for (int i = 1; i <= MaxClients; i++)
 					{
 						if(IsClientReady(i))
@@ -803,11 +799,9 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 					}
 					m_nPayloadStage = 2;
 				}
-				
+
 				if(flNew < PAYLOAD_STAGE_1_START)
 				{
-					PrintToChatAll("Stage 1 Cancelled");
-					
 					for (int i = 1; i <= MaxClients; i++)
 					{
 						if(IsClientReady(i))
@@ -818,12 +812,10 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 					m_nPayloadStage = 0;
 				}
 			}
-			case 2: 
+			case 2:
 			{
 				if(flNew < PAYLOAD_STAGE_1_START)
 				{
-					PrintToChatAll("Stage 2 Cancelled");
-					
 					for (int i = 1; i <= MaxClients; i++)
 					{
 						if(IsClientReady(i))
@@ -860,7 +852,7 @@ public Action teamplay_point_captured(Handle hEvent, const char[] szName, bool b
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
-		
+
 		CEEvents_SendEventToClient(i, "OST_POINT_CAPTURE", 1, view_as<int>(hEvent));
 	}
 }
