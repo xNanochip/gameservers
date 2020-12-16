@@ -207,19 +207,27 @@ public void OnDrawWeapon(int client, int iWeapon)
 	ClearWeaponWearables(client, iWeapon);
 	if(ShouldDrawWeaponModel(client, iWeapon))
 	{
-		SetEntityRenderMode(iWeapon, RENDER_TRANSALPHA);
-		SetEntityRenderColor(iWeapon, 0, 0, 0, 0);
-
-		SetEntProp(iWeapon, Prop_Send, "m_bBeingRepurposedForTaunt", 1);
-
-		if(ShouldDrawWeaponWorldModel(client, iWeapon))
+		if(IsFakeClient(client))
 		{
-			m_hModels[iWeapon].m_hWorldModel = CEModels_CreateTiedWearable(client, m_sModel[iWeapon], false, iWeapon);
-		}
-
-		if(ShouldDrawWeaponViewModel(client, iWeapon))
-		{
-			m_hModels[iWeapon].m_hViewModel = CEModels_CreateTiedWearable(client, m_sModel[iWeapon], true, iWeapon);
+			for (int i = 0; i <= 3; i++)
+			{
+				SetEntProp(iWeapon, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(m_sModel[iWeapon]), 4, i);
+			}
+		} else {
+			SetEntityRenderMode(iWeapon, RENDER_TRANSALPHA);
+			SetEntityRenderColor(iWeapon, 0, 0, 0, 0);
+	
+			SetEntProp(iWeapon, Prop_Send, "m_bBeingRepurposedForTaunt", 1);
+	
+			if(ShouldDrawWeaponWorldModel(client, iWeapon))
+			{
+				m_hModels[iWeapon].m_hWorldModel = CEModels_CreateTiedWearable(client, m_sModel[iWeapon], false, iWeapon);
+			}
+	
+			if(ShouldDrawWeaponViewModel(client, iWeapon))
+			{
+				m_hModels[iWeapon].m_hViewModel = CEModels_CreateTiedWearable(client, m_sModel[iWeapon], true, iWeapon);
+			}
 		}
 	}
 }
