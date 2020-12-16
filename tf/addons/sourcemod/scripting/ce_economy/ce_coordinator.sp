@@ -31,7 +31,6 @@ ConVar ce_economy_backend_auth;
 ConVar ce_server_index;
 
 Handle m_hSocket;
-Handle m_hReconnectTimer;
 ArrayList m_hFragmentedPayload;
 
 public void OnPluginStart()
@@ -107,6 +106,7 @@ public void NotifyPlayerLeave(int client)
 public void OnSocketError(Handle socket, const int errorType, const int errorNum, any hFile)
 {
 	StartCoordinatorCheckTimer();
+	delete socket;
 }
 
 public void OnSocketConnected(Handle socket, any arg)
@@ -208,6 +208,9 @@ public void StartCoordinatorCheckTimer()
 
 public void ConnectCoordinator()
 {
+	// Don't connect because server index is not valid.
+	if (CESC_GetServerID() <= 0)return;
+	
 	char sURL[64];
 	ce_economy_coordinator_domain.GetString(sURL, sizeof(sURL));
 	int iPort = ce_economy_coordinator_port.IntValue;
@@ -235,6 +238,7 @@ public void OnSocketDisconnected(Handle socket, any arg)
 	}
 	m_bCoordinatorConnected = false;
 	ConnectCoordinator();
+	delete socket;
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -407,6 +411,7 @@ public void httpRequestCallback(bool success, const char[] error, System2HTTPReq
 public any Native_SendMessage(Handle plugin, int numParams)
 {
 	if (!m_bCoreEnabled)return;
+	if (!m_bCoordinatorConnected)return;
 
 	// Name of the message.
 	char sContent[125];
