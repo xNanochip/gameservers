@@ -4,6 +4,9 @@
 #define MAX_SOUND_NAME 512
 #define MAX_EVENT_NAME 32
 
+#define PAYLOAD_STAGE_1_START 0.85
+#define PAYLOAD_STAGE_2_START 0.93
+
 #include <sdktools>
 #include <ce_events>
 #include <ce_manager_items>
@@ -18,6 +21,7 @@ int m_iMusicKit[MAXPLAYERS + 1] =  { -1, ... };
 int m_iNextEvent[MAXPLAYERS + 1] =  { -1, ... };
 int m_iCurrentEvent[MAXPLAYERS + 1] =  { -1, ... };
 int m_iCurrentSample[MAXPLAYERS + 1];
+char m_sActiveSound[MAXPLAYERS + 1][MAX_SOUND_NAME];
 
 bool m_bIsPlaying[MAXPLAYERS + 1];
 bool m_bShouldStop[MAXPLAYERS + 1];
@@ -362,7 +366,8 @@ public void StopEventsForAll()
 			// Otherwise, queue a stop.
 			
 			// Play null sound to stop current sample.
-			ClientCommand(i, "play misc/null.wav");
+			StopSound(i, SNDCHAN_AUTO, m_sActiveSound[i]);
+			strcopy(m_sActiveSound[i], sizeof(m_sActiveSound[]), "");
 			
 			// Stop everything if we have Force tag set.
 			if(m_hTimer[i] != null)
@@ -393,37 +398,32 @@ public void CEEvents_OnSendEvent(int client, const char[] event, int add, int un
 		Event_t hEvent;
 		hKit.m_hEvents.GetArray(i, hEvent);
 		
-		if(m_iCurrentEvent[client] != iEvent)
+		// Check if we need to start an event.
+		if(StrContains(hEvent.m_sStartHook, event) != -1)
 		{
-			// Start Sample playing.
-			if(StrContains(hEvent.m_sStartHook, event) != -1)
+			// If this event is played only once, we skip this.
+			if (hEvent.m_bFireOnce && m_iCurrentEvent[client] == iEvent)continue;
+			
+			if(m_iCurrentEvent[client] > -1)
 			{
-				if(m_iCurrentEvent[client] > -1)
+				Event_t hOldEvent;
+				if(GetKitEventByIndex(m_iMusicKit[client], m_iCurrentEvent[client], hOldEvent))
 				{
-					Event_t hOldEvent;
-					if(GetKitEventByIndex(m_iMusicKit[client], m_iCurrentEvent[client], hOldEvent))
-					{
-						if(hOldEvent.m_iPriority > hEvent.m_iPriority)
-						{
-							continue;
-						}
-					}
+					if(hOldEvent.m_iPriority > hEvent.m_iPriority) continue;
 				}
-				
-				if (hEvent.m_bFireOnce && m_iCurrentEvent[client] == iEvent)continue;
-	
-				m_iNextEvent[client] = iEvent;
-				m_bForceNextEvent[client] = hEvent.m_bForceStart;
-				m_bShouldStop[client] = false;
 			}
-		} else {
-			// Start Sample playing.
-			if(StrContains(hEvent.m_sStopHook, event) != -1)
+			
+			m_iNextEvent[client] = iEvent;
+			m_bForceNextEvent[client] = hEvent.m_bForceStart;
+			m_bShouldStop[client] = false;
+		}
+		
+		// Start Sample playing.
+		if(StrContains(hEvent.m_sStopHook, event) != -1)
+		{
+			if(m_bIsPlaying[client] && !m_bShouldStop[client])
 			{
-				if(m_bIsPlaying[client] && !m_bShouldStop[client])
-				{
-					m_bShouldStop[client] = true;
-				}
+				m_bShouldStop[client] = true;
 			}
 		}
 	}
@@ -460,14 +460,18 @@ public void PlayNextSample(int client)
 
 	if(!StrEqual(hSample.m_sSound, "") || hSample.m_bPreserveSample)
 	{
-		char sSound[MAX_SOUND_NAME];
-		Format(sSound, sizeof(sSound), "#%s", hSample.m_sSound);
 		m_bIsPlaying[client] = true;
 
 		if(!StrEqual(hSample.m_sSound, ""))
 		{
-			ClientCommand(client, "play misc/null.wav");
-			ClientCommand(client, "play %s", sSound);
+			if(!StrEqual(m_sActiveSound[client], ""))
+			{
+				StopSound(client, SNDCHAN_AUTO, m_sActiveSound[client]);
+			}
+			
+			strcopy(m_sActiveSound[client], sizeof(m_sActiveSound[]), hSample.m_sSound);
+			PrecacheSound(hSample.m_sSound);
+			EmitSoundToClient(client, hSample.m_sSound);
 		}
 
 		float flInterp = GetClientSoundInterp(client);
@@ -764,75 +768,73 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 	static float flOld = 0.0;
 	float flNew = Payload_GetProgress();
 	
-	const float flStage1 = 0.85;
-	const float flStage2 = 0.93;
-	const float flFinish = 0.99;
-	
 	if(flOld != flNew)
 	{
-		// It has changed.
-		if(flNew >= flFinish && flOld < flFinish)
+		switch(m_nPayloadStage)
 		{
-			//PrintToChatAll("Climax");
-			for (int i = 1; i <= MaxClients; i++)
+			case 0: 
 			{
-				if(IsClientReady(i))
+				if(flNew >= PAYLOAD_STAGE_1_START)
 				{
-					//CEEvents_SendEventToClient(i, "OST_PAYLOAD_CLIMAX", 1, GetRandomInt(1, 10000));
+					PrintToChatAll("Stage 1 Started");
+					
+					for (int i = 1; i <= MaxClients; i++)
+					{
+						if(IsClientReady(i))
+						{
+							CEEvents_SendEventToClient(i, "OST_PAYLOAD_S1_START", 1, GetRandomInt(1, 10000));
+						}
+					}
+					m_nPayloadStage = 1;
 				}
 			}
-		
-		}else if(flNew >= flStage2 && flOld < flStage2)
-		{
-			//PrintToChatAll("Stage 2 just started");
-			// Stage 2 just started.
-			for (int i = 1; i <= MaxClients; i++)
+			case 1: 
 			{
-				if(IsClientReady(i))
+				if(flNew >= PAYLOAD_STAGE_2_START)
 				{
-					//CEEvents_SendEventToClient(i, "OST_PAYLOAD_S2_START", 1, GetRandomInt(1, 10000));
+					PrintToChatAll("Stage 2 Started");
+					
+					for (int i = 1; i <= MaxClients; i++)
+					{
+						if(IsClientReady(i))
+						{
+							CEEvents_SendEventToClient(i, "OST_PAYLOAD_S2_START", 1, GetRandomInt(1, 10000));
+						}
+					}
+					m_nPayloadStage = 2;
+				}
+				
+				if(flNew < PAYLOAD_STAGE_1_START)
+				{
+					PrintToChatAll("Stage 1 Cancelled");
+					
+					for (int i = 1; i <= MaxClients; i++)
+					{
+						if(IsClientReady(i))
+						{
+							CEEvents_SendEventToClient(i, "OST_PAYLOAD_S1_CANCEL", 1, GetRandomInt(1, 10000));
+						}
+					}
+					m_nPayloadStage = 0;
 				}
 			}
-			m_nPayloadStage = 2;
-			
-		} else if (flNew < flStage2 && flOld >= flStage2)
-		{
-			//PrintToChatAll("Stage 2 just cancelled");
-			// Stage 2 just cancelled.
-			for (int i = 1; i <= MaxClients; i++)
+			case 2: 
 			{
-				if(IsClientReady(i))
+				if(flNew < PAYLOAD_STAGE_1_START)
 				{
-					//CEEvents_SendEventToClient(i, "OST_PAYLOAD_S2_CANCEL", 1, GetRandomInt(1, 10000));
+					PrintToChatAll("Stage 2 Cancelled");
+					
+					for (int i = 1; i <= MaxClients; i++)
+					{
+						if(IsClientReady(i))
+						{
+							CEEvents_SendEventToClient(i, "OST_PAYLOAD_S2_CANCEL", 1, GetRandomInt(1, 10000));
+						}
+					}
+					m_nPayloadStage = 0;
 				}
 			}
-			m_nPayloadStage = 0;
-		} else if(flNew >= flStage1 && flOld < flStage1)
-		{
-			//PrintToChatAll("Stage 1 just started");
-			// Stage 1 just started.
-			for (int i = 1; i <= MaxClients; i++)
-			{
-				if(IsClientReady(i))
-				{
-					//CEEvents_SendEventToClient(i, "OST_PAYLOAD_S1_START", 1, GetRandomInt(1, 10000));
-				}
-			}
-			m_nPayloadStage = 1;
-		} else if(flNew < flStage1 && flOld >= flStage1)
-		{
-			//PrintToChatAll("Stage 1 just cancelled");
-			// Stage 1 just cancelled.
-			for (int i = 1; i <= MaxClients; i++)
-			{
-				if(IsClientReady(i))
-				{
-					//CEEvents_SendEventToClient(i, "OST_PAYLOAD_S1_CANCEL", 1, GetRandomInt(1, 10000));
-				}
-			}
-			m_nPayloadStage = 0;
 		}
-		
 		flOld = flNew;
 	}
 }
