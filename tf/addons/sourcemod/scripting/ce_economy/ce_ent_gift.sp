@@ -64,11 +64,13 @@ public bool IsValidGift(int entity)
 
 public void OnEntityCreated(int entity)
 {
+	if (entity < 0)return;
 	FlushEntGift(entity);
 }
 
 public void OnEntityDestroyed(int entity)
 {	
+	if (entity < 0)return;
 	FlushEntGift(entity);
 }
 
