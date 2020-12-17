@@ -139,7 +139,7 @@ public void Gift_StartTargetMovement(int ent)
 
 public Action Gift_OnTouch(int entity, int other)
 {
-	if(IsClientValid(other))
+	if(IsClientValid(other) && IsValidGift(entity))
 	{
 		// Only allow target player to trigger this, if we're in target lock mode.
 		if(m_bTargetLock[entity] && other != m_hTarget[entity]) return Plugin_Handled;
