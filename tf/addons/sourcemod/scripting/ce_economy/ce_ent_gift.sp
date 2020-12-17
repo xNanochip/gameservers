@@ -102,10 +102,11 @@ public int Gift_Create(int client, float pos[3])
 		float vecAng[3];
 		vecAng[0] = GetRandomFloat(-20.0, 20.0);
 		vecAng[2] = GetRandomFloat(-20.0, 20.0);
+		
+		TeleportEntity(iEnt, pos, vecAng, NULL_VECTOR);
 
 		DispatchSpawn(iEnt);
 		ActivateEntity(iEnt);
-		TeleportEntity(iEnt, pos, vecAng, NULL_VECTOR);
 
 		SetEntProp(iEnt, Prop_Data, "m_nSolidType", 6);
 		SetEntProp(iEnt, Prop_Send, "m_usSolidFlags", 0x0008 | 0x0200);
