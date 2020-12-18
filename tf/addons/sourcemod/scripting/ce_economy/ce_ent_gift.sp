@@ -23,7 +23,7 @@ public Plugin myinfo =
 	name = "[CE Entity] ent_gift",
 	author = "Creators.TF Team",
 	description = "Holiday Gift Pickup",
-	version = "1.00",
+	version = "1.01",
 	url = "https://creators.tf"
 }
 
@@ -46,31 +46,37 @@ public void FlushEntGift(int entity)
 	m_hTarget[entity] = 0;
 	m_bTargetLock[entity] = false;
 	m_flCreationTime[entity] = 0.0;
-	
+
 	for (int i = 0; i < 3; i++)
 	{
 		m_vecStartCurvePos[entity][i] = 0.0;
 		m_vecPreCurvePos[entity][i] = 0.0;
 	}
-	
+
 	m_flDuration[entity] = 0.0;
 }
 
 public bool IsValidGift(int entity)
 {
-	if (!IsValidEntity(entity))return false;
-	return m_bIsGift[entity];
+	if (!IsValidEntity(entity) || entity <= 0)
+	{
+		return false;
+	}
+	else
+	{
+		return m_bIsGift[entity];
+	}
 }
 
 public void OnEntityCreated(int entity)
 {
-	if (entity < 0)return;
+	if (!IsValidEntity(entity) || entity <= 0) return;
 	FlushEntGift(entity);
 }
 
 public void OnEntityDestroyed(int entity)
-{	
-	if (entity < 0)return;
+{
+	if (!IsValidEntity(entity) || entity <= 0) return;
 	FlushEntGift(entity);
 }
 
@@ -94,7 +100,7 @@ public void Gift_CreateForPlayer(int client, int origin)
 public int Gift_Create(int client, float pos[3])
 {
 	int iEnt = CreateEntityByName("prop_physics_override");
-	if(iEnt > -1)
+	if (iEnt > -1)
 	{
 		m_bIsGift[iEnt] = true;
 		SetEntityModel(iEnt, TF_GIFT_MODEL);
@@ -102,7 +108,7 @@ public int Gift_Create(int client, float pos[3])
 		float vecAng[3];
 		vecAng[0] = GetRandomFloat(-20.0, 20.0);
 		vecAng[2] = GetRandomFloat(-20.0, 20.0);
-		
+
 		TeleportEntity(iEnt, pos, vecAng, NULL_VECTOR);
 
 		DispatchSpawn(iEnt);
@@ -111,7 +117,7 @@ public int Gift_Create(int client, float pos[3])
 		SetEntProp(iEnt, Prop_Data, "m_nSolidType", 6);
 		SetEntProp(iEnt, Prop_Send, "m_usSolidFlags", 0x0008 | 0x0200);
 		SetEntProp(iEnt, Prop_Send, "m_CollisionGroup", 2);
-						
+
 		SDKHook(iEnt, SDKHook_StartTouch, Gift_OnTouch);
 
 		// Gift is not flying to target when spawned.
@@ -153,7 +159,7 @@ public Action Gift_OnTouch(int entity, int other)
 
 public void Gift_SetActive(int entity, bool active)
 {
-	if(active)
+	if (active)
 	{
 		// Gift is flying to the target.
 		SetEntPropFloat(entity, Prop_Send, "m_flModelScale", 0.3);
@@ -170,7 +176,7 @@ public void Gift_SetActive(int entity, bool active)
 
 public void Gift_InitSplineData(int iEnt)
 {
-	if (!IsValidGift(iEnt))return;
+	if (!IsValidGift(iEnt)) return;
 	m_flCreationTime[iEnt] = GetEngineTime();
 	GetEntPropVector(iEnt, Prop_Send, "m_vecOrigin", m_vecStartCurvePos[iEnt]);
 
@@ -195,7 +201,7 @@ public void Gift_InitSplineData(int iEnt)
 
 public void Gift_FlyTowardsTargetEntity(any iEnt)
 {
-	if (!IsValidGift(iEnt))return;
+	if (!IsValidGift(iEnt)) return;
 
 	int iTarget = m_hTarget[iEnt];
 	float flLife = GetEngineTime() - m_flCreationTime[iEnt];
@@ -278,7 +284,7 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 // -----------------------------------------------------------------------------------------
 public void Catmull_Rom_Spline(float p1[3], float p2[3], float p3[3], float p4[3], float t, float output[3])
 {
-	
+
 	float tSqr = t * t * 0.5;
 	float tSqrSqr = t * tSqr;
 
@@ -340,7 +346,7 @@ public float Bias(float x, float biasAmt)
 public int TF_StartAttachedParticle(const char[] system, int entity, float lifetime)
 {
 	int iParticle = CreateEntityByName("info_particle_system");
-	if(iParticle > -1)
+	if (iParticle > -1)
 	{
 		float vecPos[3];
 		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", vecPos);
@@ -361,7 +367,7 @@ public int TF_StartAttachedParticle(const char[] system, int entity, float lifet
 
 public Action Timer_RemoveParticle(Handle timer, any particle)
 {
-	if(IsValidEntity(particle))
+	if (IsValidEntity(particle))
 	{
 		AcceptEntityInput(particle, "Stop");
 		AcceptEntityInput(particle, "Kill");
