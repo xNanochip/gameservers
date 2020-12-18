@@ -20,6 +20,7 @@
 	"$rimlightboost" "2"
 
 	"$cloakPassEnabled" "1"
+}
 
 "VertexlitGeneric"
 {
