@@ -360,16 +360,13 @@ public int TF_StartAttachedParticle(const char[] system, int entity, float lifet
 
 		ActivateEntity(iParticle);
 		AcceptEntityInput(iParticle, "Start");
-		CreateTimer(lifetime, Timer_RemoveParticle, iParticle);
+		
+		//have the entity kill itself after a set time rather than manually killing it.
+		char info[64];
+		Format(info, sizeof(info), "OnUser1 !self:kill::%d:1", RoundFloat(lifetime));
+		SetVariantString(info);
+		AcceptEntityInput(iParticle, "AddOutput");
+		AcceptEntityInput(iParticle, "FireUser1");
 	}
 	return iParticle;
-}
-
-public Action Timer_RemoveParticle(Handle timer, any particle)
-{
-	if (IsValidEntity(particle))
-	{
-		AcceptEntityInput(particle, "Stop");
-		AcceptEntityInput(particle, "Kill");
-	}
 }
