@@ -31,6 +31,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
+	SetFailState("unloaded until fixed by moonly");
 	// Misc Events
 	HookEvent("player_death", player_death);
 }
