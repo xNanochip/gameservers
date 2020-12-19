@@ -1,5 +1,6 @@
 #define OST_MAX_KITS 32
-#define OST_MAX_EVENTS 16
+#define OST_MAX_EVENTS 256
+#define OST_MAX_SAMPLES 512
 
 enum struct Soundtrack_t
 {
@@ -7,6 +8,9 @@ enum struct Soundtrack_t
 
 	char m_sWinMusic[512];
 	char m_sLossMusic[512];
+
+	int m_iEvents[16];
+	int m_iEventsCount;
 
 	ArrayList m_hEvents;
 }
@@ -37,11 +41,12 @@ enum struct Event_t
 	bool m_bForceStart;
     bool m_bFireOnce;
     bool m_bSkipPost;
-    
+
     int m_iPriority;
 
-	Sample_t m_hPre;
-	Sample_t m_hPost;
+	int m_iPreSample;
+	int m_iPostSample;
 
-	ArrayList m_hSamples;
+	int m_iSamples[32];
+	int m_iSamplesCount;
 }
