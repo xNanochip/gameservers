@@ -61,7 +61,7 @@ public void OnPluginStart()
 	HookEvent("teamplay_round_start", teamplay_round_start, EventHookMode_Pre);
 	HookEvent("teamplay_round_win", teamplay_round_win);
 	HookEvent("teamplay_point_captured", teamplay_point_captured);
-	
+
 	CreateTimer(0.5, Timer_EscordProgressUpdate, _, TIMER_REPEAT);
 	RegServerCmd("ce_soundtrack_setkit", cSetKit, "");
 	RegServerCmd("ce_soundtrack_dump", cDump, "");
@@ -701,13 +701,53 @@ public void BufferLoadEvent(int client, int event)
 
 public Action teamplay_round_start(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
-	//StopEventsForAll();
-
+	StopEventsForAll();
 	if(!TF2_IsSetup() && !TF2_IsWaitingForPlayers())
 	{
-		//RequestFrame(PlayRoundStartMusic, hEvent);
+		RequestFrame(PlayRoundStartMusic, hEvent);
 	}
 }
+
+public void PlayRoundStartMusic(any hEvent)
+{
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if(IsClientReady(i))
+		{
+			CEEvents_SendEventToClient(i, "OST_ROUND_START", 1, view_as<int>(hEvent));
+		}
+	}
+}
+
+public void StopEventsForAll()
+{
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientValid(i))continue;
+		if(m_bIsPlaying[i])
+		{
+			// Otherwise, queue a stop.
+
+			// Play null sound to stop current sample.
+			StopSound(i, SNDCHAN_AUTO, m_sActiveSound[i]);
+			strcopy(m_sActiveSound[i], sizeof(m_sActiveSound[]), "");
+
+			// Stop everything if we have Force tag set.
+			if(m_hTimer[i] != null)
+			{
+				KillTimer(m_hTimer[i]);
+				m_hTimer[i] = null;
+			}
+			BufferFlush(i);
+
+			m_bForceNextEvent[i] = false;
+			m_bIsPlaying[i] = false;
+			m_bShouldStop[i] = false;
+		}
+		m_iNextEvent[i] = -1;
+	}
+}
+
 
 public Action teamplay_round_win(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
