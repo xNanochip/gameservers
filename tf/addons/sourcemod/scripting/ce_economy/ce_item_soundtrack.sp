@@ -14,28 +14,34 @@
 #include <ce_util>
 #include <ce_core>
 
-ArrayList m_hKits;
+Soundtrack_t m_hKitDefs[OST_MAX_KITS];
+int m_iKitDefsLength = 0;
+
+Event_t m_hEventDefs[OST_MAX_EVENTS];
+int m_iEventDefsLength = 0;
+
+Sample_t m_hSampleDefs[OST_MAX_SAMPLES];
+int m_iSampleDefsLength = 0;
 
 int m_iMusicKit[MAXPLAYERS + 1] =  { -1, ... };
 
-int m_iNextEvent[MAXPLAYERS + 1] =  { -1, ... };
-int m_iCurrentEvent[MAXPLAYERS + 1] =  { -1, ... };
-int m_iCurrentSample[MAXPLAYERS + 1];
+int m_iNextEvent[MAXPLAYERS + 1];
+
+int m_iCurrentEvent[MAXPLAYERS + 1];
+
 char m_sActiveSound[MAXPLAYERS + 1][MAX_SOUND_NAME];
 
 bool m_bIsPlaying[MAXPLAYERS + 1];
 bool m_bShouldStop[MAXPLAYERS + 1];
 bool m_bForceNextEvent[MAXPLAYERS + 1];
 
-Sample_t m_hClientPreSample[MAXPLAYERS + 1];
-Sample_t m_hClientPostSample[MAXPLAYERS + 1];
-
-Sample_t m_hPreSamples[OST_MAX_KITS][OST_MAX_EVENTS];
-Sample_t m_hPostSamples[OST_MAX_KITS][OST_MAX_EVENTS];
-
 Handle m_hTimer[MAXPLAYERS + 1];
 
-ArrayList m_hSampleQueue[MAXPLAYERS + 1];
+int m_iQueueLength[MAXPLAYERS + 1];
+int m_iQueuePointer[MAXPLAYERS + 1];
+Sample_t m_hQueue[MAXPLAYERS + 1][OST_MAX_EVENTS];
+Sample_t m_hPreSample[MAXPLAYERS + 1];
+Sample_t m_hPostSample[MAXPLAYERS + 1];
 
 int m_nPayloadStage = 0;
 int m_iRoundTime = 0;
@@ -51,78 +57,115 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	HookEvent("teamplay_broadcast_audio", evBroadcast, EventHookMode_Pre);
+	HookEvent("teamplay_broadcast_audio", teamplay_broadcast_audio, EventHookMode_Pre);
 	HookEvent("teamplay_round_start", teamplay_round_start, EventHookMode_Pre);
 	HookEvent("teamplay_round_win", teamplay_round_win);
 	HookEvent("teamplay_point_captured", teamplay_point_captured);
+	
 	CreateTimer(0.5, Timer_EscordProgressUpdate, _, TIMER_REPEAT);
-	RegServerCmd("ce_quest_setkit", cSetKit, "");
+	RegServerCmd("ce_soundtrack_setkit", cSetKit, "");
+	RegServerCmd("ce_soundtrack_dump", cDump, "");
 
 	HookEntityOutput("team_round_timer", "On30SecRemain", OnEntityOutput);
 	HookEntityOutput("team_round_timer", "On1MinRemain", OnEntityOutput);
 }
 
-public bool TF2_IsWaitingForPlayers()
+public void OnAllPluginsLoaded()
 {
-	return GameRules_GetProp("m_bInWaitingForPlayers") == 1;
+	KeyValues hSchema = CE_GetEconomyConfig();
+	if(hSchema == INVALID_HANDLE) return;
+	ParseEconomySchema(hSchema);
+	delete hSchema;
 }
 
-public bool TF2_IsSetup()
+public void ParseEconomySchema(KeyValues hConf)
 {
-	return GameRules_GetProp("m_bInSetup") == 1;
-}
-
-public void OnEntityOutput(const char[] output, int caller, int activator, float delay)
-{
-	if (TF2_IsWaitingForPlayers())return;
-
-	// Round almost over.
-	if (strcmp(output, "On30SecRemain") == 0)
+	if(hConf.JumpToKey("Items", false))
 	{
-		if (TF2_IsSetup())return;
-
-		m_iRoundTime = 29;
-		CreateTimer(1.0, Timer_Countdown, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
-	}
-
-	// Setup
-	if (strcmp(output, "On1MinRemain") == 0)
-	{
-		if (!TF2_IsSetup())return;
-
-		m_iRoundTime = 59;
-		CreateTimer(1.0, Timer_Countdown, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
-	}
-}
-
-public Action Timer_Countdown(Handle timer, any data)
-{
-	if (m_iRoundTime < 1) return Plugin_Stop;
-
-	if(TF2_IsSetup() && m_iRoundTime == 45)
-	{
-		for (int i = 1; i <= MaxClients; i++)
+		if(hConf.GotoFirstSubKey())
 		{
-			if(IsClientReady(i))
-			{
-				CEEvents_SendEventToClient(i, "OST_ROUND_SETUP", 1, GetRandomInt(1, 10000));
-			}
+			do {
+				char sType[32];
+				hConf.GetString("type", sType, sizeof(sType));
+				if (!StrEqual(sType, "soundtrack"))continue;
+				
+				PrecacheSoundtrackKeyValues(hConf);
+			} while (hConf.GotoNextKey());
 		}
 	}
+}
 
-	if(!TF2_IsSetup() && m_iRoundTime == 20)
+public void OnClientPostAdminCheck(int client)
+{
+	m_iMusicKit[client] = -1;
+	BufferFlush(client);
+}
+
+public Action cDump(int args)
+{
+	LogMessage("Dumping precached data");
+	for (int i = 0; i < m_iKitDefsLength; i++)
 	{
-		for (int i = 1; i <= MaxClients; i++)
+		Soundtrack_t hKit;
+		GetKitByIndex(i, hKit);
+		
+		LogMessage("Soundtrack_t");
+		LogMessage("{");
+		LogMessage("  m_iDefIndex = %d", hKit.m_iDefIndex);
+		LogMessage("  m_sWinMusic = \"%s\"", hKit.m_sWinMusic);
+		LogMessage("  m_sLossMusic = \"%s\"", hKit.m_sLossMusic);
+		LogMessage("  m_iEventsCount = %d", hKit.m_iEventsCount);
+		LogMessage("  m_iEvents =");
+		LogMessage("  [");
+		
+		for (int j = 0; j < hKit.m_iEventsCount; j++)
 		{
-			if(IsClientReady(i))
+			int iEventIndex = hKit.m_iEvents[j];
+			
+			Event_t hEvent;
+			GetEventByIndex(iEventIndex, hEvent);
+			LogMessage("    %d => Event_t (%d)", j, iEventIndex);
+			LogMessage("    {");
+			LogMessage("      m_sStartHook = \"%s\"", hEvent.m_sStartHook);
+			LogMessage("      m_sStopHook = \"%s\"", hEvent.m_sStopHook);
+			LogMessage("      m_sID = \"%s\"", hEvent.m_sID);
+			
+			LogMessage("      m_bForceStart = %s", hEvent.m_bForceStart ? "true" : "false");
+			LogMessage("      m_bFireOnce = %s", hEvent.m_bFireOnce ? "true" : "false");
+			LogMessage("      m_bSkipPost = %s", hEvent.m_bSkipPost ? "true" : "false");
+			
+			LogMessage("      m_iPriority = %d", hEvent.m_iPriority);
+			LogMessage("      m_iSamplesCount = %d", hEvent.m_iSamplesCount);
+			LogMessage("      m_iSamples =");
+			LogMessage("      [");
+			
+			for (int k = 0; k < hEvent.m_iSamplesCount; k++)
 			{
-				CEEvents_SendEventToClient(i, "OST_ROUND_ALMOST_END", 1, GetRandomInt(1, 10000));
+				int iSampleIndex = hEvent.m_iSamples[k];
+				
+				Sample_t hSample;
+				GetSampleByIndex(iSampleIndex, hSample);
+				LogMessage("        %d => Sample_t (%d)", k, iSampleIndex);
+				LogMessage("        {");
+				LogMessage("          m_sSound = \"%s\"", hSample.m_sSound);
+				LogMessage("          m_nIterations = %d", hSample.m_nIterations);
+				LogMessage("          m_nCurrentIteration = %d", hSample.m_nCurrentIteration);
+				LogMessage("          m_nMoveToSample = %d", hSample.m_nMoveToSample);
+				LogMessage("          m_sMoveToEvent = \"%d\"", hSample.m_sMoveToEvent);
+				LogMessage("          m_flDuration = %f", hSample.m_flDuration);
+				LogMessage("          m_flVolume = %f", hSample.m_flVolume);
+				LogMessage("          m_bPreserveSample = %s", hSample.m_bPreserveSample ? "true" : "false");
+				LogMessage("        }");
 			}
+			
+			LogMessage("      ]");
+			LogMessage("    }");
 		}
+		
+		LogMessage("  ]");
+		LogMessage("}");
+		
 	}
-
-	m_iRoundTime--;
-	return Plugin_Continue;
 }
 
 public Action cSetKit(int args)
@@ -141,121 +184,128 @@ public Action cSetKit(int args)
 	return Plugin_Handled;
 }
 
-public void CE_OnSchemaUpdated(KeyValues hSchema)
+public void MusicKit_SetKit(int client, int defid, char[] name)
 {
-	LogMessage("Schema updated");
-	ParseEconomySchema(hSchema);
+	int iKitID = GetKitIndexByDefID(defid);
+
+	if(iKitID != m_iMusicKit[client])
+	{
+		if(iKitID == -1)
+		{
+			PrintToChat(client, "\x01* Game soundtrack removed.", name);
+		} else {
+			PrintToChat(client, "\x01* Game soundtrack set to: %s", name);
+		}
+	}
+
+	m_iMusicKit[client] = iKitID;
+	m_iCurrentEvent[client] = -1;
+	m_iNextEvent[client] = -1;
+	BufferFlush(client);
 }
 
-public void OnAllPluginsLoaded()
+public int PrecacheSoundtrackKeyValues(KeyValues hConf)
 {
-	KeyValues hSchema = CE_GetEconomyConfig();
-	if(hSchema == INVALID_HANDLE) return;
-	ParseEconomySchema(hSchema);
-	delete hSchema;
+	// Getting Definition Index of the kit.
+	char sIndex[11];
+	hConf.GetSectionName(sIndex, sizeof(sIndex));
+	int iDefIndex = StringToInt(sIndex);
+	
+	char sName[128];
+	hConf.GetString("name", sName, sizeof(sName));
+
+	int iIndex = m_iKitDefsLength;
+	Soundtrack_t hKit;
+	hKit.m_iDefIndex = iDefIndex;
+
+	if(hConf.JumpToKey("logic", false))
+	{
+		// Setting Win and Lose music.
+		hConf.GetString("broadcast/win", hKit.m_sWinMusic, sizeof(hKit.m_sWinMusic));
+		hConf.GetString("broadcast/loss", hKit.m_sLossMusic, sizeof(hKit.m_sLossMusic));
+
+		if(hConf.JumpToKey("events", false))
+		{
+			if(hConf.GotoFirstSubKey())
+			{
+				do {
+					int iEvent = PrecacheEventKeyValues(hConf);
+					// Add to array.
+
+					hKit.m_iEvents[hKit.m_iEventsCount] = iEvent;
+					hKit.m_iEventsCount++;
+
+				} while (hConf.GotoNextKey());
+				hConf.GoBack();
+			}
+			hConf.GoBack();
+		}
+		hConf.GoBack();
+	}
+
+	m_hKitDefs[iIndex] = hKit;
+	m_iKitDefsLength++;
+
+	return iIndex;
 }
 
-public void ParseEconomySchema(KeyValues hConf)
+public int PrecacheEventKeyValues(KeyValues hConf)
 {
-	if(hConf.JumpToKey("Items", false))
+	int iIndex = m_iEventDefsLength;
+	Event_t hEvent;
+
+	hEvent.m_iPriority = hConf.GetNum("priority", 0);
+
+	hEvent.m_bFireOnce = hConf.GetNum("fire_once") >= 1;
+	hEvent.m_bForceStart = hConf.GetNum("force_start") >= 1;
+	hEvent.m_bSkipPost = hConf.GetNum("skip_post") >= 1;
+
+	hConf.GetString("start_hook", hEvent.m_sStartHook, sizeof(hEvent.m_sStartHook));
+	hConf.GetString("stop_hook", hEvent.m_sStopHook, sizeof(hEvent.m_sStopHook));
+	hConf.GetString("id", hEvent.m_sID, sizeof(hEvent.m_sID));
+	
+	hEvent.m_iPreSample = -1;
+	hEvent.m_iPostSample = -1;
+
+	if(hConf.JumpToKey("pre_sample", false))
+	{
+		hEvent.m_iPreSample = PrecacheSampleKeyValues(hConf);
+		hConf.GoBack();
+	}
+
+	if(hConf.JumpToKey("post_sample", false))
+	{
+		hEvent.m_iPostSample = PrecacheSampleKeyValues(hConf);
+		hConf.GoBack();
+	}
+
+	if(hConf.JumpToKey("samples", false))
 	{
 		if(hConf.GotoFirstSubKey())
 		{
-			// ===================
-			// || Checking Item ||
-			// ===================
-
-			m_hKits = new ArrayList(sizeof(Soundtrack_t));
 			do {
-				char sType[32];
-				hConf.GetString("type", sType, sizeof(sType));
-				if (!StrEqual(sType, "soundtrack"))continue;
+				int iSample = PrecacheSampleKeyValues(hConf);
 
-				char sIndex[11];
-				hConf.GetSectionName(sIndex, sizeof(sIndex));
-				int iDefIndex = StringToInt(sIndex);
+				hEvent.m_iSamples[hEvent.m_iSamplesCount] = iSample;
+				hEvent.m_iSamplesCount++;
 
-				int iKitIndex = m_hKits.Length;
-
-				Soundtrack_t hKit;
-				hKit.m_iDefIndex = iDefIndex;
-				if(hConf.JumpToKey("logic", false))
-				{
-					hConf.GetString("broadcast/win", hKit.m_sWinMusic, sizeof(hKit.m_sWinMusic));
-					hConf.GetString("broadcast/loss", hKit.m_sLossMusic, sizeof(hKit.m_sLossMusic));
-
-					if(hConf.JumpToKey("events", false))
-					{
-						if(hConf.GotoFirstSubKey())
-						{
-							// ====================
-							// || Checking Event ||
-							// ====================
-
-							hKit.m_hEvents = new ArrayList(sizeof(Event_t));
-							do {
-								int iEventIndex = hKit.m_hEvents.Length;
-
-								Event_t hEvent;
-								hEvent.m_iPriority = hConf.GetNum("priority", 0);
-
-								hEvent.m_bFireOnce = hConf.GetNum("fire_once") >= 1;
-								hEvent.m_bForceStart = hConf.GetNum("force_start") >= 1;
-								hEvent.m_bSkipPost = hConf.GetNum("skip_post") >= 1;
-								hConf.GetString("start_hook", hEvent.m_sStartHook, sizeof(hEvent.m_sStartHook));
-								hConf.GetString("stop_hook", hEvent.m_sStopHook, sizeof(hEvent.m_sStopHook));
-								hConf.GetString("id", hEvent.m_sID, sizeof(hEvent.m_sID));
-
-								if(hConf.JumpToKey("pre_sample", false))
-								{
-									KeyValuesToSample(hConf, m_hPreSamples[iKitIndex][iEventIndex]);
-									hConf.GoBack();
-								}
-
-								if(hConf.JumpToKey("post_sample", false))
-								{
-									KeyValuesToSample(hConf, m_hPostSamples[iKitIndex][iEventIndex]);
-									hConf.GoBack();
-								}
-
-								if(hConf.JumpToKey("samples", false))
-								{
-									if(hConf.GotoFirstSubKey())
-									{
-										// =====================
-										// || Checking Sample ||
-										// =====================
-
-										hEvent.m_hSamples = new ArrayList(sizeof(Sample_t));
-										do {
-
-											Sample_t hSample;
-											KeyValuesToSample(hConf, hSample);
-
-											hEvent.m_hSamples.PushArray(hSample);
-
-										} while (hConf.GotoNextKey());
-										hConf.GoBack();
-									}
-									hConf.GoBack();
-								}
-								hKit.m_hEvents.PushArray(hEvent);
-							} while (hConf.GotoNextKey());
-							hConf.GoBack();
-						}
-						hConf.GoBack();
-					}
-					hConf.GoBack();
-				}
-				m_hKits.PushArray(hKit);
 			} while (hConf.GotoNextKey());
+			hConf.GoBack();
 		}
+		hConf.GoBack();
 	}
-	hConf.Rewind();
+
+	m_hEventDefs[iIndex] = hEvent;
+	m_iEventDefsLength++;
+
+	return iIndex;
 }
 
-public void KeyValuesToSample(KeyValues hConf, Sample_t hSample)
+public int PrecacheSampleKeyValues(KeyValues hConf)
 {
+	int iIndex = m_iSampleDefsLength;
+	Sample_t hSample;
+
 	hSample.m_flDuration = hConf.GetFloat("duration");
 	hSample.m_flVolume = hConf.GetFloat("volume");
 
@@ -266,9 +316,14 @@ public void KeyValuesToSample(KeyValues hConf, Sample_t hSample)
 	hSample.m_nMoveToSample = hConf.GetNum("move_to_sample", -1);
 
 	hSample.m_bPreserveSample = hConf.GetNum("preserve_sample", 0) == 1;
+
+	m_hSampleDefs[iIndex] = hSample;
+	m_iSampleDefsLength++;
+
+	return iIndex;
 }
 
-public Action evBroadcast(Event hEvent, const char[] szName, bool bDontBroadcast)
+public Action teamplay_broadcast_audio(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int iTeam = hEvent.GetInt("team");
 	char sOldSound[MAX_SOUND_NAME];
@@ -276,17 +331,14 @@ public Action evBroadcast(Event hEvent, const char[] szName, bool bDontBroadcast
 
 	for (int i = 1; i < MaxClients; i++)
 	{
-		if (!IsClientValid(i))continue;
+		if (!IsClientReady(i))continue;
 		if (GetClientTeam(i) != iTeam)continue;
 
 		char sSound[MAX_SOUND_NAME];
-
-		if(m_iMusicKit[i] > -1)
+		
+		Soundtrack_t hKit;
+		if(GetClientKit(i, hKit))
 		{
-			int iMusicKit = m_iMusicKit[i];
-			Soundtrack_t hKit;
-			m_hKits.GetArray(iMusicKit, hKit);
-
 			if(StrContains(sOldSound, "YourTeamWon") != -1)
 			{
 				strcopy(sSound, sizeof(sSound), hKit.m_sWinMusic);
@@ -307,6 +359,7 @@ public Action evBroadcast(Event hEvent, const char[] szName, bool bDontBroadcast
 			if (hNewEvent == null)continue;
 
 			hNewEvent.SetInt("team", iTeam);
+			hNewEvent.SetInt("override", 1);
 			hNewEvent.SetString("sound", sSound);
 			hNewEvent.FireToClient(i);
 		}
@@ -315,88 +368,75 @@ public Action evBroadcast(Event hEvent, const char[] szName, bool bDontBroadcast
 	return Plugin_Handled;
 }
 
-public Action teamplay_round_start(Event hEvent, const char[] szName, bool bDontBroadcast)
+public int GetKitIndexByDefID(int defid)
 {
-	StopEventsForAll();
-
-	if(!TF2_IsSetup() && !TF2_IsWaitingForPlayers())
+	for (int i = 0; i < m_iKitDefsLength; i++)
 	{
-		RequestFrame(PlayRoundStartMusic, hEvent);
+		if (m_hKitDefs[i].m_iDefIndex == defid)return i;
 	}
+	return -1;
 }
 
-public void PlayRoundStartMusic(any hEvent)
+public bool GetKitByIndex(int id, Soundtrack_t hKit)
 {
-	for (int i = 1; i <= MaxClients; i++)
+	if(id >= m_iKitDefsLength || id < 0) return false;
+	hKit = m_hKitDefs[id];
+	return true;
+}
+
+public bool GetEventByIndex(int id, Event_t hEvent)
+{
+	if(id >= m_iEventDefsLength || id < 0) return false;
+	hEvent = m_hEventDefs[id];
+	return true;
+}
+
+public bool GetSampleByIndex(int id, Sample_t hSample)
+{
+	if(id >= m_iSampleDefsLength || id < 0) return false;
+	hSample = m_hSampleDefs[id];
+	return true;
+}
+
+public int GetEventIndexByKitAndID(int kit, char[] id)
+{
+	Soundtrack_t hKit;
+	GetKitByIndex(kit, hKit);
+	
+	for (int i = 0; i < hKit.m_iEventsCount; i++)
 	{
-		if(IsClientReady(i))
+		int iEventIndex = hKit.m_iEvents[i];
+		
+		Event_t hEvent;
+		if(GetEventByIndex(iEventIndex, hEvent))
 		{
-			CEEvents_SendEventToClient(i, "OST_ROUND_START", 1, view_as<int>(hEvent));
+			if (StrEqual(hEvent.m_sID, ""))continue;
+			if (StrEqual(hEvent.m_sID, id))return iEventIndex;
 		}
 	}
+	
+	return -1;
 }
 
-public Action teamplay_round_win(Event hEvent, const char[] szName, bool bDontBroadcast)
+public bool GetClientKit(int client, Soundtrack_t hKit)
 {
-	int iWinReason = GetEventInt(hEvent, "winreason");
-	if(m_nPayloadStage == 2 && iWinReason == 1)
-	{
-		for (int i = 1; i <= MaxClients; i++)
-		{
-			if(IsClientReady(i))
-			{
-				CEEvents_SendEventToClient(i, "OST_PAYLOAD_CLIMAX", 1, view_as<int>(hEvent));
-			}
-		}
-	}
-}
+	if (m_iMusicKit[client] < 0)return false;
 
-public void RF_StopEventsForAll(any forced)
-{
-	StopEventsForAll();
-}
-
-public void StopEventsForAll()
-{
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if (!IsClientValid(i))continue;
-		if(m_bIsPlaying[i])
-		{
-			// Otherwise, queue a stop.
-
-			// Play null sound to stop current sample.
-			StopSound(i, SNDCHAN_AUTO, m_sActiveSound[i]);
-			strcopy(m_sActiveSound[i], sizeof(m_sActiveSound[]), "");
-
-			// Stop everything if we have Force tag set.
-			if(m_hTimer[i] != null)
-			{
-				KillTimer(m_hTimer[i]);
-				m_hTimer[i] = null;
-			}
-			BufferFlush(i);
-
-			m_bForceNextEvent[i] = false;
-			m_bIsPlaying[i] = false;
-			m_bShouldStop[i] = false;
-		}
-		m_iNextEvent[i] = -1;
-	}
+	if (!GetKitByIndex(m_iMusicKit[client], hKit))return false;
+	return true;
 }
 
 public void CEEvents_OnSendEvent(int client, const char[] event, int add, int unique)
 {
 	Soundtrack_t hKit;
-	bool bFound = GetClientKit(client, hKit);
-	if (!bFound)return;
+	if(!GetClientKit(client, hKit)) return;
 
-	for (int i = 0; i < hKit.m_hEvents.Length; i++)
+	for (int i = 0; i < hKit.m_iEventsCount; i++)
 	{
-		int iEvent = i;
+		int iEvent = hKit.m_iEvents[i];
 
 		Event_t hEvent;
-		hKit.m_hEvents.GetArray(i, hEvent);
+		GetEventByIndex(iEvent, hEvent);
 
 		// Check if we need to start an event.
 		if(StrContains(hEvent.m_sStartHook, event) != -1)
@@ -407,7 +447,7 @@ public void CEEvents_OnSendEvent(int client, const char[] event, int add, int un
 			if(m_iCurrentEvent[client] > -1)
 			{
 				Event_t hOldEvent;
-				if(GetKitEventByIndex(m_iMusicKit[client], m_iCurrentEvent[client], hOldEvent))
+				if(GetEventByIndex(m_iCurrentEvent[client], hOldEvent))
 				{
 					if(hOldEvent.m_iPriority > hEvent.m_iPriority) continue;
 				}
@@ -490,8 +530,8 @@ public Action Timer_PlayNextSample(Handle timer, any client)
 		m_bIsPlaying[client] = false;
 		PlayNextSample(client);
 	}
-
 }
+
 
 public float GetClientSoundInterp(int client)
 {
@@ -503,6 +543,16 @@ public int TF2_GetNativePing(int client)
 	return GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iPing", _, client);
 }
 
+public void BufferFlush(int client)
+{
+	m_iQueueLength[client] = 0;
+	m_iQueuePointer[client] = 0;
+	m_iCurrentEvent[client] = -1;
+	
+	strcopy(m_hPreSample[client].m_sSound, sizeof(m_hPreSample[].m_sSound), "");
+	strcopy(m_hPostSample[client].m_sSound, sizeof(m_hPostSample[].m_sSound), "");
+}
+
 public void GetNextSample(int client, Sample_t hSample)
 {
 	// Make sure client exists.
@@ -512,15 +562,13 @@ public void GetNextSample(int client, Sample_t hSample)
 	// We only do that if post and pre are not set and queue is empty.
 	if(m_bShouldStop[client])
 	{
-		if(StrEqual(m_hClientPostSample[client].m_sSound, ""))
+		if(StrEqual(m_hPostSample[client].m_sSound, ""))
 		{
 			BufferFlush(client);
 			m_bShouldStop[client] = false;
-			//PrintToConsole(client, "m_bShouldStop, true");
 		} else {
-			hSample = m_hClientPostSample[client];
-			strcopy(m_hClientPostSample[client].m_sSound, MAX_SOUND_NAME, "");
-			//PrintToConsole(client, "m_bShouldStop, false");
+			hSample = m_hPostSample[client];
+			strcopy(m_hPostSample[client].m_sSound, MAX_SOUND_NAME, "");
 			return;
 		}
 	}
@@ -528,83 +576,89 @@ public void GetNextSample(int client, Sample_t hSample)
 	if(m_iNextEvent[client] > -1)
 	{
 		bool bSkipPost = false;
-		Soundtrack_t hKit;
-		if(GetClientKit(client, hKit))
+		
+		Event_t CurrentEvent;
+		if(GetEventByIndex(m_iNextEvent[client], CurrentEvent))
 		{
-			Event_t hEvent;
-			hKit.m_hEvents.GetArray(m_iNextEvent[client], hEvent);
-			bSkipPost = hEvent.m_bSkipPost;
+			bSkipPost = CurrentEvent.m_bSkipPost;
 		}
 
-		if(StrEqual(m_hClientPostSample[client].m_sSound, "") || bSkipPost)
+		if(StrEqual(m_hPostSample[client].m_sSound, "") || bSkipPost)
 		{
-			//PrintToConsole(client, "m_iNextEvent, true");
+			PrintToConsole(client, "m_iNextEvent, true");
 			BufferLoadEvent(client, m_iNextEvent[client]);
 			m_iNextEvent[client] = -1;
 		} else {
-			//PrintToConsole(client, "m_iNextEvent, false");
-			hSample = m_hClientPostSample[client];
-			strcopy(m_hClientPostSample[client].m_sSound, MAX_SOUND_NAME, "");
+			PrintToConsole(client, "m_iNextEvent, false");
+			hSample = m_hPostSample[client];
+			strcopy(m_hPostSample[client].m_sSound, MAX_SOUND_NAME, "");
 			return;
 		}
 	}
 
-	// Make sure queue handle exists.
-	if (m_hSampleQueue[client] == null)return;
-
-	if(!StrEqual(m_hClientPreSample[client].m_sSound, ""))
+	if(!StrEqual(m_hPreSample[client].m_sSound, ""))
 	{
-		//PrintToConsole(client, "m_hClientPreSample");
-		hSample = m_hClientPreSample[client];
-		strcopy(m_hClientPreSample[client].m_sSound, MAX_SOUND_NAME, "");
+		PrintToConsole(client, "m_hPreSample");
+		hSample = m_hPreSample[client];
+		strcopy(m_hPreSample[client].m_sSound, MAX_SOUND_NAME, "");
 		return;
 	}
 
-	if(m_hSampleQueue[client].Length > m_iCurrentSample[client])
+	int iPointer = m_iQueuePointer[client];
+	
+	// If we have more things to play in the main queue.
+	if(m_iQueueLength[client] > iPointer)
 	{
-		Sample_t sample;
-		m_hSampleQueue[client].GetArray(m_iCurrentSample[client], sample);
+		
+		// Get currently active sample.
+		Sample_t CurrentSample;
+		CurrentSample = m_hQueue[client][iPointer];
 
 		// If we run this sample and amount of iterations has exceeded the max amount,
 		// we reset the value and run it again.
-		if(sample.m_nCurrentIteration >= sample.m_nIterations)
+		if(CurrentSample.m_nCurrentIteration >= CurrentSample.m_nIterations)
 		{
-			sample.m_nCurrentIteration = 0;
+			CurrentSample.m_nCurrentIteration = 0;
 		}
 
 		//PrintToConsole(client, "m_hSampleQueue, %d, (%d/%d)", m_iCurrentSample[client], sample.m_nCurrentIteration + 1, sample.m_nIterations);
 
 		// Increase current iteration every time we run through it.
-		if(sample.m_nCurrentIteration < sample.m_nIterations)
+		if(CurrentSample.m_nCurrentIteration < CurrentSample.m_nIterations)
 		{
-			sample.m_nCurrentIteration++;
+			CurrentSample.m_nCurrentIteration++;
 		}
 
 		// Update all changed data in the queue.
-		m_hSampleQueue[client].SetArray(m_iCurrentSample[client], sample);
+		m_hQueue[client][iPointer] = CurrentSample;
 
 		// Move to next sample if we reached our limit.
-		if(sample.m_nCurrentIteration == sample.m_nIterations)
+		if(CurrentSample.m_nCurrentIteration == CurrentSample.m_nIterations)
 		{
-			int iMoveToEvent = GetEventIndexByID(m_iMusicKit[client], sample.m_sMoveToEvent);
+			int iMoveToEvent = GetEventIndexByKitAndID(m_iMusicKit[client], CurrentSample.m_sMoveToEvent);
 			if(iMoveToEvent > -1)
 			{
+				// Check if we need to move to a specific event now.
 				m_iNextEvent[client] = iMoveToEvent;
-			} else if(sample.m_nMoveToSample > -1 && sample.m_nMoveToSample < m_hSampleQueue[client].Length)
+			} else if(CurrentSample.m_nMoveToSample > -1 && CurrentSample.m_nMoveToSample < m_iQueueLength[client])
 			{
-				m_iCurrentSample[client] = sample.m_nMoveToSample;
-			} else m_iCurrentSample[client]++;
+				// Otherwise check if we need to go to a specific sample.
+				// m_iCurrentSample[client] = sample.m_nMoveToSample;
+				m_iQueuePointer[client] = CurrentSample.m_nMoveToSample;
+			} else {
+				// Otherwise, move to next sample.
+				m_iQueuePointer[client]++;
+			}
 		}
 
-		hSample = sample;
+		hSample = CurrentSample;
 		return;
 	}
 
-	if(!StrEqual(m_hClientPostSample[client].m_sSound, ""))
+	if(!StrEqual(m_hPostSample[client].m_sSound, ""))
 	{
-		//PrintToConsole(client, "m_hClientPostSample");
-		hSample = m_hClientPostSample[client];
-		strcopy(m_hClientPostSample[client].m_sSound, MAX_SOUND_NAME, "");
+		hSample = m_hPostSample[client];
+		strcopy(m_hPostSample[client].m_sSound, MAX_SOUND_NAME, "");
 		return;
 	}
 
@@ -614,153 +668,60 @@ public void GetNextSample(int client, Sample_t hSample)
 
 public void BufferLoadEvent(int client, int event)
 {
+	
 	if (!IsClientValid(client))return;
 
-	Soundtrack_t hKit;
-	if (!GetClientKit(client, hKit))return;
-
-	// Set up an array list if not exists.
-	if (m_hSampleQueue[client] == null)
-	{
-		m_hSampleQueue[client] = new ArrayList(sizeof(Sample_t));
-	}
-
-	// Clear the arraylist from old samples if exist.
-	if (m_hSampleQueue[client].Length > 0)
-	{
-		m_hSampleQueue[client].Clear();
-	}
-
 	Event_t hEvent;
-	hKit.m_hEvents.GetArray(event, hEvent);
+	if (!GetEventByIndex(event, hEvent))return;
 
-	m_hSampleQueue[client] = hEvent.m_hSamples.Clone();
-	m_hClientPreSample[client] = m_hPreSamples[m_iMusicKit[client]][event];
-	m_hClientPostSample[client] = m_hPostSamples[m_iMusicKit[client]][event];
-
-	m_iCurrentEvent[client] = event;
-	m_iCurrentSample[client] = 0;
-}
-
-public void BufferFlush(int client)
-{
-	if(UTIL_IsValidHandle(m_hSampleQueue[client]))
+	for (int i = 0; i < hEvent.m_iSamplesCount; i++)
 	{
-		m_hSampleQueue[client].Clear();
+		int iEventIndex = hEvent.m_iSamples[i];
+		
+		Sample_t hSample;
+		GetSampleByIndex(iEventIndex, hSample);
+		
+		m_hQueue[client][i] = hSample;
 	}
-	strcopy(m_hClientPostSample[client].m_sSound, MAX_SOUND_NAME, "");
-	strcopy(m_hClientPreSample[client].m_sSound, MAX_SOUND_NAME, "");
-
-	m_iCurrentEvent[client] = -1;
-}
-
-public void OnClientConnected(int client)
-{
-	ClearData(client);
-}
-
-public void OnClientDisconnect(int client)
-{
-	ClearData(client);
-}
-
-public void ClearData(int client)
-{
-	delete m_hSampleQueue[client];
-
-	m_iMusicKit[client] = -1;
-	m_iNextEvent[client] = -1;
-	m_iCurrentEvent[client] = -1;
-	m_iCurrentSample[client] = -1;
-
-	m_bIsPlaying[client] = false;
-	m_bShouldStop[client] = false;
-	m_bForceNextEvent[client] = false;
-
-	if(m_hTimer[client] != null)
+	m_iQueueLength[client] = hEvent.m_iSamplesCount;
+	m_iQueuePointer[client] = 0;
+	
+	// Loading Pre
+	if(!GetSampleByIndex(hEvent.m_iPreSample, m_hPreSample[client]))
 	{
-		KillTimer(m_hTimer[client]);
-		m_hTimer[client] = null;
+		strcopy(m_hPreSample[client].m_sSound, sizeof(m_hPreSample[].m_sSound), "");
+	}
+	
+	// Loading Post
+	if(!GetSampleByIndex(hEvent.m_iPostSample, m_hPostSample[client]))
+	{
+		strcopy(m_hPostSample[client].m_sSound, sizeof(m_hPostSample[].m_sSound), "");
 	}
 }
 
-public void MusicKit_SetKit(int client, int defid, char[] name)
+public Action teamplay_round_start(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
-	int iKitID = GetKitIndexByDefID(defid);
+	//StopEventsForAll();
 
-	if(iKitID != m_iMusicKit[client])
+	if(!TF2_IsSetup() && !TF2_IsWaitingForPlayers())
 	{
-		if(iKitID == -1)
+		//RequestFrame(PlayRoundStartMusic, hEvent);
+	}
+}
+
+public Action teamplay_round_win(Event hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int iWinReason = GetEventInt(hEvent, "winreason");
+	if(m_nPayloadStage == 2 && iWinReason == 1)
+	{
+		for (int i = 1; i <= MaxClients; i++)
 		{
-			PrintToChat(client, "\x01* Game soundtrack removed.", name);
-		} else {
-			PrintToChat(client, "\x01* Game soundtrack set to: %s", name);
+			if(IsClientReady(i))
+			{
+				CEEvents_SendEventToClient(i, "OST_PAYLOAD_CLIMAX", 1, view_as<int>(hEvent));
+			}
 		}
 	}
-
-	m_iMusicKit[client] = iKitID;
-}
-
-public int GetEventIndexByID(int kit, const char[] sId)
-{
-	Soundtrack_t hKit;
-	bool bFound = GetKitByIndex(kit, hKit);
-	if (!bFound)return -1;
-
-	for (int i = 0; i < hKit.m_hEvents.Length; i++)
-	{
-		Event_t hEvent;
-		hKit.m_hEvents.GetArray(i, hEvent);
-		if (StrEqual(hEvent.m_sID, ""))continue;
-		if (StrEqual(hEvent.m_sID, sId))
-		{
-			return i;
-		}
-	}
-	return -1;
-}
-
-public bool GetKitByIndex(int index, Soundtrack_t kit)
-{
-	if (!UTIL_IsValidHandle(m_hKits))return false;
-	if (index >= m_hKits.Length)return false;
-
-	m_hKits.GetArray(index, kit);
-
-	return true;
-}
-
-public bool GetKitEventByIndex(int kit, int index, Event_t event)
-{
-	Soundtrack_t hKit;
-	if (!GetKitByIndex(kit, hKit))return false;
-
-	hKit.m_hEvents.GetArray(index, event);
-
-	return true;
-}
-
-public int GetKitIndexByDefID(int defid)
-{
-	if (!UTIL_IsValidHandle(m_hKits))return -1;
-
-	for (int i = 0; i < m_hKits.Length; i++)
-	{
-		Soundtrack_t hKit;
-		m_hKits.GetArray(i, hKit);
-
-		if (hKit.m_iDefIndex == defid)return i;
-	}
-	return -1;
-}
-
-public bool GetClientKit(int client, Soundtrack_t hKit)
-{
-	if (m_iMusicKit[client] == -1)return false;
-	int iMusicKit = m_iMusicKit[client];
-
-	if (!GetKitByIndex(iMusicKit, hKit))return false;
-	return true;
 }
 
 public Action Timer_EscordProgressUpdate(Handle timer, any data)
@@ -855,4 +816,67 @@ public Action teamplay_point_captured(Handle hEvent, const char[] szName, bool b
 
 		CEEvents_SendEventToClient(i, "OST_POINT_CAPTURE", 1, view_as<int>(hEvent));
 	}
+}
+
+public void OnEntityOutput(const char[] output, int caller, int activator, float delay)
+{
+	if (TF2_IsWaitingForPlayers())return;
+
+	// Round almost over.
+	if (strcmp(output, "On30SecRemain") == 0)
+	{
+		if (TF2_IsSetup())return;
+
+		m_iRoundTime = 29;
+		CreateTimer(1.0, Timer_Countdown, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	}
+
+	// Setup
+	if (strcmp(output, "On1MinRemain") == 0)
+	{
+		if (!TF2_IsSetup())return;
+
+		m_iRoundTime = 59;
+		CreateTimer(1.0, Timer_Countdown, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	}
+}
+
+public bool TF2_IsWaitingForPlayers()
+{
+	return GameRules_GetProp("m_bInWaitingForPlayers") == 1;
+}
+
+public bool TF2_IsSetup()
+{
+	return GameRules_GetProp("m_bInSetup") == 1;
+}
+
+public Action Timer_Countdown(Handle timer, any data)
+{
+	if (m_iRoundTime < 1) return Plugin_Stop;
+
+	if(TF2_IsSetup() && m_iRoundTime == 45)
+	{
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if(IsClientReady(i))
+			{
+				CEEvents_SendEventToClient(i, "OST_ROUND_SETUP", 1, GetRandomInt(1, 10000));
+			}
+		}
+	}
+
+	if(!TF2_IsSetup() && m_iRoundTime == 20)
+	{
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if(IsClientReady(i))
+			{
+				CEEvents_SendEventToClient(i, "OST_ROUND_ALMOST_END", 1, GetRandomInt(1, 10000));
+			}
+		}
+	}
+
+	m_iRoundTime--;
+	return Plugin_Continue;
 }

@@ -333,7 +333,7 @@ public void ApplyGlobalItems(int client)
 	}
 	hLoadout.Rewind();
 	
-	ServerCommand("ce_quest_setkit %s %d \"%s\"", sSteamID, iMusicKit, sMusicKitName);
+	ServerCommand("ce_soundtrack_setkit %s %d \"%s\"", sSteamID, iMusicKit, sMusicKitName);
 }
 
 public bool HasClassLoadoutChanged(int client, TFClassType class, KeyValues kv)
