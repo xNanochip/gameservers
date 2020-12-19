@@ -51,7 +51,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	SetFailState("unloaded until fixed by moonly");
+	//SetFailState("unloaded until fixed by moonly");
 	HookEvent("teamplay_broadcast_audio", evBroadcast, EventHookMode_Pre);
 	HookEvent("teamplay_round_start", teamplay_round_start, EventHookMode_Pre);
 	HookEvent("teamplay_round_win", teamplay_round_win);
