@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.5.9b"
+#define PLUGIN_VERSION  "3.6.1"
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 public Plugin myinfo =
@@ -25,7 +25,7 @@ public Plugin myinfo =
     author           =  "steph&nie",
     description      =  "Anticheat plugin [tf2 only] written by Stephanie. Originally forked from IntegriTF2 by Miggy (RIP)",
     version          =   PLUGIN_VERSION,
-    url              =  "https://steph.anie.dev/"
+    url              =  "https://sappho.io"
 }
 
 // TIMER HANDLES
@@ -101,7 +101,7 @@ bool kickForPingMasking     = false;
 bool banForMiscCheats       = true;
 bool optimizeCvars          = true;
 int maxAimsnapDetections    = 999;
-int maxPsilentDetections    = 15;
+int maxPsilentDetections    = 10;
 int maxFakeAngDetections    = 10;
 int maxBhopDetections       = 10;
 // this gets set later
@@ -584,10 +584,11 @@ void RunOptimizeCvars()
     // limit fakelag abuse
     SetConVarFloat(FindConVar("sv_maxunlag"), 0.2);
     // dont error out on server start
-    if (FindConVar("backtrack_behavior") != INVALID_HANDLE)
+    if (FindConVar("jay_backtrack_enable") != INVALID_HANDLE)
     {
         // fix backtracking
-        SetConVarInt(FindConVar("backtrack_behavior"), 1);
+        SetConVarInt(FindConVar("jay_backtrack_enable"), 1);
+        SetConVarInt(FindConVar("jay_backtrack_tolerance"), 0);
     }
     // get rid of any possible exploits by using teleporters and fov
     SetConVarInt(FindConVar("tf_teleporter_fov_start"), 90);
@@ -688,7 +689,7 @@ public Action PrintMaxMouse(int callingCl, int args)
 
 public Action PrintMaxTicks(int callingCl, int args)
 {
-    ReplyToCommand(callingCl, "[StAC] == CURRENT MOUSE MOVEMENT == ");
+    ReplyToCommand(callingCl, "[StAC] == CURRENT MAX TICKS == ");
     for (int Cl = 1; Cl <= MaxClients; Cl++)
     {
         if (IsValidClient(Cl))
@@ -696,7 +697,7 @@ public Action PrintMaxTicks(int callingCl, int args)
             ReplyToCommand(callingCl, "maxTick: %f | client %N", maxEngineTimeFor[Cl], Cl);
         }
     }
-    ReplyToCommand(callingCl, "[StAC] == END MOUSE MOVEMENT REPORT == ");
+    ReplyToCommand(callingCl, "[StAC] == END MAX TICKS REPORT == ");
 }
 */
 
@@ -1103,7 +1104,7 @@ public Action OnPlayerRunCmd
             fuzzyClangles[0][0] = RoundFloat(clangles[0][Cl][0] * 10.0) / 10.0;
             fuzzyClangles[0][1] = RoundFloat(clangles[0][Cl][1] * 10.0) / 10.0;
 
-            // we need this later for decrimenting psilent detections after 20 minutes!
+            // we need this later for decrimenting psilent detections after 10 minutes!
             int userid = GetClientUserId(Cl);
 
             // we have to do all these annoying checks to make sure we get as few false positives as possible.
@@ -1275,8 +1276,8 @@ public Action OnPlayerRunCmd
                             )
                             {
                                 pSilentDetects[Cl]++;
-                                // have this detection expire in 20 minutes
-                                CreateTimer(1200.0, Timer_decr_pSilent, userid);
+                                // have this detection expire in 10 minutes
+                                CreateTimer(600.0, Timer_decr_pSilent, userid);
                                 // first detection is LIKELY bullshit
                                 if (pSilentDetects[Cl] > 0)
                                 {
@@ -1333,24 +1334,24 @@ public Action OnPlayerRunCmd
                             int wx = abs(RoundFloat(mouse[0] * ( 1 / sensFor[Cl])));
                             int wy = abs(RoundFloat(mouse[1] * ( 1 / sensFor[Cl])));
                             if
-                            (   // literally no mouse movement on both axes
-                                (
-                                    wx == 0
-                                    &&
-                                    wy == 0
-                                )
-                                ||
+                            (   // literally no mouse movement on both axes - buggy, don't enable
+                                //(
+                                //    wx == 0
+                                //    &&
+                                //    wy == 0
+                                //)
+                                //||
                                 // stupidly big amts of mouse movement on either axis
-                                (
+                                //(
                                     wx >= 5000
                                     ||
                                     wy >= 5000
-                                )
+                                //)
                             )
                             {
                                 aimsnapDetects[Cl]++;
-                                // have this detection expire in 20 minutes
-                                CreateTimer(1200.0, Timer_decr_aimsnaps, userid);
+                                // have this detection expire in 10 minutes
+                                CreateTimer(600.0, Timer_decr_aimsnaps, userid);
                                 if (aimsnapDetects[Cl] > 0)
                                 {
                                     PrintToImportant("{hotpink}[StAC]{white} Aimsnap detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.", aDiffReal, Cl,  aimsnapDetects[Cl]);
