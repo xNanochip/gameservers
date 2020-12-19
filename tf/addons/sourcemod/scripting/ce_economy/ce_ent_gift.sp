@@ -10,9 +10,7 @@
 #include <ce_manager_attributes>
 #include <tf2_stocks>
 
-bool m_bIsGift[MAX_ENTITY_LIMIT + 1];
 int m_hTarget[MAX_ENTITY_LIMIT + 1];
-bool m_bTargetLock[MAX_ENTITY_LIMIT + 1];
 float m_flCreationTime[MAX_ENTITY_LIMIT + 1];
 float m_vecStartCurvePos[MAX_ENTITY_LIMIT + 1][3];
 float m_vecPreCurvePos[MAX_ENTITY_LIMIT + 1][3];
@@ -31,7 +29,6 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	SetFailState("unloaded until fixed by moonly");
 	// Misc Events
 	HookEvent("player_death", player_death);
 }
@@ -41,44 +38,14 @@ public void OnMapStart()
 	PrecacheModel(TF_GIFT_MODEL);
 }
 
-public void FlushEntGift(int entity)
-{
-	m_bIsGift[entity] = false;
-	m_hTarget[entity] = 0;
-	m_bTargetLock[entity] = false;
-	m_flCreationTime[entity] = 0.0;
-
-	for (int i = 0; i < 3; i++)
-	{
-		m_vecStartCurvePos[entity][i] = 0.0;
-		m_vecPreCurvePos[entity][i] = 0.0;
-	}
-
-	m_flDuration[entity] = 0.0;
-}
-
 public bool IsValidGift(int entity)
 {
-	if (!IsValidEntity(entity) || entity <= 0)
-	{
-		return false;
-	}
-	else
-	{
-		return m_bIsGift[entity];
-	}
-}
-
-public void OnEntityCreated(int entity)
-{
-	if (!IsValidEntity(entity) || entity <= 0) return;
-	FlushEntGift(entity);
-}
-
-public void OnEntityDestroyed(int entity)
-{
-	if (!IsValidEntity(entity) || entity <= 0) return;
-	FlushEntGift(entity);
+	if (entity <= 0)return false;
+	if (!IsValidEntity(entity))return false;
+	
+	char sName[128];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+	return StrEqual(sName, "ce_gift");
 }
 
 public void Gift_CreateForPlayer(int client, int origin)
@@ -103,7 +70,6 @@ public int Gift_Create(int client, float pos[3])
 	int iEnt = CreateEntityByName("prop_physics_override");
 	if (iEnt > -1)
 	{
-		m_bIsGift[iEnt] = true;
 		SetEntityModel(iEnt, TF_GIFT_MODEL);
 
 		float vecAng[3];
@@ -111,6 +77,8 @@ public int Gift_Create(int client, float pos[3])
 		vecAng[2] = GetRandomFloat(-20.0, 20.0);
 
 		TeleportEntity(iEnt, pos, vecAng, NULL_VECTOR);
+		
+		DispatchKeyValue(iEnt, "targetname", "ce_gift");
 
 		DispatchSpawn(iEnt);
 		ActivateEntity(iEnt);
@@ -123,7 +91,6 @@ public int Gift_Create(int client, float pos[3])
 
 		// Gift is not flying to target when spawned.
 		Gift_SetActive(iEnt, false);
-		m_bTargetLock[iEnt] = true;
 
 		CreateTimer(1.0, Timer_Gift_SetActive, iEnt);
 	}
@@ -141,15 +108,13 @@ public void Gift_StartTargetMovement(int ent)
 {
 	if (!IsValidGift(ent))return;
 	Gift_InitSplineData(ent);
-	m_bTargetLock[ent] = true;
 }
 
 public Action Gift_OnTouch(int entity, int other)
 {
 	if(IsClientValid(other) && IsValidGift(entity))
 	{
-		// Only allow target player to trigger this, if we're in target lock mode.
-		if(m_bTargetLock[entity] && other != m_hTarget[entity]) return Plugin_Handled;
+		if(other != m_hTarget[entity]) return Plugin_Handled;
 
 		ClientPlayResponse(other, "XmasGift.Pickup");
 		AcceptEntityInput(entity, "Kill");
@@ -166,12 +131,10 @@ public void Gift_SetActive(int entity, bool active)
 		SetEntPropFloat(entity, Prop_Send, "m_flModelScale", 0.3);
 		AcceptEntityInput(entity, "DisableMotion");
 		TF_StartAttachedParticle("soul_trail", entity, 2.0);
-		m_bTargetLock[entity] = true;
 		Gift_StartTargetMovement(entity);
 	} else {
 		SetEntPropFloat(entity, Prop_Send, "m_flModelScale", 0.7);
 		AcceptEntityInput(entity, "EnableMotion");
-		m_bTargetLock[entity] = false;
 	}
 }
 
@@ -214,16 +177,13 @@ public void Gift_FlyTowardsTargetEntity(any iEnt)
 		return;
 	}
 
-	RequestFrame(Gift_FlyTowardsTargetEntity, iEnt);
 
 	if (!IsClientValid(iTarget))return;
 
 	if(flT > 2.0 || !IsPlayerAlive(iTarget))
 	{
-		m_hTarget[iEnt] = -1;
-		m_bTargetLock[iEnt] = false;
-		AcceptEntityInput(iEnt, "EnableMotion");
-		SetEntPropFloat(iEnt, Prop_Send, "m_flModelScale", 0.85);
+		AcceptEntityInput(iEnt, "Kill");
+		return;
 	}
 
 	const float flBiasAmt = 0.2;
@@ -250,6 +210,8 @@ public void Gift_FlyTowardsTargetEntity(any iEnt)
 	Catmull_Rom_Spline(m_vecPreCurvePos[iEnt], m_vecStartCurvePos[iEnt], vecTargetPos, vecNextCuvePos, flT, vecOutput);
 
 	TeleportEntity(iEnt, vecOutput, NULL_VECTOR, NULL_VECTOR);
+	
+	RequestFrame(Gift_FlyTowardsTargetEntity, iEnt);
 }
 
 public Action Projectile_OnTouch(int entity, int other)
@@ -362,7 +324,6 @@ public int TF_StartAttachedParticle(const char[] system, int entity, float lifet
 		ActivateEntity(iParticle);
 		AcceptEntityInput(iParticle, "Start");
 		
-		//have the entity kill itself after a set time rather than manually killing it.
 		char info[64];
 		Format(info, sizeof(info), "OnUser1 !self:kill::%d:1", RoundFloat(lifetime));
 		SetVariantString(info);
