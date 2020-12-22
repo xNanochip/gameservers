@@ -21,7 +21,7 @@ public Plugin myinfo =
 	name = "[CE Entity] ent_gift",
 	author = "Creators.TF Team",
 	description = "Holiday Gift Pickup",
-	version = "1.01",
+	version = "1.02",
 	url = "https://creators.tf"
 }
 
@@ -310,7 +310,7 @@ public float Bias(float x, float biasAmt)
 public int TF_StartAttachedParticle(const char[] system, int entity, float lifetime)
 {
 	int iParticle = CreateEntityByName("info_particle_system");
-	if (iParticle > -1)
+	if (IsValidEntity(iParticle) && iParticle > 0)
 	{
 		float vecPos[3];
 		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", vecPos);
@@ -324,7 +324,7 @@ public int TF_StartAttachedParticle(const char[] system, int entity, float lifet
 
 		ActivateEntity(iParticle);
 		AcceptEntityInput(iParticle, "Start");
-		
+
 		char info[64];
 		Format(info, sizeof(info), "OnUser1 !self:kill::%d:1", RoundFloat(lifetime));
 		SetVariantString(info);
