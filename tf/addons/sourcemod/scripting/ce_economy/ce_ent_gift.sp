@@ -40,9 +40,9 @@ public void OnMapStart()
 
 public bool IsValidGift(int entity)
 {
-	if (entity <= 0)return false;
-	if (!IsValidEntity(entity))return false;
-	
+	if (entity <= 0) return false;
+	if (!IsValidEntity(entity)) return false;
+
 	char sName[128];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 	return StrEqual(sName, "ce_gift");
@@ -68,7 +68,8 @@ public void Gift_CreateForPlayer(int client, int origin)
 public int Gift_Create(int client, float pos[3])
 {
 	int iEnt = CreateEntityByName("prop_physics_override");
-	if (iEnt > -1)
+	// stop fucking touching world spawn please
+	if (IsValidEntity(iEnt) && iEnt > 0)
 	{
 		SetEntityModel(iEnt, TF_GIFT_MODEL);
 
@@ -77,7 +78,7 @@ public int Gift_Create(int client, float pos[3])
 		vecAng[2] = GetRandomFloat(-20.0, 20.0);
 
 		TeleportEntity(iEnt, pos, vecAng, NULL_VECTOR);
-		
+
 		DispatchKeyValue(iEnt, "targetname", "ce_gift");
 
 		DispatchSpawn(iEnt);
