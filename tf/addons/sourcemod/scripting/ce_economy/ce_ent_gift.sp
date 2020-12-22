@@ -21,7 +21,7 @@ public Plugin myinfo =
 	name = "[CE Entity] ent_gift",
 	author = "Creators.TF Team",
 	description = "Holiday Gift Pickup",
-	version = "1.02",
+	version = "1.03",
 	url = "https://creators.tf"
 }
 
@@ -40,8 +40,10 @@ public void OnMapStart()
 
 public bool IsValidGift(int entity)
 {
-	if (entity <= 0) return false;
-	if (!IsValidEntity(entity)) return false;
+	if (!IsValidEntity(entity) || entity <= 0)
+	{
+		return false;
+	}
 
 	char sName[128];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
@@ -60,7 +62,7 @@ public void Gift_CreateForPlayer(int client, int origin)
 
 	switch(TF2_GetClientTeam(client))
 	{
-		case TFTeam_Red: TF_StartAttachedParticle("peejar_trail_red", iGift, 4.0);
+		case TFTeam_Red:  TF_StartAttachedParticle("peejar_trail_red", iGift, 4.0);
 		case TFTeam_Blue: TF_StartAttachedParticle("peejar_trail_blu", iGift, 4.0);
 	}
 }
@@ -98,28 +100,41 @@ public int Gift_Create(int client, float pos[3])
 	return iEnt;
 }
 
+
 public Action Timer_Gift_SetActive(Handle timer, any gift)
 {
-	if (!IsValidGift(gift))return Plugin_Handled;
+	if (!IsValidGift(gift))
+	{
+		return Plugin_Handled;
+	}
+
 	Gift_SetActive(gift, true);
 	return Plugin_Handled;
 }
 
 public void Gift_StartTargetMovement(int ent)
 {
-	if (!IsValidGift(ent))return;
+	if (!IsValidGift(ent))
+	{
+		return;
+	}
+
 	Gift_InitSplineData(ent);
 }
 
 public Action Gift_OnTouch(int entity, int other)
 {
-	if(IsClientValid(other) && IsValidGift(entity))
+	if (IsClientValid(other) && IsValidGift(entity))
 	{
-		if(other != m_hTarget[entity]) return Plugin_Handled;
+		if (other != m_hTarget[entity])
+		{
+			return Plugin_Handled;
+		}
 
 		ClientPlayResponse(other, "XmasGift.Pickup");
-		AcceptEntityInput(entity, "Kill");
+		RemoveEntity(entity);
 		CEEvents_SendEventToClient(other, "LOGIC_COLLECT_GIFT", 1, GetRandomInt(0, 10000));
+
 	}
 	return Plugin_Handled;
 }
@@ -133,7 +148,9 @@ public void Gift_SetActive(int entity, bool active)
 		AcceptEntityInput(entity, "DisableMotion");
 		TF_StartAttachedParticle("soul_trail", entity, 2.0);
 		Gift_StartTargetMovement(entity);
-	} else {
+	}
+	else
+	{
 		SetEntPropFloat(entity, Prop_Send, "m_flModelScale", 0.7);
 		AcceptEntityInput(entity, "EnableMotion");
 	}
@@ -141,7 +158,11 @@ public void Gift_SetActive(int entity, bool active)
 
 public void Gift_InitSplineData(int iEnt)
 {
-	if (!IsValidGift(iEnt)) return;
+	if (!IsValidGift(iEnt))
+	{
+		return;
+	}
+
 	m_flCreationTime[iEnt] = GetEngineTime();
 	GetEntPropVector(iEnt, Prop_Send, "m_vecOrigin", m_vecStartCurvePos[iEnt]);
 
@@ -157,7 +178,10 @@ public void Gift_InitSplineData(int iEnt)
 	{
 		m_vecPreCurvePos[iEnt][i] += vecRandom[i];
 	}
-	if (m_vecPreCurvePos[iEnt][2] > 0.0)m_vecPreCurvePos[iEnt][2] = 0.0;
+	if (m_vecPreCurvePos[iEnt][2] > 0.0)
+	{
+		m_vecPreCurvePos[iEnt][2] = 0.0;
+	}
 
 	m_flDuration[iEnt] = 1.1;
 
@@ -166,31 +190,38 @@ public void Gift_InitSplineData(int iEnt)
 
 public void Gift_FlyTowardsTargetEntity(any iEnt)
 {
-	if (!IsValidGift(iEnt)) return;
+	if (!IsValidGift(iEnt))
+	{
+		return;
+	}
 
 	int iTarget = m_hTarget[iEnt];
 	float flLife = GetEngineTime() - m_flCreationTime[iEnt];
 	float flT = flLife / m_flDuration[iEnt];
 
-	if(flLife > 5.0)
+	if (!IsClientValid(iTarget))
 	{
-		AcceptEntityInput(iEnt, "Kill");
 		return;
 	}
 
-
-	if (!IsClientValid(iTarget))return;
-
-	if(flT > 2.0 || !IsPlayerAlive(iTarget))
+	if (flLife > 5.0 || flT > 2.0 || !IsPlayerAlive(iTarget))
 	{
-		AcceptEntityInput(iEnt, "Kill");
+		RemoveEntity(iEnt);
 		return;
 	}
 
 	const float flBiasAmt = 0.2;
 	flT = Bias(flT, flBiasAmt);
-	if (flT < 0.0)flT = 0.0;
-	if (flT > 1.0)flT = 1.0;
+
+	if (flT < 0.0)
+	{
+		flT = 0.0;
+	}
+
+	if (flT > 1.0)
+	{
+		flT = 1.0;
+	}
 
 	float angEyes[3];
 	GetClientEyeAngles(iTarget, angEyes);
@@ -211,7 +242,7 @@ public void Gift_FlyTowardsTargetEntity(any iEnt)
 	Catmull_Rom_Spline(m_vecPreCurvePos[iEnt], m_vecStartCurvePos[iEnt], vecTargetPos, vecNextCuvePos, flT, vecOutput);
 
 	TeleportEntity(iEnt, vecOutput, NULL_VECTOR, NULL_VECTOR);
-	
+
 	RequestFrame(Gift_FlyTowardsTargetEntity, iEnt);
 }
 
@@ -222,11 +253,18 @@ public Action Projectile_OnTouch(int entity, int other)
 
 public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
+	// don't detect dead ringer deaths
+	int victim_deathflags = GetEventInt(hEvent, "death_flags");
+	if (victim_deathflags & 32)
+	{
+		return Plugin_Continue;
+	}
+
 	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
 	int attacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"));
 	int assister = GetClientOfUserId(GetEventInt(hEvent, "assister"));
 
-	if(IsClientReady(attacker) && attacker != client)
+	if (IsClientReady(attacker) && attacker != client)
 	{
 		float vecPos[3];
 		GetClientAbsOrigin(client, vecPos);
@@ -234,13 +272,14 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 		vecPos[2] += 60.0;
 
 		Gift_CreateForPlayer(attacker, client);
-
 	}
 
-	if(IsClientReady(assister))
+	if (IsClientReady(assister))
 	{
 		Gift_CreateForPlayer(assister, client);
 	}
+
+	return Plugin_Continue;
 }
 
 // -----------------------------------------------------------------------------------------
@@ -299,7 +338,7 @@ public float Bias(float x, float biasAmt)
 {
 	static float lastAmt = -1.0;
 	static float lastExponent = 0.0;
-	if( lastAmt != biasAmt )
+	if (lastAmt != biasAmt)
 	{
 		lastExponent = Logarithm( biasAmt ) * -1.4427;
 	}
