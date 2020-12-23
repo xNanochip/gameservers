@@ -2,7 +2,7 @@
 
 shopt -s globstar
 
-SPCOMP_PATH=$(realpath "tf/addons/sourcemod/scripting/spcomp")
+SPCOMP_PATH=$(realpath "tf/addons/sourcemod/scripting/spcomp64")
 COMPILED_DIR=$(realpath 'tf/addons/sourcemod/plugins/')
 SCRIPTS_DIR=$(realpath 'tf/addons/sourcemod/scripting/')
 
