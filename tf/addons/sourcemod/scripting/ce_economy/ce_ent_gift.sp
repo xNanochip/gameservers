@@ -87,6 +87,7 @@ public int Gift_Create(int client, float pos[3], bool deadRinged)
 
 		SetEntProp(iEnt, Prop_Data, "m_nSolidType", 6);
 		SetEntProp(iEnt, Prop_Send, "m_usSolidFlags", 0x0008 | 0x0200);
+		LogMessage("iEnt = %i, collision changed", iEnt);
 		SetEntProp(iEnt, Prop_Send, "m_CollisionGroup", 2);
 
 		//why can't i pass deadRinged to the callback? this is silly...
@@ -108,7 +109,7 @@ public Action Timer_Gift_SetActive(Handle timer, any data)
 	{
 		return Plugin_Handled;
 	}
-	
+
 	int gift = EntRefToEntIndex(data);
 	if (!IsValidGift(gift))
 	{
