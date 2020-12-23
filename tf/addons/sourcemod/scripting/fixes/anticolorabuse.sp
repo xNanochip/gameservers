@@ -21,7 +21,7 @@ new String:sCodes[][] = {"\x01", "\x02", "\x03", "\x04", "\x05", "\x06", "\x07",
 
 public OnPluginStart()
 {
-	CreateConVar("sm_anticolorabuse_version", PLUGIN_VERSION, "Plugin version.", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY|FCVAR_DONTRECORD);
+	CreateConVar("sm_anticolorabuse_version", PLUGIN_VERSION, "Plugin version.", FCVAR_SPONLY|FCVAR_NOTIFY|FCVAR_DONTRECORD);
 
 	g_hEnabled = CreateConVar("sm_anticolorabuse_enabled", "1", "Enable/disable the plugin.", 0, true, 0.0, true, 1.0);
 	HookConVarChange(g_hEnabled, OnConVarEnabledChanged);
