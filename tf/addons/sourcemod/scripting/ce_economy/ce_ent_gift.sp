@@ -10,7 +10,7 @@
 #include <ce_manager_attributes>
 #include <tf2_stocks>
 
-int m_hTarget[MAX_ENTITY_LIMIT + 1];
+int m_hTarget[MAX_ENTITY_LIMIT + 1]; // the target client userid (not index) to send the gift to
 float m_flCreationTime[MAX_ENTITY_LIMIT + 1];
 float m_vecStartCurvePos[MAX_ENTITY_LIMIT + 1][3];
 float m_vecPreCurvePos[MAX_ENTITY_LIMIT + 1][3];
@@ -21,7 +21,7 @@ public Plugin myinfo =
 	name = "[CE Entity] ent_gift",
 	author = "Creators.TF Team",
 	description = "Holiday Gift Pickup",
-	version = "1.03",
+	version = "1.04",
 	url = "https://creators.tf"
 }
 
@@ -50,15 +50,15 @@ public bool IsValidGift(int entity)
 	return StrEqual(sName, "ce_gift");
 }
 
-public void Gift_CreateForPlayer(int client, int origin)
+public void Gift_CreateForPlayer(int client, int origin, bool deadRinged)
 {
 	float vecPos[3];
 	GetClientAbsOrigin(origin, vecPos);
 
 	vecPos[2] += 60.0;
 
-	int iGift = Gift_Create(client, vecPos);
-	m_hTarget[iGift] = client;
+	int iGift = EntRefToEntIndex(Gift_Create(client, vecPos, deadRinged));
+	m_hTarget[iGift] = GetClientUserId(client);
 
 	switch(TF2_GetClientTeam(client))
 	{
@@ -67,10 +67,9 @@ public void Gift_CreateForPlayer(int client, int origin)
 	}
 }
 
-public int Gift_Create(int client, float pos[3])
+public int Gift_Create(int client, float pos[3], bool deadRinged)
 {
 	int iEnt = CreateEntityByName("prop_physics_override");
-	// stop fucking touching world spawn please
 	if (IsValidEntity(iEnt) && iEnt > 0)
 	{
 		SetEntityModel(iEnt, TF_GIFT_MODEL);
@@ -90,19 +89,27 @@ public int Gift_Create(int client, float pos[3])
 		SetEntProp(iEnt, Prop_Send, "m_usSolidFlags", 0x0008 | 0x0200);
 		SetEntProp(iEnt, Prop_Send, "m_CollisionGroup", 2);
 
-		SDKHook(iEnt, SDKHook_StartTouch, Gift_OnTouch);
+		//why can't i pass deadRinged to the callback? this is silly...
+		if (deadRinged) SDKHook(iEnt, SDKHook_StartTouch, Gift_OnTouch_Fake);
+		else SDKHook(iEnt, SDKHook_StartTouch, Gift_OnTouch);
 
 		// Gift is not flying to target when spawned.
 		Gift_SetActive(iEnt, false);
 
-		CreateTimer(1.0, Timer_Gift_SetActive, iEnt);
+		CreateTimer(1.0, Timer_Gift_SetActive, EntIndexToEntRef(iEnt));
 	}
-	return iEnt;
+	return EntIndexToEntRef(iEnt);
 }
 
 
-public Action Timer_Gift_SetActive(Handle timer, any gift)
+public Action Timer_Gift_SetActive(Handle timer, any data)
 {
+	if (data == INVALID_ENT_REFERENCE)
+	{
+		return Plugin_Handled;
+	}
+	
+	int gift = EntRefToEntIndex(data);
 	if (!IsValidGift(gift))
 	{
 		return Plugin_Handled;
@@ -122,11 +129,27 @@ public void Gift_StartTargetMovement(int ent)
 	Gift_InitSplineData(ent);
 }
 
+public Action Gift_OnTouch_Fake(int entity, int other)
+{
+	if (IsClientValid(other) && IsValidGift(entity))
+	{
+		if (GetClientUserId(other) != m_hTarget[entity])
+		{
+			return Plugin_Handled;
+		}
+
+		ClientPlayResponse(other, "XmasGift.Pickup");
+		RemoveEntity(entity);
+
+	}
+	return Plugin_Handled;
+}
+
 public Action Gift_OnTouch(int entity, int other)
 {
 	if (IsClientValid(other) && IsValidGift(entity))
 	{
-		if (other != m_hTarget[entity])
+		if (GetClientUserId(other) != m_hTarget[entity])
 		{
 			return Plugin_Handled;
 		}
@@ -185,17 +208,23 @@ public void Gift_InitSplineData(int iEnt)
 
 	m_flDuration[iEnt] = 1.1;
 
-	RequestFrame(Gift_FlyTowardsTargetEntity, iEnt);
+	RequestFrame(Gift_FlyTowardsTargetEntity, EntIndexToEntRef(iEnt));
 }
 
-public void Gift_FlyTowardsTargetEntity(any iEnt)
+public void Gift_FlyTowardsTargetEntity(any data)
 {
+	if (data == INVALID_ENT_REFERENCE)
+	{
+		return;
+	}
+	
+	int iEnt = EntRefToEntIndex(data);
 	if (!IsValidGift(iEnt))
 	{
 		return;
 	}
 
-	int iTarget = m_hTarget[iEnt];
+	int iTarget = GetClientOfUserId(m_hTarget[iEnt]);
 	float flLife = GetEngineTime() - m_flCreationTime[iEnt];
 	float flT = flLife / m_flDuration[iEnt];
 
@@ -243,40 +272,34 @@ public void Gift_FlyTowardsTargetEntity(any iEnt)
 
 	TeleportEntity(iEnt, vecOutput, NULL_VECTOR, NULL_VECTOR);
 
-	RequestFrame(Gift_FlyTowardsTargetEntity, iEnt);
+	RequestFrame(Gift_FlyTowardsTargetEntity, EntIndexToEntRef(iEnt));
 }
 
-public Action Projectile_OnTouch(int entity, int other)
+public Action player_death(Event ev, const char[] szName, bool bDontBroadcast)
 {
-	return Plugin_Handled;
-}
-
-public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadcast)
-{
-	// don't detect dead ringer deaths
-	int victim_deathflags = GetEventInt(hEvent, "death_flags");
-	if (victim_deathflags & 32)
+	int victim = GetClientOfUserId(ev.GetInt("userid"));
+	int attacker = GetClientOfUserId(ev.GetInt("attacker"));
+	int assister = GetClientOfUserId(ev.GetInt("assister"));
+	
+	bool deadRinged = false;
+	if (ev.GetInt("death_flags") & 32) 
 	{
-		return Plugin_Continue;
+		deadRinged = true;
 	}
 
-	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
-	int attacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"));
-	int assister = GetClientOfUserId(GetEventInt(hEvent, "assister"));
-
-	if (IsClientReady(attacker) && attacker != client)
+	if (IsClientReady(attacker) && attacker != victim)
 	{
 		float vecPos[3];
-		GetClientAbsOrigin(client, vecPos);
+		GetClientAbsOrigin(victim, vecPos);
 
 		vecPos[2] += 60.0;
 
-		Gift_CreateForPlayer(attacker, client);
+		Gift_CreateForPlayer(attacker, victim, deadRinged);
 	}
 
 	if (IsClientReady(assister))
 	{
-		Gift_CreateForPlayer(assister, client);
+		Gift_CreateForPlayer(assister, victim, deadRinged);
 	}
 
 	return Plugin_Continue;
