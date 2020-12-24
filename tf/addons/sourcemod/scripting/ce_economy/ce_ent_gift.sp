@@ -87,7 +87,10 @@ public int Gift_Create(int client, float pos[3], bool deadRinged)
 
 		SetEntProp(iEnt, Prop_Data, "m_nSolidType", 6);
 		SetEntProp(iEnt, Prop_Send, "m_usSolidFlags", 0x0008 | 0x0200);
-		LogMessage("iEnt = %i, collision changed", iEnt);
+		//debug
+		char classname[128];
+		GetEntityClassname(iEnt, classname, sizeof(classname));
+		LogMessage("iEnt = %i, %s, collision changed", iEnt, classname);
 		SetEntProp(iEnt, Prop_Send, "m_CollisionGroup", 2);
 
 		//why can't i pass deadRinged to the callback? this is silly...
@@ -218,7 +221,7 @@ public void Gift_FlyTowardsTargetEntity(any data)
 	{
 		return;
 	}
-	
+
 	int iEnt = EntRefToEntIndex(data);
 	if (!IsValidGift(iEnt))
 	{
@@ -281,7 +284,7 @@ public Action player_death(Event ev, const char[] szName, bool bDontBroadcast)
 	int victim = GetClientOfUserId(ev.GetInt("userid"));
 	int attacker = GetClientOfUserId(ev.GetInt("attacker"));
 	int assister = GetClientOfUserId(ev.GetInt("assister"));
-	
+
 	bool deadRinged = false;
 	if (ev.GetInt("death_flags") & 32) 
 	{
