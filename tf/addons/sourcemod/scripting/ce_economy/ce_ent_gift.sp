@@ -111,6 +111,7 @@ public int Gift_Create(int client, float pos[3], bool deadRinged)
 
 		TeleportEntity(iEnt, pos, vecAng, NULL_VECTOR);
 
+		//DispatchKeyValue(iEnt, "spawnflags", "2");
 		DispatchKeyValue(iEnt, "targetname", "ce_gift");
 
 		DispatchSpawn(iEnt);
@@ -121,10 +122,6 @@ public int Gift_Create(int client, float pos[3], bool deadRinged)
 		// FSOLID_TRIGGER - This is something may be collideable but fires touch functions
 		// FSOLID_TRIGGER_TOUCH_DEBRIS - This trigger will touch debris objects
 		SetEntProp(iEnt, Prop_Send, "m_usSolidFlags", FSOLID_TRIGGER | FSOLID_TRIGGER_TOUCH_DEBRIS);
-		// debug
-		char classname[128];
-		GetEntityClassname(iEnt, classname, sizeof(classname));
-		LogMessage("iEnt = %i, %s, collision changed", iEnt, classname);
 
 		//SetEntProp(iEnt, Prop_Send, "m_CollisionGroup", 2);
 		// https://github.com/ashort96/SetCollisionGroup
@@ -322,7 +319,7 @@ public Action player_death(Event ev, const char[] szName, bool bDontBroadcast)
 	int assister = GetClientOfUserId(ev.GetInt("assister"));
 
 	bool deadRinged = false;
-	if (ev.GetInt("death_flags") & 32) 
+	if (ev.GetInt("death_flags") & 32)
 	{
 		deadRinged = true;
 	}
