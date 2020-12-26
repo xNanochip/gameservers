@@ -9,6 +9,7 @@
 #include <ce_manager_responses>
 #include <ce_manager_attributes>
 #include <tf2_stocks>
+#include <SetCollisionGroup>
 
 int m_hTarget[MAX_ENTITY_LIMIT + 1]; // the target client userid (not index) to send the gift to
 float m_flCreationTime[MAX_ENTITY_LIMIT + 1];
@@ -21,11 +22,41 @@ public Plugin myinfo =
 	name = "[CE Entity] ent_gift",
 	author = "Creators.TF Team",
 	description = "Holiday Gift Pickup",
-	version = "1.04",
+	version = "1.05",
 	url = "https://creators.tf"
 }
 
 #define TF_GIFT_MODEL "models/items/tf_gift.mdl"
+
+
+enum SolidType_t
+{
+    SOLID_NONE          = 0,    // no solid model
+    SOLID_BSP           = 1,    // a BSP tree
+    SOLID_BBOX          = 2,    // an AABB
+    SOLID_OBB           = 3,    // an OBB (not implemented yet)
+    SOLID_OBB_YAW       = 4,    // an OBB, constrained so that it can only yaw
+    SOLID_CUSTOM        = 5,    // Always call into the entity for tests
+    SOLID_VPHYSICS      = 6,    // solid vphysics object, get vcollide from the model and collide with that
+    SOLID_LAST,
+};
+
+ enum SolidFlags_t
+{
+    FSOLID_CUSTOMRAYTEST                = 0x0001,    // Ignore solid type + always call into the entity for ray tests
+    FSOLID_CUSTOMBOXTEST                = 0x0002,    // Ignore solid type + always call into the entity for swept box tests
+    FSOLID_NOT_SOLID                    = 0x0004,    // Are we currently not solid?
+    FSOLID_TRIGGER                      = 0x0008,    // This is something may be collideable but fires touch functions
+                                                     // ... even when it's not collideable (when the FSOLID_NOT_SOLID flag is set)
+    FSOLID_NOT_STANDABLE                = 0x0010,    // You can't stand on this
+    FSOLID_VOLUME_CONTENTS              = 0x0020,    // Contains volumetric contents (like water)
+    FSOLID_FORCE_WORLD_ALIGNED          = 0x0040,    // Forces the collision rep to be world-aligned even if it's SOLID_BSP or SOLID_VPHYSICS
+    FSOLID_USE_TRIGGER_BOUNDS           = 0x0080,    // Uses a special trigger bounds separate from the normal OBB
+    FSOLID_ROOT_PARENT_ALIGNED          = 0x0100,    // Collisions are defined in root parent's local coordinate space
+    FSOLID_TRIGGER_TOUCH_DEBRIS         = 0x0200,    // This trigger will touch debris objects
+
+    FSOLID_MAX_BITS    = 10
+};
 
 public void OnPluginStart()
 {
@@ -60,7 +91,7 @@ public void Gift_CreateForPlayer(int client, int origin, bool deadRinged)
 	int iGift = EntRefToEntIndex(Gift_Create(client, vecPos, deadRinged));
 	m_hTarget[iGift] = GetClientUserId(client);
 
-	switch(TF2_GetClientTeam(client))
+	switch (TF2_GetClientTeam(client))
 	{
 		case TFTeam_Red:  TF_StartAttachedParticle("peejar_trail_red", iGift, 4.0);
 		case TFTeam_Blue: TF_StartAttachedParticle("peejar_trail_blu", iGift, 4.0);
@@ -85,15 +116,20 @@ public int Gift_Create(int client, float pos[3], bool deadRinged)
 		DispatchSpawn(iEnt);
 		ActivateEntity(iEnt);
 
-		SetEntProp(iEnt, Prop_Data, "m_nSolidType", 6);
-		SetEntProp(iEnt, Prop_Send, "m_usSolidFlags", 0x0008 | 0x0200);
-		//debug
+		// SOLID_VPHYSICS - solid vphysics object, get vcollide from the model and collide with that
+		SetEntProp(iEnt, Prop_Data, "m_nSolidType", SOLID_VPHYSICS);
+		// FSOLID_TRIGGER - This is something may be collideable but fires touch functions
+		// FSOLID_TRIGGER_TOUCH_DEBRIS - This trigger will touch debris objects
+		SetEntProp(iEnt, Prop_Send, "m_usSolidFlags", FSOLID_TRIGGER | FSOLID_TRIGGER_TOUCH_DEBRIS);
+		// debug
 		char classname[128];
 		GetEntityClassname(iEnt, classname, sizeof(classname));
 		LogMessage("iEnt = %i, %s, collision changed", iEnt, classname);
-		SetEntProp(iEnt, Prop_Send, "m_CollisionGroup", 2);
 
-		//why can't i pass deadRinged to the callback? this is silly...
+		//SetEntProp(iEnt, Prop_Send, "m_CollisionGroup", 2);
+		// https://github.com/ashort96/SetCollisionGroup
+		SetEntityCollisionGroup(iEnt, COLLISION_GROUP_DEBRIS_TRIGGER);
+		// why can't i pass deadRinged to the callback? this is silly...
 		if (deadRinged) SDKHook(iEnt, SDKHook_StartTouch, Gift_OnTouch_Fake);
 		else SDKHook(iEnt, SDKHook_StartTouch, Gift_OnTouch);
 
