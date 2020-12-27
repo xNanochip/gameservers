@@ -634,6 +634,7 @@ public void OnClientAuthorized(int client, const char[] auth)
 
 	char sName[64];
 	Format(sName, sizeof sName, "(%s) %N", auth, client);
+	ReplaceString(sName, sizeof sName, "@", "");
 
 	EventMessage("Player Connected", sName).Dispatch();
 }
@@ -650,12 +651,14 @@ public void OnClientDisconnect(int iClient)
 
 	if (!GetClientName(iClient, sName, sizeof sName))
 		return;
+		
+	ReplaceString(sName, sizeof sName, "@", "");
 
 	if (!GetClientAuthId(iClient, AuthId_Steam2, auth, sizeof auth))
 		return;
 
 	char text[64];
-	Format(text, sizeof text, "(%s) %s", sName, auth);
+	Format(text, sizeof text, "(%s) %s", auth, sName);
 
 	EventMessage("Player Disconnected", text).Dispatch();
 }
@@ -695,6 +698,7 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		for (int i = strlen(g_sPrefix); i < strlen(sArgs); i++)
 			Format(sBuffer, sizeof sBuffer, "%s%c", sBuffer, sArgs[i]);
 		
+		ReplaceString(sBuffer, sizeof sBuffer, "@", "");
 		DispatchMessage(client, sBuffer);
 	}
 }
@@ -747,6 +751,7 @@ public Action Cmd_VoteKick(int client, const char[] cmd, int argc)
 	char sFormat[512];
 	Format(sFormat, sizeof(sFormat), "(%s) called a votekick on %s (%s)", sClientAuth, targetName, sTargetAuth);
 	
+	ReplaceString(sFormat, sizeof sFormat, "@", "");
 	DispatchMessage(client, sFormat);
 	return Plugin_Continue;
 }
