@@ -746,7 +746,7 @@ public Action Cmd_VoteKick(int client, const char[] cmd, int argc)
 	GetClientAuthId(target, AuthId_Steam2, sTargetAuth, sizeof(sTargetAuth));
 	
 	char sFormat[512];
-	Format(sFormat, sizeof(sFormat), "`(%s)` **called a votekick on** `%s` `(%s)`", sClientAuth, targetName, sTargetAuth);
+	Format(sFormat, sizeof(sFormat), "`(%s)` **called a votekick on** `%s` `(%s)` :exclamation::exclamation:", sClientAuth, targetName, sTargetAuth);
 	
 	ReplaceString(sFormat, sizeof sFormat, "@", "");
 	DispatchMessage(client, sFormat);
