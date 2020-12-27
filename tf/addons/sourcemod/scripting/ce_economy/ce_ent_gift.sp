@@ -9,7 +9,7 @@
 #include <ce_manager_responses>
 #include <ce_manager_attributes>
 #include <tf2_stocks>
-//#include <SetCollisionGroup>
+#include <SetCollisionGroup>
 
 int m_hTarget[MAX_ENTITY_LIMIT + 1]; // the target client userid (not index) to send the gift to
 float m_flCreationTime[MAX_ENTITY_LIMIT + 1];
@@ -111,7 +111,7 @@ public int Gift_Create(int client, float pos[3], bool deadRinged)
 
 		TeleportEntity(iEnt, pos, vecAng, NULL_VECTOR);
 
-		DispatchKeyValue(iEnt, "spawnflags", "2");
+		//DispatchKeyValue(iEnt, "spawnflags", "2");
 		DispatchKeyValue(iEnt, "targetname", "ce_gift");
 
 		DispatchSpawn(iEnt);
@@ -125,7 +125,7 @@ public int Gift_Create(int client, float pos[3], bool deadRinged)
 
 		//SetEntProp(iEnt, Prop_Send, "m_CollisionGroup", 2);
 		// https://github.com/ashort96/SetCollisionGroup
-		// SetEntityCollisionGroup(iEnt, COLLISION_GROUP_DEBRIS_TRIGGER);
+		SetEntityCollisionGroup(iEnt, COLLISION_GROUP_DEBRIS_TRIGGER);
 		// why can't i pass deadRinged to the callback? this is silly...
 		if (deadRinged) SDKHook(iEnt, SDKHook_StartTouch, Gift_OnTouch_Fake);
 		else SDKHook(iEnt, SDKHook_StartTouch, Gift_OnTouch);
