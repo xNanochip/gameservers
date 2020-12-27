@@ -361,6 +361,8 @@ public void OnPluginStart()
 	
 	AddCommandListener(Cmd_VoteKick, "callvote");
 	
+	HookEvent("player_disconnect", OnPlayerDisconnect, EventHookMode_Pre);
+	
 	g_hSocket = SocketCreate(SOCKET_TCP, OnSocketError);
 
 	SocketSetOption(g_hSocket, SocketReuseAddr, 1);
@@ -639,28 +641,23 @@ public void OnClientAuthorized(int client, const char[] auth)
 	EventMessage("Player Connected", sName).Dispatch();
 }
 
-public void OnClientDisconnect(int iClient)
+public Action OnPlayerDisconnect(Event event, const char[] name, bool dontBroadcast)
 {
 	if (!g_cPlayerEvent.BoolValue)
 		return;
 
-	if (IsClientInGame(iClient) && (IsFakeClient(iClient) || IsClientSourceTV(iClient) || IsClientReplay(iClient)))
-		return;
+	int client = GetClientOfUserId(event.GetInt("userid"));
 
-	char sName[MAX_NAME_LENGTH], auth[32];
-
-	if (!GetClientName(iClient, sName, sizeof sName))
-		return;
+	if (client && !IsFakeClient(client) && !IsClientSourceTV(client) && !IsClientReplay(client) && !dontBroadcast)
+	{
+		char reason[64], auth[32], text[128];
+		event.GetString("reason", reason, sizeof reason);
+		GetClientAuthId(client, AuthId_Steam2, auth, sizeof auth);
 		
-	ReplaceString(sName, sizeof sName, "@", "");
-
-	if (!GetClientAuthId(iClient, AuthId_Steam2, auth, sizeof auth))
-		return;
-
-	char text[64];
-	Format(text, sizeof text, "(%s) %s", auth, sName);
-
-	EventMessage("Player Disconnected", text).Dispatch();
+		Format(text, sizeof text, "(%s) %N [[%s]]", auth, client, reason);
+		ReplaceString(text, sizeof text, "@", "");
+		EventMessage("Player Disconnected", text).Dispatch();
+	}
 }
 
 public void OnMapEnd()
