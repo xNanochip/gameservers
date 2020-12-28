@@ -681,7 +681,12 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		return;
 		
 	if (StrEqual(g_sPrefix, ""))
-		DispatchMessage(client, sArgs);
+	{
+		char text[256];
+		Format(text, sizeof text, sArgs);
+		ReplaceString(text, sizeof text, "@", "");
+		DispatchMessage(client, text);
+	}
 	else
 	{
 		if (g_bFlag && !CheckCommandAccess(client, "arandomcommandthatsnotregistered", g_iFlag, true))
