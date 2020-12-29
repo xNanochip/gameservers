@@ -60,16 +60,17 @@ public Action ToggleCTFHat(int client, int args)
 
     if (bHatsOff[client])
     {
-        MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] Toggled Creators.TF custom cosmetics {green}ON{default}!", client);
+        MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] Toggled Creators.TF custom cosmetics {red}OFF{default}!", client);
     }
     else
     {
-        MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] Toggled Creators.TF custom cosmetics {red}OFF{default}!", client);
+        MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] Toggled Creators.TF custom cosmetics {green}ON{default}!", client);
     }
 
     if (AreClientCookiesCached(client))
     {
         char sValue[8];
+        GetClientCookie(client, ctfHatsCookie, sValue, sizeof(sValue));
         // convert cookie value to string
         IntToString(bHatsOff[client], sValue, sizeof(sValue));
         // save to cookie
@@ -77,6 +78,12 @@ public Action ToggleCTFHat(int client, int args)
     }
 
     return Plugin_Handled;
+}
+
+
+public void OnClientDisconnect(int client)
+{
+    bHatsOff[client] = false;
 }
 
 public void OnEntityCreated(int entity, const char[] classname)
