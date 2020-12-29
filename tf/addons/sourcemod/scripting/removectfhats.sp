@@ -17,7 +17,7 @@ public Plugin myinfo =
     name        = "CreatorsTF Hat Removal",
     author      = "Jaro 'Monkeys' Vanderheijden, steph&",
     description = "Gives players the choice to locally toggle CreatorsTF hat visibility",
-    version     = "0.0.3",
+    version     = "0.0.4",
     url         = ""
 };
 
@@ -30,42 +30,6 @@ public void OnPluginStart()
 
     ctfHatsCookie = RegClientCookie("ctfHatsTransmitCookie", "Cookie for determining if CTF hats are transmitted to player or not", CookieAccess_Protected);
 }
-
-public Action ToggleCTFHat(int client, int args)
-{
-    //Toggle, but if the client gives a 0/other as argument, turn it off/on.
-    if (args > 0)
-    {
-        char arg[5];
-        GetCmdArg(1, arg, sizeof(arg));
-        bHatsOff[client] = StrEqual(arg, "0");
-    }
-    else
-    {
-        bHatsOff[client] = !bHatsOff[client];
-    }
-
-    if (bHatsOff[client])
-    {
-        MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] Toggled Creators.TF custom cosmetics {green}ON{default}!", client);
-    }
-    else
-    {
-        MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] Toggled Creators.TF custom cosmetics {red}OFF{default}!", client);
-    }
-
-    if (AreClientCookiesCached(client))
-    {
-        char sValue[8];
-        // convert cookie value to string
-        IntToString(bHatsOff[client], sValue, sizeof(sValue));
-        // save to cookie
-        SetClientCookie(client, ctfHatsCookie, sValue);
-    }
-
-    return Plugin_Handled;
-}
-
 
 public void OnClientCookiesCached(int client)
 {
@@ -89,9 +53,30 @@ public void OnClientCookiesCached(int client)
     }
 }
 
-public void OnClientDisconnect(int client)
+public Action ToggleCTFHat(int client, int args)
 {
-    bHatsOff[client] = false;
+    // toggle
+    bHatsOff[client] = !bHatsOff[client];
+
+    if (bHatsOff[client])
+    {
+        MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] Toggled Creators.TF custom cosmetics {green}ON{default}!", client);
+    }
+    else
+    {
+        MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] Toggled Creators.TF custom cosmetics {red}OFF{default}!", client);
+    }
+
+    if (AreClientCookiesCached(client))
+    {
+        char sValue[8];
+        // convert cookie value to string
+        IntToString(bHatsOff[client], sValue, sizeof(sValue));
+        // save to cookie
+        SetClientCookie(client, ctfHatsCookie, sValue);
+    }
+
+    return Plugin_Handled;
 }
 
 public void OnEntityCreated(int entity, const char[] classname)
