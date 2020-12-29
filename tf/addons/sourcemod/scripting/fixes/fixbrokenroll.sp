@@ -3,7 +3,7 @@ public Plugin myinfo =
     name             =  "Fix roll while dead",
     author           =  "steph&nie",
     description      =  "Fixes https://github.com/ValveSoftware/Source-1-Games/issues/3338",
-    version          =  "0.0.1",
+    version          =  "0.0.2",
     url              =  "https://sappho.io"
 }
 
@@ -27,17 +27,14 @@ public Action OnPlayerRunCmd
         if (!IsPlayerAlive(client))
         {
             // fix https://github.com/ValveSoftware/Source-1-Games/issues/3338
-            if (angles[2] != 0.0)
-            {
-                angles[2] = 0.0;
-            }
+            angles[2] = 0.0;
         }
     }
 }
 
 stock bool IsValidClient(int client)
 {
-    return ((0 < client <= MaxClients) && IsClientInGame(client) && !IsFakeClient(client));
+    return ((0 < client <= MaxClients) && IsClientInGame(client));
 }
 
 
