@@ -23,10 +23,10 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-    RegConsoleCmd("sm_noctfhats", 		ToggleCTFHat, "Locally toggles CreatorsTF custom cosmetic visibility");
-    RegConsoleCmd("sm_togglectfhats", 	ToggleCTFHat, "Locally toggles CreatorsTF custom cosmetic visibility");
-    RegConsoleCmd("sm_togglehats", 		ToggleCTFHat, "Locally toggles CreatorsTF custom cosmetic visibility");
-    RegConsoleCmd("sm_ctfhats", 		ToggleCTFHat, "Locally toggles CreatorsTF custom cosmetic visibility");
+    RegConsoleCmd("sm_noctfhats",       ToggleCTFHat, "Locally toggles CreatorsTF custom cosmetic visibility");
+    RegConsoleCmd("sm_togglectfhats",   ToggleCTFHat, "Locally toggles CreatorsTF custom cosmetic visibility");
+    RegConsoleCmd("sm_togglehats",      ToggleCTFHat, "Locally toggles CreatorsTF custom cosmetic visibility");
+    RegConsoleCmd("sm_ctfhats",         ToggleCTFHat, "Locally toggles CreatorsTF custom cosmetic visibility");
 
     ctfHatsCookie = RegClientCookie("ctfHatsTransmitCookie_", "Cookie for determining if CTF hats are transmitted to player or not", CookieAccess_Protected);
 }
