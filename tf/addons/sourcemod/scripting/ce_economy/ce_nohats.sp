@@ -17,7 +17,7 @@ public Plugin myinfo =
     name        = "CreatorsTF Hat Removal",
     author      = "Jaro 'Monkeys' Vanderheijden, steph&",
     description = "Gives players the choice to locally toggle CreatorsTF hat visibility",
-    version     = "0.0.4",
+    version     = "0.0.5",
     url         = ""
 };
 
@@ -60,7 +60,7 @@ public Action ToggleCTFHat(int client, int args)
 
     if (bHatsOff[client])
     {
-        MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] Toggled Creators.TF custom cosmetics {red}OFF{default}!", client);
+        MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] Toggled Creators.TF custom cosmetics {red}OFF{default}! Be warned, this may cause invisible heads or feet on some cosmetics!", client);
     }
     else
     {
@@ -79,7 +79,6 @@ public Action ToggleCTFHat(int client, int args)
 
     return Plugin_Handled;
 }
-
 
 public void OnClientDisconnect(int client)
 {
