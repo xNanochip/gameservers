@@ -17,7 +17,7 @@ public Plugin myinfo =
     name        = "CreatorsTF Hat Removal",
     author      = "Jaro 'Monkeys' Vanderheijden, steph&",
     description = "Gives players the choice to locally toggle CreatorsTF hat visibility",
-    version     = "0.0.5",
+    version     = "0.0.6",
     url         = ""
 };
 
@@ -28,7 +28,7 @@ public void OnPluginStart()
     RegConsoleCmd("sm_togglehats", 		ToggleCTFHat, "Locally toggles CreatorsTF custom cosmetic visibility");
     RegConsoleCmd("sm_ctfhats", 		ToggleCTFHat, "Locally toggles CreatorsTF custom cosmetic visibility");
 
-    ctfHatsCookie = RegClientCookie("ctfHatsTransmitCookie", "Cookie for determining if CTF hats are transmitted to player or not", CookieAccess_Protected);
+    ctfHatsCookie = RegClientCookie("ctfHatsTransmitCookie_", "Cookie for determining if CTF hats are transmitted to player or not", CookieAccess_Protected);
 }
 
 public void OnClientCookiesCached(int client)
@@ -36,15 +36,16 @@ public void OnClientCookiesCached(int client)
     char sValue[8];
     // Gets stored value for specific client and stores in sValue
     GetClientCookie(client, ctfHatsCookie, sValue, sizeof(sValue));
-    // If the string is null, it'll be set to true - we want hats defaulted on
+    // If the string is null, it'll be set to false - we want hats defaulted on, and the bool determines if hats are OFF
+    // 0 = on, 1 = off
     if (!sValue[0])
     {
-        SetClientCookie(client, ctfHatsCookie, "1");
-        sValue = "1";
-        // convert cookie value to string
-        bHatsOff[client] = (StringToInt(sValue) != 0);
+        // set string to 0
+        sValue = "0";
         // save to cookie
         SetClientCookie(client, ctfHatsCookie, sValue);
+        // convert cookie value to string and save it to the plugin bool
+        bHatsOff[client] = (StringToInt(sValue) != 0);
     }
     else
     {
@@ -60,7 +61,7 @@ public Action ToggleCTFHat(int client, int args)
 
     if (bHatsOff[client])
     {
-        MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] Toggled Creators.TF custom cosmetics {red}OFF{default}! Be warned, this may cause invisible heads or feet on some cosmetics!", client);
+        MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] Toggled Creators.TF custom cosmetics {red}OFF{default}! Be warned, this may cause invisible heads or feet for some cosmetics!", client);
     }
     else
     {
