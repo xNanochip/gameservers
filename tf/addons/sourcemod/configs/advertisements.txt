@@ -31,7 +31,7 @@
     }
     "4"
     {
-        "chat"                  "{fullblue}Seeing {red}red ERRORs{fullblue}? Type {mediumpurple}/ctfhats{fullblue} in chat to disable custom cosmetics, or download our asset pack at {fullblue}creators.tf/assetpack{fullblue}!"
+        "chat"                  "{aquamarine}Seeing {red}red ERRORs{aquamarine}? Type {mediumpurple}/ctfhats{aquamarine} in chat to disable custom cosmetics, or download our asset pack at {mediumpurple}creators.tf/assetpack{fullblue}!"
     }
     "5"
     {
