@@ -379,7 +379,10 @@ public any Native_SendAPIRequest(Handle plugin, int numParams)
 
 public void httpRequestCallback(bool success, const char[] error, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method)
 {
-	if (!UTIL_IsValidHandle(response))return;
+	if (!UTIL_IsValidHandle(response))
+	{
+		return;
+	}
 
 	char content[MAX_RESPONSE_LENGTH];
 	if(response.ContentLength <= MAX_RESPONSE_LENGTH)
@@ -388,9 +391,20 @@ public void httpRequestCallback(bool success, const char[] error, System2HTTPReq
 	}
 
 	DataPack hPack = request.Any;
-	if (!UTIL_IsValidHandle(hPack))return;
+	if (!UTIL_IsValidHandle(hPack))
+	{
+		delete hPack;
+		return;
+	}
+
 	Function fnCallback = hPack.ReadFunction();
 	Handle plugin = hPack.ReadCell();
+
+	if (!UTIL_IsValidHandle(plugin))
+	{
+		delete hPack;
+		return;
+	}
 
 	any value = hPack.ReadCell();
 	delete hPack;
