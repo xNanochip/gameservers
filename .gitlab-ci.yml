@@ -38,19 +38,23 @@ stages:
                         echo "stashing"
                         git stash;
 
+                        # clean cfg folder in case of update
+                        git clean -d -f -x tf/cfg/
+
+
                         echo "fetching"
                         git fetch origin $CI_COMMIT_REF_NAME;
 
                         echo "resetting"
                         git reset --hard origin/$CI_COMMIT_REF_NAME;
 
-                        # UNCOMMENT THESE LINES TO FORCE CLEANUP OF EXTRA BULLSHIT THAT MIGHT BE ON SERVERS
-                        echo "git clean"
-                        git clean -d -f -x tf/addons/sourcemod/plugins/
-                        git clean -d -f -x tf/addons/sourcemod/data/
-                        git clean -d -f -x tf/addons/sourcemod/gamedata/
-                        git clean -d -f -x tf/addons/sourcemod/logs/
 
+                        # UNCOMMENT THESE LINES TO FORCE CLEANUP OF EXTRA BULLSHIT THAT MIGHT BE ON SERVERS
+                        # echo "git clean"
+                        # git clean -d -f -x tf/addons/sourcemod/plugins/
+                        # git clean -d -f -x tf/addons/sourcemod/data/
+                        # git clean -d -f -x tf/addons/sourcemod/gamedata/
+                        # git clean -d -f -x tf/addons/sourcemod/logs/
 
                         echo "chmodding"
                         chmod 744 build.sh;
