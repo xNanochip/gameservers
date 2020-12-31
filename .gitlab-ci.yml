@@ -52,7 +52,8 @@ stages:
                         chmod 744 start.sh;
 
                         echo "building"
-                        ./build.sh $COMMIT_OLD;
+                        ./build.sh
+                        # $COMMIT_OLD;
 
                     fi;
                 fi;
