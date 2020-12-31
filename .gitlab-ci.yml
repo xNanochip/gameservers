@@ -28,17 +28,30 @@ stages:
                     echo "Comparing branches `git rev-parse --abbrev-ref HEAD` and $CI_COMMIT_REF_NAME."
                     if [ `git rev-parse --abbrev-ref HEAD` == $CI_COMMIT_REF_NAME ]; then
 
+
+                        echo "setting git config"
                         git config --global user.email "support@creators.tf"
                         git config --global user.name "Creators.TF Production"
 
                         COMMIT_OLD=`git rev-parse HEAD`;
+
+                        echo "stashing"
                         git stash;
 
+                        echo "fetching"
                         git fetch origin $CI_COMMIT_REF_NAME;
+
+                        echo "resetting"
                         git reset --hard origin/$CI_COMMIT_REF_NAME;
 
+                        echo "testing git clean"
+                        git clean -n -d -f -x tf/addons/sourcemod/plugins/
+
+                        echo "chmodding"
                         chmod 744 build.sh;
                         chmod 744 start.sh;
+
+                        echo "building"
                         ./build.sh $COMMIT_OLD;
 
                     fi;
