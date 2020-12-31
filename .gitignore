@@ -12,7 +12,7 @@ tf/*
 tf/addons/sourcemod/configs/items.cfg
 tf/addons/*/scripting/**/*.smx
 tf/addons/*/plugins/*.smx
-tf/addons/*/logs
+#tf/addons/*/logs
 tf/addons/*/data/sqlite/clientprefs-sqlite.sq3
 tf/addons/*/data/_*.data
 tf/addons/*/configs/sourcebans/sb_admins.cfg
