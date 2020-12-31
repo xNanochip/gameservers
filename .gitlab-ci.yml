@@ -45,7 +45,7 @@ stages:
                         git reset --hard origin/$CI_COMMIT_REF_NAME;
 
                         echo "testing git clean"
-                        git clean -n -d -f -x tf/addons/sourcemod/plugins/
+                        git clean -d -f -x tf/addons/sourcemod/plugins/
 
                         echo "chmodding"
                         chmod 744 build.sh;
