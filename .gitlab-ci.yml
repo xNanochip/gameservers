@@ -38,9 +38,8 @@ stages:
                         echo "stashing"
                         git stash;
 
-                        # clean cfg folder in case of update
+                        echo "cleaning cfg folder"
                         git clean -d -f -x tf/cfg/
-
 
                         echo "fetching"
                         git fetch origin $CI_COMMIT_REF_NAME;
