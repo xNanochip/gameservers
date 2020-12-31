@@ -5,7 +5,7 @@ public Plugin myinfo =
     name             =  "Restart Soon:tm:",
     author           =  "steph&nie",
     description      =  "Restart map at end of map timer, if requested",
-    version          =  "0.0.2",
+    version          =  "0.0.3",
     url              =  "https://sappho.io"
 }
 
@@ -47,7 +47,8 @@ public void OnMapEnd()
 {
     if (b_restart)
     {
-        ServerCommand("kickall This server is restarting. Please rejoin in about 30 seconds")
+        // could do a for loop, but i am lazy
+        ServerCommand("sm_kick @humans This server is restarting. Please rejoin in about 30 seconds")
         ServerCommand("_restart");
     }
 }
