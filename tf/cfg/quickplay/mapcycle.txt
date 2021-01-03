@@ -33,7 +33,7 @@ koth_spillway_rc3a
 koth_synthetic_rc6a
 pd_snowville_event
 pl_badwater_pro_v9
-pl_barnblitz
+pl_barnblitz_pro6
 pl_borneo
 pl_fifthcurve_rc1
 pl_pier
