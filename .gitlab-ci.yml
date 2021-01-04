@@ -46,7 +46,7 @@ stages:
                         # git clean -d -f -x tf/addons/sourcemod/plugins/
                         # git clean -d -f -x tf/addons/sourcemod/data/
                         # git clean -d -f -x tf/addons/sourcemod/gamedata/
-                        # THIS WILL DELETE ALL SOURCEMOD LOGS, BUT NOT STAC OR CHAT ONES
+                        # THIS WILL DELETE ALL SOURCEMOD LOGS, INCLUDING STAC AND CHAT LOGS
                         # git clean -d -f -x tf/addons/sourcemod/logs/
 
                         echo "fetching"
