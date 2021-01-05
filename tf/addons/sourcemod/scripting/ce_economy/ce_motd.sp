@@ -14,7 +14,7 @@ public Plugin myinfo =
 	name = "Creators.TF Economy - MotD",
 	author = "Creators.TF Team",
 	description = "Creators.TF MotD",
-	version = "1.02",
+	version = "1.03",
 	url = "https://creators.tf"
 }
 
@@ -26,8 +26,8 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_website", cOpenWebsite, "Opens Creators.TF Website");
 	RegConsoleCmd("sm_w", cOpenWebsite, "Opens Creators.TF Website");
 
-	RegConsoleCmd("sm_servers", cOpenServers, "Opens Creators.TF Servers");
-	RegConsoleCmd("sm_s", cOpenServers, "Opens Creators.TF Servers");
+	//RegConsoleCmd("sm_servers", cOpenServers, "Opens Creators.TF Servers");
+	//RegConsoleCmd("sm_s", cOpenServers, "Opens Creators.TF Servers");
 
 	RegConsoleCmd("sm_contracker", cOpenContracker, "Opens your Creators.TF ConTracker");
 	RegConsoleCmd("sm_c", cOpenContracker, "Opens your Creators.TF ConTracker");
@@ -80,12 +80,12 @@ public Action cOpenLoadout(int client, int args)
 /**
 *	Purpose: sm_servers / sm_s command.
 */
-public Action cOpenServers(int client, int args)
-{
-
-	OpenURL(client, "https://creators.tf/servers");
-	return Plugin_Handled;
-}
+//public Action cOpenServers(int client, int args)
+//{
+//
+//	OpenURL(client, "https://creators.tf/servers");
+//	return Plugin_Handled;
+//}
 
 /**
 *	Purpose: sm_contracker / sm_c command.
