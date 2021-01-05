@@ -49,8 +49,12 @@
     {
         "chat"                  "{green}See any hate speech or prohibited content in chat or on decals? Screenshot it and send it directly to {lightgreen}@ModMail {green}on our Discord."
     }
-      "9"
+    "9"
     {
         "chat"                  "{green}Don't forget to {lightgreen}!nominate {green}the next map you want to play!"
+    }
+    "10"
+    {
+        "chat"                  "{green}Wanna play on another server? Type {lightgreen}!servers {green}, or visit {lightgreen}https://creators.tf/servers {green}to see a list of all Creators.TF servers."
     }
 }
