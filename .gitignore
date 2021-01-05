@@ -1,5 +1,4 @@
 /*
-!do.sh
 !build.sh
 !start.sh
 !.gitignore
@@ -13,14 +12,10 @@ tf/addons/sourcemod/configs/items.cfg
 tf/addons/*/scripting/**/*.smx
 tf/addons/*/plugins/*.smx
 
+tf/addons/*/logs
 !tf/addons/*/logs/chat/.gitkeep
 !tf/addons/*/logs/stac/.gitkeep
 !tf/addons/*/logs/.gitkeep
-
-
-tf/addons/*/logs/stac/**
-tf/addons/*/logs/chat/**
-tf/addons/*/logs/**
 
 
 tf/addons/*/data/sqlite/clientprefs-sqlite.sq3
