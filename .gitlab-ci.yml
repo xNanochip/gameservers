@@ -83,7 +83,7 @@ deploy-russia:
     - russiapub
     <<: *deploy_template
 
-deploy-la:
-    tags:
-    - lapub
-    <<: *deploy_template
+#deploy-la:
+#    tags:
+#    - lapub
+#    <<: *deploy_template
