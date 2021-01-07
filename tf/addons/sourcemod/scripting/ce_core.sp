@@ -83,6 +83,16 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	return APLRes_Success;
 }
 
+public void OnMapStart()
+{
+    CreateTimer(10.0, reloadCoord);
+}
+
+Action reloadCoord(Handle timer)
+{
+    ServerCommand("sm plugins reload ce_coordinator");
+}
+
 public any Native_FlushSchema(Handle plugin, int numParams)
 {
 	CE_LoadConfig();
@@ -95,7 +105,7 @@ public void NotifySchemaUpdated()
 	Call_PushCell(hSchema);
 	Call_Finish();
 	delete hSchema;
-	
+
 }
 
 public Action cBroadcast(int args)
