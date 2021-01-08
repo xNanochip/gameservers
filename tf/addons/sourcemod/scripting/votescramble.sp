@@ -46,6 +46,7 @@ public void OnPluginStart()
 	HookEvent("teamplay_round_win", Event_RoundEnd);
 	HookEvent("teamplay_round_stalemate", Event_RoundEnd);
 	HookEvent("teamplay_win_panel", Event_RoundEnd);
+	HookEvent("teamplay_alert", OnTeamplayAlert);
 
 	RegConsoleCmd("sm_votescramble", Cmd_VoteScramble, "Initiate a vote to scramble teams!");
 	RegConsoleCmd("sm_vscramble", Cmd_VoteScramble, "Initiate a vote to scramble teams!");
@@ -228,6 +229,15 @@ public void Event_RoundStart(Handle event, const char[] name, bool dontBroadcast
 	{
 		g_bCanScramble = true;
 		CreateTimer(cvarCanScrambleTime.FloatValue, Timer_CanScrambleDelay, _, TIMER_FLAG_NO_MAPCHANGE);
+	}
+}
+
+public void OnTeamplayAlert(Event event, const char[] name, bool dontBroadcast)
+{
+	//teams were auto-scrambled so reset vscramble votes
+	if (event.GetInt("alert_type") == 0)
+	{
+		g_iVotes = 0;
 	}
 }
 
