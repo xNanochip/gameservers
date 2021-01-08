@@ -91,6 +91,14 @@ public void OnPluginStart()
 	HookEvent("eyeball_boss_killer", eyeball_boss_killer);
 	HookEvent("escaped_loot_island", escaped_loot_island);
 	HookEvent("escape_hell", escape_hell);
+	
+	//Passtime Events
+	HookEvent("pass_get", pass_get);
+	HookEvent("pass_score", pass_score);
+	HookEvent("pass_free", pass_free);
+	HookEvent("pass_pass_caught", pass_pass_caught);
+	HookEvent("pass_ball_stolen", pass_ball_stolen);
+	HookEvent("pass_ball_blocked", pass_ball_blocked);
 
 	HookEvent("team_leader_killed", team_leader_killed);
 
@@ -445,6 +453,83 @@ public Action escaped_loot_island(Handle hEvent, const char[] szName, bool bDont
 	int player = GetClientOfUserId(GetEventInt(hEvent, "player"));
 
 	CEEvents_SendEventToClient(player, "LOGIC_ESCAPE_LOOT_ISLAND", 1, view_as<int>(hEvent));
+
+	return Plugin_Continue;
+}
+
+public Action pass_get(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int player = GetClientOfUserId(GetEventInt(hEvent, "owner"));
+
+	CEEvents_SendEventToClient(player, "LOGIC_BALL_GET", 1, view_as<int>(hEvent));
+
+	return Plugin_Continue;
+}
+
+public Action pass_score(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int scorer = GetClientOfUserId(GetEventInt(hEvent, "scorer"));
+	int assister = GetClientOfUserId(GetEventInt(hEvent, "assister"));
+
+	CEEvents_SendEventToClient(scorer, "LOGIC_BALL_SCORE", 1, view_as<int>(hEvent));
+	if (assister != 0) CEEvents_SendEventToClient(assister, "LOGIC_PASS_SCORE_ASSIST", 1, view_as<int>(hEvent));
+
+	return Plugin_Continue;
+}
+
+public Action pass_free(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int player = GetClientOfUserId(GetEventInt(hEvent, "owner"));
+	int attacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"));
+
+	CEEvents_SendEventToClient(player, "LOGIC_BALL_LOST", 1, view_as<int>(hEvent));
+	if (attacker != 0) CEEvents_SendEventToClient(attacker, "LOGIC_BALL_STEAL", 1, view_as<int>(hEvent));
+
+	return Plugin_Continue;
+}
+
+public Action pass_pass_caught(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int passer = GetClientOfUserId(GetEventInt(hEvent, "passer"));
+	int catcher = GetClientOfUserId(GetEventInt(hEvent, "catcher"));
+	float distance = GetEventFloat(hEvent, "dist");
+	float duration = GetEventFloat(hEvent, "duration");
+
+	CEEvents_SendEventToClient(passer, "LOGIC_BALL_PASSED", 1, view_as<int>(hEvent));
+	CEEvents_SendEventToClient(passer, "LOGIC_BALL_PASSED_DISTANCE", RoundFloat(distance), view_as<int>(hEvent));
+	CEEvents_SendEventToClient(passer, "LOGIC_BALL_PASSED_DURATION", RoundFloat(duration), view_as<int>(hEvent));
+	
+	CEEvents_SendEventToClient(catcher, "LOGIC_BALL_CAUGHT", 1, view_as<int>(hEvent));
+	CEEvents_SendEventToClient(catcher, "LOGIC_BALL_CAUGHT_DISTANCE", RoundFloat(distance), view_as<int>(hEvent));
+	CEEvents_SendEventToClient(catcher, "LOGIC_BALL_CAUGHT_DURATION", RoundFloat(duration), view_as<int>(hEvent));
+
+	return Plugin_Continue;
+}
+
+public Action pass_ball_stolen(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int victim = GetClientOfUserId(GetEventInt(hEvent, "victim"));
+	int attacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"));
+
+	CEEvents_SendEventToClient(victim, "LOGIC_BALL_LOST_STOLEN", 1, view_as<int>(hEvent));
+	if (attacker != 0) CEEvents_SendEventToClient(attacker, "LOGIC_BALL_STEAL_MELEE", 1, view_as<int>(hEvent));
+
+	return Plugin_Continue;
+}
+
+public Action pass_ball_blocked(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int player = GetClientOfUserId(GetEventInt(hEvent, "owner"));
+	int blocker = GetClientOfUserId(GetEventInt(hEvent, "blocker"));
+
+	CEEvents_SendEventToClient(player, "LOGIC_BALL_INCOMPLETE_PASS", 1, view_as<int>(hEvent));
+	if (blocker != 0) CEEvents_SendEventToClient(blocker, "LOGIC_BALL_BLOCKED_PASS", 1, view_as<int>(hEvent));
 
 	return Plugin_Continue;
 }
