@@ -81,17 +81,13 @@ public Action SetRoundSettings(Handle Timer)
 	}
 	SetFlagReturnTime(REDFlag, GetConVarInt(ReturnTime));
 	SetFlagReturnTime(BLUFlag, GetConVarInt(ReturnTime));
-	HookSingleEntityOutput(REDFlag, "OnDrop", REDFlagDropped, false);
-	HookSingleEntityOutput(BLUFlag, "OnDrop", BLUFlagDropped, false);
+	HookEntityOutput("item_teamflag", "OnDrop", FlagDropped);
 }
 
-public void REDFlagDropped(const char[] name, int caller, int activator, float delay)
+public void FlagDropped(const char[] name, int caller, int activator, float delay)
 {
+	PrintToChatAll("Flag dropped");
 	SetFlagReturnTime(REDFlag, GetConVarInt(ReturnTime));
-}
-
-public void BLUFlagDropped(const char[] name, int caller, int activator, float delay)
-{
 	SetFlagReturnTime(BLUFlag, GetConVarInt(ReturnTime));
 }
 
@@ -100,6 +96,7 @@ public void TimerExpire(const char[] output, int caller, int victim, float delay
 	if (GameRules_GetProp("m_bInWaitingForPlayers"))
 		return;
 	
+	PrintToChatAll("Round Ended");
 	EndRound();
 }
 
@@ -201,6 +198,7 @@ public void EndRound()
 
 	SetVariantInt(winningteam);
 	AcceptEntityInput(iEnt, "SetTeam");
+	PrintToChatAll("Winning Team: %i", winningteam);
 	AcceptEntityInput(iEnt, "RoundWin");
 }
 
