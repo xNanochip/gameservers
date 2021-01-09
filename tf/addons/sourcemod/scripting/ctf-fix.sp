@@ -49,7 +49,11 @@ public Action Event_RoundStart(Handle event, const char[] name, bool dontBroadca
 	if (GameRules_GetProp("m_bInWaitingForPlayers"))
 		return;
 		
+	CreateTimer(0.5, SetRoundSettings, _, TIMER_FLAG_NO_MAPCHANGE);
+}
 
+public Action SetRoundSettings(Handle Timer)
+{
 	int iEnt;
 	iEnt = FindEntityByClassname(iEnt, "team_round_timer");
 	if (iEnt < 1)
@@ -60,6 +64,7 @@ public Action Event_RoundStart(Handle event, const char[] name, bool dontBroadca
 		else
 		{
 			PrintToServer("Unable to find or create a team_round_timer entity!");
+			PrintToChatAll("Could not create team_round_timer");
 		}
 	}
 	TimerSeconds = GetConVarInt(TimerValue); //Initial seconds left for round
@@ -143,7 +148,7 @@ public void SetFlagReturnTime(int flag, int time)
 	//IntToString(time, sTime, sizeof(sTime));
 	SetVariantInt(time);
 	AcceptEntityInput(flag, "SetReturnTime");
-	PrintTOChatAll("Set flag return time to %i", GetConVarInt(ReturnTime));
+	PrintToChatAll("Set flag return time to %i", GetConVarInt(ReturnTime));
 	//DispatchKeyValue(flag, "Return timer", sTime);
 }
 
