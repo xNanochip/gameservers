@@ -50,6 +50,7 @@ public void httpUpdateCallback(const char[] content, int size, int status, any v
 	PrintToServer("c");
 	if (status == StatusCode_Success)
 	{
+		PrintToServer("d");
 		char sLoc[96];
 		BuildPath(Path_SM, sLoc, 96, "configs/items.cfg");
 		KeyValues kvOld = new KeyValues("Items");
