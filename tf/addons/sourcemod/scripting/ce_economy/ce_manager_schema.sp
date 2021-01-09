@@ -35,22 +35,18 @@ public bool ShouldSchemaUpdate()
 public Action cUpdateSchema(int args)
 {
 	CE_UpdateScheme(true);
-	PrintToServer("a");
 }
 
 public void CE_UpdateScheme(bool force)
 {
 	if (!ShouldSchemaUpdate() && !force)return;
-	PrintToServer("b");
 	CESC_SendAPIRequest("/api/IEconomyItems/GScheme?field=Version", RequestType_GET, httpUpdateCallback);
 }
 
 public void httpUpdateCallback(const char[] content, int size, int status, any value)
 {
-	PrintToServer("c");
 	if (status == StatusCode_Success)
 	{
-		PrintToServer("d");
 		char sLoc[96];
 		BuildPath(Path_SM, sLoc, 96, "configs/items.cfg");
 		KeyValues kvOld = new KeyValues("Items");
@@ -69,16 +65,12 @@ public void httpUpdateCallback(const char[] content, int size, int status, any v
 		{
 			char sNewVersion[256];
 			kvNew.GetString("build", sNewVersion, sizeof(sNewVersion), "");
-			PrintToServer("e");
-			PrintToServer("old: %s", sOldVersion);
-			PrintToServer("new: %s", sNewVersion);
 			if (!StrEqual(sOldVersion, sNewVersion))
 			{
 				// Versions differ, so we need to redownload the full file.
 				LogMessage("New Schema version detected (%s), downloading...", sNewVersion);
 
 				CESC_SendAPIRequest("/api/IEconomyItems/GScheme", RequestType_GET, HttpDownloadCallback, _, _, sLoc);
-				PrintToServer("f");
 			}
 		} else {
 			LogMessage("Failed loading new Creators.TF Economy Schema.");
@@ -94,11 +86,9 @@ public void httpUpdateCallback(const char[] content, int size, int status, any v
 */
 public void HttpDownloadCallback(const char[] content, int size, int status, any value)
 {
-	PrintToServer("g");
 	if (status == StatusCode_Success)
 	{
 		LogMessage("New Creators.TF Schema downloaded successfully.");
-		PrintToServer("h");
 		CE_FlushSchema();
 	}
 }

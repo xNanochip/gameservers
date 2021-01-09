@@ -480,7 +480,6 @@ public Action pd_special_score(Handle hEvent, const char[] szName, bool bDontBro
 
 public Action pass_get(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	PrintToChatAll("pass_get");
 	if (!g_CoreEnabled)return Plugin_Continue;
 	int player = GetEventInt(hEvent, "owner");
 
@@ -494,7 +493,6 @@ public Action pass_get(Handle hEvent, const char[] szName, bool bDontBroadcast)
 
 public Action pass_score(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	PrintToChatAll("pass_score");
 	if (!g_CoreEnabled)return Plugin_Continue;
 	int scorer = GetEventInt(hEvent, "scorer");
 	int assister = GetEventInt(hEvent, "assister");
@@ -514,7 +512,6 @@ public Action pass_score(Handle hEvent, const char[] szName, bool bDontBroadcast
 
 public Action pass_free(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	PrintToChatAll("pass_free");
 	if (!g_CoreEnabled)return Plugin_Continue;
 	int player = GetEventInt(hEvent, "owner");
 	int attacker = GetEventInt(hEvent, "attacker");
@@ -533,7 +530,6 @@ public Action pass_free(Handle hEvent, const char[] szName, bool bDontBroadcast)
 
 public Action pass_pass_caught(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	PrintToChatAll("pass_pass_caught");
 	if (!g_CoreEnabled)return Plugin_Continue;
 	int passer = GetEventInt(hEvent, "passer");
 	int catcher = GetEventInt(hEvent, "catcher");
@@ -559,7 +555,6 @@ public Action pass_pass_caught(Handle hEvent, const char[] szName, bool bDontBro
 
 public Action pass_ball_stolen(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	PrintToChatAll("pass_ball_stolen");
 	if (!g_CoreEnabled)return Plugin_Continue;
 	int victim = GetEventInt(hEvent, "victim");
 	int attacker = GetEventInt(hEvent, "attacker");
@@ -571,7 +566,6 @@ public Action pass_ball_stolen(Handle hEvent, const char[] szName, bool bDontBro
 	
 	if (IsClientValid(attacker)) 
 	{
-		PrintToChatAll("%N STOLE BALL index %d", attacker, attacker);
 		CEEvents_SendEventToClient(attacker, "LOGIC_BALL_STEAL_MELEE", 1, view_as<int>(hEvent));
 	}
 
@@ -580,7 +574,6 @@ public Action pass_ball_stolen(Handle hEvent, const char[] szName, bool bDontBro
 
 public Action pass_ball_blocked(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	PrintToChatAll("pass_ball_blocked");
 	if (!g_CoreEnabled)return Plugin_Continue;
 	int player = GetEventInt(hEvent, "owner");
 	int blocker = GetEventInt(hEvent, "blocker");
