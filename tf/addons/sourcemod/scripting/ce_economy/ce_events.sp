@@ -99,6 +99,12 @@ public void OnPluginStart()
 	HookEvent("pass_pass_caught", pass_pass_caught);
 	HookEvent("pass_ball_stolen", pass_ball_stolen);
 	HookEvent("pass_ball_blocked", pass_ball_blocked);
+	
+	//Robot Destruction
+	HookEvent("rd_robot_killed", rd_robot_killed);
+	//HookEvent("rd_player_score_points", rd_player_score_points);
+	
+	//Special Delivery
 
 	HookEvent("team_leader_killed", team_leader_killed);
 
@@ -530,6 +536,16 @@ public Action pass_ball_blocked(Handle hEvent, const char[] szName, bool bDontBr
 
 	CEEvents_SendEventToClient(player, "LOGIC_BALL_INCOMPLETE_PASS", 1, view_as<int>(hEvent));
 	if (blocker != 0) CEEvents_SendEventToClient(blocker, "LOGIC_BALL_BLOCKED_PASS", 1, view_as<int>(hEvent));
+
+	return Plugin_Continue;
+}
+
+public Action rd_robot_killed(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int attacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"));
+
+	CEEvents_SendEventToClient(attacker, "LOGIC_RD_ROBOT_KILLED", 1, view_as<int>(hEvent));
 
 	return Plugin_Continue;
 }
