@@ -81,6 +81,18 @@ public Action SetRoundSettings(Handle Timer)
 	}
 	SetFlagReturnTime(REDFlag, GetConVarInt(ReturnTime));
 	SetFlagReturnTime(BLUFlag, GetConVarInt(ReturnTime));
+	HookSingleEntityOutput(REDFlag, "OnDrop", REDFlagDropped, false);
+	HookSingleEntityOutput(BLUFlag, "OnDrop", BLUFlagDropped, false);
+}
+
+public void REDFlagDropped(const char[] name, int caller, int activator, float delay)
+{
+	SetFlagReturnTime(REDFlag, GetConVarInt(ReturnTime));
+}
+
+public void BLUFlagDropped(const char[] name, int caller, int activator, float delay)
+{
+	SetFlagReturnTime(BLUFlag, GetConVarInt(ReturnTime));
 }
 
 public void TimerExpire(const char[] output, int caller, int victim, float delay)
@@ -114,17 +126,6 @@ public Action Event_FlagCapped(Handle event, const char[] name, bool dontBroadca
 			TeamScore[team]++;
 			//PrintToChatAll("Red Score: %i\nBlue Score: %i", TeamScore[2], TeamScore[3]);
 			return Plugin_Continue;
-		}
-		case 4: //Flag Dropped
-		{
-			PrintToChat(client, "Flag Dropped");
-			int team = GetEventInt(event, "team");
-			switch (team)
-			{
-				case 2: SetFlagReturnTime(REDFlag, GetConVarInt(ReturnTime));
-				case 3: SetFlagReturnTime(BLUFlag, GetConVarInt(ReturnTime));
-			}
-			
 		}
 	}
 	return Plugin_Continue;
