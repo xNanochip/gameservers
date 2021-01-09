@@ -115,6 +115,17 @@ public Action Event_FlagCapped(Handle event, const char[] name, bool dontBroadca
 			//PrintToChatAll("Red Score: %i\nBlue Score: %i", TeamScore[2], TeamScore[3]);
 			return Plugin_Continue;
 		}
+		case 4: //Flag Dropped
+		{
+			PrintToChat(client, "Flag Dropped");
+			int team = GetEventInt(event, "team");
+			switch (team)
+			{
+				case 2: SetFlagReturnTime(REDFlag, GetConVarInt(ReturnTime));
+				case 3: SetFlagReturnTime(BLUFlag, GetConVarInt(ReturnTime));
+			}
+			
+		}
 	}
 	return Plugin_Continue;
 }
@@ -144,12 +155,9 @@ public Action FlagSpawn(int flag)
 public void SetFlagReturnTime(int flag, int time)
 {
 	if (!IsValidEntity(flag)) return;
-	//char sTime[64];
-	//IntToString(time, sTime, sizeof(sTime));
 	SetVariantInt(time);
 	AcceptEntityInput(flag, "SetReturnTime");
 	PrintToChatAll("Set flag return time to %i", GetConVarInt(ReturnTime));
-	//DispatchKeyValue(flag, "Return timer", sTime);
 }
 
 //Reset scores on round end
