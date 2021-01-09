@@ -79,7 +79,7 @@ public void TimerExpire(const char[] output, int caller, int victim, float delay
 	EndRound();
 }
 
-//Increment score of
+//Increment score of team that captured
 public Action Event_FlagCapped(Handle event, const char[] name, bool dontBroadcast)
 {
 	int type = GetEventInt(event, "eventtype"); //type corresponding to event
@@ -112,7 +112,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 {
 	if (StrEqual(classname, "item_teamflag"))
 	{
-		SDKHook(entity, SDKHook_Spawn, FlagSpawn);
+		SDKHook(entity, SDKHook_SpawnPost, FlagSpawn);
 	}
 }
 
@@ -125,9 +125,11 @@ public Action FlagSpawn(int flag)
 
 public void SetFlagReturnTime(int flag, int time)
 {
-	char sTime[64];
-	IntToString(time, sTime, sizeof(sTime));
-	DispatchKeyValue(flag, "Return timer", sTime);
+	//char sTime[64];
+	//IntToString(time, sTime, sizeof(sTime));
+	SetVariantInt(time);
+	AcceptEntityInput(flag, "SetReturnTime");
+	//DispatchKeyValue(flag, "Return timer", sTime);
 }
 
 //Reset scores on round end
