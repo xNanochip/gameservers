@@ -478,9 +478,10 @@ public Action pass_score(Handle hEvent, const char[] szName, bool bDontBroadcast
 {
 	PrintToChatAll("pass_score");
 	if (!g_CoreEnabled)return Plugin_Continue;
-	int scorer = GetClientOfUserId(GetEventInt(hEvent, "scorer"));
+	int scorer = GetEventInt(hEvent, "scorer");
 	int assister = GetClientOfUserId(GetEventInt(hEvent, "assister"));
-
+	
+	PrintToChatAll("%N scored!", scorer);
 	CEEvents_SendEventToClient(scorer, "LOGIC_BALL_SCORE", 1, view_as<int>(hEvent));
 	if (assister != 0) CEEvents_SendEventToClient(assister, "LOGIC_PASS_SCORE_ASSIST", 1, view_as<int>(hEvent));
 
