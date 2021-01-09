@@ -104,8 +104,10 @@ public void OnPluginStart()
 	HookEvent("rd_robot_killed", rd_robot_killed);
 	HookEvent("rd_player_score_points", rd_player_score_points);
 	
+	// Player Destruction
+	HookEvent("special_score", pd_special_score);
+	
 	//Special Delivery
-
 	HookEvent("team_leader_killed", team_leader_killed);
 
 	g_hOnSendEvent = CreateGlobalForward("CEEvents_OnSendEvent", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_Cell);
@@ -460,6 +462,19 @@ public Action escaped_loot_island(Handle hEvent, const char[] szName, bool bDont
 
 	CEEvents_SendEventToClient(player, "LOGIC_ESCAPE_LOOT_ISLAND", 1, view_as<int>(hEvent));
 
+	return Plugin_Continue;
+}
+
+public Action pd_special_score(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int player = GetEventInt(hEvent, "player");
+
+	if (IsClientValid(player))
+	{
+		CEEvents_SendEventToClient(player, "LOGIC_PD_SCORE", 1, view_as<int>(hEvent));
+	}
+	
 	return Plugin_Continue;
 }
 
