@@ -70,6 +70,8 @@ public void httpUpdateCallback(const char[] content, int size, int status, any v
 			char sNewVersion[256];
 			kvNew.GetString("build", sNewVersion, sizeof(sNewVersion), "");
 			PrintToServer("e");
+			PrintToServer("old: %s", sOldVersion);
+			PrintToServer("new: %s", sNewVersion);
 			if (!StrEqual(sOldVersion, sNewVersion))
 			{
 				// Versions differ, so we need to redownload the full file.
