@@ -102,7 +102,7 @@ public void OnPluginStart()
 	
 	//Robot Destruction
 	HookEvent("rd_robot_killed", rd_robot_killed);
-	//HookEvent("rd_player_score_points", rd_player_score_points);
+	HookEvent("rd_player_score_points", rd_player_score_points);
 	
 	//Special Delivery
 
@@ -588,7 +588,17 @@ public Action rd_robot_killed(Handle hEvent, const char[] szName, bool bDontBroa
 	if (!g_CoreEnabled)return Plugin_Continue;
 	int attacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"));
 
-	CEEvents_SendEventToClient(attacker, "LOGIC_RD_ROBOT_KILLED", 1, view_as<int>(hEvent));
+	if (IsClientValid(attacker)) CEEvents_SendEventToClient(attacker, "LOGIC_RD_ROBOT_KILLED", 1, view_as<int>(hEvent));
+
+	return Plugin_Continue;
+}
+
+public Action rd_player_score_points(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int player = GetClientOfUserId(GetEventInt(hEvent, "player"));
+
+	if (IsClientValid(player)) CEEvents_SendEventToClient(player, "LOGIC_RD_POINTS_SCORE", 1, view_as<int>(hEvent));
 
 	return Plugin_Continue;
 }
