@@ -14,7 +14,7 @@
 public Plugin:myinfo = {
 	name = "[C.TF] Capture The Flag",
 	author = "IvoryPal",
-	version = "1.0"
+	version = "1.1"
 }
 
 #define MAXTEAMS 4
@@ -64,7 +64,6 @@ public Action SetRoundSettings(Handle Timer)
 		else
 		{
 			PrintToServer("Unable to find or create a team_round_timer entity!");
-			PrintToChatAll("Could not create team_round_timer");
 		}
 	}
 	TimerSeconds = GetConVarInt(TimerValue); //Initial seconds left for round
@@ -86,7 +85,6 @@ public Action SetRoundSettings(Handle Timer)
 
 public void FlagDropped(const char[] name, int caller, int activator, float delay)
 {
-	PrintToChatAll("Flag dropped");
 	SetFlagReturnTime(REDFlag, GetConVarInt(ReturnTime));
 	SetFlagReturnTime(BLUFlag, GetConVarInt(ReturnTime));
 }
@@ -96,7 +94,6 @@ public void TimerExpire(const char[] output, int caller, int victim, float delay
 	if (GameRules_GetProp("m_bInWaitingForPlayers"))
 		return;
 	
-	PrintToChatAll("Round Ended");
 	EndRound();
 }
 
@@ -155,7 +152,7 @@ public void SetFlagReturnTime(int flag, int time)
 	if (!IsValidEntity(flag)) return;
 	SetVariantInt(time);
 	AcceptEntityInput(flag, "SetReturnTime");
-	PrintToChatAll("Set flag return time to %i", GetConVarInt(ReturnTime));
+	//PrintToChatAll("Set flag return time to %i", GetConVarInt(ReturnTime));
 }
 
 //Reset scores on round end
@@ -198,7 +195,6 @@ public void EndRound()
 
 	SetVariantInt(winningteam);
 	AcceptEntityInput(iEnt, "SetTeam");
-	PrintToChatAll("Winning Team: %i", winningteam);
 	AcceptEntityInput(iEnt, "RoundWin");
 }
 
