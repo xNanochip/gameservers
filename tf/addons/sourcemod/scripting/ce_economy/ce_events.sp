@@ -469,8 +469,11 @@ public Action pass_get(Handle hEvent, const char[] szName, bool bDontBroadcast)
 	if (!g_CoreEnabled)return Plugin_Continue;
 	int player = GetEventInt(hEvent, "owner");
 
-	CEEvents_SendEventToClient(player, "LOGIC_BALL_GET", 1, view_as<int>(hEvent));
-
+	if (IsClientValid(player))
+	{
+		CEEvents_SendEventToClient(player, "LOGIC_BALL_GET", 1, view_as<int>(hEvent));
+	}
+	
 	return Plugin_Continue;
 }
 
@@ -481,8 +484,15 @@ public Action pass_score(Handle hEvent, const char[] szName, bool bDontBroadcast
 	int scorer = GetEventInt(hEvent, "scorer");
 	int assister = GetEventInt(hEvent, "assister");
 	
-	CEEvents_SendEventToClient(scorer, "LOGIC_BALL_SCORE", 1, view_as<int>(hEvent));
-	if (assister != 0) CEEvents_SendEventToClient(assister, "LOGIC_PASS_SCORE_ASSIST", 1, view_as<int>(hEvent));
+	if (IsClientValid(scorer))
+	{
+		CEEvents_SendEventToClient(scorer, "LOGIC_BALL_SCORE", 1, view_as<int>(hEvent));
+	}
+	
+	if (IsClientValid(assister))
+	{
+		CEEvents_SendEventToClient(assister, "LOGIC_PASS_SCORE_ASSIST", 1, view_as<int>(hEvent));
+	}
 
 	return Plugin_Continue;
 }
@@ -494,8 +504,14 @@ public Action pass_free(Handle hEvent, const char[] szName, bool bDontBroadcast)
 	int player = GetEventInt(hEvent, "owner");
 	int attacker = GetEventInt(hEvent, "attacker");
 
-	CEEvents_SendEventToClient(player, "LOGIC_BALL_LOST", 1, view_as<int>(hEvent));
-	if (attacker != 0) CEEvents_SendEventToClient(attacker, "LOGIC_BALL_STEAL", 1, view_as<int>(hEvent));
+	if (IsClientValid(player))
+	{
+		CEEvents_SendEventToClient(player, "LOGIC_BALL_LOST", 1, view_as<int>(hEvent));
+	}
+	if (IsClientValid(attacker))
+	{
+		CEEvents_SendEventToClient(attacker, "LOGIC_BALL_STEAL", 1, view_as<int>(hEvent));
+	}
 
 	return Plugin_Continue;
 }
@@ -508,14 +524,20 @@ public Action pass_pass_caught(Handle hEvent, const char[] szName, bool bDontBro
 	int catcher = GetEventInt(hEvent, "catcher");
 	float distance = GetEventFloat(hEvent, "dist");
 	float duration = GetEventFloat(hEvent, "duration");
-
-	CEEvents_SendEventToClient(passer, "LOGIC_BALL_PASSED", 1, view_as<int>(hEvent));
-	CEEvents_SendEventToClient(passer, "LOGIC_BALL_PASSED_DISTANCE", RoundFloat(distance), view_as<int>(hEvent));
-	CEEvents_SendEventToClient(passer, "LOGIC_BALL_PASSED_DURATION", RoundFloat(duration), view_as<int>(hEvent));
 	
-	CEEvents_SendEventToClient(catcher, "LOGIC_BALL_CAUGHT", 1, view_as<int>(hEvent));
-	CEEvents_SendEventToClient(catcher, "LOGIC_BALL_CAUGHT_DISTANCE", RoundFloat(distance), view_as<int>(hEvent));
-	CEEvents_SendEventToClient(catcher, "LOGIC_BALL_CAUGHT_DURATION", RoundFloat(duration), view_as<int>(hEvent));
+	if (IsClientValid(passer))
+	{
+		CEEvents_SendEventToClient(passer, "LOGIC_BALL_PASSED", 1, view_as<int>(hEvent));
+		CEEvents_SendEventToClient(passer, "LOGIC_BALL_PASSED_DISTANCE", RoundFloat(distance), view_as<int>(hEvent));
+		CEEvents_SendEventToClient(passer, "LOGIC_BALL_PASSED_DURATION", RoundFloat(duration), view_as<int>(hEvent));
+	}
+	
+	if (IsClientValid(catcher))
+	{
+		CEEvents_SendEventToClient(catcher, "LOGIC_BALL_CAUGHT", 1, view_as<int>(hEvent));
+		CEEvents_SendEventToClient(catcher, "LOGIC_BALL_CAUGHT_DISTANCE", RoundFloat(distance), view_as<int>(hEvent));
+		CEEvents_SendEventToClient(catcher, "LOGIC_BALL_CAUGHT_DURATION", RoundFloat(duration), view_as<int>(hEvent));
+	}
 
 	return Plugin_Continue;
 }
@@ -527,9 +549,15 @@ public Action pass_ball_stolen(Handle hEvent, const char[] szName, bool bDontBro
 	int victim = GetEventInt(hEvent, "victim");
 	int attacker = GetEventInt(hEvent, "attacker");
 
-	CEEvents_SendEventToClient(victim, "LOGIC_BALL_LOST_STOLEN", 1, view_as<int>(hEvent));
+	if (IsClientValid(victim))
+	{
+		CEEvents_SendEventToClient(victim, "LOGIC_BALL_LOST_STOLEN", 1, view_as<int>(hEvent));
+	}
 	PrintToChatAll("%N STOLE BALL index %d", attacker, attacker);
-	if (attacker != 0) CEEvents_SendEventToClient(attacker, "LOGIC_BALL_STEAL_MELEE", 1, view_as<int>(hEvent));
+	if (IsClientValid(attacker)) 
+	{
+		CEEvents_SendEventToClient(attacker, "LOGIC_BALL_STEAL_MELEE", 1, view_as<int>(hEvent));
+	}
 
 	return Plugin_Continue;
 }
@@ -540,9 +568,16 @@ public Action pass_ball_blocked(Handle hEvent, const char[] szName, bool bDontBr
 	if (!g_CoreEnabled)return Plugin_Continue;
 	int player = GetEventInt(hEvent, "owner");
 	int blocker = GetEventInt(hEvent, "blocker");
-
-	CEEvents_SendEventToClient(player, "LOGIC_BALL_INCOMPLETE_PASS", 1, view_as<int>(hEvent));
-	if (blocker != 0) CEEvents_SendEventToClient(blocker, "LOGIC_BALL_BLOCKED_PASS", 1, view_as<int>(hEvent));
+	
+	if (IsClientValid(player))
+	{
+		CEEvents_SendEventToClient(player, "LOGIC_BALL_INCOMPLETE_PASS", 1, view_as<int>(hEvent));
+	}
+	
+	if (IsClientValid(blocker)) 
+	{
+		CEEvents_SendEventToClient(blocker, "LOGIC_BALL_BLOCKED_PASS", 1, view_as<int>(hEvent));
+	}
 
 	return Plugin_Continue;
 }
