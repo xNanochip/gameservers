@@ -479,9 +479,8 @@ public Action pass_score(Handle hEvent, const char[] szName, bool bDontBroadcast
 	PrintToChatAll("pass_score");
 	if (!g_CoreEnabled)return Plugin_Continue;
 	int scorer = GetEventInt(hEvent, "scorer");
-	int assister = GetClientOfUserId(GetEventInt(hEvent, "assister"));
+	int assister = GetEventInt(hEvent, "assister");
 	
-	PrintToChatAll("%N scored!", scorer);
 	CEEvents_SendEventToClient(scorer, "LOGIC_BALL_SCORE", 1, view_as<int>(hEvent));
 	if (assister != 0) CEEvents_SendEventToClient(assister, "LOGIC_PASS_SCORE_ASSIST", 1, view_as<int>(hEvent));
 
@@ -492,8 +491,8 @@ public Action pass_free(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	PrintToChatAll("pass_free");
 	if (!g_CoreEnabled)return Plugin_Continue;
-	int player = GetClientOfUserId(GetEventInt(hEvent, "owner"));
-	int attacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"));
+	int player = GetEventInt(hEvent, "owner");
+	int attacker = GetEventInt(hEvent, "attacker");
 
 	CEEvents_SendEventToClient(player, "LOGIC_BALL_LOST", 1, view_as<int>(hEvent));
 	if (attacker != 0) CEEvents_SendEventToClient(attacker, "LOGIC_BALL_STEAL", 1, view_as<int>(hEvent));
@@ -505,8 +504,8 @@ public Action pass_pass_caught(Handle hEvent, const char[] szName, bool bDontBro
 {
 	PrintToChatAll("pass_pass_caught");
 	if (!g_CoreEnabled)return Plugin_Continue;
-	int passer = GetClientOfUserId(GetEventInt(hEvent, "passer"));
-	int catcher = GetClientOfUserId(GetEventInt(hEvent, "catcher"));
+	int passer = GetEventInt(hEvent, "passer");
+	int catcher = GetEventInt(hEvent, "catcher");
 	float distance = GetEventFloat(hEvent, "dist");
 	float duration = GetEventFloat(hEvent, "duration");
 
@@ -525,7 +524,7 @@ public Action pass_ball_stolen(Handle hEvent, const char[] szName, bool bDontBro
 {
 	PrintToChatAll("pass_ball_stolen");
 	if (!g_CoreEnabled)return Plugin_Continue;
-	int victim = GetClientOfUserId(GetEventInt(hEvent, "victim"));
+	int victim = GetEventInt(hEvent, "victim");
 	int attacker = GetEventInt(hEvent, "attacker");
 
 	CEEvents_SendEventToClient(victim, "LOGIC_BALL_LOST_STOLEN", 1, view_as<int>(hEvent));
