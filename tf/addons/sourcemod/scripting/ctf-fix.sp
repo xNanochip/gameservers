@@ -25,6 +25,11 @@ Handle TimerMax;
 Handle CapTimeAdd;
 Handle ReturnTime;
 int TeamScore[MAXTEAMS];
+
+//flag vars
+int BLUFlag;
+int REDFlag;
+
 //bool RoundInProgress = false;
 
 public void OnPluginStart()
@@ -69,6 +74,8 @@ public Action Event_RoundStart(Handle event, const char[] name, bool dontBroadca
 	{
 		TeamScore[team] = 0;
 	}
+	SetFlagReturnTime(REDFlag, GetConVarInt(ReturnTime));
+	SetFlagReturnTime(BLUFlag, GetConVarInt(ReturnTime));
 }
 
 public void TimerExpire(const char[] output, int caller, int victim, float delay)
@@ -120,15 +127,23 @@ public void OnEntityCreated(int entity, const char[] classname)
 public Action FlagSpawn(int flag)
 {
 	SetFlagReturnTime(flag, GetConVarInt(ReturnTime)); //set flag return time
+	int team = GetEntProp(flag, Prop_Send, "m_iTeamNum");
+	switch (team)
+	{
+		case 2: REDFlag = flag;
+		case 3: BLUFlag = flag;
+	}
 	return Plugin_Continue;
 }
 
 public void SetFlagReturnTime(int flag, int time)
 {
+	if (!IsValidEntity(flag)) return;
 	//char sTime[64];
 	//IntToString(time, sTime, sizeof(sTime));
 	SetVariantInt(time);
 	AcceptEntityInput(flag, "SetReturnTime");
+	PrintTOChatAll("Set flag return time to %i", GetConVarInt(ReturnTime));
 	//DispatchKeyValue(flag, "Return timer", sTime);
 }
 
