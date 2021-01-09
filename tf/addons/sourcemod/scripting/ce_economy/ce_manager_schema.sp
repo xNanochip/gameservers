@@ -35,17 +35,19 @@ public bool ShouldSchemaUpdate()
 public Action cUpdateSchema(int args)
 {
 	CE_UpdateScheme(true);
+	PrintToServer("a");
 }
 
 public void CE_UpdateScheme(bool force)
 {
 	if (!ShouldSchemaUpdate() && !force)return;
-
+	PrintToServer("b");
 	CESC_SendAPIRequest("/api/IEconomyItems/GScheme?field=Version", RequestType_GET, httpUpdateCallback);
 }
 
 public void httpUpdateCallback(const char[] content, int size, int status, any value)
 {
+	PrintToServer("c");
 	if (status == StatusCode_Success)
 	{
 		char sLoc[96];
