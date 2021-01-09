@@ -525,7 +525,7 @@ public Action pass_ball_stolen(Handle hEvent, const char[] szName, bool bDontBro
 	PrintToChatAll("pass_ball_stolen");
 	if (!g_CoreEnabled)return Plugin_Continue;
 	int victim = GetClientOfUserId(GetEventInt(hEvent, "victim"));
-	int attacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"));
+	int attacker = GetEventInt(hEvent, "attacker");
 
 	CEEvents_SendEventToClient(victim, "LOGIC_BALL_LOST_STOLEN", 1, view_as<int>(hEvent));
 	PrintToChatAll("%N STOLE BALL index %d", attacker, attacker);
