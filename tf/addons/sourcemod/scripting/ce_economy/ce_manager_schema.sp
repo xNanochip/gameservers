@@ -75,6 +75,7 @@ public void httpUpdateCallback(const char[] content, int size, int status, any v
 				LogMessage("New Schema version detected (%s), downloading...", sNewVersion);
 
 				CESC_SendAPIRequest("/api/IEconomyItems/GScheme", RequestType_GET, HttpDownloadCallback, _, _, sLoc);
+				PrintToServer("e");
 			}
 		} else {
 			LogMessage("Failed loading new Creators.TF Economy Schema.");
@@ -90,10 +91,11 @@ public void httpUpdateCallback(const char[] content, int size, int status, any v
 */
 public void HttpDownloadCallback(const char[] content, int size, int status, any value)
 {
+	PrintToServer("f");
 	if (status == StatusCode_Success)
 	{
 		LogMessage("New Creators.TF Schema downloaded successfully.");
-		
+		PrintToServer("g");
 		CE_FlushSchema();
 	}
 }
