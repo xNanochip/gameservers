@@ -467,7 +467,7 @@ public Action pass_get(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	PrintToChatAll("pass_get");
 	if (!g_CoreEnabled)return Plugin_Continue;
-	int player = GetClientOfUserId(GetEventInt(hEvent, "owner"));
+	int player = GetEventInt(hEvent, "owner");
 
 	CEEvents_SendEventToClient(player, "LOGIC_BALL_GET", 1, view_as<int>(hEvent));
 
@@ -538,8 +538,8 @@ public Action pass_ball_blocked(Handle hEvent, const char[] szName, bool bDontBr
 {
 	PrintToChatAll("pass_ball_blocked");
 	if (!g_CoreEnabled)return Plugin_Continue;
-	int player = GetClientOfUserId(GetEventInt(hEvent, "owner"));
-	int blocker = GetClientOfUserId(GetEventInt(hEvent, "blocker"));
+	int player = GetEventInt(hEvent, "owner");
+	int blocker = GetEventInt(hEvent, "blocker");
 
 	CEEvents_SendEventToClient(player, "LOGIC_BALL_INCOMPLETE_PASS", 1, view_as<int>(hEvent));
 	if (blocker != 0) CEEvents_SendEventToClient(blocker, "LOGIC_BALL_BLOCKED_PASS", 1, view_as<int>(hEvent));
