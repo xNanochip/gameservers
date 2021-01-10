@@ -42,6 +42,8 @@ public void OnPluginStart()
 	HookEvent("teamplay_round_start", Event_RoundStart, EventHookMode_Pre);
 	HookEvent("teamplay_flag_event", Event_FlagCapped, EventHookMode_Pre);
 	AddCommandListener(ClassListener, "joinclass");
+	
+	RegConsoleCmd("sm_ctfrework", Cmd_CTFRework, "Show the Capture the Flag Rework Tip Panel");
 
 	CapTimeAdd = CreateConVar("sm_ctf_time_added", "135", "How many seconds are added to the timer on capture");
 	TimerValue = CreateConVar("sm_ctf_timer", "300", "Initial round timer in seconds");
@@ -57,6 +59,12 @@ public void OnPluginStart()
 	}
 }
 
+public Action Cmd_CTFRework(int client, int args)
+{
+	if (IsValidClient(client)) TipMenu(client);
+	return Plugin_Handled;
+}
+
 public Action Event_RoundStart(Handle event, const char[] name, bool dontBroadcast)
 {
 	if (GameRules_GetProp("m_bInWaitingForPlayers"))
@@ -67,24 +75,20 @@ public Action Event_RoundStart(Handle event, const char[] name, bool dontBroadca
 
 public void OnClientConnected(int client)
 {
-	PrintToServer("connect, true");
 	g_bShowTipMenu[client] = true;
 }
 
 public void OnClientCookiesCached(int client)
 {
-	PrintToServer("cached");
 	char info[16];
 	GetClientCookie(client, g_Cookie, info, sizeof info);
-	if (strcmp(info, "false") == 0) {g_bShowTipMenu[client] = false; PrintToServer("set false");}
+	if (strcmp(info, "false") == 0) g_bShowTipMenu[client] = false;
 }
 
 public Action ClassListener(int client, const char[] command, int args)
 {
-	PrintToServer("joinclass");
 	if (IsValidClient(client) && g_bShowTipMenu[client])
 	{
-		PrintToServer("tipmenu shown");
 		TipMenu(client);
 		g_bShowTipMenu[client] = false;
 	}
@@ -100,7 +104,7 @@ void TipMenu(int client)
 	panel.DrawText("");
 	panel.DrawText("    ➝ A 5 minute round timer has been added.");
 	panel.DrawText("    ➝ The intel now returns on drop much faster (15 seconds).");
-	panel.DrawText("    ➝ When time runs out, the team with most captures will win.\n      If both teams are tied, both will lose to Stalemate.");
+	panel.DrawText("    ➝ When time runs out, the team with most captures will win.\n        If both teams are tied, both will lose to Stalemate.");
 	panel.DrawText("    ➝ Capturing the intel will add 2.25 minutes to the round.");
 	panel.DrawText("");
 	panel.DrawItem("", ITEMDRAW_NOTEXT);
