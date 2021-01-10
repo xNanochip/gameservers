@@ -76,7 +76,7 @@ public void OnClientCookiesCached(int client)
 	PrintToServer("cached");
 	char info[16];
 	GetClientCookie(client, g_Cookie, info, sizeof info);
-	if (!!strcmp(info, "false")) {g_bShowTipMenu[client] = false; PrintToServer("set false");}
+	if (strcmp(info, "false") == 0) {g_bShowTipMenu[client] = false; PrintToServer("set false");}
 }
 
 public Action ClassListener(int client, const char[] command, int args)
