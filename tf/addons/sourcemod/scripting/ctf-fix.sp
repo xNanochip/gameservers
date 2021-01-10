@@ -107,7 +107,7 @@ void TipMenu(int client)
 	panel.DrawText("    ➝ If both teams are tied, both will lose to Stalemate.");
 	panel.DrawText("    ➝ Capturing the intel will add 2.25 minutes to the round.");
 	panel.DrawText(" ");
-	panel.DrawText("If you have feedback for us, please let us know in #feedback on our discord.");
+	panel.DrawText("As always, send us #feedback in our discord.");
 	panel.DrawText(" ");
 	panel.DrawItem("Close", ITEMDRAW_CONTROL);
 	panel.DrawItem("", ITEMDRAW_NOTEXT);
