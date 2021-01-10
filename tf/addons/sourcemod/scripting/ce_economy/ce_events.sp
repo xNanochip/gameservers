@@ -91,7 +91,23 @@ public void OnPluginStart()
 	HookEvent("eyeball_boss_killer", eyeball_boss_killer);
 	HookEvent("escaped_loot_island", escaped_loot_island);
 	HookEvent("escape_hell", escape_hell);
-
+	
+	//Passtime Events
+	HookEvent("pass_get", pass_get);
+	HookEvent("pass_score", pass_score);
+	HookEvent("pass_free", pass_free);
+	HookEvent("pass_pass_caught", pass_pass_caught);
+	HookEvent("pass_ball_stolen", pass_ball_stolen);
+	HookEvent("pass_ball_blocked", pass_ball_blocked);
+	
+	//Robot Destruction
+	HookEvent("rd_robot_killed", rd_robot_killed);
+	HookEvent("rd_player_score_points", rd_player_score_points);
+	
+	// Player Destruction
+	HookEvent("special_score", pd_special_score);
+	
+	//Special Delivery
 	HookEvent("team_leader_killed", team_leader_killed);
 
 	g_hOnSendEvent = CreateGlobalForward("CEEvents_OnSendEvent", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_Cell);
@@ -445,6 +461,152 @@ public Action escaped_loot_island(Handle hEvent, const char[] szName, bool bDont
 	int player = GetClientOfUserId(GetEventInt(hEvent, "player"));
 
 	CEEvents_SendEventToClient(player, "LOGIC_ESCAPE_LOOT_ISLAND", 1, view_as<int>(hEvent));
+
+	return Plugin_Continue;
+}
+
+public Action pd_special_score(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int player = GetEventInt(hEvent, "player");
+
+	if (IsClientValid(player))
+	{
+		CEEvents_SendEventToClient(player, "LOGIC_PD_SCORE", 1, view_as<int>(hEvent));
+	}
+	
+	return Plugin_Continue;
+}
+
+public Action pass_get(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int player = GetEventInt(hEvent, "owner");
+
+	if (IsClientValid(player))
+	{
+		CEEvents_SendEventToClient(player, "LOGIC_BALL_GET", 1, view_as<int>(hEvent));
+	}
+	
+	return Plugin_Continue;
+}
+
+public Action pass_score(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int scorer = GetEventInt(hEvent, "scorer");
+	int assister = GetEventInt(hEvent, "assister");
+	
+	if (IsClientValid(scorer))
+	{
+		CEEvents_SendEventToClient(scorer, "LOGIC_BALL_SCORE", 1, view_as<int>(hEvent));
+	}
+	
+	if (IsClientValid(assister))
+	{
+		CEEvents_SendEventToClient(assister, "LOGIC_PASS_SCORE_ASSIST", 1, view_as<int>(hEvent));
+	}
+
+	return Plugin_Continue;
+}
+
+public Action pass_free(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int player = GetEventInt(hEvent, "owner");
+	int attacker = GetEventInt(hEvent, "attacker");
+
+	if (IsClientValid(player))
+	{
+		CEEvents_SendEventToClient(player, "LOGIC_BALL_LOST", 1, view_as<int>(hEvent));
+	}
+	if (IsClientValid(attacker))
+	{
+		CEEvents_SendEventToClient(attacker, "LOGIC_BALL_STEAL", 1, view_as<int>(hEvent));
+	}
+
+	return Plugin_Continue;
+}
+
+public Action pass_pass_caught(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int passer = GetEventInt(hEvent, "passer");
+	int catcher = GetEventInt(hEvent, "catcher");
+	float distance = GetEventFloat(hEvent, "dist");
+	float duration = GetEventFloat(hEvent, "duration");
+	
+	if (IsClientValid(passer))
+	{
+		CEEvents_SendEventToClient(passer, "LOGIC_BALL_PASSED", 1, view_as<int>(hEvent));
+		CEEvents_SendEventToClient(passer, "LOGIC_BALL_PASSED_DISTANCE", RoundFloat(distance), view_as<int>(hEvent));
+		CEEvents_SendEventToClient(passer, "LOGIC_BALL_PASSED_DURATION", RoundFloat(duration), view_as<int>(hEvent));
+	}
+	
+	if (IsClientValid(catcher))
+	{
+		CEEvents_SendEventToClient(catcher, "LOGIC_BALL_CAUGHT", 1, view_as<int>(hEvent));
+		CEEvents_SendEventToClient(catcher, "LOGIC_BALL_CAUGHT_DISTANCE", RoundFloat(distance), view_as<int>(hEvent));
+		CEEvents_SendEventToClient(catcher, "LOGIC_BALL_CAUGHT_DURATION", RoundFloat(duration), view_as<int>(hEvent));
+	}
+
+	return Plugin_Continue;
+}
+
+public Action pass_ball_stolen(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int victim = GetEventInt(hEvent, "victim");
+	int attacker = GetEventInt(hEvent, "attacker");
+
+	if (IsClientValid(victim))
+	{
+		CEEvents_SendEventToClient(victim, "LOGIC_BALL_LOST_STOLEN", 1, view_as<int>(hEvent));
+	}
+	
+	if (IsClientValid(attacker)) 
+	{
+		CEEvents_SendEventToClient(attacker, "LOGIC_BALL_STEAL_MELEE", 1, view_as<int>(hEvent));
+	}
+
+	return Plugin_Continue;
+}
+
+public Action pass_ball_blocked(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int player = GetEventInt(hEvent, "owner");
+	int blocker = GetEventInt(hEvent, "blocker");
+	
+	if (IsClientValid(player))
+	{
+		CEEvents_SendEventToClient(player, "LOGIC_BALL_INCOMPLETE_PASS", 1, view_as<int>(hEvent));
+	}
+	
+	if (IsClientValid(blocker)) 
+	{
+		CEEvents_SendEventToClient(blocker, "LOGIC_BALL_BLOCKED_PASS", 1, view_as<int>(hEvent));
+	}
+
+	return Plugin_Continue;
+}
+
+public Action rd_robot_killed(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int attacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"));
+
+	if (IsClientValid(attacker)) CEEvents_SendEventToClient(attacker, "LOGIC_RD_ROBOT_KILLED", 1, view_as<int>(hEvent));
+
+	return Plugin_Continue;
+}
+
+public Action rd_player_score_points(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if (!g_CoreEnabled)return Plugin_Continue;
+	int player = GetClientOfUserId(GetEventInt(hEvent, "player"));
+
+	if (IsClientValid(player)) CEEvents_SendEventToClient(player, "LOGIC_RD_POINTS_SCORE", 1, view_as<int>(hEvent));
 
 	return Plugin_Continue;
 }

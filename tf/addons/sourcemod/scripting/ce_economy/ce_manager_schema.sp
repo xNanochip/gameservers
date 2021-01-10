@@ -40,7 +40,6 @@ public Action cUpdateSchema(int args)
 public void CE_UpdateScheme(bool force)
 {
 	if (!ShouldSchemaUpdate() && !force)return;
-
 	CESC_SendAPIRequest("/api/IEconomyItems/GScheme?field=Version", RequestType_GET, httpUpdateCallback);
 }
 
@@ -90,7 +89,6 @@ public void HttpDownloadCallback(const char[] content, int size, int status, any
 	if (status == StatusCode_Success)
 	{
 		LogMessage("New Creators.TF Schema downloaded successfully.");
-		
 		CE_FlushSchema();
 	}
 }
