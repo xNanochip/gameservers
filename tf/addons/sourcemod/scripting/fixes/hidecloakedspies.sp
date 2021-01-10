@@ -7,7 +7,7 @@ public Plugin myinfo =
     name             = "Really Hide Cloaked Spies",
     author           = "steph&",
     description      = "Prevent cheaters from seeing cloaked spies!",
-    version          = "0.0.1",
+    version          = "0.0.2",
     url              = "https://sappho.io"
 }
 
@@ -104,8 +104,13 @@ public Action Hook_SetTransmit(int entity, int client)
             TFTeam eteam = TF2_GetClientTeam(entity);
             TFTeam cteam = TF2_GetClientTeam(client);
 
-            // teammates should always be able to see their own team's cloaked spies!
-            if (eteam != cteam)
+            // teammates should always be able to see their own team's cloaked spies, as should spectators
+            if
+            (
+                   eteam != cteam
+                && cteam != TFTeam_Unassigned
+                && cteam != TFTeam_Spectator
+            )
             {
                 // are they actually cloaked?
                 if (isCloaked[entity])
