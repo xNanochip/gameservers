@@ -38,7 +38,7 @@ public void OnClientPutInServer(int client)
 
     if (sameip > maxip)
     {
-        KickClientEx(client, "Too many concurrent connections from your IP address!", maxip);
+        KickClient(client, "Too many concurrent connections from your IP address!", maxip);
     }
 }
 
