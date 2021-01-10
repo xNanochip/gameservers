@@ -41,7 +41,7 @@ public void OnPluginStart()
 	HookEvent("teamplay_round_win", Event_RoundEnd, EventHookMode_PostNoCopy);
 	HookEvent("teamplay_round_start", Event_RoundStart, EventHookMode_Pre);
 	HookEvent("teamplay_flag_event", Event_FlagCapped, EventHookMode_Pre);
-	HookEvent("player_team", Event_PlayerTeam);
+	AddCommandListener(ClassListener, "joinclass");
 
 	CapTimeAdd = CreateConVar("sm_ctf_time_added", "135", "How many seconds are added to the timer on capture");
 	TimerValue = CreateConVar("sm_ctf_timer", "300", "Initial round timer in seconds");
@@ -77,9 +77,8 @@ public void OnClientCookiesCached(int client)
 	if (!!strcmp(info, "false")) g_bShowTipMenu[client] = false;
 }
 
-public Action Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast)
+public Action ClassListener(int client, const char[] command, int args)
 {
-	int client = GetClientOfUserId(event.GetInt("userid"));
 	if (IsValidClient(client) && g_bShowTipMenu[client])
 	{
 		TipMenu(client);
