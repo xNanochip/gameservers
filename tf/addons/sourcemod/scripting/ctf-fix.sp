@@ -6,13 +6,14 @@
 #include <tf2attributes>
 #include <sdkhooks>
 #include <sdktools>
+#include <clientprefs>
 
 /**
  * CTF game mode test for Creators.TF
  */
 
 public Plugin:myinfo = {
-	name = "[C.TF] Capture The Flag",
+	name = "[C.TF] Capture The Flag Rework",
 	author = "IvoryPal",
 	version = "1.1"
 }
@@ -32,16 +33,28 @@ int REDFlag;
 
 //bool RoundInProgress = false;
 
+Cookie g_Cookie;
+bool g_bShowTipMenu[MAXPLAYERS+1];
+
 public void OnPluginStart()
 {
 	HookEvent("teamplay_round_win", Event_RoundEnd, EventHookMode_PostNoCopy);
 	HookEvent("teamplay_round_start", Event_RoundStart, EventHookMode_Pre);
 	HookEvent("teamplay_flag_event", Event_FlagCapped, EventHookMode_Pre);
+	HookEvent("player_team", Event_PlayerTeam);
 
 	CapTimeAdd = CreateConVar("sm_ctf_time_added", "135", "How many seconds are added to the timer on capture");
 	TimerValue = CreateConVar("sm_ctf_timer", "300", "Initial round timer in seconds");
 	TimerMax = CreateConVar("sm_ctf_timer_max", "720", "Max value for round timer in seconds");
 	ReturnTime = CreateConVar("sm_ctf_return_time", "15", "Return time for intel in seconds");
+	
+	g_Cookie = new Cookie("ctfrework_cookie", "CTF Rework Popup Tip", CookieAccess_Public);
+	
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		g_bShowTipMenu[i] = true;
+		if (AreClientCookiesCached(i)) OnClientCookiesCached(i);
+	}
 }
 
 public Action Event_RoundStart(Handle event, const char[] name, bool dontBroadcast)
@@ -50,6 +63,65 @@ public Action Event_RoundStart(Handle event, const char[] name, bool dontBroadca
 		return;
 		
 	CreateTimer(0.5, SetRoundSettings, _, TIMER_FLAG_NO_MAPCHANGE);
+}
+
+public void OnClientConnected(int client)
+{
+	g_bShowTipMenu[client] = true;
+}
+
+public void OnClientCookiesCached(int client)
+{
+	char info[16];
+	GetClientCookie(client, g_Cookie, info, sizeof info);
+	if (!!strcmp(info, "false")) g_bShowTipMenu[client] = false;
+}
+
+public Action Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast)
+{
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if (IsValidClient(client) && g_bShowTipMenu[client])
+	{
+		TipMenu(client);
+		g_bShowTipMenu[client] = false;
+	}
+}
+
+void TipMenu(int client)
+{
+	Panel panel = new Panel();
+	
+	panel.SetTitle("Capture The Flag Reworkedᴮᴱᵀᴬ");
+	panel.DrawText("");
+	panel.DrawText("To help encourage objective-based playing, a few changes have been introduced:");
+	panel.DrawText("");
+	panel.DrawText("    ➝ A 5 minute round timer has been added.");
+	panel.DrawText("    ➝ The intel now returns on drop much faster (15 seconds).");
+	panel.DrawText("    ➝ When time runs out, the team with most captures will win.\n\t  If both teams are tied, both will lose to Stalemate.");
+	panel.DrawText("    ➝ Capturing the intel will add 2.25 minutes to the round.");
+	panel.DrawText("");
+	panel.DrawItem("", ITEMDRAW_NOTEXT);
+	panel.DrawItem("", ITEMDRAW_NOTEXT);
+	panel.DrawItem("", ITEMDRAW_NOTEXT);
+	panel.DrawItem("Close", ITEMDRAW_CONTROL);
+	panel.DrawItem("Don't show this again", ITEMDRAW_CONTROL);
+	
+	panel.Send(client, PanelHandler, 20);
+	delete panel;
+}
+
+public int PanelHandler(Menu menu, MenuAction action, int client, int param2)
+{
+	if (action == MenuAction_Select)
+	{
+		ClientCommand(client, "playgamesound \"%s\"", "ui\\panel_close.wav");
+		if (param2 == 5)
+		{
+			char info[16];
+			Format(info, sizeof info, "false");
+			SetClientCookie(client, g_Cookie, info);
+		}
+	}
 }
 
 public Action SetRoundSettings(Handle Timer)
