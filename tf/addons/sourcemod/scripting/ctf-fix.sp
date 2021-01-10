@@ -67,20 +67,24 @@ public Action Event_RoundStart(Handle event, const char[] name, bool dontBroadca
 
 public void OnClientConnected(int client)
 {
+	PrintToServer("connect, true");
 	g_bShowTipMenu[client] = true;
 }
 
 public void OnClientCookiesCached(int client)
 {
+	PrintToServer("cached");
 	char info[16];
 	GetClientCookie(client, g_Cookie, info, sizeof info);
-	if (!!strcmp(info, "false")) g_bShowTipMenu[client] = false;
+	if (!!strcmp(info, "false")) {g_bShowTipMenu[client] = false; PrintToServer("set false");}
 }
 
 public Action ClassListener(int client, const char[] command, int args)
 {
+	PrintToServer("joinclass");
 	if (IsValidClient(client) && g_bShowTipMenu[client])
 	{
+		PrintToServer("tipmenu shown");
 		TipMenu(client);
 		g_bShowTipMenu[client] = false;
 	}
