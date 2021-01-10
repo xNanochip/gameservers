@@ -1,6 +1,9 @@
 #pragma semicolon 1
 #pragma newdecls required
 
+#pragma semicolon 1;
+#pragma newdecls required;
+
 #include <sourcemod>
 #include <sdktools>
 
@@ -20,7 +23,7 @@ public void OnClientPutInServer(int client)
     char clientIP[16];
     GetClientIP(client, clientIP, sizeof(clientIP));
 
-    int sameip = 0;
+    int sameip;
 
     for (int i = 1; i <= MaxClients; i++)
     {
