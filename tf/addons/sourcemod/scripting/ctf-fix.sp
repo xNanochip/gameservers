@@ -100,7 +100,7 @@ void TipMenu(int client)
 	panel.DrawText("");
 	panel.DrawText("    ➝ A 5 minute round timer has been added.");
 	panel.DrawText("    ➝ The intel now returns on drop much faster (15 seconds).");
-	panel.DrawText("    ➝ When time runs out, the team with most captures will win.\n\t  If both teams are tied, both will lose to Stalemate.");
+	panel.DrawText("    ➝ When time runs out, the team with most captures will win.\n      If both teams are tied, both will lose to Stalemate.");
 	panel.DrawText("    ➝ Capturing the intel will add 2.25 minutes to the round.");
 	panel.DrawText("");
 	panel.DrawItem("", ITEMDRAW_NOTEXT);
@@ -109,7 +109,7 @@ void TipMenu(int client)
 	panel.DrawItem("Close", ITEMDRAW_CONTROL);
 	panel.DrawItem("Don't show this again", ITEMDRAW_CONTROL);
 	
-	panel.Send(client, PanelHandler, 20);
+	panel.Send(client, PanelHandler, 120);
 	delete panel;
 }
 
