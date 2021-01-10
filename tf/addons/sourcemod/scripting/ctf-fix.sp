@@ -99,18 +99,16 @@ void TipMenu(int client)
 	Panel panel = new Panel();
 	
 	panel.SetTitle("Capture The Flag Reworkedᴮᴱᵀᴬ");
-	panel.DrawText("");
+	panel.DrawText(" ");
 	panel.DrawText("To help encourage objective-based playing, a few changes have been introduced:");
-	panel.DrawText("");
 	panel.DrawText("    ➝ A 5 minute round timer has been added.");
 	panel.DrawText("    ➝ The intel now returns on drop much faster (15 seconds).");
-	panel.DrawText("    ➝ When time runs out, the team with most captures will win.\n        If both teams are tied, both will lose to Stalemate.");
+	panel.DrawText("    ➝ When time runs out, the team with most captures will win.");
+	panel.DrawText("    ➝ If both teams are tied, both will lose to Stalemate.");
 	panel.DrawText("    ➝ Capturing the intel will add 2.25 minutes to the round.");
-	panel.DrawText("");
-	panel.DrawItem("", ITEMDRAW_NOTEXT);
-	panel.DrawItem("", ITEMDRAW_NOTEXT);
-	panel.DrawItem("", ITEMDRAW_NOTEXT);
+	panel.DrawText(" ");
 	panel.DrawItem("Close", ITEMDRAW_CONTROL);
+	panel.DrawItem("", ITEMDRAW_NOTEXT);
 	panel.DrawItem("Don't show this again", ITEMDRAW_CONTROL);
 	
 	panel.Send(client, PanelHandler, 120);
