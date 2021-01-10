@@ -3,38 +3,27 @@
 #include <sourcemod>
 #include <sdktools>
 #include <tf2_stocks>
+#include <gamemode>
 
 #pragma newdecls required
 
 public Plugin myinfo =
 {
-    name        = "[TF2] Open The Doors",
+    name        = "[TF2] Waiting Doors",
     author      = "stephanie, Nanochip, & Lange",
-    description = "Open spawn doors during waiting for players round and after rounds end",
-    version     = "0.0.7",
+    description = "Open spawn doors during waiting for players round.",
+    version     = "0.0.6",
     url         = "https://sappho.io/"
 };
 
-public void OnPluginStart()
-{
-    // Win conditions met (maxrounds, timelimit)
-    HookEvent("teamplay_game_over", Event_GameOver);
-
-    // Win conditions met (windifference)
-    HookEvent("tf_game_over", Event_GameOver);
-
-    // Win conditions met (windifference)
-    HookEvent("teamplay_round_win", Event_GameOver);
-}
-
 public void TF2_OnWaitingForPlayersStart()
 {
-    CreateTimer(0.25, openDoorsTimer, _, TIMER_FLAG_NO_MAPCHANGE);
-}
+    TF2_GameMode mode = TF2_DetectGameMode();
 
-public Action Event_GameOver(Handle event, const char[] name, bool dontBroadcast)
-{
-    CreateTimer(0.25, openDoorsTimer, _, TIMER_FLAG_NO_MAPCHANGE);
+    if (mode == TF2_GameMode_PL || mode == TF2_GameMode_ADCP)
+    {
+        CreateTimer(0.25, openDoorsTimer, _, TIMER_FLAG_NO_MAPCHANGE);
+    }
 }
 
 /* OpenDoors - from SOAP-TF2DM - https://github.com/Lange/SOAP-TF2DM/blob/master/addons/sourcemod/scripting/soap_tf2dm.sp#L1181-L1207
