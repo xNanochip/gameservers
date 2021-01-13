@@ -25,7 +25,6 @@ koth_ramjam_rc1
 koth_slaughter_b2a
 koth_spillway_rc3a
 koth_synthetic_rc6a
-pd_snowville_event
 pl_badwater_pro_v12
 pl_barnblitz_pro6
 pl_borneo
