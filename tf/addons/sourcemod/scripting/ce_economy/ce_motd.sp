@@ -26,8 +26,11 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_website", cOpenWebsite, "Opens Creators.TF Website");
 	RegConsoleCmd("sm_w", cOpenWebsite, "Opens Creators.TF Website");
 
-	//RegConsoleCmd("sm_servers", cOpenServers, "Opens Creators.TF Servers");
-	//RegConsoleCmd("sm_s", cOpenServers, "Opens Creators.TF Servers");
+	RegConsoleCmd("sm_servers", cOpenServers, "Opens Creators.TF Servers");
+	RegConsoleCmd("sm_server", cOpenServers, "Opens Creators.TF Servers");
+	RegConsoleCmd("sm_hop", cOpenServers, "Opens Creators.TF Servers");
+	RegConsoleCmd("sm_serverhop", cOpenServers, "Opens Creators.TF Servers");
+	RegConsoleCmd("sm_s", cOpenServers, "Opens Creators.TF Servers");
 
 	RegConsoleCmd("sm_contracker", cOpenContracker, "Opens your Creators.TF ConTracker");
 	RegConsoleCmd("sm_c", cOpenContracker, "Opens your Creators.TF ConTracker");
@@ -80,12 +83,12 @@ public Action cOpenLoadout(int client, int args)
 /**
 *	Purpose: sm_servers / sm_s command.
 */
-//public Action cOpenServers(int client, int args)
-//{
-//
-//	OpenURL(client, "https://creators.tf/servers");
-//	return Plugin_Handled;
-//}
+public Action cOpenServers(int client, int args)
+{
+
+	MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] To see a list of our servers, visit {lightgreen}https://creators.tf/servers{default}in your web browser.", client);
+	return Plugin_Handled;
+}
 
 /**
 *	Purpose: sm_contracker / sm_c command.
