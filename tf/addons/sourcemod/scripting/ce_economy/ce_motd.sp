@@ -86,7 +86,7 @@ public Action cOpenLoadout(int client, int args)
 public Action cOpenServers(int client, int args)
 {
 
-	MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] To see a list of our servers, visit {lightgreen}https://creators.tf/servers{default}in your web browser.", client);
+	MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] To see a list of our servers, visit {lightgreen}https://creators.tf/servers{default} in your web browser.", client);
 	return Plugin_Handled;
 }
 
