@@ -28,7 +28,6 @@ public Action Cmd_VoteKick(int client, int args)
 	if (args < 1)
 	{
 		FakeClientCommand(client, "callvote");
-		PrintToChat(client, "callvote");
 		return Plugin_Handled;
 	}
 	
