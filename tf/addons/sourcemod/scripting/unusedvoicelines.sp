@@ -115,24 +115,27 @@ public void OnEntityOutput(const char[] output, int caller, int activator, float
 {
 	if (strcmp(output, "On30SecRemain") == 0) // this actually outputs when the timer says "29". ohwell..
 	{
+		int rand = cvPregameMusic.IntValue;
+		if (rand == 3) rand = GetRandomInt(1, 2);
+		
 		PlaySound("30");
 		g_iRoundTime = 30;
-		CreateTimer(1.0, Timer_Countdown, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(1.0, Timer_Countdown, rand, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
 	if (strcmp(output, "On10SecRemain") == 0)
 	{
+		int rand = cvPregameMusic.IntValue;
+		if (rand == 3) rand = GetRandomInt(1, 2);
+		
 		PlaySound("10");
 		g_iRoundTime = 10;
-		CreateTimer(1.0, Timer_Countdown, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(1.0, Timer_Countdown, rand, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
 }
 
-public Action Timer_Countdown(Handle hTimer, any data)
+public Action Timer_Countdown(Handle hTimer, any rand)
 {
 	if (g_iRoundTime < 1) return Plugin_Stop;
-	
-	int rand = cvPregameMusic.IntValue;
-	if (rand == 3) rand = GetRandomInt(1, 2);
 	
 	bool countdown = cvPregameCountdown.BoolValue;
 	
