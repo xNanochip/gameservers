@@ -27,7 +27,8 @@ public Action Cmd_VoteKick(int client, int args)
 	
 	if (args < 1)
 	{
-		ClientCommand(client, "callvote");
+		FakeClientCommand(client, "callvote");
+		PrintToChat(client, "callvote");
 		return Plugin_Handled;
 	}
 	
@@ -36,7 +37,7 @@ public Action Cmd_VoteKick(int client, int args)
 	int target = FindTarget(client, arg1);
 	if (target < 1) return Plugin_Handled;
 	
-	ClientCommand(client, "callvote kick %d", GetClientUserId(target));
+	FakeClientCommand(client, "callvote kick %d", GetClientUserId(target));
 	return Plugin_Handled;
 }
 
