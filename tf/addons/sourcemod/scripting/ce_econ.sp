@@ -2,9 +2,6 @@
 #pragma newdecls required
 #pragma tabsize 0
 
-#define PLUGIN_AUTHOR "Creators.TF Team"
-#define PLUGIN_VERSION "1.0"
-
 #include <ce_core>
 #include <ce_util>
 
