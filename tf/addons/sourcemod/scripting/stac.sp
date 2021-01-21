@@ -190,6 +190,9 @@ public void OnPluginStart()
         if (IsValidClient(Cl))
         {
             ClearClBasedVars(GetClientUserId(Cl));
+        }
+        if (IsValidClientOrBot(Cl))
+        {
             SDKHook(Cl, SDKHook_OnTakeDamage, hOnTakeDamage);
         }
     }
@@ -959,6 +962,10 @@ void ClearClBasedVars(int userid)
 
 public void OnClientPutInServer(int Cl)
 {
+    if (IsValidClientOrBot(Cl))
+    {
+        SDKHook(Cl, SDKHook_OnTakeDamage, hOnTakeDamage);
+    }
     if (IsValidClient(Cl))
     {
         int userid = GetClientUserId(Cl);
@@ -1512,7 +1519,6 @@ public Action OnPlayerRunCmd
         engineTime[0][Cl] - timeSinceDidHurt[Cl] < tickinterv * 3
     )
     {
-        LogMessage("GetEngineTime() %f, timeSinceDidHurt %f", GetEngineTime(), timeSinceDidHurt[Cl]);
         if (aDiffReal >= 10.0)
         {
             int wx;
@@ -2194,6 +2200,15 @@ bool IsValidClient(int client)
         (0 < client <= MaxClients)
         && IsClientInGame(client)
         && !IsFakeClient(client)
+    );
+}
+
+bool IsValidClientOrBot(int client)
+{
+    return
+    (
+        (0 < client <= MaxClients)
+        && IsClientInGame(client)
     );
 }
 
