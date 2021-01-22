@@ -61,8 +61,8 @@ stages:
                         chmod 744 start.sh;
 
                         # don't run this often
-                        #echo "garbage collecting"
-                        #git gc --aggressive;
+                        echo "garbage collecting"
+                        git gc --aggressive;
 
                         echo "building"
                         ./build.sh $COMMIT_OLD;
