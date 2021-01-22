@@ -62,7 +62,7 @@ stages:
 			
 			# don't run this often
 			echo "garbage collecting"
-			git gc --aggressive
+			git gc --aggressive;
 
                         echo "building"
                         ./build.sh $COMMIT_OLD;
