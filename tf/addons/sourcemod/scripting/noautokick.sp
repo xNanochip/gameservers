@@ -16,7 +16,7 @@ public void OnPluginStart()
 {
     for (int client = 1; client <= MaxClients; client++)
     {
-        CheckAdmin(client);
+        CheckIfAdmin(client);
     }
 }
 
