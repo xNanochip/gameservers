@@ -22,7 +22,7 @@ public void OnPluginStart()
     pingmaskRegex = new Regex("^\\d*\\.?\\d*$");
     // hook player resource ent
     SDKHook(GetPlayerResourceEntity(), SDKHook_ThinkPost, PlayerResource_OnThinkPost);
-    LogMessage("hooked ent")
+    LogMessage("hooked ent");
 }
 
 // this runs every 20ms (i think)
