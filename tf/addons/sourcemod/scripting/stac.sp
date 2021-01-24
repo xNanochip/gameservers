@@ -769,6 +769,10 @@ public Action ePlayerChangedName(Handle event, char[] name, bool dontBroadcast)
 Action hOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3])
 {
     // get ent classname AKA the weapon name
+    if (!IsValidEntity(weapon) || weapon <= 0)
+    {
+        return Plugin_Continue;
+    }
     GetEntityClassname(weapon, hurtWeapon[attacker], 256);
     // get distance between attacker and victim
     float distance = GetVectorDistance(clpos[0][attacker], clpos[0][victim]);
