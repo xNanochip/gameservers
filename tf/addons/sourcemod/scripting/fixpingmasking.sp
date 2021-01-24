@@ -13,17 +13,16 @@ public Plugin myinfo =
     name        = "Fix ping masking",
     author      = "sappho",
     description = "Fix fake ping values for clients that are ping masking - originally from Steph's AntiCheat",
-    version     = "0.0.2"
+    version     = "0.0.3"
 };
 
 public void OnPluginStart()
 {
     // set up regex to find nonnumeric values
     pingmaskRegex = new Regex("^\\d*\\.?\\d*$");
-    // get player resource entity
-    int PlayerResourceEnt = GetPlayerResourceEntity();
-    // hook it
-    SDKHook(PlayerResourceEnt, SDKHook_ThinkPost, PlayerResource_OnThinkPost);
+    // hook player resource ent
+    SDKHook(GetPlayerResourceEntity(), SDKHook_ThinkPost, PlayerResource_OnThinkPost);
+    LogMessage("hooked ent")
 }
 
 // this runs every 20ms (i think)
@@ -68,7 +67,7 @@ public void PlayerResource_OnThinkPost(int entity)
                 // clients want to see ping, not rtt, so slice it in half
                 int newping = RoundToNearest((GetClientLatency(client, NetFlow_Both) * 1000) * 0.5);
                 // set the scoreboard ping to our new value
-                SetEntProp(entity, Prop_Send, "m_iPing", newping, client, 1);
+                SetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iPing", newping, client, 1);
                 // debug
                 LogMessage("Corrected client %N's ping. original ping: %i - new ping: %i", client, ping, newping);
             }
