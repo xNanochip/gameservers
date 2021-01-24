@@ -13,7 +13,7 @@ public Plugin myinfo =
     name        = "Fix ping masking",
     author      = "sappho",
     description = "Fix fake ping values for clients that are ping masking - originally from Steph's AntiCheat",
-    version     = "0.0.3"
+    version     = "0.0.4"
 };
 
 public void OnPluginStart()
@@ -67,7 +67,7 @@ public void PlayerResource_OnThinkPost(int entity)
                 // clients want to see ping, not rtt, so slice it in half
                 int newping = RoundToNearest((GetClientLatency(client, NetFlow_Both) * 1000) * 0.5);
                 // set the scoreboard ping to our new value
-                SetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iPing", newping, client, 1);
+                SetEntProp(entity, Prop_Send, "m_iPing", newping, 1, client);
                 // debug
                 LogMessage("Corrected client %N's ping. original ping: %i - new ping: %i", client, ping, newping);
             }
