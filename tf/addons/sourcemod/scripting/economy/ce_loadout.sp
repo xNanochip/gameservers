@@ -256,7 +256,12 @@ public void RequestPlayerLoadout(int client, bool apply)
 	pack.WriteCell(apply);
 	pack.Reset();
 
-	CESC_SendAPIRequest("/api/IUsers/GLoadout", RequestType_GET, httpPlayerLoadout, client, _, _, pack);
+	Format(sURL, sizeof(sURL), "%s/api/IUsers/GLoadout", m_sBaseEconomyURL);
+	
+	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
+	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
+	
+	Steam_SendHTTPRequest(httpRequest, CoordinatorCallback);
 }
 
 public void httpPlayerLoadout(const char[] content, int size, int status, any pack)

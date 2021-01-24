@@ -1,186 +1,129 @@
+//============= Copyright Amper Software , All rights reserved. ============//
+//
+// Purpose: Core script for Creators.TF Custom Economy plugin.
+// 
+//=========================================================================//
+
 #pragma semicolon 1
 #pragma newdecls required
 #pragma tabsize 0
 
-#include <ce_core>
-#include <ce_util>
+#include <ce_econ>
+#include <sdktools>
+#include <tf2>
+#include <tf2_stocks>
+#pragma newdecls optional
+#include <steamtools>
+#pragma newdecls required 
+
+#define DEFAULT_ECONOMY_BASE_URL "https://creators.tf"
 
 public Plugin myinfo =
 {
 	name = "Creators.TF",
 	author = "Creators.TF Team",
-	description = "Creators.TF Economy Core Plugin",
+	description = "Creators.TF Custom Economy",
 	version = "1.0",
 	url = "https://creators.tf"
 };
 
-KeyValues m_hConfig;
-Handle g_hOnSchemaUpdate;
+char m_sBaseEconomyURL[64];
+char m_sEconomyAccessKey[150];
+char m_sBranchName[32];
+char m_sBranchPassword[64];
 
-// TODO: Unhardcode this.
-char m_sPlugins[][] = {
+bool m_bCredentialsLoaded = false;
 
-	// Core Subplugins
-	"ce_util",
-	"ce_events",
-	"ce_coordinator",
-	"ce_models",
+ConVar ce_debug_mode;
 
-	// Manager Subplugins
-	"ce_manager_attributes",
-	"ce_manager_items",
-	"ce_manager_responses",
-	"ce_manager_schema",
+// System Features
+#include "economy/tfschema_interface.sp"
+#include "economy/schema.sp"
+#include "economy/coordinator.sp"
 
-	// Econ Item Subplugins
-	"ce_item_cosmetic",
-	"ce_item_weapon",
-	"ce_item_soundtrack",
+#include "economy/attributes.sp"
+#include "economy/items.sp"
 
-	// Econ Subplugins
-	"ce_styles",
-	"ce_stranges",
-	"ce_campaign",
-	"ce_contracts",
-	"ce_loadout",
+#include "economy/loadout.sp"
 
-	// Misc Subplugins
-	"ce_testing",
-	"ce_gamemode_mann_vs_machines"
-};
-
-public void OnAllPluginsLoaded()
-{
-	CE_LoadConfig();
-}
 
 public void OnPluginStart()
 {
-	for (int i = 0; i < sizeof(m_sPlugins); i++)
-	{
-		ServerCommand("sm plugins unload %s", m_sPlugins[i]);
-	}
-
-	for (int i = 0; i < sizeof(m_sPlugins); i++)
-	{
-		ServerCommand("sm plugins load %s", m_sPlugins[i]);
-	}
-
-	RegServerCmd("ce_broadcast_announce", cBroadcast);
-
-	g_hOnSchemaUpdate = CreateGlobalForward("CE_OnSchemaUpdated", ET_Ignore, Param_Cell);
-}
-
-public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
-{
-	RegPluginLibrary("ce_core");
-
-	CreateNative("CE_GetEconomyConfig", Native_GetEconomyConfig);
-	CreateNative("CE_FlushSchema", Native_FlushSchema);
-	return APLRes_Success;
+	ce_debug_mode = CreateConVar("ce_debug_mode", "0");
+	
+	ReloadEconomyCredentials();
+	
+	// Subscripts callbacks.
+	TFSchema_OnPluginStart(); // tfschema_interface.sp
+	Schema_OnPluginStart(); // schema.sp
+	Loadout_OnPluginStart(); // schema.sp
 }
 
 public void OnMapStart()
 {
-    CreateTimer(10.0, reloadCoord);
+	
+	// Subscripts callbacks.
+	Schema_OnMapStart(); // schema.sp
 }
 
-Action reloadCoord(Handle timer)
+// Used to refresh economy credentials from economy.cfg file.
+public void ReloadEconomyCredentials()
 {
-    ServerCommand("sm plugins reload ce_coordinator");
-}
-
-public any Native_FlushSchema(Handle plugin, int numParams)
-{
-	CE_LoadConfig();
-}
-
-public void NotifySchemaUpdated()
-{
-	KeyValues hSchema = CE_GetEconomyConfig();
-	Call_StartForward(g_hOnSchemaUpdate);
-	Call_PushCell(hSchema);
-	Call_Finish();
-	delete hSchema;
-
-}
-
-public Action cBroadcast(int args)
-{
-	char sSteamID[64], sText[256];
-	GetCmdArg(1, sSteamID, sizeof(sSteamID));
-	GetCmdArgString(sText, sizeof(sText));
-
-	ReplaceString(sText, sizeof(sText), sSteamID, "");
-	TrimString(sText);
-
-	int iTarget = FindTargetBySteamID(sSteamID);
-
-	if(!StrEqual(sText, ""))
-	{
-		char sTeamColor[10];
-		char sClientName[128];
-		if(IsClientValid(iTarget))
-		{
-			strcopy(sTeamColor, sizeof(sTeamColor), "f5eed2");
-			switch(GetClientTeam(iTarget))
-			{
-				case 2:strcopy(sTeamColor, sizeof(sTeamColor), "f84549");
-				case 3:strcopy(sTeamColor, sizeof(sTeamColor), "adcff4");
-				default:strcopy(sTeamColor, sizeof(sTeamColor), "f5eed2");
-			}
-
-			GetClientName(iTarget, sClientName, sizeof(sClientName));
-		}
-
-		ReplaceString(sText, sizeof(sText), "#", "\x07");
-
-		ReplaceString(sText, sizeof(sText), "@1", "\x01");
-		ReplaceString(sText, sizeof(sText), "@2", "\x02");
-		ReplaceString(sText, sizeof(sText), "@3", "\x03");
-		ReplaceString(sText, sizeof(sText), "@4", "\x04");
-		ReplaceString(sText, sizeof(sText), "@5", "\x05");
-		ReplaceString(sText, sizeof(sText), "@6", "\x06");
-
-		ReplaceString(sText, sizeof(sText), "{team}", sTeamColor);
-		ReplaceString(sText, sizeof(sText), "{name}", sClientName);
-
-		PrintToChatAll(sText);
-	}
-
-	return Plugin_Handled;
-}
-
-public bool CE_LoadConfig()
-{
-	delete m_hConfig;
-
+	m_bCredentialsLoaded = false;
+	
 	char sLoc[96];
-	BuildPath(Path_SM, sLoc, 96, "configs/items.cfg");
+	BuildPath(Path_SM, sLoc, 96, "configs/economy.cfg");
 
-	m_hConfig = new KeyValues("Economy");
-	if (!UTIL_IsValidHandle(m_hConfig))return false;
-	m_hConfig.ImportFromFile(sLoc);
+	KeyValues kv = new KeyValues("Economy");
+	if (!kv.ImportFromFile(sLoc))return;
+	
+	kv.GetString("Key", m_sEconomyAccessKey, sizeof(m_sEconomyAccessKey));
+	kv.GetString("Branch", m_sBranchName, sizeof(m_sBranchName));
+	kv.GetString("Password", m_sBranchPassword, sizeof(m_sBranchPassword));
+	kv.GetString("Domain", m_sBaseEconomyURL, sizeof(m_sBaseEconomyURL), DEFAULT_ECONOMY_BASE_URL);
+	
+	m_bCredentialsLoaded = true;
+	
+	SafeStartCoordinatorPolling();
+}
 
-	NotifySchemaUpdated();
+public void DebugLog(const char[] message, any ...)
+{
+	if(ce_debug_mode.BoolValue)
+	{
+		int length = strlen(message) + 255;
+		char[] sOutput = new char[length];
+		
+		VFormat(sOutput, length, message, 2);
+		LogMessage(sOutput);
+	}
+}
 
+public bool IsClientReady(int client)
+{
+	if (!IsClientValid(client))return false;
+	if (IsFakeClient(client))return false;
 	return true;
 }
 
-public any Native_GetEconomyConfig(Handle plugin, int numParams)
+public bool IsClientValid(int client)
 {
-	if (!UTIL_IsValidHandle(m_hConfig))
+	if (client <= 0 || client > MaxClients)return false;
+	if (!IsClientInGame(client))return false;
+	if (!IsClientAuthorized(client))return false;
+	return true;
+}
+
+public int FindTargetBySteamID(const char[] steamid)
+{
+	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (!CE_LoadConfig())
+		if (IsClientInGame(i) && IsClientAuthorized(i))
 		{
-			return INVALID_HANDLE;
+			char szAuth[256];
+			GetClientAuthId(i, AuthId_SteamID64, szAuth, sizeof(szAuth));
+			if (StrEqual(szAuth, steamid))return i;
 		}
 	}
-
-	KeyValues kv = new KeyValues("Economy");
-	kv.Import(m_hConfig);
-
-	KeyValues hReturn = view_as<KeyValues>(UTIL_ChangeHandleOwner(plugin, kv));
-	delete kv;
-	return hReturn;
+	return -1;
 }

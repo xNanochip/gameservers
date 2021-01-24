@@ -54,15 +54,8 @@ public void CoordinatorCallback(HTTPRequestHandle request, bool success, HTTPSta
 	
 	if(bError)
 	{
-		ThrowLongPollingConnectionError
 	} else {
-		PrintToServer("pog");
 	}
-}
-
-public void ThrowLongPollingConnectionError()
-{
-	
 }
 
 public bool ProcessContent(HTTPRequestHandle request)
