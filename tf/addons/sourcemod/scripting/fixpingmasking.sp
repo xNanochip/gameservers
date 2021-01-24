@@ -10,10 +10,10 @@ Regex pingmaskRegex;
 
 public Plugin myinfo =
 {
-	name 		= "Fix ping masking",
-	author 		= "sappho",
-	description = "Fix fake ping values for clients that are ping masking - originally from Steph's AntiCheat",
-	version 	= "0.0.1"
+    name        = "Fix ping masking",
+    author      = "sappho",
+    description = "Fix fake ping values for clients that are ping masking - originally from Steph's AntiCheat",
+    version     = "0.0.2"
 };
 
 public void OnPluginStart()
@@ -70,7 +70,7 @@ public void PlayerResource_OnThinkPost(int entity)
                 // set the scoreboard ping to our new value
                 SetEntProp(entity, Prop_Send, "m_iPing", newping, client, 1);
                 // debug
-                // LogMessage("Corrected client %N's ping. original ping: %i - new ping: %i", client, ping, newping);
+                LogMessage("Corrected client %N's ping. original ping: %i - new ping: %i", client, ping, newping);
             }
         }
     }
