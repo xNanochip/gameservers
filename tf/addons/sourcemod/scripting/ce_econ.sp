@@ -8,6 +8,8 @@
 #pragma newdecls required
 #pragma tabsize 0
 
+#define MAX_ENTITY_LIMIT 2048
+
 #include <ce_econ>
 #include <sdktools>
 #include <tf2>
@@ -64,6 +66,14 @@ public void OnMapStart()
 	
 	// Subscripts callbacks.
 	Schema_OnMapStart(); // schema.sp
+}
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	RegPluginLibrary("ce_econ");
+	
+	Items_AskPluginLoad2(myself, late, error, err_max); // items.sp
+	return APLRes_Success;
 }
 
 // Used to refresh economy credentials from economy.cfg file.
@@ -126,4 +136,9 @@ public int FindTargetBySteamID(const char[] steamid)
 		}
 	}
 	return -1;
+}
+
+public bool IsEntityValid(int entity)
+{
+	return entity > 0 && entity < MAX_ENTITY_LIMIT && IsValidEntity(entity);
 }

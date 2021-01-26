@@ -23,3 +23,34 @@ public ArrayList Attributes_KeyValuesToArrayList(KeyValues kv)
 	
 	return Attributes;
 }
+
+public ArrayList Attributes_MergeAttributes(ArrayList hArray1, ArrayList hArray2)
+{
+	if (hArray1 == null)return null;
+	
+	ArrayList hResult = hArray1.Clone();
+	
+	if (hArray2 == null)return hResult;
+	
+	int size = hResult.Length;
+	for (int i = 0; i < hArray2.Length; i++)
+	{
+		CEAttribute newAttr;
+		hArray2.GetArray(i, newAttr);
+		
+		for (int j = 0; j < size; j++)
+		{
+			CEAttribute oldAttr;
+			hResult.GetArray(j, oldAttr);
+			if (StrEqual(oldAttr.m_sName, newAttr.m_sName))
+			{
+				hResult.Erase(j);
+				j--;
+				size--;
+			}
+		}
+		hResult.PushArray(newAttr);
+	}
+	
+	return hResult;
+}

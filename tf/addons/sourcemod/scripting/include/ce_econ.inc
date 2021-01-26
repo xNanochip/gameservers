@@ -1,10 +1,10 @@
 //============= Copyright Amper Software , All rights reserved. ============//
 //
 // Purpose: Include file for plugins that use Creators.TF Custom Economy features.
-// 
+//
 //=========================================================================//
 
-enum CELoadoutClass 
+enum CELoadoutClass
 {
 	CEClass_Unknown,
 	CEClass_General,
@@ -25,7 +25,7 @@ enum struct CEItem
 	int m_iItemDefinitionIndex;
 	int m_nQuality;
 	char m_sName[64];
-	
+
 	ArrayList m_Attributes;
 }
 
@@ -34,8 +34,8 @@ enum struct CEItemDefinition
 	int m_iIndex;
 	char m_sName[128];
 	char m_sType[32];
-	
-	ArrayList m_BaseAttributes;
+
+	ArrayList m_Attributes;
 }
 
 enum struct CEAttribute
@@ -43,3 +43,7 @@ enum struct CEAttribute
 	char m_sName[128];
 	char m_sValue[256];
 }
+
+forward bool CEEcon_ShouldItemBeBlocked(int client, CEItem item, const char[] type);
+forward int CEEcon_OnEquipItem(int client, CEItem item);
+forward void CEEcon_OnItemIsEquipped(int client, int entity, CEItem item);

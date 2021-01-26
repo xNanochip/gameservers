@@ -210,6 +210,10 @@ public void Loadout_RequestPlayerLoadout_Callback(HTTPRequestHandle request, boo
 				{
 					do {
 					
+						CEItemDefinition hDef;
+						int iDefID = Response.GetNum("defid", -1);
+						if (!Items_GetItemDefinitionByIndex(iDefID, hDef))continue;
+					
 						CEItem hItem;
 						hItem.m_iIndex = Response.GetNum("id", -1);
 						hItem.m_iItemDefinitionIndex = Response.GetNum("defid", -1);
@@ -218,7 +222,8 @@ public void Loadout_RequestPlayerLoadout_Callback(HTTPRequestHandle request, boo
 						
 						if(Response.JumpToKey("attributes"))
 						{
-							hItem.m_Attributes = Attributes_KeyValuesToArrayList(Response);
+							ArrayList Frog = Attributes_KeyValuesToArrayList(Response);
+							hItem.m_Attributes = Attributes_MergeAttributes(hDef.m_Attributes, Frog);
 							Response.GoBack();
 						}
 						
@@ -398,7 +403,8 @@ public void Loadout_AddWearingClientItem(int client, CEItem item)
 	}
 	
 	m_MyItems[client].PushArray(item);
-	PrintToChatAll("Equipped: %s", item.m_sName);
+	
+	Items_GivePlayerItemByIndex(client, item);
 }
 
 public void Loadout_RemoveWearingClientItem(int client, CEItem item)
@@ -420,7 +426,7 @@ public void Loadout_RemoveWearingClientItem(int client, CEItem item)
 	
 	if(bRemoved)
 	{
-		PrintToChatAll("Holstered: %s", item.m_sName);
+		//PrintToChatAll("Holstered: %s", item.m_sName);
 	}
 }
 
