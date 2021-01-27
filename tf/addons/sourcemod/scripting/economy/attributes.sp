@@ -149,6 +149,8 @@ public void Attributes_ApplyOriginalAttributes(int entity)
 	if(!Items_IsEntityCustomEconItem(entity)) return;
 	if(m_hEconItem[entity].m_Attributes == null) return;
 
+	// TODO: Make a check to see if entity accepts TF2 attributes.
+
 	for(int i = 0; i < m_hEconItem[entity].m_Attributes; i++)
 	{
 		CEAttribute hAttr;

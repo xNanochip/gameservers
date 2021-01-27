@@ -118,6 +118,20 @@ public bool Items_IsEntityCustomEconItem(int entity)
 	return m_bIsEconItem[entity];
 }
 
+public bool Items_CreateItem(CEItem buffer, int index, int defid, int quality, ArrayList override = null, char[] name = "")
+{
+	CEItemDefinition hDef;
+	if (!Items_GetItemDefinitionByIndex(defid, hDef))return false;
+
+	buffer.m_iIndex = index;
+	buffer.m_iItemDefinitionIndex = defid;
+	buffer.m_nQuality = quality;
+	strcopy(buffer.m_sName, sizeof(buffer.m_sName), name);
+	buffer.m_Attributes = Attributes_MergeAttributes(hDef.m_Attributes, override);
+
+	return true;
+}
+
 public bool Items_GivePlayerItemByIndex(int client, CEItem item)
 {
 	// First, let's see if this item's definition even exists.
@@ -153,43 +167,17 @@ public bool Items_GivePlayerItemByIndex(int client, CEItem item)
 			m_bIsEconItem[iEntity] = true;
 			m_hEconItem[iEntity] = item;
 
-			//CE_SetEntityAttributes(iEntity, hAttributes);
-			//CE_ApplyOriginalAttributes(iEntity, hAttributes);
+			Attributes_ApplyOriginalAttributes(iEntity);
 		}
 
-		for (int i = 0; i < item.m_Attributes.Length; i++)
-		{
-			CEAttribute Attr;
-			item.m_Attributes.GetArray(i, Attr);
-
-			if(Attribute_IsOriginalTFAttributeName(Attr.m_sName))
-			{
-				PrintToChatAll("%s is official", Attr.m_sName);
-			}
-		}
-		/*
-		if(UTIL_IsEntityValid(iEntity))
-		{
-			m_bIsCustomEconItem[iEntity] = true;
-			m_iEconIndex[iEntity] = iIndex;
-			m_iEconDefIndex[iEntity] = iDefID;
-			m_iEconQuality[iEntity] = iQuality;
-
-			CE_SetEntityAttributes(iEntity, hAttributes);
-			CE_ApplyOriginalAttributes(iEntity, hAttributes);
-		}
 		// Alerting subplugins that this item was equipped.
-		Call_StartForward(g_hOnPostEquip);
+		Call_StartForward(g_CEEcon_OnItemIsEquipped);
 		Call_PushCell(iClient);
 		Call_PushCell(iEntity);
-		Call_PushCell(iIndex);
-		Call_PushCell(iDefID);
-		Call_PushCell(iQuality);
-		Call_PushCell(hAttributes);
-		Call_PushString(sType);
+		Call_PushArray(item, sizeof(CEItem));
 		Call_Finish();
 
-		bResult = true;*/
+		bResult = true;
 	}
 
 	return bResult;
