@@ -1,7 +1,7 @@
 //============= Copyright Amper Software , All rights reserved. ============//
 //
 // Purpose: Core script for Creators.TF Custom Economy plugin.
-// 
+//
 //=========================================================================//
 
 #pragma semicolon 1
@@ -14,9 +14,10 @@
 #include <sdktools>
 #include <tf2>
 #include <tf2_stocks>
+#include <tf2attributes>
 #pragma newdecls optional
 #include <steamtools>
-#pragma newdecls required 
+#pragma newdecls required
 
 #define DEFAULT_ECONOMY_BASE_URL "https://creators.tf"
 
@@ -52,9 +53,9 @@ ConVar ce_debug_mode;
 public void OnPluginStart()
 {
 	ce_debug_mode = CreateConVar("ce_debug_mode", "0");
-	
+
 	ReloadEconomyCredentials();
-	
+
 	// Subscripts callbacks.
 	TFSchema_OnPluginStart(); // tfschema_interface.sp
 	Schema_OnPluginStart(); // schema.sp
@@ -63,7 +64,7 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
-	
+
 	// Subscripts callbacks.
 	Schema_OnMapStart(); // schema.sp
 }
@@ -71,7 +72,7 @@ public void OnMapStart()
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	RegPluginLibrary("ce_econ");
-	
+
 	Items_AskPluginLoad2(myself, late, error, err_max); // items.sp
 	return APLRes_Success;
 }
@@ -80,20 +81,20 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void ReloadEconomyCredentials()
 {
 	m_bCredentialsLoaded = false;
-	
+
 	char sLoc[96];
 	BuildPath(Path_SM, sLoc, 96, "configs/economy.cfg");
 
 	KeyValues kv = new KeyValues("Economy");
 	if (!kv.ImportFromFile(sLoc))return;
-	
+
 	kv.GetString("Key", m_sEconomyAccessKey, sizeof(m_sEconomyAccessKey));
 	kv.GetString("Branch", m_sBranchName, sizeof(m_sBranchName));
 	kv.GetString("Password", m_sBranchPassword, sizeof(m_sBranchPassword));
 	kv.GetString("Domain", m_sBaseEconomyURL, sizeof(m_sBaseEconomyURL), DEFAULT_ECONOMY_BASE_URL);
-	
+
 	m_bCredentialsLoaded = true;
-	
+
 	SafeStartCoordinatorPolling();
 }
 
@@ -103,7 +104,7 @@ public void DebugLog(const char[] message, any ...)
 	{
 		int length = strlen(message) + 255;
 		char[] sOutput = new char[length];
-		
+
 		VFormat(sOutput, length, message, 2);
 		LogMessage(sOutput);
 	}

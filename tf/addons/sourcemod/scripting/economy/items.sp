@@ -7,7 +7,7 @@
 Handle 	g_CEEcon_ShouldItemBeBlocked,
 		g_CEEcon_OnEquipItem,
 		g_CEEcon_OnItemIsEquipped;
-		
+
 bool m_bIsEconItem[MAX_ENTITY_LIMIT + 1];
 CEItem m_hEconItem[MAX_ENTITY_LIMIT + 1];
 
@@ -113,6 +113,11 @@ public void Items_FlushItemDefinitionCache()
 	delete m_ItemDefinitons;
 }
 
+public bool Items_IsEntityCustomEconItem(int entity)
+{
+	return m_bIsEconItem[entity];
+}
+
 public bool Items_GivePlayerItemByIndex(int client, CEItem item)
 {
 	// First, let's see if this item's definition even exists.
@@ -140,9 +145,9 @@ public bool Items_GivePlayerItemByIndex(int client, CEItem item)
 		Call_PushCell(client);
 		Call_PushArray(item, sizeof(CEItem));
 		int iEntity = -1;
-		
+
 		Call_Finish(iEntity);
-		
+
 		if(IsEntityValid(iEntity))
 		{
 			m_bIsEconItem[iEntity] = true;
@@ -151,12 +156,12 @@ public bool Items_GivePlayerItemByIndex(int client, CEItem item)
 			//CE_SetEntityAttributes(iEntity, hAttributes);
 			//CE_ApplyOriginalAttributes(iEntity, hAttributes);
 		}
-		
+
 		for (int i = 0; i < item.m_Attributes.Length; i++)
 		{
 			CEAttribute Attr;
 			item.m_Attributes.GetArray(i, Attr);
-			
+
 			if(Attribute_IsOriginalTFAttributeName(Attr.m_sName))
 			{
 				PrintToChatAll("%s is official", Attr.m_sName);
