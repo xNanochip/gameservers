@@ -14,8 +14,10 @@ CEItem m_hEconItem[MAX_ENTITY_LIMIT + 1];
 public void Items_AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	g_CEEcon_ShouldItemBeBlocked 	= new GlobalForward("CEEcon_ShouldItemBeBlocked", ET_Event, Param_Cell, Param_Array, Param_String);
-	g_CEEcon_OnEquipItem 			= new GlobalForward("CEEcon_OnEquipItem", ET_Single, Param_Cell, Param_Array);
-	g_CEEcon_OnItemIsEquipped 		= new GlobalForward("CEEcon_OnItemIsEquipped", ET_Ignore, Param_Cell, Param_Cell, Param_Array);
+	g_CEEcon_OnEquipItem 			= new GlobalForward("CEEcon_OnEquipItem", ET_Single, Param_Cell, Param_Array, Param_String);
+	g_CEEcon_OnItemIsEquipped 		= new GlobalForward("CEEcon_OnItemIsEquipped", ET_Ignore, Param_Cell, Param_Cell, Param_Array, Param_String);
+	
+	CreateNative("CEEcon_IsEntityCustomEconItem", Native_IsEntityCustomEconItem);
 }
 
 ArrayList m_ItemDefinitons = null;
@@ -118,7 +120,7 @@ public bool Items_IsEntityCustomEconItem(int entity)
 	return m_bIsEconItem[entity];
 }
 
-public bool Items_CreateItem(CEItem buffer, int index, int defid, int quality, ArrayList override = null, char[] name = "")
+public bool Items_CreateItem(CEItem buffer, int index, int defid, int quality, ArrayList override, char[] name)
 {
 	CEItemDefinition hDef;
 	if (!Items_GetItemDefinitionByIndex(defid, hDef))return false;
@@ -158,6 +160,7 @@ public bool Items_GivePlayerItemByIndex(int client, CEItem item)
 		Call_StartForward(g_CEEcon_OnEquipItem);
 		Call_PushCell(client);
 		Call_PushArray(item, sizeof(CEItem));
+		Call_PushString(hDef.m_sType);
 		int iEntity = -1;
 
 		Call_Finish(iEntity);
@@ -172,13 +175,24 @@ public bool Items_GivePlayerItemByIndex(int client, CEItem item)
 
 		// Alerting subplugins that this item was equipped.
 		Call_StartForward(g_CEEcon_OnItemIsEquipped);
-		Call_PushCell(iClient);
+		Call_PushCell(client);
 		Call_PushCell(iEntity);
 		Call_PushArray(item, sizeof(CEItem));
+		Call_PushString(hDef.m_sType);
 		Call_Finish();
 
 		bResult = true;
 	}
 
 	return bResult;
+}
+
+public any Native_IsEntityCustomEconItem(Handle plugin, int numParams)
+{
+	int iEntity = GetNativeCell(1);
+	if(IsEntityValid(iEntity))
+	{
+		return m_bIsEconItem[iEntity];
+	}
+	return false;
 }

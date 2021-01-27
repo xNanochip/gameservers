@@ -141,11 +141,13 @@ public void Loadout_RequestPlayerLoadout(int client, bool apply)
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Cookie", "session_id=f457c545a9ded88f18ecee47145a72c04ac9f435bbbd8973d18b0723aae4c7b5295fefe1.b92b2b3f8a0439d2632195a560aa101b");
 
+	PrintToChatAll("Loadout_RequestPlayerLoadout()");
 	Steam_SendHTTPRequest(httpRequest, Loadout_RequestPlayerLoadout_Callback, pack);
 }
 
 public void Loadout_RequestPlayerLoadout_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code, any pack)
 {
+	PrintToChatAll("Loadout_RequestPlayerLoadout_Callback()");
 	// Retrieving DataPack parameter.
 	DataPack hPack = pack;
 
@@ -280,8 +282,6 @@ public void Loadout_ApplyLoadout(int client)
 			}
 		}
 	}
-
-
 }
 
 public bool Loadout_HasCachedLoadout(int client)
@@ -463,5 +463,6 @@ public void Loadout_RemoveAllWearingItems(int client)
 		m_MyItems[client].GetArray(i, hItem);
 
 		Loadout_RemoveWearingClientItem(client, hItem);
+		i--;
 	}
 }

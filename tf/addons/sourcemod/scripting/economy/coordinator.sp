@@ -52,6 +52,7 @@ public void SafeStartCoordinatorPolling()
 // Used to force start a coordinator request.
 public void StartCoordinatorLongPolling()
 {
+	PrintToChatAll("StartCoordinatorLongPolling()");
 	// Before we make anoher request, let's make sure that nothing tells us
 	// not to. Before we are sure that nothing stops us from making a request, let's
 	// set this flag to false.
@@ -68,7 +69,7 @@ public void StartCoordinatorLongPolling()
 
 	// All conditions were met, mark this flag as true and start the request.
 	m_bCoordinatorActive = true;
-
+	
 	char sURL[64];
 	Format(sURL, sizeof(sURL), "%s/api/IServers/GServerCoordinator", m_sBaseEconomyURL);
 
@@ -82,6 +83,7 @@ public void StartCoordinatorLongPolling()
 
 public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
 {
+	PrintToChatAll("Coordinator_Request_Callback()");
 	bool bError = true;
 
 	// If response was succesful...

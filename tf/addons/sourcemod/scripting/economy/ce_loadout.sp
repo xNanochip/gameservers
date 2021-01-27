@@ -257,11 +257,11 @@ public void RequestPlayerLoadout(int client, bool apply)
 	pack.Reset();
 
 	Format(sURL, sizeof(sURL), "%s/api/IUsers/GLoadout", m_sBaseEconomyURL);
-	
+
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
-	
-	Steam_SendHTTPRequest(httpRequest, CoordinatorCallback);
+
+	// team_SendHTTPRequest(httpRequest, CoordinatorCallback);
 }
 
 public void httpPlayerLoadout(const char[] content, int size, int status, any pack)
@@ -292,9 +292,9 @@ public void httpPlayerLoadout(const char[] content, int size, int status, any pa
 		ClearLoadoutCache(client);
 		m_bWaitingForLoadout[client] = false;
 		m_hLoadout[client] = hLoadout;
-		
+
 		ApplyGlobalItems(client);
-		
+
 		if(bChanged && m_bInRespawn[client])
 		{
 			TF2_RespawnPlayer(client);
@@ -310,10 +310,10 @@ public void ApplyGlobalItems(int client)
 {
 	char sSteamID[64];
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-	
+
 	int iMusicKit = 0;
 	char sMusicKitName[128];
-	
+
 	KeyValues hLoadout = m_hLoadout[client];
 	if(hLoadout.JumpToKey("general"))
 	{
@@ -325,9 +325,9 @@ public void ApplyGlobalItems(int client)
 				hLoadout.GetString("name", sName, sizeof(sName));
 				hLoadout.GetString("quality_color", sColor, sizeof(sColor));
 				ReplaceString(sColor, sizeof(sColor), "#", "");
-				
+
 				int iDefIndex = hLoadout.GetNum("defid");
-				
+
 				if(StrEqual(sSlot, "SOUNDTRACK"))
 				{
 					iMusicKit = iDefIndex;
@@ -337,7 +337,7 @@ public void ApplyGlobalItems(int client)
 		}
 	}
 	hLoadout.Rewind();
-	
+
 	ServerCommand("ce_soundtrack_setkit %s %d \"%s\"", sSteamID, iMusicKit, sMusicKitName);
 }
 

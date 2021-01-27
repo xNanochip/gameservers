@@ -44,6 +44,19 @@ enum struct CEAttribute
 	char m_sValue[256];
 }
 
+//======================================//
+// SCHEMA
+//======================================//
+native KeyValues CEEcon_GetEconomySchema();
+forward void CEEcon_OnSchemaUpdated(KeyValues hSchema);
+
+//======================================//
+// ITEMS
+//======================================//
+native bool CEEcon_IsEntityCustomEconItem(int entity);
+
 forward bool CEEcon_ShouldItemBeBlocked(int client, CEItem item, const char[] type);
-forward int CEEcon_OnEquipItem(int client, CEItem item);
-forward void CEEcon_OnItemIsEquipped(int client, int entity, CEItem item);
+forward int CEEcon_OnEquipItem(int client, CEItem item, const char[] type);
+forward void CEEcon_OnItemIsEquipped(int client, int entity, CEItem item, const char[] type);
+
+//======================================//

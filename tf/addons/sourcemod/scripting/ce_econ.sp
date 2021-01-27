@@ -44,8 +44,8 @@ ConVar ce_debug_mode;
 #include "economy/schema.sp"
 #include "economy/coordinator.sp"
 
-#include "economy/attributes.sp"
 #include "economy/items.sp"
+#include "economy/attributes.sp"
 
 #include "economy/loadout.sp"
 
@@ -73,6 +73,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 {
 	RegPluginLibrary("ce_econ");
 
+	Schema_AskPluginLoad2(myself, late, error, err_max); // schema.sp
 	Items_AskPluginLoad2(myself, late, error, err_max); // items.sp
 	return APLRes_Success;
 }
@@ -95,7 +96,7 @@ public void ReloadEconomyCredentials()
 
 	m_bCredentialsLoaded = true;
 
-	SafeStartCoordinatorPolling();
+	//SafeStartCoordinatorPolling();
 }
 
 public void DebugLog(const char[] message, any ...)

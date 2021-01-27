@@ -78,12 +78,12 @@ public bool Attributes_GetAttributeStringFromArray(ArrayList hArray, const char[
 }
 
 // Returns a float attribute value from ArrayList
-public float Attributes_GetAttributeFloatFromArray(ArrayList, const char[] name)
+public float Attributes_GetAttributeFloatFromArray(ArrayList hArray, const char[] name)
 {
 	if(hArray == null) return 0.0;
 
 	char sBuffer[11];
-	Attributes_GetAttributeStringFromArray(ArrayList, name, sBuffer, sizeof(sBuffer));
+	Attributes_GetAttributeStringFromArray(hArray, name, sBuffer, sizeof(sBuffer));
 
 	return StringToFloat(sBuffer);
 }
@@ -93,7 +93,7 @@ public int Attributes_GetAttributeIntegerFromArray(ArrayList hArray, const char[
 	if(hArray == null) return 0;
 
 	char sBuffer[11];
-	Attributes_GetAttributeStringFromArray(ArrayList, name, sBuffer, sizeof(sBuffer));
+	Attributes_GetAttributeStringFromArray(hArray, name, sBuffer, sizeof(sBuffer));
 
 	return StringToInt(sBuffer);
 }
@@ -103,7 +103,7 @@ public bool Attributes_GetAttributeBoolFromArray(ArrayList hArray, const char[] 
 	if(hArray == null) return false;
 
 	char sBuffer[11];
-	Attributes_GetAttributeStringFromArray(ArrayList, name, sBuffer, sizeof(sBuffer));
+	Attributes_GetAttributeStringFromArray(hArray, name, sBuffer, sizeof(sBuffer));
 
 	return StringToInt(sBuffer) > 0;
 }
@@ -136,7 +136,7 @@ public int Attributes_GetEntityAttributeInteger(int entity, const char[] name)
 	return Attributes_GetAttributeIntegerFromArray(m_hEconItem[entity].m_Attributes, name);
 }
 
-public bool Attributes_GetEntityAttributeInteger(int entity, const char[] name)
+public bool Attributes_GetEntityAttributeBool(int entity, const char[] name)
 {
 	if(!Items_IsEntityCustomEconItem(entity)) return false;
 	if(m_hEconItem[entity].m_Attributes == null) return false;
@@ -151,7 +151,7 @@ public void Attributes_ApplyOriginalAttributes(int entity)
 
 	// TODO: Make a check to see if entity accepts TF2 attributes.
 
-	for(int i = 0; i < m_hEconItem[entity].m_Attributes; i++)
+	for(int i = 0; i < m_hEconItem[entity].m_Attributes.Length; i++)
 	{
 		CEAttribute hAttr;
 		m_hEconItem[entity].m_Attributes.GetArray(i, hAttr);
