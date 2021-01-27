@@ -22,7 +22,10 @@ public APLRes AskPluginLoad2(Handle plugin, bool late, char[] error, int err_max
 	RegPluginLibrary("tf2wearables");
 	CreateNative("TF2Wear_CreateWearable", Native_CreateWearable);
 	CreateNative("TF2Wear_EquipWearable", Native_EquipWearable);
+	CreateNative("TF2Wear_RemoveWearable", Native_RemoveWearable);
+	
 	CreateNative("TF2Wear_SetModel", Native_SetModel);
+	CreateNative("TF2Wear_ParseEquipRegionString", Native_ParseEquipRegionString);
 	/*
 	CreateNative("CEModels_SetModelIndex", Native_SetModelIndex);
 	CreateNative("TF2_EquipWearable", Native_EquipWearable);
@@ -121,6 +124,17 @@ public int Native_EquipWearable(Handle plugin, int numParams)
 	int entity = GetNativeCell(2);
 	
 	SDKCall(g_hSdkEquipWearable, client, entity);
+}
+
+// =============================================== //
+// 	Native: TF2Wear_RemoveWearable
+// =============================================== //
+public int Native_RemoveWearable(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	int entity = GetNativeCell(2);
+	
+	TF2_RemoveWearable(client, entity);
 }
 
 // =============================================== //
@@ -357,3 +371,86 @@ public int CE_AttachmentsCount(int client)
 	}
 	return a;
 }*/
+
+public int Native_ParseEquipRegionString(Handle plugin, int numParams)
+{
+	char string[256];
+	GetNativeString(1, string, 256);
+
+	int bits;
+	if (StrContains(string, "whole_head") != -1)bits |= TFEquip_WholeHead | TFEquip_Hat | TFEquip_Face | TFEquip_Glasses;
+	if (StrContains(string, "hat") != -1)bits |= TFEquip_Hat;
+	if (StrContains(string, "face") != -1)bits |= TFEquip_Face;
+	if (StrContains(string, "glasses") != -1)bits |= TFEquip_Glasses | TFEquip_Face | TFEquip_Lenses;
+	if (StrContains(string, "lenses") != -1)bits |= TFEquip_Lenses;
+	if (StrContains(string, "pants") != -1)bits |= TFEquip_Pants;
+	if (StrContains(string, "beard") != -1)bits |= TFEquip_Beard;
+	if (StrContains(string, "shirt") != -1)bits |= TFEquip_Shirt;
+	if (StrContains(string, "medal") != -1)bits |= TFEquip_Medal;
+	if (StrContains(string, "arms") != -1)bits |= TFEquip_Arms;
+	if (StrContains(string, "back") != -1)bits |= TFEquip_Back;
+	if (StrContains(string, "feet") != -1)bits |= TFEquip_Feet;
+	if (StrContains(string, "necklace") != -1)bits |= TFEquip_Necklace;
+	if (StrContains(string, "grenades") != -1)bits |= TFEquip_Grenades;
+	if (StrContains(string, "arm_tatoos") != -1)bits |= TFEquip_ArmTatoos;
+	if (StrContains(string, "flair") != -1)bits |= TFEquip_Flair;
+	if (StrContains(string, "head_skin") != -1)bits |= TFEquip_HeadSkin;
+	if (StrContains(string, "ears") != -1)bits |= TFEquip_Ears;
+	if (StrContains(string, "left_shoulder") != -1)bits |= TFEquip_LeftShoulder;
+	if (StrContains(string, "belt_misc") != -1)bits |= TFEquip_BeltMisc;
+	if (StrContains(string, "disconnected_floating_item") != -1)bits |= TFEquip_Floating;
+	if (StrContains(string, "zombie_body") != -1)bits |= TFEquip_Zombie;
+	if (StrContains(string, "sleeves") != -1)bits |= TFEquip_Sleeves;
+	if (StrContains(string, "right_shoulder") != -1)bits |= TFEquip_RightShoulder;
+
+	if (StrContains(string, "pyro_spikes") != -1)bits |= TFEquip_PyroSpikes;
+	if (StrContains(string, "scout_bandages") != -1)bits |= TFEquip_ScoutBandages;
+	if (StrContains(string, "engineer_pocket") != -1)bits |= TFEquip_EngineerPocket;
+	if (StrContains(string, "heavy_belt_back") != -1)bits |= TFEquip_HeavyBeltBack;
+	if (StrContains(string, "demo_eyepatch") != -1)bits |= TFEquip_DemoEyePatch;
+	if (StrContains(string, "soldier_gloves") != -1)bits |= TFEquip_SoldierGloves;
+	if (StrContains(string, "spy_gloves") != -1)bits |= TFEquip_SpyGloves;
+	if (StrContains(string, "sniper_headband") != -1)bits |= TFEquip_SniperHeadband;
+
+	if (StrContains(string, "scout_backpack") != -1)bits |= TFEquip_ScoutBack;
+	if (StrContains(string, "heavy_pocket") != -1)bits |= TFEquip_HeavyPocket;
+	if (StrContains(string, "engineer_belt") != -1)bits |= TFEquip_EngineerBelt;
+	if (StrContains(string, "soldier_pocket") != -1)bits |= TFEquip_SoldierPocket;
+	if (StrContains(string, "demo_belt") != -1)bits |= TFEquip_DemoBelt;
+	if (StrContains(string, "sniper_quiver") != -1)bits |= TFEquip_SniperQuiver;
+
+	if (StrContains(string, "pyro_wings") != -1)bits |= TFEquip_PyroWings;
+	if (StrContains(string, "sniper_bullets") != -1)bits |= TFEquip_SniperBullets;
+	if (StrContains(string, "medigun_accessories") != -1)bits |= TFEquip_MediAccessories;
+	if (StrContains(string, "soldier_coat") != -1)bits |= TFEquip_SoldierCoat;
+	if (StrContains(string, "heavy_hip") != -1)bits |= TFEquip_HeavyHip;
+	if (StrContains(string, "scout_hands") != -1)bits |= TFEquip_ScoutHands;
+
+	if (StrContains(string, "engineer_left_arm") != -1)bits |= TFEquip_EngineerLeftArm;
+	if (StrContains(string, "pyro_tail") != -1)bits |= TFEquip_PyroTail;
+	if (StrContains(string, "sniper_legs") != -1)bits |= TFEquip_SniperLegs;
+	if (StrContains(string, "medic_gloves") != -1)bits |= TFEquip_MedicGloves;
+	if (StrContains(string, "soldier_cigar") != -1)bits |= TFEquip_SoldierCigar;
+	if (StrContains(string, "demoman_collar") != -1)bits |= TFEquip_DemomanCollar;
+	if (StrContains(string, "heavy_towel") != -1)bits |= TFEquip_HeavyTowel;
+
+	if (StrContains(string, "engineer_wings") != -1)bits |= TFEquip_EngineerWings;
+	if (StrContains(string, "pyro_head_replacement") != -1)bits |= TFEquip_PyroHead;
+	if (StrContains(string, "scout_wings") != -1)bits |= TFEquip_ScoutWings;
+	if (StrContains(string, "heavy_hair") != -1)bits |= TFEquip_HeavyHair;
+	if (StrContains(string, "medic_pipe") != -1)bits |= TFEquip_MedicPipe;
+	if (StrContains(string, "soldier_legs") != -1)bits |= TFEquip_SoldierLegs;
+
+	if (StrContains(string, "scout_pants") != -1)bits |= TFEquip_ScoutPants;
+	if (StrContains(string, "heavy_bullets") != -1)bits |= TFEquip_HeavyBullets;
+	if (StrContains(string, "engineer_hair") != -1)bits |= TFEquip_EngineerHair;
+	if (StrContains(string, "sniper_vest") != -1)bits |= TFEquip_SniperVest;
+	if (StrContains(string, "medigun_backpack") != -1)bits |= TFEquip_MedigunBackpack;
+	if (StrContains(string, "sniper_pocket_left") != -1)bits |= TFEquip_SniperPocketLeft;
+
+	if (StrContains(string, "sniper_pocket") != -1)bits |= TFEquip_SniperPocket;
+	if (StrContains(string, "heavy_hip_pouch") != -1)bits |= TFEquip_HeavyHipPouch;
+	if (StrContains(string, "spy_coat") != -1)bits |= TFEquip_SpyCoat;
+	if (StrContains(string, "medic_hip") != -1)bits |= TFEquip_MedicHip;
+	return bits;
+}

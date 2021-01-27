@@ -12,6 +12,7 @@
 #include <tf2wearables>
 #include <tf2>
 #include <tf2_stocks>
+#include <tf_econ_data>
 
 public Plugin myinfo =
 {
@@ -60,11 +61,19 @@ public int CEEcon_OnEquipItem(int client, CEItem item, const char[] type)
 	CEItemDefinitionCosmetic hDef;
 	if(FindCosmeticDefinitionByIndex(item.m_iItemDefinitionIndex, hDef))
 	{
+		// If there are any weapons that occupy this equip
+		// regions, we do not equip this cosmetic.
+		if(HasOverlappingWeapons(client, hDef.m_iEquipRegion))
+		{
+			return -1;
+		}
+		
 		char sModel[512];
 		strcopy(sModel, sizeof(sModel), hDef.m_sWorldModel);
 		ParseCosmeticModel(client, sModel, sizeof(sModel));
 		
 		int iWear = TF2Wear_CreateWearable(client, false, sModel);
+		SetEntProp(iWear, Prop_Send, "m_iItemDefinitionIndex", hDef.m_iBaseIndex);
 		
 		return iWear;
 	}
@@ -116,6 +125,12 @@ public void ProcessEconSchema(KeyValues kv)
 				
 				CEItemDefinitionCosmetic hDef;
 				hDef.m_iIndex = StringToInt(sIndex);
+				hDef.m_iBaseIndex = kv.GetNum("item_index");
+				
+				char sEquipRegions[64];
+				kv.GetString("equip_region", sEquipRegions, sizeof(sEquipRegions));
+				hDef.m_iEquipRegion = TF2Wear_ParseEquipRegionString(sEquipRegions);
+				
 				kv.GetString("world_model", hDef.m_sWorldModel, sizeof(hDef.m_sWorldModel));
 					
 				m_hDefinitions.PushArray(hDef);
@@ -124,8 +139,6 @@ public void ProcessEconSchema(KeyValues kv)
 	}
 	
 	kv.Rewind();
-	
-	PrintToChatAll("%d cosmetics loaded.", m_hDefinitions.Length);
 }
 
 //--------------------------------------------------------------------
@@ -145,4 +158,23 @@ public void ParseCosmeticModel(int client, char[] sModel, int size)
 		case TFClass_Sniper:ReplaceString(sModel, size, "%s", "sniper");
 		case TFClass_Spy:ReplaceString(sModel, size, "%s", "spy");
 	}
+}
+
+//--------------------------------------------------------------------
+// Purpose: Returns true if there are weapons that occupy specific
+// equip regions.
+//--------------------------------------------------------------------
+public bool HasOverlappingWeapons(int client, int bits)
+{
+	for (int i = 0; i < 5; i++)
+	{
+		int iWeapon = GetPlayerWeaponSlot(client, i);
+		if(iWeapon != -1)
+		{
+			int idx = GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex");
+			int iCompareBits = TF2Econ_GetItemEquipRegionGroupBits(idx);
+			if (bits & iCompareBits != 0)return true;
+		}
+	}
+	return false;
 }
