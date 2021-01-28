@@ -1,59 +1,7 @@
-//============= Copyright Amper Software , All rights reserved. ============//
-//
-// Purpose: Managing players loadouts.
-//
-//=========================================================================//
-
-//===============================//
-// DOCUMENTATION
-
-/* HOW DOES THE LOADOUT SYSTEM ACTUALLY WORK?
-*
-*	When player requests their loadout (this happens when player respawns
-*	or touches ressuply locker), we run Loadout_InventoryApplication function.
-*	This function checks if we already have loadout information loaded for this
-*	specific player. If we have, apply the loadout right away using `Loadout_ApplyLoadout`.
-*
-*	If we dont, we request loadout info for the player from the backend using
-*	`Loadout_RequestPlayerLoadout`. The response for this request is parsed into m_Loadout[client] array.
-*	m_Loadout[client] contains X ArrayLists, where X is the amount of classes that we have loadouts for.
-*	(For TF2, the X value is 11. In consists of: 9 (TF2 Classes) + 1 (General Items Class) + 1 (Unknown Class)).
-*
-*	When we are sure we have loadout information available, `Loadout_ApplyLoadout` is run. This function checks
-*	which equipped items player is able to wear, and which items we need to holster from player.
-*
-*	If an item is eligible for being equipped, we run a forward with all the data about this item
-*	to the subplugins, who will take care of managing what these items need to do when equipped.
-*
-*/
-
-/* DIFFERENCE BETWEEN EQUIPPED AND WEARABLE ITEMS
-*
-*	Terminology:
-*	"(Item) Equipped" 	- Item is in player loadout.
-*	"Wearing (Item)"	- Player is currently wearing this item.
-*
-*	Why?
-*	Sometimes player loadout might not match what player
-*	actually has equipped. This can happen, for example, with
-*	holiday restricted items. They are only wearable during holidays.
-*	Also some specific item types are auto-unequipped by the game itself
-*	when player touches ressuply locker. This happens with Cosmetics and
-*	Weapons. To prevent mismatch between equipped items and wearable items,
-*	we keep track of them separately.
-*
-*	To check if player has item equipped in their inventory you run:
-*	- CEcon_IsPlayerEquippedItemIndex(int client, CELoadoutClass class, int item_index);
-*
-*	To check if player has this item actually equipped right now, run:
-*	- CEcon_IsPlayerWearingItemIndex(int client, int item_index);
-*/
-//===============================//
-
 ArrayList m_PartialReapplicationTypes;
 
 bool m_bLoadoutCached[MAXPLAYERS + 1];
-ArrayList m_Loadout[MAXPLAYERS + 1][CELoadoutClass]; 	// Cached loadout data of a user.
+ArrayList m_Loadout[MAXPLAYERS + 1][CEEconLoadoutClass]; 	// Cached loadout data of a user.
 ArrayList m_MyItems[MAXPLAYERS + 1]; 					// Array of items this user is wearing.
 
 bool m_bWaitingForLoadout[MAXPLAYERS + 1];
@@ -194,17 +142,17 @@ public void Loadout_RequestPlayerLoadout_Callback(HTTPRequestHandle request, boo
 				char sClassName[32];
 				Response.GetSectionName(sClassName, sizeof(sClassName));
 
-				CELoadoutClass nClass;
-				if(StrEqual(sClassName, "general")) nClass = CEClass_General;
-				if(StrEqual(sClassName, "scout")) nClass = CEClass_Scout;
-				if(StrEqual(sClassName, "soldier")) nClass = CEClass_Soldier;
-				if(StrEqual(sClassName, "pyro")) nClass = CEClass_Pyro;
-				if(StrEqual(sClassName, "demo")) nClass = CEClass_Demoman;
-				if(StrEqual(sClassName, "heavy")) nClass = CEClass_Heavy;
-				if(StrEqual(sClassName, "engineer")) nClass = CEClass_Engineer;
-				if(StrEqual(sClassName, "medic")) nClass = CEClass_Medic;
-				if(StrEqual(sClassName, "sniper")) nClass = CEClass_Sniper;
-				if(StrEqual(sClassName, "spy")) nClass = CEClass_Spy;
+				CEEconLoadoutClass nClass;
+				if(StrEqual(sClassName, "general")) nClass = CEconLoadoutClass_General;
+				if(StrEqual(sClassName, "scout")) nClass = CEconLoadoutClass_Scout;
+				if(StrEqual(sClassName, "soldier")) nClass = CEconLoadoutClass_Soldier;
+				if(StrEqual(sClassName, "pyro")) nClass = CEconLoadoutClass_Pyro;
+				if(StrEqual(sClassName, "demo")) nClass = CEconLoadoutClass_Demoman;
+				if(StrEqual(sClassName, "heavy")) nClass = CEconLoadoutClass_Heavy;
+				if(StrEqual(sClassName, "engineer")) nClass = CEconLoadoutClass_Engineer;
+				if(StrEqual(sClassName, "medic")) nClass = CEconLoadoutClass_Medic;
+				if(StrEqual(sClassName, "sniper")) nClass = CEconLoadoutClass_Sniper;
+				if(StrEqual(sClassName, "spy")) nClass = CEconLoadoutClass_Spy;
 
 				m_Loadout[client][nClass] = new ArrayList(sizeof(CEItem));
 
@@ -247,9 +195,9 @@ public void Loadout_RequestPlayerLoadout_Callback(HTTPRequestHandle request, boo
 
 public void Loadout_ApplyLoadout(int client)
 {
-	CELoadoutClass nClass = Loadout_TFClassToCEClass(TF2_GetPlayerClass(client));
+	CEEconLoadoutClass nClass = Loadout_TFClassToCEClass(TF2_GetPlayerClass(client));
 
-	if (nClass == CEClass_Unknown)return;
+	if (nClass == CEconLoadoutClass_Unknown)return;
 	if (m_Loadout[client][nClass] == null)return;
 
 	// See if we need to holster something.
@@ -330,9 +278,9 @@ public void RF_Loadout_InventoryApplication(int client)
 
 public void Loadout_ClearLoadout(int client)
 {
-	for (int i = 0; i < view_as<int>(CELoadoutClass); i++)
+	for (int i = 0; i < view_as<int>(CEEconLoadoutClass); i++)
 	{
-		CELoadoutClass nClass = view_as<CELoadoutClass>(i);
+		CEEconLoadoutClass nClass = view_as<CEEconLoadoutClass>(i);
 		if (m_Loadout[client][nClass] == null)continue;
 
 		for (int j = 0; j < m_Loadout[client][nClass].Length; j++)
@@ -347,24 +295,24 @@ public void Loadout_ClearLoadout(int client)
 	}
 }
 
-public CELoadoutClass Loadout_TFClassToCEClass(TFClassType class)
+public CEEconLoadoutClass Loadout_TFClassToCEClass(TFClassType class)
 {
 	switch(class)
 	{
-		case TFClass_Scout:return CEClass_Scout;
-		case TFClass_Soldier:return CEClass_Soldier;
-		case TFClass_Pyro:return CEClass_Pyro;
-		case TFClass_DemoMan:return CEClass_Demoman;
-		case TFClass_Heavy:return CEClass_Heavy;
-		case TFClass_Engineer:return CEClass_Engineer;
-		case TFClass_Medic:return CEClass_Medic;
-		case TFClass_Sniper:return CEClass_Sniper;
-		case TFClass_Spy:return CEClass_Spy;
+		case TFClass_Scout:return CEconLoadoutClass_Scout;
+		case TFClass_Soldier:return CEconLoadoutClass_Soldier;
+		case TFClass_Pyro:return CEconLoadoutClass_Pyro;
+		case TFClass_DemoMan:return CEconLoadoutClass_Demoman;
+		case TFClass_Heavy:return CEconLoadoutClass_Heavy;
+		case TFClass_Engineer:return CEconLoadoutClass_Engineer;
+		case TFClass_Medic:return CEconLoadoutClass_Medic;
+		case TFClass_Sniper:return CEconLoadoutClass_Sniper;
+		case TFClass_Spy:return CEconLoadoutClass_Spy;
 	}
-	return CEClass_Unknown;
+	return CEconLoadoutClass_Unknown;
 }
 
-public bool Loadout_ClientHasItemEquippedByIndex(int client, CELoadoutClass nClass, int index)
+public bool Loadout_ClientHasItemEquippedByIndex(int client, CEEconLoadoutClass nClass, int index)
 {
 	if (m_Loadout[client][nClass] == null)return false;
 

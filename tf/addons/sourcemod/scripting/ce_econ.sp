@@ -40,14 +40,8 @@ bool m_bCredentialsLoaded = false;
 ConVar ce_debug_mode;
 
 // System Features
-#include "economy/tfschema_interface.sp"
 #include "economy/schema.sp"
 #include "economy/coordinator.sp"
-
-#include "economy/items.sp"
-#include "economy/attributes.sp"
-
-#include "economy/loadout.sp"
 
 
 public void OnPluginStart()
@@ -57,14 +51,11 @@ public void OnPluginStart()
 	ReloadEconomyCredentials();
 
 	// Subscripts callbacks.
-	TFSchema_OnPluginStart(); // tfschema_interface.sp
 	Schema_OnPluginStart(); // schema.sp
-	Loadout_OnPluginStart(); // schema.sp
 }
 
 public void OnMapStart()
 {
-
 	// Subscripts callbacks.
 	Schema_OnMapStart(); // schema.sp
 }
@@ -74,7 +65,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	RegPluginLibrary("cecon_core");
 
 	Schema_AskPluginLoad2(myself, late, error, err_max); // schema.sp
-	Items_AskPluginLoad2(myself, late, error, err_max); // items.sp
 	return APLRes_Success;
 }
 
@@ -96,7 +86,7 @@ public void ReloadEconomyCredentials()
 
 	m_bCredentialsLoaded = true;
 
-	//SafeStartCoordinatorPolling();
+	SafeStartCoordinatorPolling();
 }
 
 public void DebugLog(const char[] message, any ...)
