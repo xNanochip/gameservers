@@ -43,10 +43,10 @@
 *	we keep track of them separately.
 *
 *	To check if player has item equipped in their inventory you run:
-*	- CEEcon_IsPlayerEquippedItemIndex(int client, CELoadoutClass class, int item_index);
+*	- CEcon_IsPlayerEquippedItemIndex(int client, CELoadoutClass class, int item_index);
 *
 *	To check if player has this item actually equipped right now, run:
-*	- CEEcon_IsPlayerWearingItemIndex(int client, int item_index);
+*	- CEcon_IsPlayerWearingItemIndex(int client, int item_index);
 */
 //===============================//
 

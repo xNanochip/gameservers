@@ -39,14 +39,14 @@ ArrayList m_hDefinitions;
 //--------------------------------------------------------------------
 public void OnPluginStart()
 {
-	ProcessEconSchema(CEEcon_GetEconomySchema());
+	ProcessEconSchema(CEcon_GetEconomySchema());
 }
 
 //--------------------------------------------------------------------
 // Purpose: If schema was late updated (by an update), reprecache
 // everything again.
 //--------------------------------------------------------------------
-public void CEEcon_OnSchemaUpdated(KeyValues hSchema)
+public void CEcon_OnSchemaUpdated(KeyValues hSchema)
 {
 	ProcessEconSchema(hSchema);
 }
@@ -54,7 +54,7 @@ public void CEEcon_OnSchemaUpdated(KeyValues hSchema)
 //--------------------------------------------------------------------
 // Purpose: This is called upon item equipping process.
 //--------------------------------------------------------------------
-public int CEEcon_OnEquipItem(int client, CEItem item, const char[] type)
+public int CEcon_OnEquipItem(int client, CEItem item, const char[] type)
 {
 	if (!StrEqual(type, "cosmetic"))return -1;
 	

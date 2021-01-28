@@ -1,8 +1,3 @@
-public bool Attribute_IsOriginalTFAttributeName(const char[] name)
-{
-	return TFSchema_IsAttributeNameValid(name);
-}
-
 public ArrayList Attributes_KeyValuesToArrayList(KeyValues kv)
 {
 	if (kv == null)return null;

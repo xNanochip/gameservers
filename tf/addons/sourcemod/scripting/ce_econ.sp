@@ -1,6 +1,6 @@
-//============= Copyright Amper Software , All rights reserved. ============//
+//============= Copyright Amper Software 2021, All rights reserved. ============//
 //
-// Purpose: Core script for Creators.TF Custom Economy plugin.
+// Purpose: Core plugin for Creators.TF Custom Economy plugin.
 //
 //=========================================================================//
 
@@ -23,12 +23,12 @@
 
 public Plugin myinfo =
 {
-	name = "Creators.TF",
+	name = "Creators.TF Core",
 	author = "Creators.TF Team",
-	description = "Creators.TF Custom Economy",
+	description = "Core plugin for Creators.TF Custom Economy plugin.",
 	version = "1.0",
 	url = "https://creators.tf"
-};
+}
 
 char m_sBaseEconomyURL[64];
 char m_sEconomyAccessKey[150];
@@ -71,7 +71,7 @@ public void OnMapStart()
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	RegPluginLibrary("ce_econ");
+	RegPluginLibrary("cecon_core");
 
 	Schema_AskPluginLoad2(myself, late, error, err_max); // schema.sp
 	Items_AskPluginLoad2(myself, late, error, err_max); // items.sp

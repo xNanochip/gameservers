@@ -11,7 +11,7 @@ char m_sSchemaBuildVersion[64];
 bool m_bSchemaLoadedSuccesfully = false;
 char m_sItemSchemaFilePath[96];
 
-Handle g_CEEcon_OnSchemaUpdated;
+Handle g_CEcon_OnSchemaUpdated;
 
 public void Schema_OnPluginStart()
 {
@@ -26,9 +26,9 @@ public void Schema_OnPluginStart()
 
 public void Schema_AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	g_CEEcon_OnSchemaUpdated = CreateGlobalForward("CEEcon_OnSchemaUpdated", ET_Ignore, Param_Cell);
+	g_CEcon_OnSchemaUpdated = CreateGlobalForward("CEcon_OnSchemaUpdated", ET_Ignore, Param_Cell);
 	
-	CreateNative("CEEcon_GetEconomySchema", Native_GetEconomySchema);
+	CreateNative("CEcon_GetEconomySchema", Native_GetEconomySchema);
 }
 
 public void Schema_OnMapStart()
@@ -55,7 +55,7 @@ public void Schema_ProcessCachedItemSchema()
 
 	Items_PrecacheItems(kv);
 
-	Call_StartForward(g_CEEcon_OnSchemaUpdated);
+	Call_StartForward(g_CEcon_OnSchemaUpdated);
 	Call_PushCell(kv);
 	Call_Finish();
 
