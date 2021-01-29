@@ -17,6 +17,14 @@ tf/addons/*/logs
 !tf/addons/*/logs/stac/.gitkeep
 !tf/addons/*/logs/.gitkeep
 
+tf/cfg/*
+!tf/cfg/quickplay
+!tf/cfg/items.cfg
+!tf/cfg/sourcemod
+!tf/cfg/cp_powerhouse.cfg
+!tf/cfg/pure_server_whitelist.txt
+!tf/cfg/sd_doomsday_event.cfg
+!tf/cfg/ctf_*.cfg
 # fix sv pure
 !tf/cfg/pure_server_*
 !tf/cfg/trusted_keys_base.txt
@@ -165,14 +173,6 @@ tf/maps/pl_wutville_event.bsp
 !tf/models
 !tf/sound
 
-tf/cfg/*
-!tf/cfg/quickplay
-!tf/cfg/items.cfg
-!tf/cfg/sourcemod
-!tf/cfg/cp_powerhouse.cfg
-!tf/cfg/pure_server_whitelist.txt
-!tf/cfg/sd_doomsday_event.cfg
-!tf/cfg/ctf_*.cfg
 
 # private
 #tf/addons/sourcemod/configs/databases.cfg
