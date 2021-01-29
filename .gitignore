@@ -17,6 +17,9 @@ tf/addons/*/logs
 !tf/addons/*/logs/stac/.gitkeep
 !tf/addons/*/logs/.gitkeep
 
+# fix sv pure
+!tf/cfg/pure_server_*
+!tf/cfg/trusted_keys_base.txt
 
 tf/addons/*/data/sqlite/clientprefs-sqlite.sq3
 tf/addons/*/data/_*.data
