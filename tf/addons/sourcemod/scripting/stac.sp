@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.6.5"
+#define PLUGIN_VERSION  "3.6.8"
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 public Plugin myinfo =
@@ -28,57 +28,55 @@ public Plugin myinfo =
     url              =  "https://sappho.io"
 }
 
+#define TFMAXPLAYERS 33
+
 // TIMER HANDLES
-Handle QueryTimer           [MAXPLAYERS+1];
+Handle QueryTimer           [TFMAXPLAYERS+1];
 Handle TriggerTimedStuffTimer;
 // TPS INFO
 float tickinterv;
 float tps;
 float bhopmult;
 // DETECTIONS PER CLIENT
-int turnTimes               [MAXPLAYERS+1];
-int fovDesired              [MAXPLAYERS+1];
-int fakeAngDetects          [MAXPLAYERS+1];
-int aimsnapDetects          [MAXPLAYERS+1] = -1; // set to -1 to ignore first detections, as theyre most likely junk
-int pSilentDetects          [MAXPLAYERS+1] = -1; // ^
-int bhopDetects             [MAXPLAYERS+1] = -1; // set to -1 to ignore single jumps
-int cmdnumSpikeDetects      [MAXPLAYERS+1];
-bool isConsecStringOfBhops  [MAXPLAYERS+1];
-int bhopConsecDetects       [MAXPLAYERS+1];
+int turnTimes               [TFMAXPLAYERS+1];
+int fovDesired              [TFMAXPLAYERS+1];
+int fakeAngDetects          [TFMAXPLAYERS+1];
+int aimsnapDetects          [TFMAXPLAYERS+1] = -1; // set to -1 to ignore first detections, as theyre most likely junk
+int pSilentDetects          [TFMAXPLAYERS+1] = -1; // ^
+int bhopDetects             [TFMAXPLAYERS+1] = -1; // set to -1 to ignore single jumps
+int cmdnumSpikeDetects      [TFMAXPLAYERS+1];
+bool isConsecStringOfBhops  [TFMAXPLAYERS+1];
+int bhopConsecDetects       [TFMAXPLAYERS+1];
+int settingsChangesFor      [TFMAXPLAYERS+1];
+
 // TIME SINCE LAST ACTION PER CLIENT
-float timeSinceSpawn        [MAXPLAYERS+1];
-float timeSinceTaunt        [MAXPLAYERS+1];
-float timeSinceTeled        [MAXPLAYERS+1];
+float timeSinceSpawn        [TFMAXPLAYERS+1];
+float timeSinceTaunt        [TFMAXPLAYERS+1];
+float timeSinceTeled        [TFMAXPLAYERS+1];
 // STORED ANGLES PER CLIENT
-float clangles           [3][MAXPLAYERS+1][2];
+float clangles           [3][TFMAXPLAYERS+1][2];
 // STORED POS PER CLIENT
-float clpos              [2][MAXPLAYERS+1][3];
+float clpos              [2][TFMAXPLAYERS+1][3];
 // STORED cmdnum PER CLIENT
-int clcmdnum             [3][MAXPLAYERS+1];
+int clcmdnum             [3][TFMAXPLAYERS+1];
 // STORED BUTTONS PER CLIENT
-int buttonsPrev             [MAXPLAYERS+1];
+int buttonsPrev             [TFMAXPLAYERS+1];
 // STORED GRAVITY STATE PER CLIENT
-bool highGrav               [MAXPLAYERS+1];
+bool highGrav               [TFMAXPLAYERS+1];
 // STORED MISC VARS PER CLIENT
-bool playerTaunting         [MAXPLAYERS+1];
-int playerInBadCond         [MAXPLAYERS+1];
-bool userBanQueued          [MAXPLAYERS+1];
+bool playerTaunting         [TFMAXPLAYERS+1];
+int playerInBadCond         [TFMAXPLAYERS+1];
+bool userBanQueued          [TFMAXPLAYERS+1];
 // STORED SENS PER CLIENT
-float sensFor               [MAXPLAYERS+1];
+float sensFor               [TFMAXPLAYERS+1];
 // get last 6 ticks
-float engineTime        [6] [MAXPLAYERS+1];
+float engineTime        [6] [TFMAXPLAYERS+1];
 // time since the map started (duh)
 float timeSinceMapStart;
 // weapon name, gets passed to aimsnap check
-char hurtWeapon             [MAXPLAYERS+1][256];
+char hurtWeapon             [TFMAXPLAYERS+1][256];
 // time since player did damage, for aimsnap check
-float timeSinceDidHurt      [MAXPLAYERS+1];
-
-//float maxEngineTimeFor[MAXPLAYERS+1];
-//
-//// debug
-//int maxMouseXFor[MAXPLAYERS+1];
-//int maxMouseYFor[MAXPLAYERS+1];
+float timeSinceDidHurt      [TFMAXPLAYERS+1];
 
 // NATIVE BOOLS
 bool SOURCEBANS;
@@ -87,13 +85,16 @@ bool SOURCEBANS;
 ConVar stac_enabled;
 ConVar stac_verbose_info;
 ConVar stac_max_allowed_turn_secs;
-ConVar stac_kick_for_pingmasking;
 ConVar stac_ban_for_misccheats;
 ConVar stac_optimize_cvars;
 ConVar stac_max_aimsnap_detections;
 ConVar stac_max_psilent_detections;
 ConVar stac_max_bhop_detections;
 ConVar stac_max_fakeang_detections;
+
+ConVar stac_max_settings_changes;
+ConVar stac_settings_changes_window;
+
 ConVar stac_min_interp_ms;
 ConVar stac_max_interp_ms;
 ConVar stac_min_randomcheck_secs;
@@ -111,6 +112,12 @@ int maxAimsnapDetections    = 25;
 int maxPsilentDetections    = 10;
 int maxFakeAngDetections    = 10;
 int maxBhopDetections       = 10;
+
+// max settings changes per...
+int maxSettingsChanges      = 25;
+// ...this time in seconds
+float SettingsChangeWindow  = 60.0;
+
 // this gets set later
 int maxBhopDetectionsScaled;
 int min_interp_ms           = -1;
@@ -122,8 +129,6 @@ float maxRandCheckVal       = 300.0;
 bool demonameinSB           = true;
 bool logtofile              = true;
 
-// REGEX
-Regex pingmaskRegex;
 
 // demoname for currently recording demo if extant
 char demoname[128];
@@ -139,6 +144,10 @@ public void OnPluginStart()
         SetFailState("[StAC] This plugin is only supported for TF2! Aborting!");
     }
 
+    if (MaxClients > TFMAXPLAYERS)
+    {
+        SetFailState("[StAC] This plugin (and TF2 in general) does not support more than 33 players. Aborting!");
+    }
     // updater
     if (LibraryExists("updater"))
     {
@@ -148,6 +157,7 @@ public void OnPluginStart()
     OpenStacLog();
 
     // reg admin commands
+    // TODO: make these invisible for non admins
     RegAdminCmd("sm_stac_checkall", ForceCheckAll, ADMFLAG_GENERIC, "Force check all client convars (ALL CLIENTS) for anticheat stuff");
     RegAdminCmd("sm_stac_detections", ShowDetections, ADMFLAG_GENERIC, "Show all current detections on all connected clients");
 
@@ -167,8 +177,7 @@ public void OnPluginStart()
     CreateTimer(2.0, checkNatives);
     // check EVERYONE's cvars on plugin reload
     CreateTimer(3.0, checkEveryone);
-    // pingmasking regex setup
-    pingmaskRegex = new Regex("^\\d*\\.?\\d*$");
+
     // hook currently recording demo name if extant
     AddCommandListener(tvRecordListener, "tv_record");
     // hook sv_cheats so we can instantly unload if cheats get turned on
@@ -273,19 +282,6 @@ void initCvars()
     {
         buffer = "0";
     }
-    stac_kick_for_pingmasking =
-    AutoExecConfig_CreateConVar
-    (
-        "stac_kick_for_pingmasking",
-        buffer,
-        "[StAC] kick clients for masking their ping with nonnumerical characters in their cl_cmdrate cvar\n(defaults to 0)",
-        FCVAR_NONE,
-        true,
-        0.0,
-        true,
-        1.0
-    );
-    HookConVarChange(stac_kick_for_pingmasking, stacVarChanged);
 
     // cheatvars ban bool
     if (banForMiscCheats)
@@ -396,6 +392,38 @@ void initCvars()
         _
     );
     HookConVarChange(stac_max_fakeang_detections, stacVarChanged);
+
+    // userinfo spam changes
+    IntToString(maxSettingsChanges, buffer, sizeof(buffer));
+    stac_max_settings_changes =
+    AutoExecConfig_CreateConVar
+    (
+        "stac_max_settings_changes",
+        buffer,
+        "[StAC] maximum client settings changes (userinfo changes) per stac_settings_changes_window before client is automatically kicked. 0 or -1 to disable",
+        FCVAR_NONE,
+        true,
+        -1.0,
+        false,
+        _
+    );
+    HookConVarChange(stac_max_settings_changes, stacVarChanged);
+
+    // settingschangewindow
+    FloatToString(SettingsChangeWindow, buffer, sizeof(buffer));
+    stac_settings_changes_window =
+    AutoExecConfig_CreateConVar
+    (
+        "stac_settings_changes_window",
+        buffer,
+        "[StAC] if client changes userinfo more than stac_max_settings_changes during this cvar value (in seconds), client is autokicked for spamming userinfo changes. 0 or -1 to disable",
+        FCVAR_NONE,
+        true,
+        -1.0,
+        false,
+        _
+    );
+    HookConVarChange(stac_settings_changes_window, stacVarChanged);
 
     // min interp
     IntToString(min_interp_ms, buffer, sizeof(buffer));
@@ -535,8 +563,7 @@ void setStacVars()
     {
         maxAllowedTurnSecs = 0.0;
     }
-    // pingmasking var
-    kickForPingMasking = GetConVarBool(stac_kick_for_pingmasking);
+
     // misccheats
     banForMiscCheats = GetConVarBool(stac_ban_for_misccheats);
     // optimizecvars
@@ -553,6 +580,12 @@ void setStacVars()
     maxBhopDetections = GetConVarInt(stac_max_bhop_detections);
     // fakeang var
     maxFakeAngDetections = GetConVarInt(stac_max_fakeang_detections);
+
+    // fakeang var
+    maxSettingsChanges = GetConVarInt(stac_max_settings_changes);
+    // fakeang var
+    SettingsChangeWindow = GetConVarFloat(stac_settings_changes_window);
+
     // minterp var - clamp to -1 if 0
     min_interp_ms = GetConVarInt(stac_min_interp_ms);
     if (min_interp_ms == 0)
@@ -945,6 +978,7 @@ void ClearClBasedVars(int userid)
     pSilentDetects          [Cl] = -1; // ^
     bhopDetects             [Cl] = -1; // set to -1 to ignore single jumps
     cmdnumSpikeDetects      [Cl] = 0;
+    settingsChangesFor      [Cl] = 0;
     isConsecStringOfBhops   [Cl] = false;
     bhopConsecDetects       [Cl] = 0;
     timeSinceSpawn          [Cl] = 0.0;
@@ -1004,6 +1038,21 @@ public Action ForceCheckAll(int client, int args)
     ReplyToCommand(client, "[StAC] Checking cvars on all clients.");
 }
 
+// TODO: monitor server tickrate
+//float gameEngineTime[2];
+//float realTPS[2];
+//float minTPS = 10000.0;
+//public void OnGameFrame()
+//{
+//    gameEngineTime[1] = gameEngineTime[0];
+//    gameEngineTime[0] = GetEngineTime();
+//
+//    realTPS[1] = realTPS[0];
+//    realTPS[0] = 1/(gameEngineTime[0] - gameEngineTime[1]);
+//
+//    if (realTPS < (tps)
+//}
+
 /*
     in OnPlayerRunCmd, we check for:
     - CMDNUM SPIKES
@@ -1033,11 +1082,29 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
+    LogMessage("[sSAC-]: OnPlayerRunCmd Debug\nbuttons = \"%i\".\nint &impulse = \"%i\".\nint &cmdnum = \"%i\".\nint &tickcount = \"%i\".\nint &seed, = \"%i\".\nint mouse[2] [1] = \"%i\", [2] = \"%i\".\n", buttons, impulse, cmdnum, tickcount, seed, mouse[0], mouse[1]);
+    //LogMessage("cmdnum = \"%i\"", cmdnum);
+    //LogMessage("playercond = \"%i\"", playerInBadCond[Cl]);
+
     // from ssac - block invalid cmds
-    if (cmdnum <= 0)
+    if (cmdnum <= 0 || tickcount <= 0)
     {
+        //KickClient(Cl, "[StAC] Kicked for invalid usercmd data!");
         return Plugin_Handled;
     }
+
+    //if
+    //(
+    //       tickcount == 0
+    //    && vel[0]    == 0.0
+    //    && vel[1]    == 0.0
+    //    && vel[2]    == 0.0
+    //    && !(buttons & IN_ATTACK)
+    //)
+    //{
+    //    KickClient(Cl, "[StAC] Kicked for attempted airstuck!");
+    //    return Plugin_Handled;
+    //}
 
     // need this basically no matter what
     int userid = GetClientUserId(Cl);
@@ -1128,7 +1195,6 @@ public Action OnPlayerRunCmd
                         // zero the player's velocity and set their gravity to 8x.
                         // if idiot cheaters keep holding their spacebar for an extra second and do 2 tick perfect bhops WHILE at 8x gravity...
                         // ...we will catch them autohopping and ban them!
-                        //TeleportEntity(Cl, NULL_VECTOR, NULL_VECTOR, view_as<float>({0.0, 0.0, 0.0})); // sourcepawn is disgusting btw
                         SetEntityGravity(Cl, 8.0);
                         highGrav[Cl] = true;
                     }
@@ -1161,8 +1227,7 @@ public Action OnPlayerRunCmd
             turnTimes[Cl]++;
             float turnSec = turnTimes[Cl] * tickinterv;
             PrintToImportant("%t", "turnbindAdminMsg", Cl, turnSec);
-            // maybe return Plugin_Handled here?
-            // not worth logging to console tbqh
+
             if (turnSec < maxAllowedTurnSecs)
             {
                 MC_PrintToChat(Cl, "%t", "turnbindWarnPlayer");
@@ -1186,20 +1251,7 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
-    // testing
-    //if (tickcount <= 0 || tickcount < GetGameTickCount())
-    //{
-    //    tickcount = GetGameTickCount();
-    //}
-
     // set previous tick times to test lagginess (THANK YOU BACKWARDS FOR HELP WITH THIS)
-    //engineTime[5][Cl] = engineTime[4][Cl];
-    //engineTime[4][Cl] = engineTime[3][Cl];
-    //engineTime[3][Cl] = engineTime[2][Cl];
-    //engineTime[2][Cl] = engineTime[1][Cl];
-    //engineTime[1][Cl] = engineTime[0][Cl];
-    //engineTime[0][Cl] = GetEngineTime();
-
     for (int i = 5; i > 0; --i)
     {
         engineTime[i][Cl] = engineTime[i-1][Cl];
@@ -1276,32 +1328,44 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
-    /* cmdnum test, taken from ssac */
+    /* cmdnum test, heavily modified from ssac */
     int spikeamt = abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]);
     if (spikeamt > 256)
     {
         cmdnumSpikeDetects[Cl]++;
-        PrintToImportant("{hotpink}[StAC]{white} CmdNum SPIKE of {yellow}%i{white} on %N.\nDetections so far: {palegreen}%i{white}.", spikeamt, Cl,  cmdnumSpikeDetects[Cl]);
-        StacLog("\n[StAC] CmdNum SPIKE of %i on %L.\nDetections so far: %i.", spikeamt, Cl,  cmdnumSpikeDetects[Cl]);
+        PrintToImportant
+        (
+            "{hotpink}[StAC]{white} CmdNum SPIKE of {yellow}%i{white} on %N.\nDetections so far: {palegreen}%i{white}.",
+            spikeamt,
+            Cl,
+            cmdnumSpikeDetects[Cl]
+        );
+        StacLog
+        (
+            "\n[StAC] CmdNum SPIKE of %i on %L.\nDetections so far: %i.",
+            spikeamt,
+            Cl,
+            cmdnumSpikeDetects[Cl]
+        );
 
-        //LogMessage("[StAC] cmdnum SPIKE of %i!", abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]));
-        //LogMessage("%i , %i",clcmdnum[1][Cl], clcmdnum[0][Cl])
-        //cmdnum = 0;
-        return Plugin_Handled;
+        if (cmdnumSpikeDetects[Cl] > 2)
+        {
+            //cmdnum = clcmdnum[1][Cl]++;
+            //return Plugin_Handled;
+        }
     }
-
     //if (clcmdnum[1][Cl] == clcmdnum[0][Cl])
     //{
-    //    LogMessage("[StAC] SAME CMDNUM REPORTED!!!");
-    //    cmdnum = cmdnum++;
-    //    return Plugin_Handled;
+    //    StacLog("[StAC] SAME CMDNUM REPORTED!!!");
+    //    //cmdnum = cmdnum++;
+    //    return Plugin_Changed;
     //}
     //if (clcmdnum[1][Cl] > clcmdnum[0][Cl])
     //{
     //    LogMessage("[StAC] cmdnum DROP of %i!", clcmdnum[1][Cl] - clcmdnum[0][Cl]);
     //    LogMessage("%i , %i", clcmdnum[1][Cl], clcmdnum[0][Cl]);
-    //    //cmdnum = cmdnum
-    //    return Plugin_Handled;
+    //    cmdnum = cmdnum;
+    //    //return Plugin_Handled;
     //}
 
     /*
@@ -1313,7 +1377,9 @@ public Action OnPlayerRunCmd
         while they are not in spec & on a map camera, we should log it.
         we would fix them but cheaters can just ignore server-enforced viewangle changes so there's no point
 
-        these bounds were lifted from lilac. Thanks lilac. although i don't know why you "patch" roll because that's a legit thing in tf2 LOL
+        these bounds were lifted from lilac. Thanks lilac.
+        lilac patches roll, we do not, i think it (screen shake) is an important part of tf2,
+        jtanz says that lmaobox can abuse roll so it should just be removed. i think both opinions are fine
     */
     if
     (
@@ -1329,8 +1395,24 @@ public Action OnPlayerRunCmd
     )
     {
         fakeAngDetects[Cl]++;
-        PrintToImportant("{hotpink}[StAC]{white} Player %N has {mediumpurple}invalid eye angles{white}!\nCurrent angles: {mediumpurple}%.2f %.2f %.2f{white}.\nDetections so far: {palegreen}%i", Cl, angles[0], angles[1], angles[2], fakeAngDetects[Cl]);
-        StacLog("\n[StAC] Player %N has invalid eye angles!\nCurrent angles: %.2f %.2f %.2f.\nDetections so far: %i", Cl, angles[0], angles[1], angles[2], fakeAngDetects[Cl]);
+        PrintToImportant
+        (
+            "{hotpink}[StAC]{white} Player %N has {mediumpurple}invalid eye angles{white}!\nCurrent angles: {mediumpurple}%.2f %.2f %.2f{white}.\nDetections so far: {palegreen}%i",
+            Cl,
+            angles[0],
+            angles[1],
+            angles[2],
+            fakeAngDetects[Cl]
+        );
+        StacLog
+        (
+            "\n[StAC] Player %N has invalid eye angles!\nCurrent angles: %.2f %.2f %.2f.\nDetections so far: %i",
+            Cl,
+            angles[0],
+            angles[1],
+            angles[2],
+            fakeAngDetects[Cl]
+        );
         if (fakeAngDetects[Cl] >= maxFakeAngDetections && maxFakeAngDetections > 0)
         {
             char reason[128];
@@ -1440,8 +1522,6 @@ public Action OnPlayerRunCmd
         //      03/25/2020 - 22:16:36: [stac.smx] [StAC] pSilent detection on [redacted2]: prev1  angles: x 21.560007 y -140.943710
         //      03/25/2020 - 22:16:36: [stac.smx] [StAC] pSilent detection on [redacted2]: prev2  angles: x 21.516006 y -140.723709
         //  doing this might make it harder to detect legitcheaters but like. legitcheating in a 12 yr old dead game OMEGALUL who fucking cares
-        //
-        // actual angle calculation here
         if
         (
             (
@@ -1630,6 +1710,19 @@ public Action Timer_decr_pSilent(Handle timer, any userid)
     }
 }
 
+public Action Timer_decr_settingsChanges(Handle timer, any userid)
+{
+    int Cl = GetClientOfUserId(userid);
+
+    if (IsValidClient(Cl))
+    {
+        if (settingsChangesFor[Cl] > 0)
+        {
+            settingsChangesFor[Cl]--;
+        }
+    }
+}
+
 char cvarsToCheck[][] =
 {
     // misc vars
@@ -1638,8 +1731,6 @@ char cvarsToCheck[][] =
     "cl_interpolate",
     // this is a useless check but we leave it here to set fov randomly to annoy cheaters
     "fov_desired",
-    // network cvars
-    "cl_cmdrate",
 };
 
 public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue)
@@ -1690,35 +1781,18 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
         // save fov to var to reset later with netpropcheck
         fovDesired[Cl] = StringToInt(cvarValue);
         // check just in case
-        if (StringToInt(cvarValue) > 90)
+        if
+        (
+            20 < StringToInt(cvarValue) > 90
+            ||
+            20 < fovDesired[Cl] > 90
+        )
         {
             char reason[128];
             Format(reason, sizeof(reason), "%t", "fovBanMsg");
             BanUser(userid, reason);
             MC_PrintToChatAll("%t", "fovBanAllChat", Cl);
             LogMessage("%t", "fovBanMsg");
-        }
-    }
-    /*
-        NETWORK CVARS
-    */
-    // cl_cmdrate
-    else if (StrEqual(cvarName, "cl_cmdrate"))
-    {
-        if (!cvarValue[0])
-        {
-            StacLog("[StAC] Null string returned as cvar result when querying cvar %s on %N", cvarName, Cl);
-            PrintToImportant("{hotpink}[StAC]{white} Null string returned as cvar result when querying cvar %s on %N", cvarName, Cl);
-        }
-        // cl_cmdrate needs to not have any non numerical chars (xcept the . sign if its a float) in it because otherwise player ping gets messed up on the scoreboard
-        else if (MatchRegex(pingmaskRegex, cvarValue) <= 0)
-        {
-            if (kickForPingMasking)
-            {
-                KickClient(Cl, "%t", "pingmaskingKickMsg", cvarValue);
-                StacLog("%t", "pingmaskingLogMsg", Cl, cvarValue);
-                MC_PrintToChatAll("%t", "pingmaskingAllChat", Cl, cvarValue);
-            }
         }
     }
     if (DEBUG)
@@ -1793,17 +1867,36 @@ public Action OnClientCommand(int client, int args)
     return Plugin_Continue;
 }
 
-public OnClientSettingsChanged(client)
+public OnClientSettingsChanged(Cl)
 {
     // todo: implement check for "too many client settings changes" at some point, cuz nullcore SPAMS this,
     // although that might be a bug with nullcore interacting with mastercomfig
-    if (IsValidClient(client))
+    if (!IsValidClient(Cl))
     {
-        if (DEBUG)
+        return;
+    }
+    if (maxSettingsChanges <= 0 || SettingsChangeWindow <= 0.0)
+    {
+        return;
+    }
+
+    // get userid for timer
+    int userid = GetClientUserId(Cl);
+
+    settingsChangesFor[Cl]++;
+    // have this detection expire in 1 minute (default)
+    CreateTimer(SettingsChangeWindow, Timer_decr_settingsChanges, userid);
+
+    if (settingsChangesFor[Cl] > maxSettingsChanges / 2)
+    {
+        PrintToImportant("{hotpink}[StAC]{white} Player %N changed settings {yellow}%i{white} times within the last 60 seconds", Cl, settingsChangesFor[Cl]);
+        StacLog("[StAC] Player %N changed settings %i times within the last 60 seconds", Cl, settingsChangesFor[Cl]);
+        if (settingsChangesFor[Cl] > maxSettingsChanges)
         {
-            StacLog("[StAC] Settings change on '%L'", client);
+            KickClient(Cl, "[StAC] Kicked for changing client settings too often");
         }
     }
+
 }
 
 Action tvRecordListener(int client, const char[] command, int argc)
@@ -1938,6 +2031,7 @@ void NetPropCheck(int userid)
                 MC_PrintToChatAll("%t", "fovBanAllChat", Cl);
                 LogMessage("%t", "fovBanMsg");
             }
+
             SetEntProp(Cl, Prop_Send, "m_iFOV", fovDesired[Cl]);
         }
         // forcibly disables thirdperson with some cheats
@@ -2213,6 +2307,9 @@ bool IsValidClientOrBot(int client)
     (
         (0 < client <= MaxClients)
         && IsClientInGame(client)
+        // don't bother sdkhooking stv or replay bots lol
+        && !IsClientSourceTV(client)
+        && !IsClientReplay(client)
     );
 }
 
@@ -2298,8 +2395,9 @@ void PrintToImportant(const char[] format, any ...)
     VFormat(buffer, sizeof(buffer), format, 2);
     PrintColoredChatToAdmins("%s", buffer);
     CPrintToSTV("%s", buffer);
+    //MC_RemoveTags(buffer, 254);
+    //StacLog("%s", buffer);
 }
-
 
 // print to all server/sourcemod admin's consoles
 PrintToConsoleAllAdmins(const char[] format, any ...)
