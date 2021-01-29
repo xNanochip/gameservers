@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.6.8"
+#define PLUGIN_VERSION  "3.7.0b"
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 public Plugin myinfo =
@@ -114,7 +114,7 @@ int maxFakeAngDetections    = 10;
 int maxBhopDetections       = 10;
 
 // max settings changes per...
-int maxSettingsChanges      = 25;
+int maxSettingsChanges      = 30;
 // ...this time in seconds
 float SettingsChangeWindow  = 60.0;
 
@@ -1082,7 +1082,7 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
-    LogMessage("[sSAC-]: OnPlayerRunCmd Debug\nbuttons = \"%i\".\nint &impulse = \"%i\".\nint &cmdnum = \"%i\".\nint &tickcount = \"%i\".\nint &seed, = \"%i\".\nint mouse[2] [1] = \"%i\", [2] = \"%i\".\n", buttons, impulse, cmdnum, tickcount, seed, mouse[0], mouse[1]);
+    //LogMessage("[sSAC-]: OnPlayerRunCmd Debug\nbuttons = \"%i\".\nint &impulse = \"%i\".\nint &cmdnum = \"%i\".\nint &tickcount = \"%i\".\nint &seed, = \"%i\".\nint mouse[2] [1] = \"%i\", [2] = \"%i\".\n", buttons, impulse, cmdnum, tickcount, seed, mouse[0], mouse[1]);
     //LogMessage("cmdnum = \"%i\"", cmdnum);
     //LogMessage("playercond = \"%i\"", playerInBadCond[Cl]);
 
@@ -1206,7 +1206,7 @@ public Action OnPlayerRunCmd
                     Format(reason, sizeof(reason), "%t", "bhopBanMsg", bhopDetects[Cl]);
                     BanUser(userid, reason);
                     MC_PrintToChatAll("%t", "bhopBanAllChat", Cl, bhopDetects[Cl]);
-                    StacLog("%t", "bhopBanMsg", bhopDetects[Cl]);
+                    StacLog("%t", "bhopBanAllChat", Cl, bhopDetects[Cl]);
                 }
             }
             buttonsPrev[Cl] = buttons;
@@ -1235,8 +1235,8 @@ public Action OnPlayerRunCmd
             else if (turnSec >= maxAllowedTurnSecs)
             {
                 KickClient(Cl, "%t", "turnbindKickMsg");
-                StacLog("%t", "turnbindLogMsg", Cl);
                 MC_PrintToChatAll("%t", "turnbindAllChat", Cl);
+                StacLog("%t", "turnbindAllChat", Cl);
             }
         }
     }
@@ -1348,10 +1348,10 @@ public Action OnPlayerRunCmd
             cmdnumSpikeDetects[Cl]
         );
 
-        if (cmdnumSpikeDetects[Cl] > 2)
+        if (cmdnumSpikeDetects[Cl] >= 25)
         {
-            //cmdnum = clcmdnum[1][Cl]++;
-            //return Plugin_Handled;
+            KickClient(Cl, "[StAC] Too many cmdnum spikes");
+            return Plugin_Handled;
         }
     }
     //if (clcmdnum[1][Cl] == clcmdnum[0][Cl])
@@ -1419,7 +1419,7 @@ public Action OnPlayerRunCmd
             Format(reason, sizeof(reason), "%t", "fakeangBanMsg", fakeAngDetects[Cl]);
             BanUser(userid, reason);
             MC_PrintToChatAll("%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
-            StacLog("%t", "fakeangBanMsg", fakeAngDetects[Cl]);
+            StacLog("%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
         }
     }
     /*
@@ -1537,7 +1537,7 @@ public Action OnPlayerRunCmd
         {
             pSilentDetects[Cl]++;
             // have this detection expire in 10 minutes
-            CreateTimer(600.0, Timer_decr_pSilent, userid);
+            CreateTimer(600.0, Timer_decr_pSilent, userid, TIMER_FLAG_NO_MAPCHANGE);
             // first detection is LIKELY bullshit
             if (pSilentDetects[Cl] > 0)
             {
@@ -1587,7 +1587,7 @@ public Action OnPlayerRunCmd
                     Format(reason, sizeof(reason), "%t", "pSilentBanMsg", pSilentDetects[Cl]);
                     BanUser(userid, reason);
                     MC_PrintToChatAll("%t", "pSilentBanAllChat", Cl, pSilentDetects[Cl]);
-                    StacLog("%t", "pSilentBanMsg", pSilentDetects[Cl]);
+                    StacLog("%t", "pSilentBanAllChat", Cl, pSilentDetects[Cl]);
                 }
             }
         }
@@ -1615,7 +1615,7 @@ public Action OnPlayerRunCmd
             }
             aimsnapDetects[Cl]++;
             // have this detection expire in 10 minutes
-            CreateTimer(600.0, Timer_decr_aimsnaps, userid);
+            CreateTimer(600.0, Timer_decr_aimsnaps, userid, TIMER_FLAG_NO_MAPCHANGE);
             // first detection is, again, likely bullshit
             if (aimsnapDetects[Cl] > 0)
             {
@@ -1675,7 +1675,7 @@ public Action OnPlayerRunCmd
                     Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
                     BanUser(userid, reason);
                     MC_PrintToChatAll("%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
-                    StacLog("%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
+                    StacLog("%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
                 }
             }
         }
@@ -1767,7 +1767,7 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
                 Format(reason, sizeof(reason), "%t", "nolerpBanMsg");
                 BanUser(userid, reason);
                 MC_PrintToChatAll("%t", "nolerpBanAllChat", Cl);
-                StacLog("%t", "nolerpBanMsg");
+                StacLog("%t", "nolerpBanAllChat", Cl);
             }
             else
             {
@@ -1792,7 +1792,7 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
             Format(reason, sizeof(reason), "%t", "fovBanMsg");
             BanUser(userid, reason);
             MC_PrintToChatAll("%t", "fovBanAllChat", Cl);
-            LogMessage("%t", "fovBanMsg");
+            StacLog("%t", "fovBanAllChat", Cl);
         }
     }
     if (DEBUG)
@@ -1818,7 +1818,7 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
             Format(reason, sizeof(reason), "%t", "newlineBanMsg");
             BanUser(userid, reason);
             MC_PrintToChatAll("%t", "newlineBanAllChat", Cl);
-            StacLog("%t", "newlineBanMsg");
+            StacLog("%t", "newlineBanAllChat", Cl);
         }
         else
         {
@@ -1869,7 +1869,7 @@ public Action OnClientCommand(int client, int args)
 
 public OnClientSettingsChanged(Cl)
 {
-    // todo: implement check for "too many client settings changes" at some point, cuz nullcore SPAMS this,
+    // check for "too many client settings changes" cuz nullcore SPAMS this
     // although that might be a bug with nullcore interacting with mastercomfig
     if (!IsValidClient(Cl))
     {
@@ -1885,18 +1885,30 @@ public OnClientSettingsChanged(Cl)
 
     settingsChangesFor[Cl]++;
     // have this detection expire in 1 minute (default)
-    CreateTimer(SettingsChangeWindow, Timer_decr_settingsChanges, userid);
+    CreateTimer(SettingsChangeWindow, Timer_decr_settingsChanges, userid, TIMER_FLAG_NO_MAPCHANGE);
 
-    if (settingsChangesFor[Cl] > maxSettingsChanges / 2)
+    // notify if player is CLOSE to getting yeeted
+    if (settingsChangesFor[Cl] > (maxSettingsChanges - 5))
     {
-        PrintToImportant("{hotpink}[StAC]{white} Player %N changed settings {yellow}%i{white} times within the last 60 seconds", Cl, settingsChangesFor[Cl]);
-        StacLog("[StAC] Player %N changed settings %i times within the last 60 seconds", Cl, settingsChangesFor[Cl]);
-        if (settingsChangesFor[Cl] > maxSettingsChanges)
+        PrintToImportant
+        (
+            "{hotpink}[StAC]{white} Player %N changed settings {yellow}%i{white} times within the last 60 seconds",
+            Cl,
+            settingsChangesFor[Cl]
+        );
+        StacLog
+        (
+            "[StAC] Player %N changed settings %i times within the last 60 seconds",
+            Cl,
+            settingsChangesFor[Cl]
+        );
+        if (settingsChangesFor[Cl] >= maxSettingsChanges)
         {
-            KickClient(Cl, "[StAC] Kicked for changing client settings too often");
+            MC_PrintToChatAll("%t", "settingsChangesSpamAllChat", Cl, settingsChangesFor[Cl], SettingsChangeWindow);
+            StacLog("%t", "settingsChangesSpamAllChat", Cl, settingsChangesFor[Cl], SettingsChangeWindow);
+            KickClient(Cl, "%t", "settingsChangesSpamKickMsg");
         }
     }
-
 }
 
 Action tvRecordListener(int client, const char[] command, int argc)
@@ -1992,7 +2004,7 @@ void NameCheck(int userid)
                 Format(reason, sizeof(reason), "%t", "illegalNameBanMsg");
                 BanUser(userid, reason);
                 MC_PrintToChatAll("%t", "illegalNameBanAllChat", Cl);
-                StacLog("%t", "illegalNameBanMsg");
+                StacLog("%t", "illegalNameBanAllChat", Cl);
             }
             else
             {
@@ -2057,8 +2069,8 @@ void NetPropCheck(int userid)
             )
             {
                 KickClient(Cl, "%t", "interpKickMsg", lerp, min_interp_ms, max_interp_ms);
-                StacLog("%t", "interpLogMsg",  Cl, lerp);
                 MC_PrintToChatAll("%t", "interpAllChat", Cl, lerp);
+                StacLog("%t", "interpAllChat", Cl, lerp);
             }
         }
         if (IsClientPlaying(Cl))
@@ -2116,7 +2128,7 @@ void NetPropCheck(int userid)
                             Format(reason, sizeof(reason), "%t", "badItemSchemaBanMsg");
                             BanUser(userid, reason);
                             MC_PrintToChatAll("%t", "badItemSchemaBanAllChat", Cl);
-                            StacLog("%t", "badItemSchemaBanMsg");
+                            StacLog("%t", "badItemSchemaBanAllChat", Cl);
                         }
                         else
                         {
@@ -2269,6 +2281,9 @@ void StacLog(const char[] format, any ...)
 {
     char buffer[254];
     VFormat(buffer, sizeof(buffer), format, 2);
+    // clear color tags
+    MC_RemoveTags(buffer, 254);
+
     if (StacLogFile != null)
     {
         LogToOpenFile(StacLogFile, buffer);
