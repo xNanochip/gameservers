@@ -8,7 +8,6 @@ ConVar ce_schema_autoupdate;
 KeyValues m_Schema;
 
 char m_sSchemaBuildVersion[64];
-bool m_bSchemaLoadedSuccesfully = false;
 char m_sItemSchemaFilePath[96];
 
 Handle g_CEcon_OnSchemaUpdated;
@@ -45,8 +44,6 @@ public Action cSchemaUpdate(int args)
 
 public void Schema_ProcessCachedItemSchema()
 {
-	m_bSchemaLoadedSuccesfully = false;
-
 	KeyValues kv = new KeyValues("Schema");
 	if (!kv.ImportFromFile(m_sItemSchemaFilePath))return;
 
@@ -60,8 +57,6 @@ public void Schema_ProcessCachedItemSchema()
 	// Clearing old schema if exists.
 	delete m_Schema;
 	m_Schema = kv;
-
-	m_bSchemaLoadedSuccesfully = true;
 }
 
 // Used to update schema on the servers.

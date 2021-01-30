@@ -462,6 +462,45 @@ public bool IsClientValid(int client)
 	return true;
 }
 
+public void TF2_OnConditionAdded(int client, TFCond cond)
+{
+	if (cond == TFCond_Taunting)
+	{
+		bool bShouldHideWeapon = false;
+		
+		int iTaunt = GetEntProp(client, Prop_Send, "m_iTauntItemDefIndex");
+		if(iTaunt > 0)
+		{
+			bShouldHideWeapon = true;
+		} else {
+			int iActiveWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
+			
+			if(IsValidEntity(iActiveWeapon))
+			{
+				char sClassName[32];
+				GetEntityClassname(iActiveWeapon, sClassName, sizeof(sClassName));
+				
+				if (StrEqual("tf_weapon_rocketlauncher", sClassName))bShouldHideWeapon = true;
+			}
+		}
+		
+		if(bShouldHideWeapon)
+		{
+			for (int i = 0; i < 5; i++)
+			{
+				int iWeapon = GetPlayerWeaponSlot(client, i);
+				if (!IsValidEntity(iWeapon))continue;
+	
+				SetEntityRenderMode(iWeapon, RENDER_NORMAL);
+				SetEntityRenderColor(iWeapon, 255, 255, 255, 255);
+				
+				TF2Wear_RemoveAllTiedWearables(iWeapon);
+				SetEntProp(iWeapon, Prop_Send, "m_bBeingRepurposedForTaunt", 0);
+			}
+		}
+	}
+}
+
 public void TF2_OnConditionRemoved(int client, TFCond cond)
 {
 	if (cond == TFCond_Taunting)
