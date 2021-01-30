@@ -461,3 +461,18 @@ public bool IsClientValid(int client)
 	if (!IsClientAuthorized(client))return false;
 	return true;
 }
+
+public void TF2_OnConditionRemoved(int client, TFCond cond)
+{
+	if (cond == TFCond_Taunting)
+	{
+		for (int i = 0; i < 5; i++)
+		{
+			int iWeapon = GetPlayerWeaponSlot(client, i);
+			if (!IsValidEntity(iWeapon))continue;
+			if (!CEconItems_IsEntityCustomEconItem(iWeapon))continue;
+
+			OnDrawWeapon(client, iWeapon);
+		}
+	}
+}
