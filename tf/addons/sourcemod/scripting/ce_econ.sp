@@ -86,6 +86,7 @@ public void ReloadEconomyCredentials()
 	m_bCredentialsLoaded = true;
 
 	SafeStartCoordinatorPolling();
+	CreateTimer(5.0, Timer_CoordinatorWatchDog);
 }
 
 public void DebugLog(const char[] message, any ...)

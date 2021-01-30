@@ -40,6 +40,12 @@ int m_iFailureCount = 0;
 #define COORDINATOR_MAX_FAILURES 5
 #define COORDINATOR_FAILURE_TIMEOUT 20.0
 
+// Timer that reenables coordinator queue in case if something breaks.
+public Action Timer_CoordinatorWatchDog(Handle timer, any data)
+{
+	SafeStartCoordinatorPolling();
+}
+
 // Used to start coordinator request, but it only does
 // that if there are no active requests right now.
 public void SafeStartCoordinatorPolling()

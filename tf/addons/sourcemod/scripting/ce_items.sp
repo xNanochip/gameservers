@@ -1037,7 +1037,6 @@ public any Native_RequestClientLoadoutUpdate(Handle plugin, int numParams)
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Cookie", "session_id=f457c545a9ded88f18ecee47145a72c04ac9f435bbbd8973d18b0723aae4c7b5295fefe1.b92b2b3f8a0439d2632195a560aa101b");
 
-	PrintToChatAll("Loadout_RequestPlayerLoadout()");
 	Steam_SendHTTPRequest(httpRequest, RequestClientLoadout_Callback, pack);
 	
 	return true;
@@ -1048,7 +1047,6 @@ public any Native_RequestClientLoadoutUpdate(Handle plugin, int numParams)
 //---------------------------------------------------------------------
 public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code, any pack)
 {
-	PrintToChatAll("RequestClientLoadout_Callback()");
 	// Retrieving DataPack parameter.
 	DataPack hPack = pack;
 
