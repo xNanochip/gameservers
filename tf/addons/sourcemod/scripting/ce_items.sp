@@ -44,7 +44,7 @@
 *	we keep track of them separately.
 *
 *	To check if player has item equipped in their inventory you run:
-*	- CEcon_IsPlayerEquippedItemIndex(int client, CEEconLoadoutClass class, int item_index);
+*	- CEcon_IsPlayerEquippedItemIndex(int client, CEconLoadoutClass class, int item_index);
 *
 *	To check if player has this item actually equipped right now, run:
 *	- CEcon_IsPlayerWearingItemIndex(int client, int item_index);
@@ -57,7 +57,7 @@
 
 #define MAX_ENTITY_LIMIT 2048
 
-#include <cecon_core>
+#include <cecon>
 #include <cecon_items>
 
 #include <sdktools>
@@ -81,7 +81,8 @@ public Plugin myinfo =
 // Forwards.
 Handle 	g_CEcon_ShouldItemBeBlocked,
 		g_CEcon_OnEquipItem,
-		g_CEcon_OnItemIsEquipped;
+		g_CEcon_OnItemIsEquipped,
+		g_CEcon_OnClientLoadoutUpdated;
 
 // SDKCalls for native TF2 economy reading.
 Handle 	g_SDKCallGetEconItemSchema,
@@ -98,7 +99,7 @@ ArrayList m_ItemDefinitons = null;
 ArrayList m_PartialReapplicationTypes = null;
 
 bool m_bLoadoutCached[MAXPLAYERS + 1];
-ArrayList m_Loadout[MAXPLAYERS + 1][CEEconLoadoutClass]; 	// Cached loadout data of a user.
+ArrayList m_Loadout[MAXPLAYERS + 1][CEconLoadoutClass]; 	// Cached loadout data of a user.
 ArrayList m_MyItems[MAXPLAYERS + 1]; 					// Array of items this user is wearing.
 
 bool m_bWaitingForLoadout[MAXPLAYERS + 1];
@@ -106,18 +107,25 @@ bool m_bInRespawn[MAXPLAYERS + 1];
 bool m_bFullReapplication[MAXPLAYERS + 1];
 
 // Native and Forward creation.
-public void AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	g_CEcon_ShouldItemBeBlocked 	= new GlobalForward("CEconItems_ShouldItemBeBlocked", ET_Event, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnEquipItem 			= new GlobalForward("CEconItems_OnEquipItem", ET_Single, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnItemIsEquipped 		= new GlobalForward("CEconItems_OnItemIsEquipped", ET_Ignore, Param_Cell, Param_Cell, Param_Array, Param_String);
+	g_CEcon_OnClientLoadoutUpdated 	= new GlobalForward("CEconItems_OnClientLoadoutUpdated", ET_Ignore, Param_Cell);
 
+	// Items
+    CreateNative("CEconItems_CreateNamedItem", Native_CreateNamedItem);
 	CreateNative("CEconItems_CreateItem", Native_CreateItem);
-	CreateNative("CEconItems_GivePlayerItem", Native_GivePlayerItem);
 	CreateNative("CEconItems_DestroyItem", Native_DestroyItem);
-
+	
     CreateNative("CEconItems_IsEntityCustomEconItem", Native_IsEntityCustomEconItem);
+    
+	CreateNative("CEconItems_GetItemDefinitionByIndex", Native_GetItemDefinitionByIndex);
+	CreateNative("CEconItems_GetItemDefinitionByName", Native_GetItemDefinitionByName);
+    
 
+	// Attributes
 	CreateNative("CEconItems_MergeAttributes", Native_MergeAttributes);
 	CreateNative("CEconItems_AttributesKeyValuesToArrayList", Native_AttributesKeyValuesToArrayList);
 
@@ -133,6 +141,25 @@ public void AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 
     CreateNative("CEconItems_IsAttributeNameOriginal", Native_IsAttributeNameOriginal);
     CreateNative("CEconItems_ApplyOriginalAttributes", Native_ApplyOriginalAttributes);
+    
+    // Loadout
+    CreateNative("CEconItems_RequestClientLoadoutUpdate", Native_RequestClientLoadoutUpdate);
+    CreateNative("CEconItems_IsClientLoadoutCached", Native_IsClientLoadoutCached);
+    
+    CreateNative("CEconItems_IsClientWearingItem", Native_IsClientWearingItem);
+    CreateNative("CEconItems_IsItemFromClientClassLoadout", Native_IsItemFromClientClassLoadout);
+    CreateNative("CEconItems_IsItemFromClientLoadout", Native_IsItemFromClientLoadout);
+    
+    CreateNative("CEconItems_GiveItemToClient", Native_GiveItemToClient);
+    CreateNative("CEconItems_RemoveItemFromClient", Native_RemoveItemFromClient);
+    
+    CreateNative("CEconItems_GetClientLoadoutSize", Native_GetClientLoadoutSize);
+    CreateNative("CEconItems_GetClientItemFromLoadoutByIndex", Native_GetClientItemFromLoadoutByIndex);
+    
+    CreateNative("CEconItems_GetClientWearedItemsCount", Native_GetClientWearedItemsCount);
+    CreateNative("CEconItems_GetClientWearedItemByIndex", Native_GetClientWearedItemByIndex);
+    
+    return APLRes_Success;
 }
 
 //---------------------------------------------------------------------
@@ -167,7 +194,7 @@ public void OnPluginStart()
 	HookEvent("player_spawn", player_spawn);
 	HookEvent("player_death", player_death);
 
-	RegServerCmd("ce_loadout_reset", cLoadoutReset);
+	//RegServerCmd("ce_loadout_reset", cLoadoutReset);
 
 	m_PartialReapplicationTypes = new ArrayList(ByteCountToCells(32));
 	m_PartialReapplicationTypes.PushString("cosmetic");
@@ -219,7 +246,7 @@ public void PrecacheItemsFromSchema(KeyValues hSchema)
                 if(hSchema.JumpToKey("attributes"))
 				{
                     // Converting attributes from KeyValues to ArrayList format.
-					hDef.m_Attributes = Attributes_KeyValuesToArrayList(hSchema);
+					hDef.m_Attributes = CEconItems_AttributesKeyValuesToArrayList(hSchema);
 					hSchema.GoBack();
 				}
 
@@ -235,11 +262,12 @@ public void PrecacheItemsFromSchema(KeyValues hSchema)
 }
 
 //---------------------------------------------------------------------
-// Purpose: Finds a definition struct in the cache with defid that
-// matches the provided one.
+// Native: CEconItems_GetItemDefinitionByIndex
 //---------------------------------------------------------------------
-public bool GetItemDefinitionByIndex(int index, CEItemDefinition output)
+public any Native_GetItemDefinitionByIndex(Handle plugin, int numParams)
 {
+	int index = GetNativeCell(1);
+	
 	if (m_ItemDefinitons == null)return false;
 
 	for (int i = 0; i < m_ItemDefinitons.Length; i++)
@@ -249,7 +277,7 @@ public bool GetItemDefinitionByIndex(int index, CEItemDefinition output)
 
 		if(buffer.m_iIndex == index)
 		{
-			output = buffer;
+			SetNativeArray(2, buffer, sizeof(CEItemDefinition));
 			return true;
 		}
 	}
@@ -258,11 +286,13 @@ public bool GetItemDefinitionByIndex(int index, CEItemDefinition output)
 }
 
 //---------------------------------------------------------------------
-// Purpose: Finds a definition struct in the cache with base name that
-// matches the provided one.
+// Native: CEconItems_GetItemDefinitionByName
 //---------------------------------------------------------------------
-public bool GetItemDefinitionByName(const char[] name, CEItemDefinition output)
+public any Native_GetItemDefinitionByName(Handle plugin, int numParams)
 {
+	char sName[128];
+	GetNativeString(1, sName, sizeof(sName));
+	
 	if (m_ItemDefinitons == null)return false;
 
 	for (int i = 0; i < m_ItemDefinitons.Length; i++)
@@ -270,9 +300,9 @@ public bool GetItemDefinitionByName(const char[] name, CEItemDefinition output)
 		CEItemDefinition buffer;
 		m_ItemDefinitons.GetArray(i, buffer);
 
-		if(StrEqual(buffer.m_sName, name))
+		if(StrEqual(buffer.m_sName, sName))
 		{
-			output = buffer;
+			SetNativeArray(2, buffer, sizeof(CEItemDefinition));
 			return true;
 		}
 	}
@@ -320,24 +350,45 @@ public bool IsEntityCustomEconItem(int entity)
 //---------------------------------------------------------------------
 public any Native_CreateItem(Handle plugin, int numParams)
 {
-    int index = GetNativeCell(2);
-    int defid = GetNativeCell(3);
-    int quality = GetNativeCell(4);
-    ArrayList overrides = GetNativeCell(5);
-
-    char sName[128];
-    GetNativeString(6, sName, sizeof(sName));
+    int defid = GetNativeCell(2);
+    int quality = GetNativeCell(3);
+    ArrayList overrides = GetNativeCell(4);
 
 	CEItemDefinition hDef;
-	if (!GetItemDefinitionByIndex(defid, hDef))return false;
+	if (!CEconItems_GetItemDefinitionByIndex(defid, hDef))return false;
 
-	buffer.m_iIndex = index;
+	CEItem buffer;
+
 	buffer.m_iItemDefinitionIndex = defid;
 	buffer.m_nQuality = quality;
-	strcopy(buffer.m_sName, sizeof(buffer.m_sName), name);
-	buffer.m_Attributes = Attributes_MergeAttributes(hDef.m_Attributes, override);
+	buffer.m_Attributes = CEconItems_MergeAttributes(hDef.m_Attributes, overrides);
 
-    SetNativeArray(1, buffer, sizeof(CEItemDefinition));
+    SetNativeArray(1, buffer, sizeof(CEItem));
+
+	return true;
+}
+
+//---------------------------------------------------------------------
+// Native: CEconItems_CreateNamedItem
+//---------------------------------------------------------------------
+public any Native_CreateNamedItem(Handle plugin, int numParams)
+{
+	char sName[128];
+	GetNativeString(2, sName, sizeof(sName));
+	
+    int quality = GetNativeCell(3);
+    ArrayList overrides = GetNativeCell(4);
+
+	CEItemDefinition hDef;
+	if (!CEconItems_GetItemDefinitionByName(sName, hDef))return false;
+
+	CEItem buffer;
+
+	buffer.m_iItemDefinitionIndex = hDef.m_iIndex;
+	buffer.m_nQuality = quality;
+	buffer.m_Attributes = CEconItems_MergeAttributes(hDef.m_Attributes, overrides);
+
+    SetNativeArray(1, buffer, sizeof(CEItem));
 
 	return true;
 }
@@ -348,28 +399,22 @@ public any Native_CreateItem(Handle plugin, int numParams)
 public any Native_DestroyItem(Handle plugin, int numParams)
 {
 	CEItem hItem;
-	GetNativeCell(1, sizeof(CEItem));
+	GetNativeArray(1, hItem, sizeof(CEItem));
 
 	delete hItem.m_Attributes;
 }
 
 //---------------------------------------------------------------------
 // Purpose: Gives players a specific item, defined by the struct.
-// Native: CEconItems_GivePlayerItem
 //---------------------------------------------------------------------
-public any Native_GivePlayerItem(Handle plugin, int numParams)
+public bool GivePlayerCEItem(int client, CEItem item)
 {
-    int client = GetNativeCell(1);
-
-    CEItem item;
-    GetNativeArray(2, item, sizeof(CEItem));
-
     // TODO: Make a client check.
 
 	// First, let's see if this item's definition even exists.
 	// If it's not, we return false as a sign of an error.
 	CEItemDefinition hDef;
-	if (!GetItemDefinitionByIndex(item.m_iItemDefinitionIndex, hDef))return false;
+	if (!CEconItems_GetItemDefinitionByIndex(item.m_iItemDefinitionIndex, hDef))return false;
 
 	// This boolean will be returned in the end of this func's execution.
 	// It shows whether item was actually created.
@@ -402,7 +447,7 @@ public any Native_GivePlayerItem(Handle plugin, int numParams)
 			m_bIsEconItem[iEntity] = true;
 			m_hEconItem[iEntity] = item;
 
-			Attributes_ApplyOriginalAttributes(iEntity);
+			CEconItems_ApplyOriginalAttributes(iEntity);
 		}
 
 		// Alerting subplugins that this item was equipped.
@@ -433,19 +478,6 @@ public any Native_IsEntityCustomEconItem(Handle plugin, int numParams)
 	return false;
 }
 
-//---------------------------------------------------------------------
-// Native: CEconItems_IsEntityCustomEconItem
-//---------------------------------------------------------------------
-public any Native_CreateItem(Handle plugin, int numParams)
-{
-	int iEntity = GetNativeCell(1);
-	if(IsEntityValid(iEntity))
-	{
-		return IsEntityCustomEconItem(iEntity);
-	}
-	return false;
-}
-
 //=======================================================//
 // ATTRIBUTES
 //=======================================================//
@@ -458,7 +490,7 @@ public any Native_CreateItem(Handle plugin, int numParams)
 public any Native_AttributesKeyValuesToArrayList(Handle plugin, int numParams)
 {
     KeyValues kv = GetNativeCell(1);
-	if (kv == null)return null;
+	if (kv == null)return kv;
 
 	ArrayList Attributes = new ArrayList(sizeof(CEAttribute));
 	if(kv.GotoFirstSubKey())
@@ -485,9 +517,9 @@ public any Native_AttributesKeyValuesToArrayList(Handle plugin, int numParams)
 public any Native_MergeAttributes(Handle plugin, int numParams)
 {
     ArrayList hArray1 = GetNativeCell(1);
-    ArrayList hArray1 = GetNativeCell(2);
+    ArrayList hArray2 = GetNativeCell(2);
 
-	if (hArray1 == null)return null;
+	if (hArray1 == null)return hArray1;
 
 	ArrayList hResult = hArray1.Clone();
 
@@ -615,7 +647,7 @@ public any Native_GetEntityAttributeString(Handle plugin, int numParams)
 	if(m_hEconItem[entity].m_Attributes == null) return false;
 
     char[] buffer = new char[length + 1];
-	CEconItems_GetEntityAttributeString(m_hEconItem[entity].m_Attributes, name, buffer, length);
+	CEconItems_GetAttributeStringFromArray(m_hEconItem[entity].m_Attributes, sName, buffer, length);
 
     SetNativeString(3, buffer, length);
     return true;
@@ -741,17 +773,17 @@ public void LoadoutApplication(int client, bool bFullReapplication)
 		}
 	}
 
-	if (ClientHasCachedLoadout(client))
+	if (CEconItems_IsClientLoadoutCached(client))
 	{
 		// If cached loadout is still recent, we parse cached response.
 		 ApplyClientLoadout(client);
 	} else {
 		// Otherwise request for the most recent data.
-		RequestClientLoadout(client, true);
+		CEconItems_RequestClientLoadoutUpdate(client, true);
 	}
 }
 
-public CEEconLoadoutClass GetCEEconLoadoutClassFromTFClass(TFClassType class)
+public CEconLoadoutClass GetCEconLoadoutClassFromTFClass(TFClassType class)
 {
 	switch(class)
 	{
@@ -768,68 +800,113 @@ public CEEconLoadoutClass GetCEEconLoadoutClassFromTFClass(TFClassType class)
 	return CEconLoadoutClass_Unknown;
 }
 
-public bool ClientHasItemInLoadoutByIndex(int client, CEEconLoadoutClass nClass, int index)
+//---------------------------------------------------------------------
+// Native: CEconItems_IsItemFromClientClassLoadout
+//---------------------------------------------------------------------
+public any Native_IsItemFromClientClassLoadout(Handle plugin, int numParams)
 {
+	int client = GetNativeCell(1);
+	CEconLoadoutClass nClass = GetNativeCell(2);
+	
 	if (m_Loadout[client][nClass] == null)return false;
+	
+	CEItem xItem;
+	GetNativeArray(3, xItem, sizeof(CEItem));
 
 	for (int i = 0; i < m_Loadout[client][nClass].Length; i++)
 	{
 		CEItem hItem;
 		m_Loadout[client][nClass].GetArray(i, hItem);
 
-		if (hItem.m_iIndex == index)return true;
+		if (hItem.m_Attributes == xItem.m_Attributes)return true;
 	}
 
 	return false;
 }
 
-public bool IsClientWearingItemIndex(int client, int index)
+//---------------------------------------------------------------------
+// Native: CEconItems_IsClientWearingItem
+//---------------------------------------------------------------------
+public any Native_IsClientWearingItem(Handle plugin, int numParams)
 {
+	int client = GetNativeCell(1);
 	if (m_MyItems[client] == null)return false;
-
+	
+	CEItem xNeedle;
+	GetNativeArray(2, xNeedle, sizeof(CEItem));
+	
 	for (int i = 0; i < m_MyItems[client].Length; i++)
 	{
 		CEItem hItem;
 		m_MyItems[client].GetArray(i, hItem);
 
-		if (hItem.m_iIndex == index)return true;
+		if (hItem.m_Attributes == xNeedle.m_Attributes)return true;
 	}
 
 	return false;
 }
 
-public void AddClientWearableItem(int client, CEItem item)
+//---------------------------------------------------------------------
+// Native: CEconItems_IsClientWearingItem
+//---------------------------------------------------------------------
+public any Native_GiveItemToClient(Handle plugin, int numParams)
 {
+	int client = GetNativeCell(1);
 	if (m_MyItems[client] == null)
 	{
 		m_MyItems[client] = new ArrayList(sizeof(CEItem));
 	}
+	
+	CEItem xItem;
+	GetNativeArray(2, xItem, sizeof(CEItem));
 
-	m_MyItems[client].PushArray(item);
+	m_MyItems[client].PushArray(xItem);
 
-	CEconItems_GivePlayerItem(client, item);
+	GivePlayerCEItem(client, xItem);
+	
+	/*
+	CEItemDefinition hDef;
+	if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, hDef))
+	{
+		PrintToChatAll("Equipped: %s", hDef.m_sName);
+	}*/
 }
 
-public void RemoveClientWearableItem(int client, CEItem item)
+//---------------------------------------------------------------------
+// Native: CEconItems_RemoveItemFromClient
+//---------------------------------------------------------------------
+public any Native_RemoveItemFromClient(Handle plugin, int numParams)
 {
+	int client = GetNativeCell(1);
 	if (m_MyItems[client] == null)return;
+	
+	CEItem xNeedle;
+	GetNativeArray(2, xNeedle, sizeof(CEItem));
 
 	bool bRemoved = false;
 	for (int i = 0; i < m_MyItems[client].Length; i++)
 	{
 		CEItem hItem;
 		m_MyItems[client].GetArray(i, hItem);
-		if(hItem.m_iIndex == item.m_iIndex)
+		
+		if(hItem.m_Attributes == xNeedle.m_Attributes)
 		{
 			m_MyItems[client].Erase(i);
 			bRemoved = true;
 			i--;
 		}
 	}
-
+	
 	if(bRemoved)
 	{
-		PrintToChatAll("Holstered: %s", item.m_sName);
+		// If removed, let's check if this item isn't in the player loadout. 
+		// It it is not, remove it, as it was not created by the econ.
+		// This is to prevent memory leaks.
+		
+		if(!CEconItems_IsItemFromClientLoadout(client, xNeedle))
+		{
+			CEconItems_DestroyItem(xNeedle);
+		}
 	}
 }
 
@@ -843,11 +920,11 @@ public void RemoveClientWearableItemsByType(int client, const char[] type)
 		m_MyItems[client].GetArray(i, hItem);
 
 		CEItemDefinition hDef;
-		if(GetItemDefinitionByIndex(hItem.m_iItemDefinitionIndex, hDef))
+		if(CEconItems_GetItemDefinitionByIndex(hItem.m_iItemDefinitionIndex, hDef))
 		{
 			if(StrEqual(hDef.m_sType, type))
 			{
-				RemoveClientWearableItem(client, hItem);
+				CEconItems_RemoveItemFromClient(client, hItem);
 				i--;
 			}
 		}
@@ -866,13 +943,18 @@ public void RemoveAllClientWearableItems(int client)
 		CEItem hItem;
 		m_MyItems[client].GetArray(i, hItem);
 
-		RemoveClientWearableItem(client, hItem);
+		CEconItems_RemoveItemFromClient(client, hItem);
 		i--;
 	}
 }
 
-public bool ClientHasCachedLoadout(int client)
+//---------------------------------------------------------------------
+// Native: CEconItems_IsClientLoadoutCached
+//---------------------------------------------------------------------
+public any Native_IsClientLoadoutCached(Handle plugin, int numParams)
 {
+	int client = GetNativeCell(1);
+	
 	return m_bLoadoutCached[client];
 }
 
@@ -910,25 +992,16 @@ public void RF_LoadoutApplication(int client)
 	m_bFullReapplication[client] = false;
 }
 
-
-public bool IsClientReady(int client)
+//---------------------------------------------------------------------
+// Native: CEconItems_RequestClientLoadoutUpdate
+//---------------------------------------------------------------------
+public any Native_RequestClientLoadoutUpdate(Handle plugin, int numParams)
 {
-	if (!IsClientValid(client))return false;
-	if (IsFakeClient(client))return false;
-	return true;
-}
-
-public bool IsClientValid(int client)
-{
-	if (client <= 0 || client > MaxClients)return false;
-	if (!IsClientInGame(client))return false;
-	if (!IsClientAuthorized(client))return false;
-	return true;
-}
-
-// Used to request loadout information from backend.
-public void RequestClientLoadout(int client, bool apply)
-{
+	int client = GetNativeCell(1);
+	bool apply = GetNativeCell(2);
+	
+	if (!IsClientReady(client))return false;
+	
 	m_bWaitingForLoadout[client] = true;
 
 	DataPack pack = new DataPack();
@@ -937,7 +1010,7 @@ public void RequestClientLoadout(int client, bool apply)
 	pack.Reset();
 
 	char sURL[64];
-	Format(sURL, sizeof(sURL), "%s/api/IUsers/GLoadout", m_sBaseEconomyURL);
+	Format(sURL, sizeof(sURL), "http://local.creators.tf/api/IUsers/GLoadout");
 
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
@@ -945,9 +1018,13 @@ public void RequestClientLoadout(int client, bool apply)
 
 	PrintToChatAll("Loadout_RequestPlayerLoadout()");
 	Steam_SendHTTPRequest(httpRequest, RequestClientLoadout_Callback, pack);
+	
+	return true;
 }
 
-
+//---------------------------------------------------------------------
+// Native: CEconItems_RequestClientLoadoutUpdate
+//---------------------------------------------------------------------
 public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code, any pack)
 {
 	PrintToChatAll("RequestClientLoadout_Callback()");
@@ -997,7 +1074,7 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 				char sClassName[32];
 				Response.GetSectionName(sClassName, sizeof(sClassName));
 
-				CEEconLoadoutClass nClass;
+				CEconLoadoutClass nClass;
 				if(StrEqual(sClassName, "general")) nClass = CEconLoadoutClass_General;
 				if(StrEqual(sClassName, "scout")) nClass = CEconLoadoutClass_Scout;
 				if(StrEqual(sClassName, "soldier")) nClass = CEconLoadoutClass_Soldier;
@@ -1014,23 +1091,23 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 				if(Response.GotoFirstSubKey())
 				{
 					do {
-
 						int iIndex = Response.GetNum("id", -1);
 						int iDefID = Response.GetNum("defid", -1);
 						int iQuality = Response.GetNum("quality", -1);
 						char sName[64];
 						Response.GetString("name", sName, sizeof(sName));
-						ArrayList hOverrides;
 
+						ArrayList hOverrides;
 						if(Response.JumpToKey("attributes"))
 						{
-							hOverrides = Attributes_KeyValuesToArrayList(Response);
+							hOverrides = CEconItems_AttributesKeyValuesToArrayList(Response);
 							Response.GoBack();
 						}
 
 						CEItem hItem;
-						if(CEconItems_CreateItem(hItem, iIndex, iDefID, iQuality, hOverrides, sName))
+						if(CEconItems_CreateItem(hItem, iDefID, iQuality, hOverrides))
 						{
+							hItem.m_iIndex = iIndex;
 							m_Loadout[client][nClass].PushArray(hItem);
 						}
 
@@ -1045,6 +1122,10 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 
 	delete Response;
 	m_bWaitingForLoadout[client] = false;
+	
+	Call_StartForward(g_CEcon_OnClientLoadoutUpdated);
+	Call_PushCell(client);
+	Call_Finish();
 
 	LoadoutApplication(client, true);
 }
@@ -1052,7 +1133,7 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 
 public void ApplyClientLoadout(int client)
 {
-	CEEconLoadoutClass nClass = GetCEEconLoadoutClassFromTFClass(TF2_GetPlayerClass(client));
+	CEconLoadoutClass nClass = GetCEconLoadoutClassFromTFClass(TF2_GetPlayerClass(client));
 
 	if (nClass == CEconLoadoutClass_Unknown)return;
 	if (m_Loadout[client][nClass] == null)return;
@@ -1064,10 +1145,9 @@ public void ApplyClientLoadout(int client)
 		{
 			CEItem hItem;
 			m_MyItems[client].GetArray(i, hItem);
-
-			if(!ClientHasItemInLoadoutByIndex(client, nClass, hItem.m_iIndex))
+			if(!CEconItems_IsItemFromClientClassLoadout(client, nClass, hItem))
 			{
-				RemoveClientWearableItem(client, hItem);
+				CEconItems_RemoveItemFromClient(client, hItem);
 				i--;
 			}
 		}
@@ -1081,9 +1161,9 @@ public void ApplyClientLoadout(int client)
 			CEItem hItem;
 			m_Loadout[client][nClass].GetArray(i, hItem);
 
-			if(!IsClientWearingItemIndex(client, hItem.m_iIndex))
+			if(!CEconItems_IsClientWearingItem(client, hItem))
 			{
-				AddClientWearableItem(client, hItem);
+				CEconItems_GiveItemToClient(client, hItem);
 			}
 		}
 	}
@@ -1091,9 +1171,9 @@ public void ApplyClientLoadout(int client)
 
 public void ClearClientLoadout(int client)
 {
-	for (int i = 0; i < view_as<int>(CEEconLoadoutClass); i++)
+	for (int i = 0; i < view_as<int>(CEconLoadoutClass); i++)
 	{
-		CEEconLoadoutClass nClass = view_as<CEEconLoadoutClass>(i);
+		CEconLoadoutClass nClass = view_as<CEconLoadoutClass>(i);
 		if (m_Loadout[client][nClass] == null)continue;
 
 		for (int j = 0; j < m_Loadout[client][nClass].Length; j++)
@@ -1101,10 +1181,121 @@ public void ClearClientLoadout(int client)
 			CEItem hItem;
 			m_Loadout[client][nClass].GetArray(j, hItem);
 
-			CEconItems_DestroyItem(client, hItem);
+			CEconItems_DestroyItem(hItem);
 		}
 
 		delete m_Loadout[client][nClass];
 	}
 	m_bLoadoutCached[client] = false;
+}
+
+//---------------------------------------------------------------------
+// Native: CEconItems_GetClientLoadoutSize
+//---------------------------------------------------------------------
+public int Native_GetClientLoadoutSize(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	CEconLoadoutClass nClass = GetNativeCell(2);
+	
+	if (m_Loadout[client][nClass] == null)return -1;
+	
+	return m_Loadout[client][nClass].Length;
+}
+
+//---------------------------------------------------------------------
+// Native: CEconItems_GetClientItemFromLoadoutByIndex
+//---------------------------------------------------------------------
+public any Native_GetClientItemFromLoadoutByIndex(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	CEconLoadoutClass nClass = GetNativeCell(2);
+	if (m_Loadout[client][nClass] == null)return false;
+	
+	int index = GetNativeCell(3);
+	
+	if (index < 0)return false;
+	if (index >= m_Loadout[client][nClass].Length)return false;
+	
+	
+	CEItem xItem;
+	m_Loadout[client][nClass].GetArray(index, xItem);
+	
+	SetNativeArray(4, xItem, sizeof(CEItem));
+	
+	return true;
+}
+
+//---------------------------------------------------------------------
+// Native: CEconItems_GetClientWearedItemsCount
+//---------------------------------------------------------------------
+public int Native_GetClientWearedItemsCount(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	
+	if (m_MyItems[client] == null)return -1;
+	
+	return m_MyItems[client].Length;
+}
+
+//---------------------------------------------------------------------
+// Native: CEconItems_GetClientWearedItemByIndex
+//---------------------------------------------------------------------
+public any Native_GetClientWearedItemByIndex(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	if (m_MyItems[client] == null)return false;
+	
+	int index = GetNativeCell(2);
+	
+	if (index < 0)return false;
+	if (index >= m_MyItems[client].Length)return false;
+	
+	CEItem xItem;
+	m_MyItems[client].GetArray(index, xItem);
+	
+	SetNativeArray(3, xItem, sizeof(CEItem));
+	
+	return true;
+}
+
+//---------------------------------------------------------------------
+// Native: CEconItems_IsItemFromClientLoadout
+//---------------------------------------------------------------------
+public any Native_IsItemFromClientLoadout(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	if (m_MyItems[client] == null)return false;
+	
+	CEItem xItem;
+	GetNativeArray(2, xItem, sizeof(CEItem));
+	
+	for (int i = 0; i < view_as<int>(CEconLoadoutClass); i++)
+	{
+		CEconLoadoutClass nClass = view_as<CEconLoadoutClass>(i);
+		
+		if (CEconItems_IsItemFromClientClassLoadout(client, nClass, xItem))return true;
+	}
+	
+	return false;
+}
+
+
+public bool IsEntityValid(int entity)
+{
+	return entity > 0 && entity < MAX_ENTITY_LIMIT && IsValidEntity(entity);
+}
+
+public bool IsClientReady(int client)
+{
+	if (!IsClientValid(client))return false;
+	if (IsFakeClient(client))return false;
+	return true;
+}
+
+public bool IsClientValid(int client)
+{
+	if (client <= 0 || client > MaxClients)return false;
+	if (!IsClientInGame(client))return false;
+	if (!IsClientAuthorized(client))return false;
+	return true;
 }

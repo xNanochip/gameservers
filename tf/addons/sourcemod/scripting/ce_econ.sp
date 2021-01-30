@@ -10,7 +10,7 @@
 
 #define MAX_ENTITY_LIMIT 2048
 
-#include <ce_econ>
+#include <cecon>
 #include <sdktools>
 #include <tf2>
 #include <tf2_stocks>

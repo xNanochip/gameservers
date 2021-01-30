@@ -8,7 +8,9 @@
 #pragma newdecls required
 #pragma tabsize 0
 
-#include <ce_econ>
+#include <cecon>
+#include <cecon_items>
+
 #include <tf2wearables>
 #include <tf2>
 #include <tf2_stocks>
@@ -40,6 +42,38 @@ ArrayList m_hDefinitions;
 public void OnPluginStart()
 {
 	ProcessEconSchema(CEcon_GetEconomySchema());
+	
+	RegConsoleCmd("ce_givemetheitem", ce_givemetheitem);
+}
+
+public Action ce_givemetheitem(int client, int args)
+{
+	ArrayList Attributes = new ArrayList(sizeof(CEAttribute));
+	
+	CEAttribute buffer;
+	strcopy(buffer.m_sName, sizeof(buffer.m_sName), "attach particle effect");
+	strcopy(buffer.m_sValue, sizeof(buffer.m_sValue), "8");
+	Attributes.PushArray(buffer);
+	
+	CEItem xCrowbar;
+	if(CEconItems_CreateNamedItem(xCrowbar, "Boston Bling", 6, Attributes))
+	{
+		CEconItems_GiveItemToClient(client, xCrowbar);
+	}
+	
+	if(CEconItems_CreateNamedItem(xCrowbar, "Dugout Scratchers", 6, Attributes))
+	{
+		CEconItems_GiveItemToClient(client, xCrowbar);
+	}
+	
+	delete Attributes;
+	
+	return Plugin_Handled;
+}
+
+public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem item, const char[] type)
+{
+	PrintToChatAll("(%d) attach particle effect = %d", entity, CEconItems_GetEntityAttributeInteger(entity, "attach particle effect"));
 }
 
 //--------------------------------------------------------------------
@@ -54,10 +88,10 @@ public void CEcon_OnSchemaUpdated(KeyValues hSchema)
 //--------------------------------------------------------------------
 // Purpose: This is called upon item equipping process.
 //--------------------------------------------------------------------
-public int CEcon_OnEquipItem(int client, CEItem item, const char[] type)
+public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 {
 	if (!StrEqual(type, "cosmetic"))return -1;
-	
+		
 	CEItemDefinitionCosmetic hDef;
 	if(FindCosmeticDefinitionByIndex(item.m_iItemDefinitionIndex, hDef))
 	{
@@ -66,7 +100,7 @@ public int CEcon_OnEquipItem(int client, CEItem item, const char[] type)
 		if(HasOverlappingWeapons(client, hDef.m_iEquipRegion))
 		{
 			return -1;
-		}
+		}		
 		
 		char sModel[512];
 		strcopy(sModel, sizeof(sModel), hDef.m_sWorldModel);

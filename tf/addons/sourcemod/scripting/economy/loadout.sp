@@ -1,7 +1,7 @@
 ArrayList m_PartialReapplicationTypes;
 
 bool m_bLoadoutCached[MAXPLAYERS + 1];
-ArrayList m_Loadout[MAXPLAYERS + 1][CEEconLoadoutClass]; 	// Cached loadout data of a user.
+ArrayList m_Loadout[MAXPLAYERS + 1][CEconLoadoutClass]; 	// Cached loadout data of a user.
 ArrayList m_MyItems[MAXPLAYERS + 1]; 					// Array of items this user is wearing.
 
 bool m_bWaitingForLoadout[MAXPLAYERS + 1];
@@ -142,7 +142,7 @@ public void Loadout_RequestPlayerLoadout_Callback(HTTPRequestHandle request, boo
 				char sClassName[32];
 				Response.GetSectionName(sClassName, sizeof(sClassName));
 
-				CEEconLoadoutClass nClass;
+				CEconLoadoutClass nClass;
 				if(StrEqual(sClassName, "general")) nClass = CEconLoadoutClass_General;
 				if(StrEqual(sClassName, "scout")) nClass = CEconLoadoutClass_Scout;
 				if(StrEqual(sClassName, "soldier")) nClass = CEconLoadoutClass_Soldier;
@@ -195,7 +195,7 @@ public void Loadout_RequestPlayerLoadout_Callback(HTTPRequestHandle request, boo
 
 public void Loadout_ApplyLoadout(int client)
 {
-	CEEconLoadoutClass nClass = Loadout_TFClassToCEClass(TF2_GetPlayerClass(client));
+	CEconLoadoutClass nClass = Loadout_TFClassToCEClass(TF2_GetPlayerClass(client));
 
 	if (nClass == CEconLoadoutClass_Unknown)return;
 	if (m_Loadout[client][nClass] == null)return;
@@ -278,9 +278,9 @@ public void RF_Loadout_InventoryApplication(int client)
 
 public void Loadout_ClearLoadout(int client)
 {
-	for (int i = 0; i < view_as<int>(CEEconLoadoutClass); i++)
+	for (int i = 0; i < view_as<int>(CEconLoadoutClass); i++)
 	{
-		CEEconLoadoutClass nClass = view_as<CEEconLoadoutClass>(i);
+		CEconLoadoutClass nClass = view_as<CEconLoadoutClass>(i);
 		if (m_Loadout[client][nClass] == null)continue;
 
 		for (int j = 0; j < m_Loadout[client][nClass].Length; j++)
@@ -295,7 +295,7 @@ public void Loadout_ClearLoadout(int client)
 	}
 }
 
-public CEEconLoadoutClass Loadout_TFClassToCEClass(TFClassType class)
+public CEconLoadoutClass Loadout_TFClassToCEClass(TFClassType class)
 {
 	switch(class)
 	{
@@ -312,7 +312,7 @@ public CEEconLoadoutClass Loadout_TFClassToCEClass(TFClassType class)
 	return CEconLoadoutClass_Unknown;
 }
 
-public bool Loadout_ClientHasItemEquippedByIndex(int client, CEEconLoadoutClass nClass, int index)
+public bool Loadout_ClientHasItemEquippedByIndex(int client, CEconLoadoutClass nClass, int index)
 {
 	if (m_Loadout[client][nClass] == null)return false;
 

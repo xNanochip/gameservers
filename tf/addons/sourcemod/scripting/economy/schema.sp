@@ -53,8 +53,6 @@ public void Schema_ProcessCachedItemSchema()
 	kv.GetString("Version/build", m_sSchemaBuildVersion, sizeof(m_sSchemaBuildVersion), "");
 	LogMessage("Current Item Schema version: %s", m_sSchemaBuildVersion);
 
-	Items_PrecacheItems(kv);
-
 	Call_StartForward(g_CEcon_OnSchemaUpdated);
 	Call_PushCell(kv);
 	Call_Finish();
