@@ -61,6 +61,7 @@
 #include <cecon_items>
 
 #include <sdktools>
+#include <sdkhooks>
 #include <tf2>
 #include <tf2_stocks>
 #include <tf2attributes>
@@ -165,7 +166,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 //---------------------------------------------------------------------
 // Purpose: Precache item definitions on plugin load.
 //---------------------------------------------------------------------
-public void OnPluginStart()
+public void OnAllPluginsLoaded()
 {
 	// Items
     PrecacheItemsFromSchema(CEcon_GetEconomySchema());
@@ -199,6 +200,24 @@ public void OnPluginStart()
 	m_PartialReapplicationTypes = new ArrayList(ByteCountToCells(32));
 	m_PartialReapplicationTypes.PushString("cosmetic");
 	m_PartialReapplicationTypes.PushString("weapon");
+
+	RegServerCmd("ce_loadout_reset", cResetLoadout);
+}
+
+public Action cResetLoadout(int args)
+{
+	char sArg1[64], sArg2[11];
+	GetCmdArg(1, sArg1, sizeof(sArg1));
+	GetCmdArg(2, sArg2, sizeof(sArg2));
+
+	int iTarget = FindTargetBySteamID64(sArg1);
+	if (IsClientValid(iTarget))
+	{
+		if (m_bWaitingForLoadout[iTarget])return Plugin_Handled;
+		CEconItems_RequestClientLoadoutUpdate(iTarget, false);
+
+	}
+	return Plugin_Handled;
 }
 
 //---------------------------------------------------------------------
@@ -400,7 +419,7 @@ public any Native_DestroyItem(Handle plugin, int numParams)
 {
 	CEItem hItem;
 	GetNativeArray(1, hItem, sizeof(CEItem));
-
+	
 	delete hItem.m_Attributes;
 }
 
@@ -998,6 +1017,8 @@ public void RF_LoadoutApplication(int client)
 public any Native_RequestClientLoadoutUpdate(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
+	if (m_bWaitingForLoadout[client])return false;
+	
 	bool apply = GetNativeCell(2);
 	
 	if (!IsClientReady(client))return false;
@@ -1127,7 +1148,13 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 	Call_PushCell(client);
 	Call_Finish();
 
-	LoadoutApplication(client, true);
+	if(m_bInRespawn[client])
+	{
+		TF2_RespawnPlayer(client);
+	} else if(apply)
+	{
+		LoadoutApplication(client, true);
+	}
 }
 
 
@@ -1171,9 +1198,15 @@ public void ApplyClientLoadout(int client)
 
 public void ClearClientLoadout(int client)
 {
+	CEconLoadoutClass nCurrentClass = GetCEconLoadoutClassFromTFClass(TF2_GetPlayerClass(client));
+	
 	for (int i = 0; i < view_as<int>(CEconLoadoutClass); i++)
 	{
 		CEconLoadoutClass nClass = view_as<CEconLoadoutClass>(i);
+		
+		// Don't remove items of the current class, as we still may need them.
+		if (nClass == nCurrentClass)continue;
+		
 		if (m_Loadout[client][nClass] == null)continue;
 
 		for (int j = 0; j < m_Loadout[client][nClass].Length; j++)
@@ -1298,4 +1331,73 @@ public bool IsClientValid(int client)
 	if (!IsClientInGame(client))return false;
 	if (!IsClientAuthorized(client))return false;
 	return true;
+}
+
+public void OnMapStart()
+{
+	int iEntity = -1;
+	while ((iEntity = FindEntityByClassname(iEntity, "func_respawnroom")) != -1)
+	{
+		SDKHook(iEntity, SDKHook_StartTouchPost, OnRespawnRoomStartTouch);
+		SDKHook(iEntity, SDKHook_EndTouchPost, OnRespawnRoomEndTouch);
+	}
+}
+
+// --------------------------------------------- //
+// Purpose: On Entity Created
+// --------------------------------------------- //
+public void OnEntityCreated(int entity, const char[] class)
+{
+	ClearEntityData(entity);
+	if (entity < 1)return;
+
+	if (StrEqual(class, "func_respawnroom"))
+	{
+		SDKHook(entity, SDKHook_StartTouchPost, OnRespawnRoomStartTouch);
+		SDKHook(entity, SDKHook_EndTouchPost, OnRespawnRoomEndTouch);
+	}
+}
+
+// --------------------------------------------- //
+// Purpose: On Entity Destroyed
+// --------------------------------------------- //
+public void OnEntityDestroyed(int entity)
+{
+	ClearEntityData(entity);
+}
+
+public void ClearEntityData(int entity)
+{
+	if (!(0 < entity <= 2049))return;
+	m_bIsEconItem[entity] = false;
+}
+
+public int FindTargetBySteamID64(const char[] steamid)
+{
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i) && IsClientAuthorized(i))
+		{
+			char szAuth[256];
+			GetClientAuthId(i, AuthId_SteamID64, szAuth, sizeof(szAuth));
+			if (StrEqual(szAuth, steamid))return i;
+		}
+	}
+	return -1;
+}
+
+public void OnRespawnRoomStartTouch(int iSpawnRoom, int iClient)
+{
+	if(IsClientValid(iClient))
+	{
+		m_bInRespawn[iClient] = true;
+	}
+}
+
+public void OnRespawnRoomEndTouch(int iSpawnRoom, int iClient)
+{
+	if(IsClientValid(iClient))
+	{
+		m_bInRespawn[iClient] = false;
+	}
 }

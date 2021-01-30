@@ -4,6 +4,8 @@
 //
 //=========================================================================//
 
+#include <steamtools>
+
 #pragma semicolon 1
 #pragma newdecls required
 #pragma tabsize 0
@@ -15,9 +17,6 @@
 #include <tf2>
 #include <tf2_stocks>
 #include <tf2attributes>
-#pragma newdecls optional
-#include <steamtools>
-#pragma newdecls required
 
 #define DEFAULT_ECONOMY_BASE_URL "https://creators.tf"
 

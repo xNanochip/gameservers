@@ -23,6 +23,7 @@ tf/addons/*/data/_*.data
 tf/addons/*/configs/sourcebans/sb_admins.cfg
 tf/addons/*/configs/sourcebans/sb_admin_groups.cfg
 tf/addons/*/configs/sourcebans/sourcebans.cfg
+tf/addons/*/configs/item_schema.cfg
 tf/addons/*/backup/*
 !tf/addons/sourcemod/scripting/fixes/*
 !tf/addons/sourcemod/scripting/fixes/
@@ -175,4 +176,3 @@ tf/cfg/*
 #tf/addons/sourcemod/configs/databases.cfg
 #tf/addons/sourcemod/configs/discord.cfg
 #tf/cfg/quickplay/private.cfg
-

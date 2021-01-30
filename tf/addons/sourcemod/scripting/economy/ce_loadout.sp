@@ -42,7 +42,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	HookEvent("player_spawn", player_spawn);
 	HookEvent("player_death", player_death);
 
-	RegServerCmd("ce_resetloadout", cResetLoadout);
+	RegServerCmd("ce_loadout_reset", cResetLoadout);
 
 	CreateNative("CE_IsPlayerWearingEconIndex", Native_IsPlayerWearingEconIndex);
 }

@@ -1,8 +1,5 @@
 #pragma semicolon 1
 
-#define PLUGIN_AUTHOR "Creators.TF Team"
-#define PLUGIN_VERSION "1.0"
-
 #define TF_ATTRIB_HOLSTER_TIME "holster_anim_time"
 
 #include <sdkhooks>
@@ -20,9 +17,9 @@
 public Plugin myinfo =
 {
 	name = "Creators.TF Economy - Weapons Handler",
-	author = PLUGIN_AUTHOR,
+	author = "Creators.TF Team",
 	description = "Creators.TF Economy Weapons Handler",
-	version = PLUGIN_VERSION,
+	version = "1.0",
 	url = "https://creators.tf"
 }
 

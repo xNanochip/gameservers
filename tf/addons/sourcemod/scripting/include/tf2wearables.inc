@@ -1,7 +1,13 @@
 native int TF2Wear_CreateWearable(int client, bool is_viewmodel, const char[] model);
 native int TF2Wear_EquipWearable(int client, int wear);
+native int TF2Wear_RemoveWearable(int client, int wear);
+native int TF2Wear_CreateWeaponTiedWearable(int weapon, bool is_viewmodel, const char[] model);
+native int TF2Wear_RemoveAllTiedWearables(int weapon);
+
 native void TF2Wear_SetModel(int entity, const char[] model);
 native int TF2Wear_ParseEquipRegionString(const char[] string);
+
+native void TF2Wear_SetEntPropFloatOfWeapon(int weapon, PropType type, const char[] propname, float value, int children = 0);
 
 
 #define TFEquip_WholeHead 		(1<<0)
