@@ -58,7 +58,7 @@ public void SafeStartCoordinatorPolling()
 // Used to force start a coordinator request.
 public void StartCoordinatorLongPolling()
 {
-	PrintToServer("StartCoordinatorLongPolling()");
+	// PrintToServer("StartCoordinatorLongPolling()");
 	// Before we make anoher request, let's make sure that nothing tells us
 	// not to. Before we are sure that nothing stops us from making a request, let's
 	// set this flag to false.
@@ -89,7 +89,7 @@ public void StartCoordinatorLongPolling()
 
 public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
 {
-	PrintToServer("Coordinator_Request_Callback()");
+	// PrintToServer("Coordinator_Request_Callback()");
 	bool bError = true;
 
 	// If response was succesful...

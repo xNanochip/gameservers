@@ -75,9 +75,7 @@ Sample_t m_hSampleDefs[OST_MAX_SAMPLES];
 int m_iSampleDefsLength = 0;
 
 int m_iMusicKit[MAXPLAYERS + 1] =  { -1, ... };
-
 int m_iNextEvent[MAXPLAYERS + 1];
-
 int m_iCurrentEvent[MAXPLAYERS + 1];
 
 char m_sActiveSound[MAXPLAYERS + 1][MAX_SOUND_NAME];

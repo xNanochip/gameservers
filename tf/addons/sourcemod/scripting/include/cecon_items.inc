@@ -54,6 +54,8 @@ native void	CEconItems_DestroyItem(any item[sizeof(CEItem)]);
 
 // True if a specific world entity is custom econ item.
 native bool CEconItems_IsEntityCustomEconItem(int entity);
+// Stores entity CEItem struct in the buffer.
+native bool CEconItems_GetEntityItemStruct(int entity, any buffer[sizeof(CEItem)]);
 
 native bool CEconItems_GetItemDefinitionByIndex(int defid, any buffer[sizeof(CEItemDefinition)]);
 native bool CEconItems_GetItemDefinitionByName(const char[] name, any buffer[sizeof(CEItemDefinition)]);

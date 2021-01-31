@@ -113,7 +113,7 @@ bool m_bFullReapplication[MAXPLAYERS + 1];
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	g_CEcon_ShouldItemBeBlocked 	= new GlobalForward("CEconItems_ShouldItemBeBlocked", ET_Event, Param_Cell, Param_Array, Param_String);
-	g_CEcon_OnEquipItem 			= new GlobalForward("CEconItems_OnEquipItem", ET_Single, Param_Cell, Param_Array, Param_String);
+	g_CEcon_OnEquipItem 			= new GlobalForward("CEconItems_OnEquipItem", ET_Event, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnItemIsEquipped 		= new GlobalForward("CEconItems_OnItemIsEquipped", ET_Ignore, Param_Cell, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnClientLoadoutUpdated 	= new GlobalForward("CEconItems_OnClientLoadoutUpdated", ET_Ignore, Param_Cell);
 	
@@ -126,6 +126,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("CEconItems_DestroyItem", Native_DestroyItem);
 	
     CreateNative("CEconItems_IsEntityCustomEconItem", Native_IsEntityCustomEconItem);
+    CreateNative("CEconItems_GetEntityItemStruct", Native_GetEntityItemStruct);
     
 	CreateNative("CEconItems_GetItemDefinitionByIndex", Native_GetItemDefinitionByIndex);
 	CreateNative("CEconItems_GetItemDefinitionByName", Native_GetItemDefinitionByName);
@@ -470,6 +471,7 @@ public bool GivePlayerCEItem(int client, CEItem item)
         // and apply original TF attributes if possible.
 		if(IsEntityValid(iEntity))
 		{
+			
 			m_bIsEconItem[iEntity] = true;
 			m_hEconItem[iEntity] = item;
 
@@ -1315,6 +1317,22 @@ public any Native_IsItemFromClientLoadout(Handle plugin, int numParams)
 		CEconLoadoutClass nClass = view_as<CEconLoadoutClass>(i);
 		
 		if (CEconItems_IsItemFromClientClassLoadout(client, nClass, xItem))return true;
+	}
+	
+	return false;
+}
+
+//---------------------------------------------------------------------
+// Native: CEconItems_GetEntityItemStruct
+//---------------------------------------------------------------------
+public any Native_GetEntityItemStruct(Handle plugin, int numParams)
+{
+	int entity = GetNativeCell(1);
+	
+	if(CEconItems_IsEntityCustomEconItem(entity))
+	{
+		SetNativeArray(2, m_hEconItem[entity], sizeof(CEItem));
+		return true;
 	}
 	
 	return false;
