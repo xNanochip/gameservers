@@ -281,8 +281,8 @@ public void TickleEntityStrangeParts(int entity, const char[] event, int add)
 		char sAttr[96];
 		GetStrangeAttributeByPartIndex(i, sAttr, sizeof(sAttr));
 		Format(sAttr, sizeof(sAttr), "%s value", sAttr);
-
-		PrintToChatAll("%s old %d new %d", sAttr, CEconItems_GetEntityAttributeInteger(entity, sAttr), CEconItems_GetEntityAttributeInteger(entity, sAttr) + add);
+		
+		CEconItems_SetEntityAttributeInteger(entity, sAttr, CEconItems_GetEntityAttributeInteger(entity, sAttr) + add, true);
 	}
 }
 

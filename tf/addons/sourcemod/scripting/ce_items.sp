@@ -140,11 +140,21 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("CEconItems_GetAttributeIntegerFromArray", Native_GetAttributeIntegerFromArray);
 	CreateNative("CEconItems_GetAttributeFloatFromArray", Native_GetAttributeFloatFromArray);
 	CreateNative("CEconItems_GetAttributeBoolFromArray", Native_GetAttributeBoolFromArray);
+	
+	CreateNative("CEconItems_SetAttributeStringInArray", Native_SetAttributeStringInArray);
+	CreateNative("CEconItems_SetAttributeIntegerInArray", Native_SetAttributeIntegerInArray);
+	CreateNative("CEconItems_SetAttributeFloatInArray", Native_SetAttributeFloatInArray);
+	CreateNative("CEconItems_SetAttributeBoolInArray", Native_SetAttributeBoolInArray);
 
 	CreateNative("CEconItems_GetEntityAttributeString", Native_GetEntityAttributeString);
 	CreateNative("CEconItems_GetEntityAttributeInteger", Native_GetEntityAttributeInteger);
 	CreateNative("CEconItems_GetEntityAttributeFloat", Native_GetEntityAttributeFloat);
 	CreateNative("CEconItems_GetEntityAttributeBool", Native_GetEntityAttributeBool);
+
+	CreateNative("CEconItems_SetEntityAttributeString", Native_SetEntityAttributeString);
+	CreateNative("CEconItems_SetEntityAttributeInteger", Native_SetEntityAttributeInteger);
+	CreateNative("CEconItems_SetEntityAttributeFloat", Native_SetEntityAttributeFloat);
+	CreateNative("CEconItems_SetEntityAttributeBool", Native_SetEntityAttributeBool);
 
     CreateNative("CEconItems_IsAttributeNameOriginal", Native_IsAttributeNameOriginal);
     CreateNative("CEconItems_ApplyOriginalAttributes", Native_ApplyOriginalAttributes);
@@ -655,6 +665,95 @@ public any Native_GetAttributeBoolFromArray(Handle plugin, int numParams)
 	return StringToInt(sBuffer) > 0;
 }
 
+//---------------------------------------------------------------------
+// Native: CEconItems_SetAttributeStringInArray
+//---------------------------------------------------------------------
+public any Native_SetAttributeStringInArray(Handle plugin, int numParams)
+{
+    ArrayList hArray = GetNativeCell(1);
+    if(hArray == null) return;
+    
+    char sName[128], sValue[128];
+    GetNativeString(2, sName, sizeof(sName));
+    GetNativeString(3, sValue, sizeof(sValue));
+
+	for(int i = 0; i < hArray.Length; i++)
+	{
+		CEAttribute hAttr;
+		hArray.GetArray(i, hAttr);
+
+		if(StrEqual(hAttr.m_sName, sName))
+		{
+			hArray.Erase(i);
+			i--;
+		}
+	}
+	
+	CEAttribute xNewAttr;
+	strcopy(xNewAttr.m_sName, sizeof(xNewAttr.m_sName), sName);
+	strcopy(xNewAttr.m_sValue, sizeof(xNewAttr.m_sValue), sValue);
+	hArray.PushArray(xNewAttr);
+	
+	return;
+}
+
+//---------------------------------------------------------------------
+// Native: CEconItems_SetAttributeIntegerInArray
+//---------------------------------------------------------------------
+public any Native_SetAttributeIntegerInArray(Handle plugin, int numParams)
+{
+    ArrayList hArray = GetNativeCell(1);
+    if(hArray == null) return;
+    
+    char sName[128], sValue[128];
+    GetNativeString(2, sName, sizeof(sName));
+    
+    int iValue = GetNativeCell(3);
+    IntToString(iValue, sValue, sizeof(sValue));
+    
+    CEconItems_SetAttributeStringInArray(hArray, sName, sValue);
+	
+	return;
+}
+
+//---------------------------------------------------------------------
+// Native: CEconItems_SetAttributeFloatInArray
+//---------------------------------------------------------------------
+public any Native_SetAttributeFloatInArray(Handle plugin, int numParams)
+{
+    ArrayList hArray = GetNativeCell(1);
+    if(hArray == null) return;
+    
+    char sName[128], sValue[128];
+    GetNativeString(2, sName, sizeof(sName));
+    
+    float flValue = GetNativeCell(3);
+    FloatToString(flValue, sValue, sizeof(sValue));
+    
+    CEconItems_SetAttributeStringInArray(hArray, sName, sValue);
+	
+	return;
+}
+
+//---------------------------------------------------------------------
+// Native: CEconItems_SetAttributeBoolInArray
+//---------------------------------------------------------------------
+public any Native_SetAttributeBoolInArray(Handle plugin, int numParams)
+{
+    ArrayList hArray = GetNativeCell(1);
+    if(hArray == null) return;
+    
+    char sName[128], sValue[128];
+    GetNativeString(2, sName, sizeof(sName));
+    
+    bool bValue = GetNativeCell(3);
+    IntToString(bValue ? 1 : 0, sValue, sizeof(sValue));
+    
+    CEconItems_SetAttributeStringInArray(hArray, sName, sValue);
+	
+	return;
+}
+
 
 // ENTITY ATTRIBUTES
 // ================================== //
@@ -727,6 +826,82 @@ public any Native_GetEntityAttributeBool(Handle plugin, int numParams)
 	if(m_hEconItem[entity].m_Attributes == null) return false;
 
 	return CEconItems_GetAttributeBoolFromArray(m_hEconItem[entity].m_Attributes, sName);
+}
+
+//---------------------------------------------------------------------
+// Native: CEconItems_SetEntityAttributeString
+//---------------------------------------------------------------------
+public any Native_SetEntityAttributeString(Handle plugin, int numParams)
+{
+    int entity = GetNativeCell(1);
+    if (m_hEconItem[entity].m_Attributes == null)return;
+    
+    char sName[128], sValue[128];
+    GetNativeString(2, sName, sizeof(sName));
+    GetNativeString(3, sValue, sizeof(sValue));
+    
+    bool bNetworked = GetNativeCell(4);
+
+	CEconItems_SetAttributeStringInArray(m_hEconItem[entity].m_Attributes, sName, sValue);
+	
+	return;
+}
+
+//---------------------------------------------------------------------
+// Native: CEconItems_SetEntityAttributeInteger
+//---------------------------------------------------------------------
+public any Native_SetEntityAttributeInteger(Handle plugin, int numParams)
+{
+    int entity = GetNativeCell(1);
+    
+    char sName[128], sValue[128];
+    GetNativeString(2, sName, sizeof(sName));
+    
+    int iValue = GetNativeCell(3);
+    IntToString(iValue, sValue, sizeof(sValue));
+    bool bNetworked = GetNativeCell(4);
+    
+    CEconItems_SetEntityAttributeString(entity, sName, sValue, bNetworked);
+	
+	return;
+}
+
+//---------------------------------------------------------------------
+// Native: CEconItems_SetEntityAttributeFloat
+//---------------------------------------------------------------------
+public any Native_SetEntityAttributeFloat(Handle plugin, int numParams)
+{
+    int entity = GetNativeCell(1);
+    
+    char sName[128], sValue[128];
+    GetNativeString(2, sName, sizeof(sName));
+    
+    float flValue = GetNativeCell(3);
+    FloatToString(flValue, sValue, sizeof(sValue));
+    bool bNetworked = GetNativeCell(4);
+    
+    CEconItems_SetEntityAttributeString(entity, sName, sValue, bNetworked);
+	
+	return;
+}
+
+//---------------------------------------------------------------------
+// Native: CEconItems_SetEntityAttributeBool
+//---------------------------------------------------------------------
+public any Native_SetEntityAttributeBool(Handle plugin, int numParams)
+{
+    int entity = GetNativeCell(1);
+    
+    char sName[128], sValue[128];
+    GetNativeString(2, sName, sizeof(sName));
+    
+    bool bValue = GetNativeCell(3);
+    IntToString(bValue ? 1 : 0, sValue, sizeof(sValue));
+    bool bNetworked = GetNativeCell(4);
+    
+    CEconItems_SetEntityAttributeString(entity, sName, sValue, bNetworked);
+	
+	return;
 }
 
 //---------------------------------------------------------------------

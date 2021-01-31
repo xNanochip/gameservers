@@ -81,6 +81,15 @@ native float CEconItems_GetAttributeFloatFromArray(ArrayList attributes, const c
 // Returns bool type attribute value from ArrayList.
 native bool CEconItems_GetAttributeBoolFromArray(ArrayList attributes, const char[] name);
 
+// Sets string type attribute value in ArrayList.
+native void CEconItems_SetAttributeStringInArray(ArrayList attributes, const char[] name, const char[] value);
+// Sets integer type attribute value in ArrayList.
+native void CEconItems_SetAttributeIntegerInArray(ArrayList attributes, const char[] name, int value);
+// Sets float type attribute value in ArrayList.
+native void CEconItems_SetAttributeFloatInArray(ArrayList attributes, const char[] name, float value);
+// Sets bool type attribute value in ArrayList.
+native void CEconItems_SetAttributeBoolInArray(ArrayList attributes, const char[] name, bool value);
+
 // Returns string type attribute value of custom econ entity.
 native bool CEconItems_GetEntityAttributeString(int entity, const char[] name, char[] buffer, int length);
 // Returns integer type attribute value of custom econ entity.
@@ -89,6 +98,15 @@ native int CEconItems_GetEntityAttributeInteger(int entity, const char[] name);
 native float CEconItems_GetEntityAttributeFloat(int entity, const char[] name);
 // Returns bool type attribute value of custom econ entity.
 native bool CEconItems_GetEntityAttributeBool(int entity, const char[] name);
+
+// Sets string type attribute value of custom econ entity.
+native void CEconItems_SetEntityAttributeString(int entity, const char[] name, const char[] value, bool networked = false);
+// Sets integer type attribute value of custom econ entity.
+native void CEconItems_SetEntityAttributeInteger(int entity, const char[] name, int value, bool networked = false);
+// Sets float type attribute value of custom econ entity.
+native void CEconItems_SetEntityAttributeFloat(int entity, const char[] name, float value, bool networked = false);
+// Sets bool type attribute value of custom econ entity.
+native void CEconItems_SetEntityAttributeBool(int entity, const char[] name, bool value, bool networked = false);
 
 // Applies all base game attributes using TF2Attributes plugin.
 native void CEconItems_ApplyOriginalAttributes(int entity);
