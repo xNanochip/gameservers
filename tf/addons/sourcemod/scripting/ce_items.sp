@@ -847,7 +847,32 @@ public any Native_SetEntityAttributeString(Handle plugin, int numParams)
     GetNativeString(3, sValue, sizeof(sValue));
     
     bool bNetworked = GetNativeCell(4);
-	CEconItems_SetAttributeStringInArray(m_hEconItem[entity].m_Attributes, sName, sValue);
+	
+	// We may have multiple instances of this item in different
+	// loadouts. Make sure to update them all.
+	if(m_hEconItem[entity].m_iIndex > 0)
+	{
+		int iItemIndex = m_hEconItem[entity].m_iIndex;
+		int iClient = m_hEconItem[entity].m_iClient;
+		
+		for (int i = 0; i < view_as<int>(CEconLoadoutClass); i++)
+		{
+			CEconLoadoutClass nClass = view_as<CEconLoadoutClass>(i);
+			
+			int iCount = CEconItems_GetClientLoadoutSize(iClient, nClass);
+			for (int j = 0; j < iCount; j++)
+			{
+				CEItem xItem;
+				if (CEconItems_GetClientItemFromLoadoutByIndex(iClient, nClass, j, xItem))
+				{
+					if(xItem.m_iIndex == iItemIndex)
+					{
+						CEconItems_SetAttributeStringInArray(xItem.m_Attributes, sName, sValue);
+					}
+				}
+			}
+		}
+	}
 	
 	if(bNetworked)
 	{
@@ -1321,6 +1346,7 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 						if(CEconItems_CreateItem(hItem, iDefID, iQuality, hOverrides))
 						{
 							hItem.m_iIndex = iIndex;
+							hItem.m_iClient = client;
 							m_Loadout[client][nClass].PushArray(hItem);
 						}
 						

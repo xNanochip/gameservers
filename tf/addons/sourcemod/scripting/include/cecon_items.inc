@@ -3,6 +3,7 @@ enum struct CEItem
 	int m_iIndex;
 	int m_iItemDefinitionIndex;
 	int m_nQuality;
+	int m_iClient;
 
 	ArrayList m_Attributes;
 }
