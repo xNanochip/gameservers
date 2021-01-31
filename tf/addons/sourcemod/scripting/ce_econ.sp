@@ -47,7 +47,11 @@ public void OnPluginStart()
 {
 	ce_debug_mode = CreateConVar("ce_debug_mode", "0");
 
-	ReloadEconomyCredentials();
+	if(Steam_IsConnected())
+	{
+		PrintToServer("Steam_IsConnected()");
+		ReloadEconomyCredentials();
+	}
 
 	// Subscripts callbacks.
 	Schema_OnPluginStart(); // schema.sp
@@ -65,6 +69,17 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 	Schema_AskPluginLoad2(myself, late, error, err_max); // schema.sp
 	return APLRes_Success;
+}
+
+public int Steam_FullyLoaded()
+{
+	PrintToServer("Steam_FullyLoaded()");
+	Steam_OnReady();
+}
+
+public void Steam_OnReady()
+{
+	ReloadEconomyCredentials();
 }
 
 // Used to refresh economy credentials from economy.cfg file.

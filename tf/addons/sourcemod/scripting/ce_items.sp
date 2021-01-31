@@ -83,7 +83,9 @@ public Plugin myinfo =
 Handle 	g_CEcon_ShouldItemBeBlocked,
 		g_CEcon_OnEquipItem,
 		g_CEcon_OnItemIsEquipped,
-		g_CEcon_OnClientLoadoutUpdated;
+		g_CEcon_OnClientLoadoutUpdated,
+		g_CEcon_OnUnequipItem,
+		g_CEcon_OnItemIsUnequipped;
 
 // SDKCalls for native TF2 economy reading.
 Handle 	g_SDKCallGetEconItemSchema,
@@ -114,6 +116,9 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	g_CEcon_OnEquipItem 			= new GlobalForward("CEconItems_OnEquipItem", ET_Single, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnItemIsEquipped 		= new GlobalForward("CEconItems_OnItemIsEquipped", ET_Ignore, Param_Cell, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnClientLoadoutUpdated 	= new GlobalForward("CEconItems_OnClientLoadoutUpdated", ET_Ignore, Param_Cell);
+	
+	g_CEcon_OnUnequipItem 			= new GlobalForward("CEconItems_OnUnequipItem", ET_Single, Param_Cell, Param_Cell, Param_Array, Param_String);
+	g_CEcon_OnItemIsUnequipped		= new GlobalForward("CEconItems_OnItemIsUnequipped", ET_Single, Param_Cell, Param_Array, Param_String);
 
 	// Items
     CreateNative("CEconItems_CreateNamedItem", Native_CreateNamedItem);
@@ -278,6 +283,8 @@ public void PrecacheItemsFromSchema(KeyValues hSchema)
 
     // Make sure we do that every time
 	hSchema.Rewind();
+	
+	PrintToServer("Preloaded %d (+ 1 = %d)", m_ItemDefinitons.Length, m_ItemDefinitons.Length + 1);
 }
 
 //---------------------------------------------------------------------
@@ -421,6 +428,8 @@ public any Native_DestroyItem(Handle plugin, int numParams)
 	GetNativeArray(1, hItem, sizeof(CEItem));
 	
 	delete hItem.m_Attributes;
+	
+	SetNativeArray(1, hItem, sizeof(CEItem));
 }
 
 //---------------------------------------------------------------------
@@ -874,6 +883,7 @@ public any Native_GiveItemToClient(Handle plugin, int numParams)
 	if (m_MyItems[client] == null)
 	{
 		m_MyItems[client] = new ArrayList(sizeof(CEItem));
+		PrintToServer("+ ArrayList (m_MyItems)");
 	}
 	
 	CEItem xItem;
@@ -1083,7 +1093,7 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 	// If we fail to import content return.
 	if (!Response.ImportFromString(content))return;
 
-	ClearClientLoadout(client);
+	ClearClientLoadout(client, false);
 
 	if(Response.JumpToKey("loadout"))
 	{
@@ -1106,6 +1116,7 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 				if(StrEqual(sClassName, "spy")) nClass = CEconLoadoutClass_Spy;
 
 				m_Loadout[client][nClass] = new ArrayList(sizeof(CEItem));
+				PrintToServer("+ ArrayList (Loadout)");
 
 				if(Response.GotoFirstSubKey())
 				{
@@ -1115,11 +1126,12 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 						int iQuality = Response.GetNum("quality", -1);
 						char sName[64];
 						Response.GetString("name", sName, sizeof(sName));
-
+						
 						ArrayList hOverrides;
 						if(Response.JumpToKey("attributes"))
 						{
 							hOverrides = CEconItems_AttributesKeyValuesToArrayList(Response);
+							PrintToServer("+ ArrayList (Attributes)");
 							Response.GoBack();
 						}
 
@@ -1129,6 +1141,8 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 							hItem.m_iIndex = iIndex;
 							m_Loadout[client][nClass].PushArray(hItem);
 						}
+						
+						delete hOverrides;
 
 					} while (Response.GotoNextKey());
 					Response.GoBack();
@@ -1194,7 +1208,7 @@ public void ApplyClientLoadout(int client)
 	}
 }
 
-public void ClearClientLoadout(int client)
+public void ClearClientLoadout(int client, bool full)
 {
 	CEconLoadoutClass nCurrentClass = GetCEconLoadoutClassFromTFClass(TF2_GetPlayerClass(client));
 	
@@ -1202,17 +1216,18 @@ public void ClearClientLoadout(int client)
 	{
 		CEconLoadoutClass nClass = view_as<CEconLoadoutClass>(i);
 		
-		// Don't remove items of the current class, as we still may need them.
-		if (nClass == nCurrentClass)continue;
-		
 		if (m_Loadout[client][nClass] == null)continue;
 
-		for (int j = 0; j < m_Loadout[client][nClass].Length; j++)
+		// Don't remove items of the current class, as we still may need them.
+		if(full || nClass != nCurrentClass)
 		{
-			CEItem hItem;
-			m_Loadout[client][nClass].GetArray(j, hItem);
-
-			CEconItems_DestroyItem(hItem);
+			for (int j = 0; j < m_Loadout[client][nClass].Length; j++)
+			{
+				CEItem hItem;
+				m_Loadout[client][nClass].GetArray(j, hItem);
+	
+				CEconItems_DestroyItem(hItem);
+			}
 		}
 
 		delete m_Loadout[client][nClass];
@@ -1398,4 +1413,26 @@ public void OnRespawnRoomEndTouch(int iSpawnRoom, int iClient)
 	{
 		m_bInRespawn[iClient] = false;
 	}
+}
+
+public void OnClientDisconnect(int client)
+{
+	FlushClientData(client);
+}
+
+public void OnClientPostAdminCheck(int client)
+{
+	FlushClientData(client);
+}
+
+public void FlushClientData(int client)
+{
+	LogMessage("Flushing Data for %d", client);
+	
+	ClearClientLoadout(client, true);
+	
+	delete m_MyItems[client];
+	m_bWaitingForLoadout[client] = false;
+	m_bInRespawn[client] = false;
+	m_bFullReapplication[client] = false;
 }
