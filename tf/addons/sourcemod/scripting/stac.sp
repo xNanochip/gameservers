@@ -16,7 +16,8 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.7.0b"
+#define PLUGIN_VERSION  "3.7.1b"
+
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 public Plugin myinfo =
@@ -45,6 +46,7 @@ int aimsnapDetects          [TFMAXPLAYERS+1] = -1; // set to -1 to ignore first 
 int pSilentDetects          [TFMAXPLAYERS+1] = -1; // ^
 int bhopDetects             [TFMAXPLAYERS+1] = -1; // set to -1 to ignore single jumps
 int cmdnumSpikeDetects      [TFMAXPLAYERS+1];
+int nullCmdsFor             [TFMAXPLAYERS+1];
 bool isConsecStringOfBhops  [TFMAXPLAYERS+1];
 int bhopConsecDetects       [TFMAXPLAYERS+1];
 int settingsChangesFor      [TFMAXPLAYERS+1];
@@ -70,7 +72,7 @@ bool userBanQueued          [TFMAXPLAYERS+1];
 // STORED SENS PER CLIENT
 float sensFor               [TFMAXPLAYERS+1];
 // get last 6 ticks
-float engineTime        [6] [TFMAXPLAYERS+1];
+float engineTime        [11] [TFMAXPLAYERS+1];
 // time since the map started (duh)
 float timeSinceMapStart;
 // weapon name, gets passed to aimsnap check
@@ -128,7 +130,6 @@ float maxRandCheckVal       = 300.0;
 // put demoname in sourcebans?
 bool demonameinSB           = true;
 bool logtofile              = true;
-
 
 // demoname for currently recording demo if extant
 char demoname[128];
@@ -978,6 +979,7 @@ void ClearClBasedVars(int userid)
     pSilentDetects          [Cl] = -1; // ^
     bhopDetects             [Cl] = -1; // set to -1 to ignore single jumps
     cmdnumSpikeDetects      [Cl] = 0;
+    nullCmdsFor             [Cl] = 0;
     settingsChangesFor      [Cl] = 0;
     isConsecStringOfBhops   [Cl] = false;
     bhopConsecDetects       [Cl] = 0;
@@ -1082,29 +1084,20 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
-    //LogMessage("[sSAC-]: OnPlayerRunCmd Debug\nbuttons = \"%i\".\nint &impulse = \"%i\".\nint &cmdnum = \"%i\".\nint &tickcount = \"%i\".\nint &seed, = \"%i\".\nint mouse[2] [1] = \"%i\", [2] = \"%i\".\n", buttons, impulse, cmdnum, tickcount, seed, mouse[0], mouse[1]);
-    //LogMessage("cmdnum = \"%i\"", cmdnum);
-    //LogMessage("playercond = \"%i\"", playerInBadCond[Cl]);
-
     // from ssac - block invalid cmds
     if (cmdnum <= 0 || tickcount <= 0)
     {
-        //KickClient(Cl, "[StAC] Kicked for invalid usercmd data!");
+        if (TF2_GetClientTeam(Cl) != TFTeam_Unassigned)
+        {
+            nullCmdsFor[Cl]++;
+            LogMessage("client %n had invalid usercmd data - %i times", nullCmdsFor[Cl]);
+            if (nullCmdsFor[Cl] >= 5)
+            {
+                KickClient(Cl, "[StAC] Kicked for invalid usercmd data!");
+            }
+        }
         return Plugin_Handled;
     }
-
-    //if
-    //(
-    //       tickcount == 0
-    //    && vel[0]    == 0.0
-    //    && vel[1]    == 0.0
-    //    && vel[2]    == 0.0
-    //    && !(buttons & IN_ATTACK)
-    //)
-    //{
-    //    KickClient(Cl, "[StAC] Kicked for attempted airstuck!");
-    //    return Plugin_Handled;
-    //}
 
     // need this basically no matter what
     int userid = GetClientUserId(Cl);
@@ -1252,7 +1245,7 @@ public Action OnPlayerRunCmd
     }
 
     // set previous tick times to test lagginess (THANK YOU BACKWARDS FOR HELP WITH THIS)
-    for (int i = 5; i > 0; --i)
+    for (int i = 10; i > 0; --i)
     {
         engineTime[i][Cl] = engineTime[i-1][Cl];
     }
@@ -1302,29 +1295,27 @@ public Action OnPlayerRunCmd
     // we have to do all these annoying checks to make sure we get as few false positives as possible.
     if
     (
-        // one day i'll unnegate this
-        !(
-            // make sure client is on a team & alive,
-               IsClientPlaying(Cl)
-            // ...isn't taunting,
-            && !playerTaunting[Cl]
-            // ...didn't recently spawn,
-            && engineTime[0][Cl] - 1.0 > timeSinceSpawn[Cl]
-            // ...didn't recently taunt,
-            && engineTime[0][Cl] - 1.0 > timeSinceTaunt[Cl]
-            // ...didn't recently teleport,
-            && engineTime[0][Cl] - 1.0 > timeSinceTeled[Cl]
-            // ...isn't already queued to be banned,
-            && !userBanQueued[Cl]
-            // ...and isn't timing out.
-            && !IsClientTimingOut(Cl)
-            // this is just for halloween shit
-            && playerInBadCond[Cl] == 0
-            // DON'T TOUCH IF MAP JUST STARTED
-            && engineTime[0][Cl] - 5.0 > timeSinceMapStart
-        )
+        // make sure client is on a team & alive,
+           !IsClientPlaying(Cl)
+        // ...isn't taunting,
+        || playerTaunting[Cl]
+        // ...didn't recently spawn,
+        || engineTime[0][Cl] - 1.0 < timeSinceSpawn[Cl]
+        // ...didn't recently taunt,
+        || engineTime[0][Cl] - 1.0 < timeSinceTaunt[Cl]
+        // ...didn't recently teleport,
+        || engineTime[0][Cl] - 1.0 < timeSinceTeled[Cl]
+        // DON'T TOUCH IF MAP JUST STARTED
+        || engineTime[0][Cl] - 5.0 < timeSinceMapStart
+        // ...isn't already queued to be banned,
+        || userBanQueued[Cl]
+        // ...and isn't timing out.
+        || IsClientTimingOut(Cl)
+        // this is just for halloween shit
+        || playerInBadCond[Cl] != 0
     )
     {
+        //StacLog("Not checking Client %N", Cl);
         return Plugin_Continue;
     }
 
@@ -1354,6 +1345,7 @@ public Action OnPlayerRunCmd
             return Plugin_Handled;
         }
     }
+
     //if (clcmdnum[1][Cl] == clcmdnum[0][Cl])
     //{
     //    StacLog("[StAC] SAME CMDNUM REPORTED!!!");
@@ -1406,7 +1398,7 @@ public Action OnPlayerRunCmd
         );
         StacLog
         (
-            "\n[StAC] Player %N has invalid eye angles!\nCurrent angles: %.2f %.2f %.2f.\nDetections so far: %i",
+            "\n==========\n[StAC] Player %N has invalid eye angles!\nCurrent angles: %.2f %.2f %.2f.\nDetections so far: %i\n==========",
             Cl,
             angles[0],
             angles[1],
@@ -1434,32 +1426,47 @@ public Action OnPlayerRunCmd
         i'll *try* to work mouse movement into this function at SOME point but it works reasonably well for right now.
     */
     // we have to do EXTRA checks because a lot of things can fuck up silent aim detection
+    // make sure ticks are sequential, hopefully avoid laggy players
+    // example real detection:
+    /*
+        [StAC] pSilent / NoRecoil detection of 5.20° on <user>.
+        Detections so far: 15
+        User Net Info: 0.00% loss, 24.10% choke, 66.22 ms ping
+         clcmdnum[0]: 61167
+         clcmdnum[1]: 61166
+         clcmdnum[2]: 61165
+         angles0: x 8.82 y 127.68
+         angles1: x 5.38 y 131.60
+         angles2: x 8.82 y 127.68
+    */
     if
-    (!
-        (
-            AreAnglesUnlaggyAndValid(Cl)
-            &&  // don't run these checks if client is currently using a spin bind
-                !(
-                    buttons & IN_LEFT
-                    ||
-                    buttons & IN_RIGHT
-                )
-            // ...doesn't have 5% or more packet loss,
-            && loss <= 5.0
-            // ...doesn't have 51% or more packet choke,
-            && choke <= 51.0
-            // check difference between client ticks to make sure client has been relatively unlaggy
-            && engineTime[0][Cl] - engineTime[1][Cl] < 0.1
-            && engineTime[1][Cl] - engineTime[2][Cl] < 0.1
-            && engineTime[2][Cl] - engineTime[3][Cl] < 0.1
-            && engineTime[3][Cl] - engineTime[4][Cl] < 0.1
-            && engineTime[4][Cl] - engineTime[5][Cl] < 0.1
-        )
+    (
+        // make sure client doesn't have invalid angles. "invalid" in this case means "any angle is 0.000000", usually caused by plugin / trigger based teleportation
+        !HasValidAngles(Cl)
+        // make sure client isnt using a spin bind
+        || buttons & IN_LEFT
+        || buttons & IN_RIGHT
+        // make sure client doesn't have 10% or more packet loss
+        || loss >= 10.0
+        // make sure client doesn't have 66.6% or more choke
+        || choke >= 66.6
+        // if a client misses 8 ticks, its safe to assume they're lagging
+        // so check the difference between the last 10 ticks
+        || (engineTime[0][Cl] - engineTime[1][Cl])  >= (tickinterv*8.0)
+        || (engineTime[1][Cl] - engineTime[2][Cl])  >= (tickinterv*8.0)
+        || (engineTime[2][Cl] - engineTime[3][Cl])  >= (tickinterv*8.0)
+        || (engineTime[3][Cl] - engineTime[4][Cl])  >= (tickinterv*8.0)
+        || (engineTime[4][Cl] - engineTime[5][Cl])  >= (tickinterv*8.0)
+        || (engineTime[5][Cl] - engineTime[6][Cl])  >= (tickinterv*8.0)
+        || (engineTime[6][Cl] - engineTime[7][Cl])  >= (tickinterv*8.0)
+        || (engineTime[7][Cl] - engineTime[8][Cl])  >= (tickinterv*8.0)
+        || (engineTime[8][Cl] - engineTime[9][Cl])  >= (tickinterv*8.0)
+        || (engineTime[9][Cl] - engineTime[10][Cl]) >= (tickinterv*8.0)
     )
+    // if any of these things are true, don't check angles
     {
         return Plugin_Continue;
     }
-
     // we can reuse this for aimsnap as well!
     float aDiffReal = CalcAngDeg(clangles[0][Cl], clangles[1][Cl]);
     // refactored from smac - make sure we don't fuck up angles near the x/y axes!
@@ -1552,7 +1559,7 @@ public Action OnPlayerRunCmd
                 );
                 StacLog
                 (
-                    "==========\n[StAC] SilentAim detection of %.2f° on \n%L.\nDetections so far: %i.\nfuzzy = %i",
+                    "\n==========\n[StAC] SilentAim detection of %.2f° on \n%L.\nDetections so far: %i.\nfuzzy = %i",
                     aDiffReal,
                     Cl,
                     pSilentDetects[Cl],
@@ -1629,7 +1636,7 @@ public Action OnPlayerRunCmd
                 // etc
                 StacLog
                 (
-                    "==========\n[StAC] Aimsnap detection of %.2f° on \n%L.\nDetections so far: %i.",
+                    "\n==========\n[StAC] Aimsnap detection of %.2f° on \n%L.\nDetections so far: %i.",
                     aDiffReal,
                     Cl,
                     aimsnapDetects[Cl]
@@ -2348,38 +2355,17 @@ bool IsClientPlaying(int client)
     return false;
 }
 
-bool AreAnglesUnlaggyAndValid(int Cl)
+bool HasValidAngles(int Cl)
 {
     if
     (
-        (
-            // OK lets make sure we dont get any fake detections on startup
-            // this also ignores weird angle resets in mge / dm
-               clangles[0][Cl][0] != 0.00
-            && clangles[0][Cl][1] != 0.00
-            && clangles[1][Cl][0] != 0.00
-            && clangles[1][Cl][1] != 0.00
-            && clangles[2][Cl][0] != 0.00
-            && clangles[2][Cl][1] != 0.00
-        )
-        &&
-        // make sure ticks are sequential, hopefully avoid laggy players
-        // example real detection:
-        /*
-            [StAC] pSilent / NoRecoil detection of 5.20° on <user>.
-            Detections so far: 15
-            User Net Info: 0.00% loss, 24.10% choke, 66.22 ms ping
-             clcmdnum[0]: 61167
-             clcmdnum[1]: 61166
-             clcmdnum[2]: 61165
-             angles0: x 8.82 y 127.68
-             angles1: x 5.38 y 131.60
-             angles2: x 8.82 y 127.68
-        */
-        (
-               clcmdnum[0][Cl] - 1 == clcmdnum[1][Cl]
-            && clcmdnum[1][Cl] - 1 == clcmdnum[2][Cl]
-        )
+        // ignore weird angle resets in mge / dm
+           clangles[0][Cl][0] != 0.000000
+        || clangles[0][Cl][1] != 0.000000
+        || clangles[1][Cl][0] != 0.000000
+        || clangles[1][Cl][1] != 0.000000
+        || clangles[2][Cl][0] != 0.000000
+        || clangles[2][Cl][1] != 0.000000
     )
     {
         return true;
