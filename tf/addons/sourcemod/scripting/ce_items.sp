@@ -58,6 +58,7 @@
 #define MAX_ENTITY_LIMIT 2048
 
 #include <cecon>
+#include <cecon_http>
 #include <cecon_items>
 
 #include <sdktools>
@@ -69,6 +70,8 @@
 #pragma newdecls optional
 #include <steamtools>
 #pragma newdecls required
+
+#define BACKEND_ATTRIBUTE_UPDATE_INTERVAL 10.0
 
 public Plugin myinfo =
 {
@@ -186,7 +189,10 @@ public void OnAllPluginsLoaded()
 {
 	// Items
     PrecacheItemsFromSchema(CEcon_GetEconomySchema());
+}
 
+public void OnPluginStart()
+{
 	// Attributes
 	Handle hGameConf = LoadGameConfigFile("tf2.creators");
 	if (!hGameConf)
@@ -205,19 +211,19 @@ public void OnAllPluginsLoaded()
 	PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
 	g_SDKCallSchemaGetAttributeDefinitionByName = EndPrepSDKCall();
 
-
 	// Loadout
 	HookEvent("post_inventory_application", post_inventory_application);
 	HookEvent("player_spawn", player_spawn);
 	HookEvent("player_death", player_death);
 
 	//RegServerCmd("ce_loadout_reset", cLoadoutReset);
-
 	m_PartialReapplicationTypes = new ArrayList(ByteCountToCells(32));
 	m_PartialReapplicationTypes.PushString("cosmetic");
 	m_PartialReapplicationTypes.PushString("weapon");
 
 	RegServerCmd("ce_loadout_reset", cResetLoadout);
+	
+	CreateTimer(BACKEND_ATTRIBUTE_UPDATE_INTERVAL, Timer_AttributeUpdateInterval, _, TIMER_REPEAT);
 }
 
 public Action cResetLoadout(int args)
@@ -841,8 +847,16 @@ public any Native_SetEntityAttributeString(Handle plugin, int numParams)
     GetNativeString(3, sValue, sizeof(sValue));
     
     bool bNetworked = GetNativeCell(4);
-
 	CEconItems_SetAttributeStringInArray(m_hEconItem[entity].m_Attributes, sName, sValue);
+	
+	if(bNetworked)
+	{
+		int iItemIndex = m_hEconItem[entity].m_iIndex;
+		if(iItemIndex > 0)
+		{
+			AddAttributeUpdateBatch(iItemIndex, sName, sValue);
+		}
+	}
 	
 	return;
 }
@@ -1217,16 +1231,10 @@ public any Native_RequestClientLoadoutUpdate(Handle plugin, int numParams)
 	char sSteamID64[64];
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID64, sizeof(sSteamID64));
 
-	char sURL[64];
-	Format(sURL, sizeof(sURL), "http://local.creators.tf/api/IEconomySDK/GetUserLoadout");
-
-	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
-	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
-	Steam_SetHTTPRequestHeaderValue(httpRequest, "Access", "Provider wbAweUMMFauDCU9ZV5fLHn8wahL9a9ndAxtQnQXY75wV5MP8VwpejJJdHnpug8CRxATmZdDM5jJu76tTmPjtg65mjthxEfSX");
+	HTTPRequestHandle httpRequest = CEcon_CreateBaseHTTPRequest("/api/IEconomySDK/GetUserLoadout", HTTPMethod_GET);
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "steamid", sSteamID64);
 
 	Steam_SendHTTPRequest(httpRequest, RequestClientLoadout_Callback, pack);
-	
 	return true;
 }
 
@@ -1252,8 +1260,8 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 	// Making HTTP checks.
 
 	// If request was not succesful, return.
-	//if (!success)return;
-	//if (code != HTTPStatusCode_OK)return;
+	if (!success)return;
+	if (code != HTTPStatusCode_OK)return;
 
 	// Getting response size.
 	int size = Steam_GetHTTPResponseBodySize(request);
@@ -1617,12 +1625,78 @@ public void OnClientPostAdminCheck(int client)
 
 public void FlushClientData(int client)
 {
-	LogMessage("Flushing Data for %d", client);
-	
 	ClearClientLoadout(client, true);
 	
 	delete m_MyItems[client];
 	m_bWaitingForLoadout[client] = false;
 	m_bInRespawn[client] = false;
 	m_bFullReapplication[client] = false;
+}
+
+enum struct CEAttributeUpdateBatch
+{
+	int m_iIndex;
+	char m_sAttr[256];
+	char m_sValue[256];
+}
+
+ArrayList m_AttributeUpdateBatches;
+
+public void AddAttributeUpdateBatch(int index, const char[] name, const char[] value)
+{
+	if(m_AttributeUpdateBatches == null)
+	{
+		m_AttributeUpdateBatches = new ArrayList(sizeof(CEAttributeUpdateBatch));
+	}
+	
+	for (int i = 0; i < m_AttributeUpdateBatches.Length; i++)
+	{
+		CEAttributeUpdateBatch xBatch;
+		m_AttributeUpdateBatches.GetArray(i, xBatch);
+		
+		if (xBatch.m_iIndex != index)continue;
+		
+		if(StrEqual(xBatch.m_sAttr, name))
+		{
+			m_AttributeUpdateBatches.Erase(i);
+			i--;
+		}
+	}
+	
+	CEAttributeUpdateBatch xBatch;
+	xBatch.m_iIndex = index;
+	strcopy(xBatch.m_sAttr, sizeof(xBatch.m_sAttr), name);
+	strcopy(xBatch.m_sValue, sizeof(xBatch.m_sValue), value);
+	m_AttributeUpdateBatches.PushArray(xBatch);
+}
+
+public Action Timer_AttributeUpdateInterval(Handle timer, any data)
+{
+	if (m_AttributeUpdateBatches == null)return;
+	if (m_AttributeUpdateBatches.Length == 0)return;
+	
+	HTTPRequestHandle hRequest = CEcon_CreateBaseHTTPRequest("/api/IEconomySDK/UpdateItemAttributes", HTTPMethod_POST);
+	
+	for (int i = 0; i < m_AttributeUpdateBatches.Length; i++)
+	{
+		CEAttributeUpdateBatch xBatch;
+		m_AttributeUpdateBatches.GetArray(i, xBatch);
+		
+		char sKey[128];
+		Format(sKey, sizeof(sKey), "items[%d][%s]", xBatch.m_iIndex, xBatch.m_sAttr);
+		
+		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, xBatch.m_sValue);
+	}
+	
+	Steam_SendHTTPRequest(hRequest, AttributeUpdate_Callback);
+	delete m_AttributeUpdateBatches;
+}
+
+public void AttributeUpdate_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
+{
+	// If request was not succesful, return.
+	if (!success)return;
+	if (code != HTTPStatusCode_OK)return;
+	
+	// Cool, we've updated everything.
 }

@@ -40,6 +40,12 @@ int m_iFailureCount = 0;
 #define COORDINATOR_MAX_FAILURES 5
 #define COORDINATOR_FAILURE_TIMEOUT 20.0
 
+public void Coordinator_AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	CreateNative("CEcon_CreateAbsoluteBackendURL", Native_CreateAbsoluteBackendURL);
+	CreateNative("CEcon_CreateBaseHTTPRequest", Native_CreateBaseHTTPRequest);
+}
+
 // Timer that reenables coordinator queue in case if something breaks.
 public Action Timer_CoordinatorWatchDog(Handle timer, any data)
 {
@@ -252,4 +258,48 @@ public bool CoordinatorProcessRequestContent(HTTPRequestHandle request)
 
 	// Return false as there were no errors in this execution.
 	return false;
+}
+
+public any Native_CreateAbsoluteBackendURL(Handle plugin, int numParams)
+{
+	char sBaseURL[256], sURL[256];
+	GetNativeString(1, sBaseURL, sizeof(sBaseURL));
+	
+	int size = GetNativeCell(3);
+
+	// If we don't have :// in the URL that means this is
+	// not the full URL. We add base domain name
+	// in the beginning.
+	if(StrContains(sBaseURL, "://") == -1)
+	{
+		if(sBaseURL[0] != '/')
+		{
+			// We need to make sure we have a slash before URL, so we
+			// can form a proper link in the end.
+			Format(sBaseURL, sizeof(sBaseURL), "/%s", sBaseURL);
+		}
+		strcopy(sURL, sizeof(sURL), m_sBaseEconomyURL);
+
+		Format(sURL, sizeof(sURL), "%s%s", sURL, sBaseURL);
+	}
+
+	SetNativeString(2, sURL, size);
+}
+
+public any Native_CreateBaseHTTPRequest(Handle plugin, int numParams)
+{
+	char sBaseURL[256], sURL[256];
+	GetNativeString(1, sBaseURL, sizeof(sBaseURL));
+	HTTPMethod nMethod = GetNativeCell(2);
+	
+	CEcon_CreateAbsoluteBackendURL(sBaseURL, sURL, sizeof(sURL));
+	
+	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(nMethod, sURL);
+	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
+	
+	char sAccessHeader[256];
+	Format(sAccessHeader, sizeof(sAccessHeader), "Provider %s", m_sEconomyAccessKey);
+	Steam_SetHTTPRequestHeaderValue(httpRequest, "Access", sAccessHeader);
+	
+	return httpRequest;
 }

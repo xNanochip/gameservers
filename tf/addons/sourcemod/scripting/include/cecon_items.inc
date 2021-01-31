@@ -102,7 +102,7 @@ native bool CEconItems_GetEntityAttributeBool(int entity, const char[] name);
 // Sets string type attribute value of custom econ entity.
 native void CEconItems_SetEntityAttributeString(int entity, const char[] name, const char[] value, bool networked = false);
 // Sets integer type attribute value of custom econ entity.
-native void CEconItems_SetEntityAttributeInteger(int entity, const char[] name, int value, bool networked = false);
+native void CEconItems_SetEntityAttributeInteger(int entity, const char[] name, int value, bool networked);
 // Sets float type attribute value of custom econ entity.
 native void CEconItems_SetEntityAttributeFloat(int entity, const char[] name, float value, bool networked = false);
 // Sets bool type attribute value of custom econ entity.

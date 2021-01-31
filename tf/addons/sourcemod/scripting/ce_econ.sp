@@ -13,6 +13,7 @@
 #define MAX_ENTITY_LIMIT 2048
 
 #include <cecon>
+#include <cecon_http>
 #include <tf2>
 #include <sdkhooks>
 #include <sdktools>
@@ -73,6 +74,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 	Schema_AskPluginLoad2(myself, late, error, err_max); // schema.sp
 	Events_AskPluginLoad2(myself, late, error, err_max); // schema.sp
+	Coordinator_AskPluginLoad2(myself, late, error, err_max); // schema.sp
 	return APLRes_Success;
 }
 
