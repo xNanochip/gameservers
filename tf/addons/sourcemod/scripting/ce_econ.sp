@@ -97,6 +97,7 @@ public void ReloadEconomyCredentials()
 	kv.GetString("Branch", m_sBranchName, sizeof(m_sBranchName));
 	kv.GetString("Password", m_sBranchPassword, sizeof(m_sBranchPassword));
 	kv.GetString("Domain", m_sBaseEconomyURL, sizeof(m_sBaseEconomyURL), DEFAULT_ECONOMY_BASE_URL);
+	delete kv;
 
 	m_bCredentialsLoaded = true;
 

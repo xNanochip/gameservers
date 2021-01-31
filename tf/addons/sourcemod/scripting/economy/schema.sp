@@ -127,6 +127,8 @@ public void Schema_CheckForUpdates_Callback(HTTPRequestHandle request, bool succ
 				LogMessage("A new version detected. Updating...");
 				Schema_ForceUpdate();
 			}
+			
+			delete kv;
 
 			return;
 		}
