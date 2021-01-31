@@ -1214,12 +1214,16 @@ public any Native_RequestClientLoadoutUpdate(Handle plugin, int numParams)
 	pack.WriteCell(apply);
 	pack.Reset();
 
+	char sSteamID64[64];
+	GetClientAuthId(client, AuthId_SteamID64, sSteamID64, sizeof(sSteamID64));
+
 	char sURL[64];
-	Format(sURL, sizeof(sURL), "http://local.creators.tf/api/IUsers/GLoadout");
+	Format(sURL, sizeof(sURL), "http://local.creators.tf/api/IEconomySDK/GetUserLoadout");
 
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
-	Steam_SetHTTPRequestHeaderValue(httpRequest, "Cookie", "session_id=f457c545a9ded88f18ecee47145a72c04ac9f435bbbd8973d18b0723aae4c7b5295fefe1.b92b2b3f8a0439d2632195a560aa101b");
+	Steam_SetHTTPRequestHeaderValue(httpRequest, "Access", "Provider wbAweUMMFauDCU9ZV5fLHn8wahL9a9ndAxtQnQXY75wV5MP8VwpejJJdHnpug8CRxATmZdDM5jJu76tTmPjtg65mjthxEfSX");
+	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "steamid", sSteamID64);
 
 	Steam_SendHTTPRequest(httpRequest, RequestClientLoadout_Callback, pack);
 	
@@ -1248,8 +1252,8 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 	// Making HTTP checks.
 
 	// If request was not succesful, return.
-	if (!success)return;
-	if (code != HTTPStatusCode_OK)return;
+	//if (!success)return;
+	//if (code != HTTPStatusCode_OK)return;
 
 	// Getting response size.
 	int size = Steam_GetHTTPResponseBodySize(request);
@@ -1297,8 +1301,6 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 						int iIndex = Response.GetNum("id", -1);
 						int iDefID = Response.GetNum("defid", -1);
 						int iQuality = Response.GetNum("quality", -1);
-						char sName[64];
-						Response.GetString("name", sName, sizeof(sName));
 						
 						ArrayList hOverrides;
 						if(Response.JumpToKey("attributes"))
