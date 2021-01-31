@@ -1,4 +1,4 @@
-//============= Copyright Amper Software , All rights reserved. ============//
+//============= Copyright Amper Software 2021, All rights reserved. =======//
 //
 // Purpose: Creates the connection between website and servers. Allows two-way
 // messaging between servers and website using long-polling technique.

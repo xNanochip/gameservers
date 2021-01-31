@@ -46,6 +46,23 @@ ArrayList m_hDefinitions;
 char m_sWeaponModel[2049][256];
 int m_hLastWeapon[MAXPLAYERS + 1];
 
+public void OnPluginStart()
+{
+	HookEvent("player_death", player_death);
+}
+
+public Action player_death(Event hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int client = GetClientOfUserId(hEvent.GetInt("userid"));
+	for (int i = 0; i < 5; i++)
+	{
+		int iWeapon = GetPlayerWeaponSlot(client, i);
+		if (!IsValidEntity(iWeapon))continue;
+
+		TF2Wear_RemoveAllTiedWearables(iWeapon);
+	}
+}
+
 //--------------------------------------------------------------------
 // Purpose: Precaches all the items of a specific type on plugin
 // startup.

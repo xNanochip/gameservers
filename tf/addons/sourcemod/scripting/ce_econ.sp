@@ -13,8 +13,9 @@
 #define MAX_ENTITY_LIMIT 2048
 
 #include <cecon>
-#include <sdktools>
 #include <tf2>
+#include <sdkhooks>
+#include <sdktools>
 #include <tf2_stocks>
 #include <tf2attributes>
 
@@ -39,8 +40,10 @@ bool m_bCredentialsLoaded = false;
 ConVar ce_debug_mode;
 
 // System Features
+#include "economy/util.sp"
 #include "economy/schema.sp"
 #include "economy/coordinator.sp"
+#include "economy/events.sp"
 
 
 public void OnPluginStart()
@@ -55,6 +58,7 @@ public void OnPluginStart()
 
 	// Subscripts callbacks.
 	Schema_OnPluginStart(); // schema.sp
+	Events_OnPluginStart(); // events.sp
 }
 
 public void OnMapStart()
@@ -68,6 +72,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	RegPluginLibrary("cecon_core");
 
 	Schema_AskPluginLoad2(myself, late, error, err_max); // schema.sp
+	Events_AskPluginLoad2(myself, late, error, err_max); // schema.sp
 	return APLRes_Success;
 }
 

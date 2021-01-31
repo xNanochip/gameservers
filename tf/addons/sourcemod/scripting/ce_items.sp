@@ -283,8 +283,6 @@ public void PrecacheItemsFromSchema(KeyValues hSchema)
 
     // Make sure we do that every time
 	hSchema.Rewind();
-	
-	PrintToServer("Preloaded %d (+ 1 = %d)", m_ItemDefinitons.Length, m_ItemDefinitons.Length + 1);
 }
 
 //---------------------------------------------------------------------
@@ -883,7 +881,6 @@ public any Native_GiveItemToClient(Handle plugin, int numParams)
 	if (m_MyItems[client] == null)
 	{
 		m_MyItems[client] = new ArrayList(sizeof(CEItem));
-		PrintToServer("+ ArrayList (m_MyItems)");
 	}
 	
 	CEItem xItem;
@@ -1116,7 +1113,6 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 				if(StrEqual(sClassName, "spy")) nClass = CEconLoadoutClass_Spy;
 
 				m_Loadout[client][nClass] = new ArrayList(sizeof(CEItem));
-				PrintToServer("+ ArrayList (Loadout)");
 
 				if(Response.GotoFirstSubKey())
 				{
@@ -1131,7 +1127,6 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 						if(Response.JumpToKey("attributes"))
 						{
 							hOverrides = CEconItems_AttributesKeyValuesToArrayList(Response);
-							PrintToServer("+ ArrayList (Attributes)");
 							Response.GoBack();
 						}
 

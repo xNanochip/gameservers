@@ -538,7 +538,7 @@ public bool GetClientKit(int client, Soundtrack_t hKit)
 	return true;
 }
 
-public void CEEvents_OnSendEvent(int client, const char[] event, int add, int unique)
+public void CEcon_OnClientEvent(int client, const char[] event, int add, int unique)
 {
 	Soundtrack_t hKit;
 	if(!GetClientKit(client, hKit)) return;
@@ -826,7 +826,7 @@ public void PlayRoundStartMusic(any hEvent)
 	{
 		if(IsClientReady(i))
 		{
-			CEEvents_SendEventToClient(i, "OST_ROUND_START", 1, view_as<int>(hEvent));
+			CEcon_SendEventToClientFromGameEvent(i, "OST_ROUND_START", 1, hEvent);
 		}
 	}
 }
@@ -870,7 +870,7 @@ public Action teamplay_round_win(Event hEvent, const char[] szName, bool bDontBr
 		{
 			if(IsClientReady(i))
 			{
-				CEEvents_SendEventToClient(i, "OST_PAYLOAD_CLIMAX", 1, view_as<int>(hEvent));
+				CEcon_SendEventToClientFromGameEvent(i, "OST_PAYLOAD_CLIMAX", 1, hEvent);
 			}
 		}
 	}
@@ -893,7 +893,7 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 					{
 						if(IsClientReady(i))
 						{
-							CEEvents_SendEventToClient(i, "OST_PAYLOAD_S1_START", 1, GetRandomInt(1, 10000));
+							CEcon_SendEventToClientUnique(i, "OST_PAYLOAD_S1_START", 1);
 						}
 					}
 					m_nPayloadStage = 1;
@@ -907,7 +907,7 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 					{
 						if(IsClientReady(i))
 						{
-							CEEvents_SendEventToClient(i, "OST_PAYLOAD_S2_START", 1, GetRandomInt(1, 10000));
+							CEcon_SendEventToClientUnique(i, "OST_PAYLOAD_S2_START", 1);
 						}
 					}
 					m_nPayloadStage = 2;
@@ -919,7 +919,7 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 					{
 						if(IsClientReady(i))
 						{
-							CEEvents_SendEventToClient(i, "OST_PAYLOAD_S1_CANCEL", 1, GetRandomInt(1, 10000));
+							CEcon_SendEventToClientUnique(i, "OST_PAYLOAD_S1_CANCEL", 1);
 						}
 					}
 					m_nPayloadStage = 0;
@@ -933,7 +933,7 @@ public Action Timer_EscordProgressUpdate(Handle timer, any data)
 					{
 						if(IsClientReady(i))
 						{
-							CEEvents_SendEventToClient(i, "OST_PAYLOAD_S2_CANCEL", 1, GetRandomInt(1, 10000));
+							CEcon_SendEventToClientUnique(i, "OST_PAYLOAD_S2_CANCEL", 1);
 						}
 					}
 					m_nPayloadStage = 0;
@@ -966,7 +966,7 @@ public Action teamplay_point_captured(Handle hEvent, const char[] szName, bool b
 	{
 		if (!IsClientReady(i))continue;
 
-		CEEvents_SendEventToClient(i, "OST_POINT_CAPTURE", 1, view_as<int>(hEvent));
+		CEcon_SendEventToClientFromGameEvent(i, "OST_POINT_CAPTURE", 1, hEvent);
 	}
 }
 
@@ -1013,7 +1013,7 @@ public Action Timer_Countdown(Handle timer, any data)
 		{
 			if(IsClientReady(i))
 			{
-				CEEvents_SendEventToClient(i, "OST_ROUND_SETUP", 1, GetRandomInt(1, 10000));
+				CEcon_SendEventToClientUnique(i, "OST_ROUND_SETUP", 1);
 			}
 		}
 	}
@@ -1024,7 +1024,7 @@ public Action Timer_Countdown(Handle timer, any data)
 		{
 			if(IsClientReady(i))
 			{
-				CEEvents_SendEventToClient(i, "OST_ROUND_ALMOST_END", 1, GetRandomInt(1, 10000));
+				CEcon_SendEventToClientUnique(i, "OST_ROUND_ALMOST_END", 1);
 			}
 		}
 	}
@@ -1066,9 +1066,4 @@ public int FindTargetBySteamID(const char[] steamid)
 public bool IsEntityValid(int entity)
 {
 	return entity > 0 && entity < 2049 && IsValidEntity(entity);
-}
-
-public void CEEvents_SendEventToClient(int client, const char[] a, int b, int c )
-{
-
 }
