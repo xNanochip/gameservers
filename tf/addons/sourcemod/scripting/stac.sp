@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.7.1b"
+#define PLUGIN_VERSION  "3.7.2b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -116,7 +116,7 @@ int maxFakeAngDetections    = 10;
 int maxBhopDetections       = 10;
 
 // max settings changes per...
-int maxSettingsChanges      = 30;
+int maxSettingsChanges      = 40;
 // ...this time in seconds
 float SettingsChangeWindow  = 60.0;
 
@@ -1090,11 +1090,11 @@ public Action OnPlayerRunCmd
         if (TF2_GetClientTeam(Cl) != TFTeam_Unassigned)
         {
             nullCmdsFor[Cl]++;
-            StacLog("client %n had invalid usercmd data - %i times", nullCmdsFor[Cl]);
-            if (nullCmdsFor[Cl] >= 50)
-            {
-                KickClient(Cl, "[StAC] Kicked for invalid usercmd data");
-            }
+            StacLog("client %N had invalid usercmd data - %i times. cmdnum = %i, tickcount = %i", nullCmdsFor[Cl], cmdnum, tickcount);
+            //if (nullCmdsFor[Cl] >= 50)
+            //{
+            //    KickClient(Cl, "[StAC] Kicked for invalid usercmd data");
+            //}
         }
         return Plugin_Handled;
     }
@@ -1751,7 +1751,7 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
     // log something about cvar errors xcept for cheat only cvars
     if (result != ConVarQuery_Okay)
     {
-        PrintToImportant("{hotpink}[StAC]{white} Could not query CVar %s on Player %N", Cl);
+        PrintToImportant("{hotpink}[StAC]{white} Could not query cvar %s on Player %N", Cl);
         StacLog("[StAC] Could not query cvar %s on player %N", cvarName, Cl);
     }
 
