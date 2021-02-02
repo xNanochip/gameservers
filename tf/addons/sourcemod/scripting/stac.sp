@@ -1090,7 +1090,7 @@ public Action OnPlayerRunCmd
         if (TF2_GetClientTeam(Cl) != TFTeam_Unassigned)
         {
             nullCmdsFor[Cl]++;
-            StacLog("client %N had invalid usercmd data - %i times. cmdnum = %i, tickcount = %i", nullCmdsFor[Cl], cmdnum, tickcount);
+            StacLog("client %N had invalid usercmd data - %i times. cmdnum = %i, tickcount = %i", Cl, nullCmdsFor[Cl], cmdnum, tickcount);
             //if (nullCmdsFor[Cl] >= 50)
             //{
             //    KickClient(Cl, "[StAC] Kicked for invalid usercmd data");
