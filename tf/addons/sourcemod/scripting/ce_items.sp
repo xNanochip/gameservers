@@ -333,6 +333,7 @@ public any Native_GetItemDefinitionByName(Handle plugin, int numParams)
 {
 	char sName[128];
 	GetNativeString(1, sName, sizeof(sName));
+	if (StrEqual(sName, ""))return false;
 	
 	if (m_ItemDefinitons == null)return false;
 

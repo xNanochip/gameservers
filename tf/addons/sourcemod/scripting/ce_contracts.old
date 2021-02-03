@@ -34,13 +34,14 @@ public Plugin myinfo =
 	url = "https://creators.tf"
 }
 
-ArrayList m_hQuestDefinitions;
-ArrayList m_hObjectiveDefinitions;
-ArrayList m_hHooksDefinitions;
+CEQuest m_hQuest[MAXPLAYERS + 1];
+ArrayList m_hFriends[MAXPLAYERS + 1];
+int m_iWaitingForQuest[MAXPLAYERS + 1];
+
+char m_sQuestEvents[MAXPLAYERS + 1][16][MAX_HOOKS][128];
 
 public void OnPluginStart()
 {
-	/*
 	for (int i = 1; i <= MaxClients; i++) // just in case plugin late loads
 	{
 		if (!IsClientValid(i))continue;
@@ -54,154 +55,10 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_q", cQuest, "Check your Contract progress");
 	RegConsoleCmd("sm_contract", cQuest, "Check your Contract progress");
 
-	RegAdminCmd("ce_quest_activate", cQuestActivate, ADMFLAG_ROOT, "Check your Contract progress");*/
+	RegAdminCmd("ce_quest_activate", cQuestActivate, ADMFLAG_ROOT, "Check your Contract progress");
 
 }
 
-public void OnAllPluginsLoaded()
-{
-	ParseEconomyConfig(CEcon_GetEconomySchema());
-}
-
-public void CEcon_OnSchemaUpdated(KeyValues hSchema)
-{
-	ParseEconomyConfig(hSchema);
-}
-
-public void ParseEconomyConfig(KeyValues kv)
-{
-	FlushQuestDefinitions();
-	m_hQuestDefinitions = 		new ArrayList(sizeof(CEQuestDefinition));
-	m_hObjectiveDefinitions = 	new ArrayList(sizeof(CEQuestObjectiveDefinition));
-	m_hHooksDefinitions = 		new ArrayList(sizeof(CEQuestObjectiveHookDefinition));
-	
-	if(kv.JumpToKey("Contracker/Quests", false))
-	{
-		if(kv.GotoFirstSubKey())
-		{
-			do {
-
-				char sSectionName[11];
-				kv.GetSectionName(sSectionName, sizeof(sSectionName));
-				
-				CEQuestDefinition xQuest;
-				PrintToServer("CEQuestDefinition");
-				PrintToServer("{");
-				xQuest.m_iIndex = StringToInt(sSectionName);
-				PrintToServer("	m_iIndex = %d", xQuest.m_iIndex);
-				
-				xQuest.m_bBackground = kv.GetNum("background", 0) == 1;
-				
-				// Map Restrictions
-				kv.GetString("restrictions/map", xQuest.m_sRestrictedToMap, sizeof(xQuest.m_sRestrictedToMap));
-				kv.GetString("restrictions/map_s", xQuest.m_sStrictRestrictedToMap, sizeof(xQuest.m_sStrictRestrictedToMap));
-				
-				PrintToServer("	m_sRestrictedToMap = %s", xQuest.m_sRestrictedToMap);
-				PrintToServer("	m_sStrictRestrictedToMap = %s", xQuest.m_sStrictRestrictedToMap);
-				
-				// CE Weapon Restriction
-				char sCEWeapon[64];
-				kv.GetString("restrictions/ce_weapon", sCEWeapon, sizeof(sCEWeapon));
-				
-				CEItemDefinition xDef;
-				if(CEconItems_GetItemDefinitionByName(sCEWeapon, xDef))
-				{
-					xQuest.m_iRestrictedToCEWeaponIndex = xDef.m_iIndex;
-				} else {
-					xQuest.m_iRestrictedToCEWeaponIndex = StringToInt(sCEWeapon);
-				}
-				PrintToServer("	m_iRestrictedToCEWeaponIndex = %d", xQuest.m_iRestrictedToCEWeaponIndex);
-				
-				// TF2 Class Restriction
-				char sTFClassName[64];
-				kv.GetString("restrictions/class", sTFClassName, sizeof(sTFClassName));
-				xQuest.m_nRestrictedToClass = TF2_GetClass(sTFClassName);
-				PrintToServer("	m_nRestrictedToClass = %d", xQuest.m_nRestrictedToClass);
-				
-				if(kv.JumpToKey("objectives", false))
-				{
-					if(kv.GotoFirstSubKey())
-					{
-						do {
-							
-							int iObjectiveLocalIndex = xQuest.m_iObjectivesCount;
-							int iObjectiveWorldIndex = m_hObjectiveDefinitions.Length;
-							xQuest.m_Objectives[iObjectiveLocalIndex] = iObjectiveWorldIndex;
-							xQuest.m_iObjectivesCount++;
-							
-							CEQuestObjectiveDefinition xObjective;
-							xObjective.m_iIndex = iObjectiveLocalIndex;
-							xObjective.m_iQuestIndex = xQuest.m_iIndex;
-							
-							kv.GetString("name", xObjective.m_sName, sizeof(xObjective.m_sName));
-							
-							xObjective.m_iLimit = kv.GetNum("end", 100);
-							xObjective.m_iPoints = kv.GetNum("points", 0);
-							xObjective.m_iEnd = kv.GetNum("end", 0);
-							
-							// CE Weapon Restriction
-							kv.GetString("restrictions/ce_weapon", sCEWeapon, sizeof(sCEWeapon));
-				
-							if(CEconItems_GetItemDefinitionByName(sCEWeapon, xDef))
-							{
-								xObjective.m_iRestrictedToCEWeaponIndex = xDef.m_iIndex;
-							} else {
-								xObjective.m_iRestrictedToCEWeaponIndex = StringToInt(sCEWeapon);
-							}
-							
-							if(kv.JumpToKey("hooks", false))
-							{
-								if(kv.GotoFirstSubKey())
-								{	
-									do {
-							
-										int iHookLocalIndex = xObjective.m_iHookCount;
-										int iHookWorldIndex = m_hHooksDefinitions.Length;
-										xObjective.m_Hooks[iHookLocalIndex] = iHookWorldIndex;
-										xObjective.m_iHookCount++;
-										
-										CEQuestObjectiveHookDefinition xHook;
-										xHook.m_iIndex = iHookLocalIndex;
-										xHook.m_iObjectiveIndex = xObjective.m_iIndex;
-										xHook.m_iQuestIndex = xQuest.m_iIndex;
-										
-										kv.GetString("event", xHook.m_sEvent, sizeof(xHook.m_sEvent));
-										
-										m_hHooksDefinitions.PushArray(xHook);
-									
-									} while (kv.GotoNextKey());
-									kv.GoBack();
-								}
-								kv.GoBack();
-							}
-							
-							PrintToServer("		%d %d", xObjective.m_iHookCount, m_hHooksDefinitions.Length);
-							m_hObjectiveDefinitions.PushArray(xQuest);
-							
-						} while (kv.GotoNextKey());
-						kv.GoBack();
-					}
-					kv.GoBack();
-				}
-				
-				PrintToServer("	%d %d", xQuest.m_iObjectivesCount, m_hObjectiveDefinitions.Length);
-				PrintToServer("}");
-				m_hQuestDefinitions.PushArray(xQuest);
-			
-			} while (kv.GotoNextKey());
-		}
-	}
-	kv.Rewind();
-}
-
-public void FlushQuestDefinitions()
-{
-	delete m_hQuestDefinitions;
-	delete m_hObjectiveDefinitions;
-	delete m_hHooksDefinitions;
-}
-
-/*
 public void CEQuest_InitClient(int client)
 {
 	if (!IsClientReady(client))return;
@@ -1097,4 +954,4 @@ public int MIN(int iNum1, int iNum2)
 	if (iNum1 < iNum2)return iNum1;
 	if (iNum2 < iNum1)return iNum2;
 	return iNum1;
-}*/
+}
