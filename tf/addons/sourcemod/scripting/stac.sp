@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.7.2b"
+#define PLUGIN_VERSION  "3.7.5b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -46,7 +46,6 @@ int aimsnapDetects          [TFMAXPLAYERS+1] = -1; // set to -1 to ignore first 
 int pSilentDetects          [TFMAXPLAYERS+1] = -1; // ^
 int bhopDetects             [TFMAXPLAYERS+1] = -1; // set to -1 to ignore single jumps
 int cmdnumSpikeDetects      [TFMAXPLAYERS+1];
-int nullCmdsFor             [TFMAXPLAYERS+1];
 bool isConsecStringOfBhops  [TFMAXPLAYERS+1];
 int bhopConsecDetects       [TFMAXPLAYERS+1];
 int settingsChangesFor      [TFMAXPLAYERS+1];
@@ -975,14 +974,15 @@ void ClearClBasedVars(int userid)
     turnTimes               [Cl] = 0;
     fovDesired              [Cl] = 0;
     fakeAngDetects          [Cl] = 0;
-    aimsnapDetects          [Cl] = -1; // ignore likely false positives
+    aimsnapDetects          [Cl] = -1; // set to -1 to ignore first detections, as theyre most likely junk
     pSilentDetects          [Cl] = -1; // ^
     bhopDetects             [Cl] = -1; // set to -1 to ignore single jumps
     cmdnumSpikeDetects      [Cl] = 0;
-    nullCmdsFor             [Cl] = 0;
-    settingsChangesFor      [Cl] = 0;
     isConsecStringOfBhops   [Cl] = false;
     bhopConsecDetects       [Cl] = 0;
+    settingsChangesFor      [Cl] = 0;
+
+    // TIME SINCE LAST ACTION PER CLIENT
     timeSinceSpawn          [Cl] = 0.0;
     timeSinceTaunt          [Cl] = 0.0;
     timeSinceTeled          [Cl] = 0.0;
@@ -996,7 +996,10 @@ void ClearClBasedVars(int userid)
     userBanQueued           [Cl] = false;
     // STORED SENS PER CLIENT
     sensFor                 [Cl] = 0.0;
+
+    // time since player did damage, for aimsnap check
     timeSinceDidHurt        [Cl] = 0.0;
+
     // don't bother clearing arrays
 }
 
@@ -1078,24 +1081,27 @@ public Action OnPlayerRunCmd
     int mouse[2]
 )
 {
-    // make sure client is real & not a bot.
+    // make sure client is real & not a bot - don't bother checking if so
     if (!IsValidClient(Cl))
     {
         return Plugin_Continue;
     }
 
-    // from ssac - block invalid cmds
+    // get flags - this is used to kick airstuck clients, and later in the bhop check
+    int flags = GetEntityFlags(Cl);
+
+    // originally from ssac - block invalid usercmds with invalid data
     if (cmdnum <= 0 || tickcount <= 0)
     {
-        if (TF2_GetClientTeam(Cl) != TFTeam_Unassigned)
+        if (IsClientPlaying(Cl))
         {
-            nullCmdsFor[Cl]++;
-            StacLog("client %N had invalid usercmd data - %i times. cmdnum = %i, tickcount = %i", Cl, nullCmdsFor[Cl], cmdnum, tickcount);
-            //if (nullCmdsFor[Cl] >= 50)
-            //{
-            //    KickClient(Cl, "[StAC] Kicked for invalid usercmd data");
-            //}
+            if (!(flags & FL_ONGROUND))
+            {
+                KickClient(Cl, "[StAC] Kicked for attempted airstuck");
+                MC_PrintToChatAll("{hotpink}[StAC]{white} Player %N was kicked for {mediumpurple}attempted airstuck{white}.", Cl);
+            }
         }
+        // technically we don't need to return Plugin_Handled, but this is more defensive programming than anything
         return Plugin_Handled;
     }
 
@@ -1103,7 +1109,6 @@ public Action OnPlayerRunCmd
     int userid = GetClientUserId(Cl);
 
     // neither of these tests need fancy checks, so we do them first
-
     /*
         BHOP DETECTION - using lilac and ssac as reference, this one's better tho
     */
@@ -1114,8 +1119,6 @@ public Action OnPlayerRunCmd
         // only check on not weirdo tickrate servers
         if (bhopmult >= 1.0 && bhopmult <= 2.0)
         {
-            int flags = GetEntityFlags(Cl);
-
             // reset their gravity if it's high!
             if (highGrav[Cl])
             {
@@ -1234,7 +1237,8 @@ public Action OnPlayerRunCmd
         }
     }
 
-    if  // if both anglesnap detection cvars are -1, don't bother even going past this point.
+    // if both anglesnap detection cvars are -1, don't bother even going past this point.
+    if
     (
         maxAimsnapDetections == -1
         &&
@@ -1305,7 +1309,7 @@ public Action OnPlayerRunCmd
         || engineTime[0][Cl] - 1.0 < timeSinceTaunt[Cl]
         // ...didn't recently teleport,
         || engineTime[0][Cl] - 1.0 < timeSinceTeled[Cl]
-        // DON'T TOUCH IF MAP JUST STARTED
+        // don't touch if map or plugin just started
         || engineTime[0][Cl] - 5.0 < timeSinceMapStart
         // ...isn't already queued to be banned,
         || userBanQueued[Cl]
@@ -1315,7 +1319,6 @@ public Action OnPlayerRunCmd
         || playerInBadCond[Cl] != 0
     )
     {
-        //StacLog("Not checking Client %N", Cl);
         return Plugin_Continue;
     }
 
@@ -1326,14 +1329,14 @@ public Action OnPlayerRunCmd
         cmdnumSpikeDetects[Cl]++;
         PrintToImportant
         (
-            "{hotpink}[StAC]{white} CmdNum SPIKE of {yellow}%i{white} on %N.\nDetections so far: {palegreen}%i{white}.",
+            "{hotpink}[StAC]{white} Cmdnum SPIKE of {yellow}%i{white} on %N.\nDetections so far: {palegreen}%i{white}.",
             spikeamt,
             Cl,
             cmdnumSpikeDetects[Cl]
         );
         StacLog
         (
-            "\n[StAC] CmdNum SPIKE of %i on %L.\nDetections so far: %i.",
+            "\n[StAC] Cmdnum SPIKE of %i on %L.\nDetections so far: %i.",
             spikeamt,
             Cl,
             cmdnumSpikeDetects[Cl]
@@ -1452,6 +1455,7 @@ public Action OnPlayerRunCmd
         || choke >= 66.6
         // if a client misses 8 ticks, its safe to assume they're lagging
         // so check the difference between the last 10 ticks
+        // if a client missed any of them, don't check
         || (engineTime[0][Cl] - engineTime[1][Cl])  >= (tickinterv*8.0)
         || (engineTime[1][Cl] - engineTime[2][Cl])  >= (tickinterv*8.0)
         || (engineTime[2][Cl] - engineTime[3][Cl])  >= (tickinterv*8.0)
@@ -1829,7 +1833,7 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
         }
         else
         {
-            StacLog("[StAC] [Detection] Blocked newline print from player %L!", Cl);
+            StacLog("[StAC] [Detection] Blocked newline print from player %L", Cl);
         }
         return Plugin_Stop;
     }
@@ -1837,9 +1841,9 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
 }
 
 // block long commands - i don't know if this actually does anything but it makes me feel better
-public Action OnClientCommand(int client, int args)
+public Action OnClientCommand(int Cl, int args)
 {
-    if (IsValidClient(client))
+    if (IsValidClient(Cl))
     {
         // init var
         char ClientCommandChar[512];
@@ -1861,13 +1865,13 @@ public Action OnClientCommand(int client, int args)
 
         if (DEBUG)
         {
-            StacLog("[StAC] '%L' issued client side command '%s' - '%i' length.", client, ClientCommandChar, strlen(ClientCommandChar));
+            StacLog("[StAC] '%L' issued client side command '%s' - '%i' length.", Cl, ClientCommandChar, strlen(ClientCommandChar));
         }
         // total length CAN NOT be more than 254 char (from my own testing), first arg can't be more than 128 (from my own testing)
         if (strlen(ClientCommandChar) > 254 || len > 128)
         {
-            StacLog("[StAC] '%L' issued client side command '%s' - '%i' length.", client, ClientCommandChar, strlen(ClientCommandChar));
-            KickClient(client, "[StAC] Issued too large of a command to the server!");
+            StacLog("[StAC] '%L' issued client side command '%s' - '%i' length.", Cl, ClientCommandChar, strlen(ClientCommandChar));
+            KickClient(Cl, "[StAC] Issued too large of a command to the server");
             return Plugin_Stop;
         }
     }
@@ -2085,7 +2089,7 @@ void NetPropCheck(int userid)
             // fix broken equip slots. Note: this was patched by valve but you can still equip invalid items...
             // ...just without the annoying unequipping other people's items part.
             // cathook is cringe
-            // only check if player has 3 valid hats on
+            // only check if player has 3 (or more, hello creators.tf) valid hats on
             if (TF2_GetNumWearables(Cl) >= 3)
             {
                 int slot1wearable = TF2_GetWearable(Cl, 0);
