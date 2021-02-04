@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.7.5b"
+#define PLUGIN_VERSION  "3.7.7b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -1087,23 +1087,30 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
-    // get flags - this is used to kick airstuck clients, and later in the bhop check
-    int flags = GetEntityFlags(Cl);
-
     // originally from ssac - block invalid usercmds with invalid data
-    if (cmdnum <= 0 || tickcount <= 0)
-    {
-        if (IsClientPlaying(Cl))
-        {
-            if (!(flags & FL_ONGROUND))
-            {
-                KickClient(Cl, "[StAC] Kicked for attempted airstuck");
-                MC_PrintToChatAll("{hotpink}[StAC]{white} Player %N was kicked for {mediumpurple}attempted airstuck{white}.", Cl);
-            }
-        }
-        // technically we don't need to return Plugin_Handled, but this is more defensive programming than anything
-        return Plugin_Handled;
-    }
+    // update from future steph: THIS IS A WASTE OF FUCKING TIME
+    //if (cmdnum <= 0 || tickcount <= 0)
+    //{
+    //    // airstuck doesn't technically exist anymore, but blocking nullcmds makes it possible to abuse. let's add a check for that
+    //    if (IsClientPlaying(Cl))
+    //    {
+    //        if (!(flags & FL_ONGROUND))
+    //        {
+    //            nullCmdsFor[Cl]++;
+    //            if (nullCmdsFor[Cl] >= 5)
+    //            {
+    //                KickClient(Cl, "[StAC] Kicked for attempted airstuck");
+    //                MC_PrintToChatAll("{hotpink}[StAC]{white} Player %N was kicked for {mediumpurple}attempted airstuck{white}.", Cl);
+    //            }
+    //        }
+    //        else
+    //        {
+    //            nullCmdsFor[Cl] = 0;
+    //        }
+    //    }
+    //    // technically we don't need to return here, but this is more defensive programming than anything
+    //    return Plugin_Stop;
+    //}
 
     // need this basically no matter what
     int userid = GetClientUserId(Cl);
@@ -1116,6 +1123,9 @@ public Action OnPlayerRunCmd
     // don't run this check if cvar is -1
     if (maxBhopDetections != -1)
     {
+        // get movement flags
+        int flags = GetEntityFlags(Cl);
+
         // only check on not weirdo tickrate servers
         if (bhopmult >= 1.0 && bhopmult <= 2.0)
         {
@@ -1203,6 +1213,7 @@ public Action OnPlayerRunCmd
                     BanUser(userid, reason);
                     MC_PrintToChatAll("%t", "bhopBanAllChat", Cl, bhopDetects[Cl]);
                     StacLog("%t", "bhopBanAllChat", Cl, bhopDetects[Cl]);
+                    return Plugin_Handled;
                 }
             }
             buttonsPrev[Cl] = buttons;
@@ -1322,47 +1333,6 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
-    /* cmdnum test, heavily modified from ssac */
-    int spikeamt = abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]);
-    if (spikeamt > 256)
-    {
-        cmdnumSpikeDetects[Cl]++;
-        PrintToImportant
-        (
-            "{hotpink}[StAC]{white} Cmdnum SPIKE of {yellow}%i{white} on %N.\nDetections so far: {palegreen}%i{white}.",
-            spikeamt,
-            Cl,
-            cmdnumSpikeDetects[Cl]
-        );
-        StacLog
-        (
-            "\n[StAC] Cmdnum SPIKE of %i on %L.\nDetections so far: %i.",
-            spikeamt,
-            Cl,
-            cmdnumSpikeDetects[Cl]
-        );
-
-        if (cmdnumSpikeDetects[Cl] >= 25)
-        {
-            KickClient(Cl, "[StAC] Too many cmdnum spikes");
-            return Plugin_Handled;
-        }
-    }
-
-    //if (clcmdnum[1][Cl] == clcmdnum[0][Cl])
-    //{
-    //    StacLog("[StAC] SAME CMDNUM REPORTED!!!");
-    //    //cmdnum = cmdnum++;
-    //    return Plugin_Changed;
-    //}
-    //if (clcmdnum[1][Cl] > clcmdnum[0][Cl])
-    //{
-    //    LogMessage("[StAC] cmdnum DROP of %i!", clcmdnum[1][Cl] - clcmdnum[0][Cl]);
-    //    LogMessage("%i , %i", clcmdnum[1][Cl], clcmdnum[0][Cl]);
-    //    cmdnum = cmdnum;
-    //    //return Plugin_Handled;
-    //}
-
     /*
         EYE ANGLES TEST
         if clients are outside of allowed angles in tf2, which are
@@ -1415,6 +1385,7 @@ public Action OnPlayerRunCmd
             BanUser(userid, reason);
             MC_PrintToChatAll("%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
             StacLog("%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
+            return Plugin_Handled;
         }
     }
     /*
@@ -1471,6 +1442,56 @@ public Action OnPlayerRunCmd
     {
         return Plugin_Continue;
     }
+
+    /* cmdnum test, heavily modified from ssac */
+    int spikeamt = abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]);
+    if (spikeamt > 256)
+    {
+        char heldWeapon[256];
+        GetClientWeapon(Cl, heldWeapon, sizeof(heldWeapon));
+
+        cmdnumSpikeDetects[Cl]++;
+        PrintToImportant
+        (
+            "{hotpink}[StAC]{white} Cmdnum SPIKE of {yellow}%i{white} on %N.\nDetections so far: {palegreen}%i{white}.",
+            spikeamt,
+            Cl,
+            cmdnumSpikeDetects[Cl]
+        );
+        StacLog
+        (
+            "\n[StAC] Cmdnum SPIKE of %i on %L.\nDetections so far: %i. Held weapon: %s",
+            spikeamt,
+            Cl,
+            cmdnumSpikeDetects[Cl],
+            heldWeapon
+        );
+        // TEMP hardcoded for now
+        if (cmdnumSpikeDetects[Cl] >= 25)
+        {
+            char reason[128];
+            Format(reason, sizeof(reason), "%t", "cmdnumSpikesBanMsg", cmdnumSpikeDetects[Cl]);
+            BanUser(userid, reason);
+            MC_PrintToChatAll("%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
+            StacLog("%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
+            return Plugin_Handled;
+        }
+    }
+
+    //if (clcmdnum[1][Cl] == clcmdnum[0][Cl])
+    //{
+    //    StacLog("[StAC] SAME CMDNUM REPORTED!!!");
+    //    KickClient(Cl, "gay");
+    //    return Plugin_Handled;
+    //}
+    //if (clcmdnum[1][Cl] > clcmdnum[0][Cl])
+    //{
+    //    LogMessage("[StAC] cmdnum DROP of %i!", clcmdnum[1][Cl] - clcmdnum[0][Cl]);
+    //    LogMessage("%i , %i", clcmdnum[1][Cl], clcmdnum[0][Cl]);
+    //    cmdnum = cmdnum;
+    //    //return Plugin_Handled;
+    //}
+
     // we can reuse this for aimsnap as well!
     float aDiffReal = CalcAngDeg(clangles[0][Cl], clangles[1][Cl]);
     // refactored from smac - make sure we don't fuck up angles near the x/y axes!
@@ -1599,6 +1620,7 @@ public Action OnPlayerRunCmd
                     BanUser(userid, reason);
                     MC_PrintToChatAll("%t", "pSilentBanAllChat", Cl, pSilentDetects[Cl]);
                     StacLog("%t", "pSilentBanAllChat", Cl, pSilentDetects[Cl]);
+                    return Plugin_Handled;
                 }
             }
         }
@@ -1687,6 +1709,7 @@ public Action OnPlayerRunCmd
                     BanUser(userid, reason);
                     MC_PrintToChatAll("%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
                     StacLog("%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
+                    return Plugin_Handled;
                 }
             }
         }
@@ -1804,6 +1827,7 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
             BanUser(userid, reason);
             MC_PrintToChatAll("%t", "fovBanAllChat", Cl);
             StacLog("%t", "fovBanAllChat", Cl);
+
         }
     }
     if (DEBUG)
@@ -2324,6 +2348,7 @@ bool IsValidClient(int client)
         (0 < client <= MaxClients)
         && IsClientInGame(client)
         && !IsFakeClient(client)
+        && !IsClientInKickQueue(client)
     );
 }
 
@@ -2336,6 +2361,7 @@ bool IsValidClientOrBot(int client)
         // don't bother sdkhooking stv or replay bots lol
         && !IsClientSourceTV(client)
         && !IsClientReplay(client)
+        && !IsClientInKickQueue(client)
     );
 }
 
