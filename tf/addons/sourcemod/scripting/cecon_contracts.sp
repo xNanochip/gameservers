@@ -38,6 +38,8 @@ ArrayList m_hQuestDefinitions;
 ArrayList m_hObjectiveDefinitions;
 ArrayList m_hHooksDefinitions;
 
+bool m_bWaitingForFriends[MAXPLAYERS + 1];
+
 public void OnPluginStart()
 {
 	/*
@@ -55,6 +57,9 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_contract", cQuest, "Check your Contract progress");
 
 	RegAdminCmd("ce_quest_activate", cQuestActivate, ADMFLAG_ROOT, "Check your Contract progress");*/
+	RegServerCmd("ce_contracts_dump", cDump, "");
+	
+	OnLateLoad();
 
 }
 
@@ -85,19 +90,13 @@ public void ParseEconomyConfig(KeyValues kv)
 				kv.GetSectionName(sSectionName, sizeof(sSectionName));
 				
 				CEQuestDefinition xQuest;
-				PrintToServer("CEQuestDefinition");
-				PrintToServer("{");
 				xQuest.m_iIndex = StringToInt(sSectionName);
-				PrintToServer("	m_iIndex = %d", xQuest.m_iIndex);
 				
 				xQuest.m_bBackground = kv.GetNum("background", 0) == 1;
 				
 				// Map Restrictions
 				kv.GetString("restrictions/map", xQuest.m_sRestrictedToMap, sizeof(xQuest.m_sRestrictedToMap));
 				kv.GetString("restrictions/map_s", xQuest.m_sStrictRestrictedToMap, sizeof(xQuest.m_sStrictRestrictedToMap));
-				
-				PrintToServer("	m_sRestrictedToMap = %s", xQuest.m_sRestrictedToMap);
-				PrintToServer("	m_sStrictRestrictedToMap = %s", xQuest.m_sStrictRestrictedToMap);
 				
 				// CE Weapon Restriction
 				char sCEWeapon[64];
@@ -110,13 +109,11 @@ public void ParseEconomyConfig(KeyValues kv)
 				} else {
 					xQuest.m_iRestrictedToCEWeaponIndex = StringToInt(sCEWeapon);
 				}
-				PrintToServer("	m_iRestrictedToCEWeaponIndex = %d", xQuest.m_iRestrictedToCEWeaponIndex);
 				
 				// TF2 Class Restriction
 				char sTFClassName[64];
 				kv.GetString("restrictions/class", sTFClassName, sizeof(sTFClassName));
 				xQuest.m_nRestrictedToClass = TF2_GetClass(sTFClassName);
-				PrintToServer("	m_nRestrictedToClass = %d", xQuest.m_nRestrictedToClass);
 				
 				if(kv.JumpToKey("objectives", false))
 				{
@@ -155,15 +152,26 @@ public void ParseEconomyConfig(KeyValues kv)
 								{	
 									do {
 							
-										int iHookLocalIndex = xObjective.m_iHookCount;
+										int iHookLocalIndex = xObjective.m_iHooksCount;
 										int iHookWorldIndex = m_hHooksDefinitions.Length;
 										xObjective.m_Hooks[iHookLocalIndex] = iHookWorldIndex;
-										xObjective.m_iHookCount++;
+										xObjective.m_iHooksCount++;
+										
+										char sAction[16];
+										kv.GetString("action", sAction, sizeof(sAction));
+										
+										CEQuestActions nAction;
+										if (StrEqual(sAction, "increment"))nAction = CEQuestAction_Increment;
+										else if (StrEqual(sAction, "reset"))nAction = CEQuestAction_Reset;
+										else if (StrEqual(sAction, "subtract"))nAction = CEQuestAction_Subtract;
+										else if (StrEqual(sAction, "set"))nAction = CEQuestAction_Set;
+										else nAction = CEQuestAction_Singlefire;
 										
 										CEQuestObjectiveHookDefinition xHook;
 										xHook.m_iIndex = iHookLocalIndex;
 										xHook.m_iObjectiveIndex = xObjective.m_iIndex;
 										xHook.m_iQuestIndex = xQuest.m_iIndex;
+										xHook.m_Action = nAction;
 										
 										kv.GetString("event", xHook.m_sEvent, sizeof(xHook.m_sEvent));
 										
@@ -175,8 +183,7 @@ public void ParseEconomyConfig(KeyValues kv)
 								kv.GoBack();
 							}
 							
-							PrintToServer("		%d %d", xObjective.m_iHookCount, m_hHooksDefinitions.Length);
-							m_hObjectiveDefinitions.PushArray(xQuest);
+							m_hObjectiveDefinitions.PushArray(xObjective);
 							
 						} while (kv.GotoNextKey());
 						kv.GoBack();
@@ -184,8 +191,6 @@ public void ParseEconomyConfig(KeyValues kv)
 					kv.GoBack();
 				}
 				
-				PrintToServer("	%d %d", xQuest.m_iObjectivesCount, m_hObjectiveDefinitions.Length);
-				PrintToServer("}");
 				m_hQuestDefinitions.PushArray(xQuest);
 			
 			} while (kv.GotoNextKey());
@@ -194,11 +199,220 @@ public void ParseEconomyConfig(KeyValues kv)
 	kv.Rewind();
 }
 
+public Action cDump(int args)
+{
+	LogMessage("Dumping precached data");
+	for (int i = 0; i < 1; i++)
+	{
+		CEQuestDefinition xQuest;
+		GetQuestByIndex(i, xQuest);
+
+		LogMessage("CEQuestDefinition");
+		LogMessage("{");
+		LogMessage("  m_iIndex = %d", xQuest.m_iIndex);
+		LogMessage("  m_bBackground = %d", xQuest.m_bBackground);
+		LogMessage("  m_iObjectivesCount = %d", xQuest.m_iObjectivesCount);
+		LogMessage("  m_sRestrictedToMap = \"%s\"", xQuest.m_sRestrictedToMap);
+		LogMessage("  m_sStrictRestrictedToMap = \"%s\"", xQuest.m_sStrictRestrictedToMap);
+		LogMessage("  m_nRestrictedToClass = %d", xQuest.m_nRestrictedToClass);
+		LogMessage("  m_iRestrictedToCEWeaponIndex = %d", xQuest.m_iRestrictedToCEWeaponIndex);
+		LogMessage("  m_Objectives =");
+		LogMessage("  [");
+		
+		for (int j = 0; j < xQuest.m_iObjectivesCount; j++)
+		{
+			CEQuestObjectiveDefinition xObjective;
+			if(GetQuestObjectiveByIndex(i, j, xObjective))
+			{
+				LogMessage("    %d => CEQuestObjectiveDefinition", j);
+				LogMessage("    {");
+				LogMessage("      m_iIndex = %d", xObjective.m_iIndex);
+				LogMessage("      m_iQuestIndex = %d", xObjective.m_iQuestIndex);
+				LogMessage("      m_sName = \"%s\"", xObjective.m_sName);
+				LogMessage("      m_iPoints = %d", xObjective.m_iPoints);
+				LogMessage("      m_iLimit = %d", xObjective.m_iLimit);
+				LogMessage("      m_iEnd = %d", xObjective.m_iEnd);
+				LogMessage("      m_iHooksCount = %d", xObjective.m_iHooksCount);
+				LogMessage("      m_iRestrictedToCEWeaponIndex = %d", xObjective.m_iRestrictedToCEWeaponIndex);
+				LogMessage("      m_Hooks =");
+				LogMessage("      [");
+		
+				for (int k = 0; k < xObjective.m_iHooksCount; k++)
+				{
+					CEQuestObjectiveHookDefinition xHook;
+					if(GetQuestObjectiveHookByIndex(i, j, k, xHook))
+					{
+						LogMessage("        %d => CEQuestObjectiveHookDefinition", k);
+						LogMessage("        {");
+						LogMessage("          m_iIndex = %d", xHook.m_iIndex);
+						LogMessage("          m_iObjectiveIndex = %d", xHook.m_iObjectiveIndex);
+						LogMessage("          m_iQuestIndex = %d", xHook.m_iQuestIndex);
+						
+						LogMessage("          m_sEvent = \"%s\"", xHook.m_sEvent);
+						LogMessage("          m_Action = %d", xHook.m_Action);
+						LogMessage("        }");
+					}
+				}
+				LogMessage("      ]");
+				LogMessage("    }");
+			}
+		}
+		
+		LogMessage("  ]");
+		LogMessage("}");
+
+	}
+	
+	LogMessage("");
+	LogMessage("CEQuestDefinition Count: %d", m_hQuestDefinitions.Length);
+	LogMessage("CEQuestObjectiveDefinition Count: %d", m_hObjectiveDefinitions.Length);
+	LogMessage("CEQuestObjectiveHookDefinition Count: %d", m_hHooksDefinitions.Length);
+}
+
 public void FlushQuestDefinitions()
 {
 	delete m_hQuestDefinitions;
 	delete m_hObjectiveDefinitions;
 	delete m_hHooksDefinitions;
+}
+
+public bool GetQuestByIndex(int index, CEQuestDefinition xStruct)
+{
+	if (m_hQuestDefinitions == null)return false;
+	if (index >= m_hQuestDefinitions.Length)return false;
+	if (index < 0)return false;
+	
+	m_hQuestDefinitions.GetArray(index, xStruct);
+	return true;
+}
+
+public bool GetObjectiveByIndex(int index, CEQuestObjectiveDefinition xStruct)
+{
+	if (m_hObjectiveDefinitions == null)return false;
+	if (index >= m_hObjectiveDefinitions.Length)return false;
+	if (index < 0)return false;
+	
+	m_hObjectiveDefinitions.GetArray(index, xStruct);
+	return true;
+}
+
+public bool GetHookByIndex(int index, CEQuestObjectiveHookDefinition xStruct)
+{
+	if (m_hHooksDefinitions == null)return false;
+	if (index >= m_hHooksDefinitions.Length)return false;
+	if (index < 0)return false;
+	
+	m_hHooksDefinitions.GetArray(index, xStruct);
+	return true;
+}
+
+public bool GetQuestObjectiveByIndex(int quest, int index, CEQuestObjectiveDefinition xStruct)
+{
+	if (quest < 0)return false;
+	if (index < 0)return false;
+	
+	CEQuestDefinition xQuest;
+	if(GetQuestByIndex(quest, xQuest))
+	{
+		if (index >= xQuest.m_iObjectivesCount)return false;
+		int iWorldIndex = xQuest.m_Objectives[index];
+		
+		GetObjectiveByIndex(iWorldIndex, xStruct);
+		return true;
+	}
+	
+	return false;
+}
+
+public bool GetQuestObjectiveHookByIndex(int quest, int objective, int index, CEQuestObjectiveHookDefinition xStruct)
+{
+	if (quest < 0)return false;
+	if (objective < 0)return false;
+	if (index < 0)return false;
+	
+	CEQuestObjectiveDefinition xObjective;
+	if(GetQuestObjectiveByIndex(quest, objective, xObjective))
+	{
+		if (index >= xObjective.m_iHooksCount)return false;
+		int iWorldIndex = xObjective.m_Hooks[index];
+		
+		GetHookByIndex(iWorldIndex, xStruct);
+		return true;
+	}
+	
+	return false;
+}
+
+public void RequestClientSteamFriends(int client)
+{	
+	if (!IsClientReady(client))return;
+	if (m_bWaitingForFriends[client])return;
+	
+	char sSteamID64[64];
+	GetClientAuthId(client, AuthId_SteamID64, sSteamID64, sizeof(sSteamID64));
+
+	HTTPRequestHandle httpRequest = CEconHTTP_CreateBaseHTTPRequest("/api/ISteamInterface/GUserFriends", HTTPMethod_GET);
+	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "steamid", sSteamID64);
+
+	Steam_SendHTTPRequest(httpRequest, RequestClientSteamFriends_Callback, client);
+	
+	PrintToServer("RequestClientSteamFriends()");
+	return;
+}
+
+public void RequestClientSteamFriends_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code, any client)
+{
+	// We are not processing bots.
+	if (!IsClientReady(client))return;
+	
+	// If request was not succesful, return.
+	if (!success)return;
+	if (code != HTTPStatusCode_OK)return;
+
+	// Getting response size.
+	int size = Steam_GetHTTPResponseBodySize(request);
+	char[] content = new char[size + 1];
+
+	// Getting actual response content body.
+	Steam_GetHTTPResponseBodyData(request, content, size);
+	Steam_ReleaseHTTPRequest(request);
+	
+	PrintToServer("RequestClientSteamFriends_Callback()");
+}
+
+public bool IsClientReady(int client)
+{
+	if (!IsClientValid(client))return false;
+	if (IsFakeClient(client))return false;
+	return true;
+}
+
+public bool IsClientValid(int client)
+{
+	if (client <= 0 || client > MaxClients)return false;
+	if (!IsClientInGame(client))return false;
+	if (!IsClientAuthorized(client))return false;
+	return true;
+}
+
+public void OnLateLoad()
+{
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientReady(i))continue;
+		
+		PrepareClientData(i);
+	}
+}
+
+public void OnClientPostAdminCheck(int client)
+{
+	PrepareClientData(client);
+}
+
+public void PrepareClientData(int client)
+{
+	RequestClientSteamFriends(client);
 }
 
 /*

@@ -6,11 +6,11 @@
 
 enum CEQuestActions
 {
-	ACTION_SINGLEFIRE,
-	ACTION_INCREMENT,
-	ACTION_RESET,
-	ACTION_SUBSTRACT,
-	ACTION_SET
+	CEQuestAction_Singlefire,
+	CEQuestAction_Increment,
+	CEQuestAction_Reset,
+	CEQuestAction_Subtract,
+	CEQuestAction_Set
 }
 
 enum struct CEObjective
@@ -81,7 +81,7 @@ enum struct CEQuestObjectiveDefinition
 	int m_iLimit; 	// Maximum amount of points
 	int m_iEnd;		// Amount of points to trigger objective with non-singlefire event.
 
-	int m_iHookCount;
+	int m_iHooksCount;
 	int m_Hooks[MAX_HOOKS];
 
 	int m_iRestrictedToCEWeaponIndex;
@@ -94,4 +94,6 @@ enum struct CEQuestObjectiveHookDefinition
 	int m_iQuestIndex;
 
 	char m_sEvent[128];
+
+	CEQuestActions m_Action;
 }

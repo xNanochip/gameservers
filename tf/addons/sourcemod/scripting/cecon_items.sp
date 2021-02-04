@@ -1257,7 +1257,7 @@ public any Native_RequestClientLoadoutUpdate(Handle plugin, int numParams)
 	char sSteamID64[64];
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID64, sizeof(sSteamID64));
 
-	HTTPRequestHandle httpRequest = CEcon_CreateBaseHTTPRequest("/api/IEconomySDK/GetUserLoadout", HTTPMethod_GET);
+	HTTPRequestHandle httpRequest = CEconHTTP_CreateBaseHTTPRequest("/api/IEconomySDK/UserLoadout", HTTPMethod_GET);
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "steamid", sSteamID64);
 
 	Steam_SendHTTPRequest(httpRequest, RequestClientLoadout_Callback, pack);
@@ -1702,7 +1702,7 @@ public Action Timer_AttributeUpdateInterval(Handle timer, any data)
 	if (m_AttributeUpdateBatches == null)return;
 	if (m_AttributeUpdateBatches.Length == 0)return;
 	
-	HTTPRequestHandle hRequest = CEcon_CreateBaseHTTPRequest("/api/IEconomySDK/UpdateItemAttributes", HTTPMethod_POST);
+	HTTPRequestHandle hRequest = CEconHTTP_CreateBaseHTTPRequest("/api/IEconomySDK/ItemAttributes", HTTPMethod_POST);
 	
 	for (int i = 0; i < m_AttributeUpdateBatches.Length; i++)
 	{

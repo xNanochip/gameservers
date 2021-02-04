@@ -31,5 +31,8 @@ native void CEcon_SendEventToAll(const char[] name, int add, int unique_id);
 // Returns weapon index client has last interacted with.
 native int CEcon_GetLastUsedWeapon(int client);
 
+native bool CEcon_GetAccessKey(const char[] buffer, int size);
+native bool CEcon_GetBaseBackendURL(const char[] buffer, int size);
+
 // Called when client receives a new event.
 forward void CEcon_OnClientEvent(int client, const char[] name, int add, int unique_id);

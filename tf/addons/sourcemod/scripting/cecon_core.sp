@@ -72,9 +72,11 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 {
 	RegPluginLibrary("cecon_core");
 
+	CreateNative("CEcon_GetAccessKey", Native_GetAccessKey);
+	CreateNative("CEcon_GetBaseBackendURL", Native_GetBaseBackendURL);
+
 	Schema_AskPluginLoad2(myself, late, error, err_max); // schema.sp
 	Events_AskPluginLoad2(myself, late, error, err_max); // schema.sp
-	Coordinator_AskPluginLoad2(myself, late, error, err_max); // schema.sp
 	return APLRes_Success;
 }
 
@@ -156,4 +158,18 @@ public int FindTargetBySteamID(const char[] steamid)
 public bool IsEntityValid(int entity)
 {
 	return entity > 0 && entity < MAX_ENTITY_LIMIT && IsValidEntity(entity);
+}
+
+public any Native_GetBaseBackendURL(Handle plugin, int numParams)
+{
+	int size = GetNativeCell(2);
+	
+	SetNativeString(1, m_sBaseEconomyURL, size);
+}
+
+public any Native_GetAccessKey(Handle plugin, int numParams)
+{
+	int size = GetNativeCell(2);
+	
+	SetNativeString(1, m_sEconomyAccessKey, size);
 }

@@ -7,10 +7,6 @@
 #define PAYLOAD_STAGE_1_START 0.85
 #define PAYLOAD_STAGE_2_START 0.93
 
-#define OST_MAX_KITS 32
-#define OST_MAX_EVENTS 256
-#define OST_MAX_SAMPLES 512
-
 enum struct Soundtrack_t
 {
 	int m_iDefIndex;
@@ -65,14 +61,9 @@ enum struct Event_t
 #include <cecon>
 #include <cecon_items>
 
-Soundtrack_t m_hKitDefs[OST_MAX_KITS];
-int m_iKitDefsLength = 0;
-
-Event_t m_hEventDefs[OST_MAX_EVENTS];
-int m_iEventDefsLength = 0;
-
-Sample_t m_hSampleDefs[OST_MAX_SAMPLES];
-int m_iSampleDefsLength = 0;
+ArrayList m_hKitDefs;
+ArrayList m_hEventDefs;
+ArrayList m_hSampleDefs;
 
 int m_iMusicKit[MAXPLAYERS + 1] =  { -1, ... };
 int m_iNextEvent[MAXPLAYERS + 1];
@@ -88,7 +79,7 @@ Handle m_hTimer[MAXPLAYERS + 1];
 
 int m_iQueueLength[MAXPLAYERS + 1];
 int m_iQueuePointer[MAXPLAYERS + 1];
-Sample_t m_hQueue[MAXPLAYERS + 1][OST_MAX_EVENTS];
+Sample_t m_hQueue[MAXPLAYERS + 1][16];
 Sample_t m_hPreSample[MAXPLAYERS + 1];
 Sample_t m_hPostSample[MAXPLAYERS + 1];
 
@@ -129,9 +120,22 @@ public void OnAllPluginsLoaded()
 	ParseEconomySchema(CEcon_GetEconomySchema());
 }
 
+public void FlushSchema()
+{
+	delete m_hKitDefs;
+	delete m_hEventDefs;
+	delete m_hSampleDefs;
+}
+
 public void ParseEconomySchema(KeyValues hConf)
 {
 	if (hConf == null)return;
+	
+	FlushSchema();
+	
+	m_hKitDefs = new ArrayList(sizeof(Soundtrack_t));
+	m_hEventDefs = new ArrayList(sizeof(Event_t));
+	m_hSampleDefs = new ArrayList(sizeof(Sample_t));
 	
 	if(hConf.JumpToKey("Items", false))
 	{
@@ -159,7 +163,7 @@ public void OnClientPostAdminCheck(int client)
 public Action cDump(int args)
 {
 	LogMessage("Dumping precached data");
-	for (int i = 0; i < m_iKitDefsLength; i++)
+	for (int i = 0; i < m_hKitDefs.Length; i++)
 	{
 		Soundtrack_t hKit;
 		GetKitByIndex(i, hKit);
@@ -221,6 +225,10 @@ public Action cDump(int args)
 		LogMessage("}");
 
 	}
+	LogMessage("");
+	LogMessage("Soundtrack_t Count: %d", m_hKitDefs.Length);
+	LogMessage("Event_t Count: %d", m_hEventDefs.Length);
+	LogMessage("Sample_t Count: %d", m_hSampleDefs.Length);
 }
 
 public Action cSetKit(int args)
@@ -319,7 +327,7 @@ public int PrecacheSoundtrackKeyValues(KeyValues hConf)
 	char sName[128];
 	hConf.GetString("name", sName, sizeof(sName));
 
-	int iIndex = m_iKitDefsLength;
+	int iIndex = m_hKitDefs.Length;
 	Soundtrack_t hKit;
 	hKit.m_iDefIndex = iDefIndex;
 
@@ -348,15 +356,14 @@ public int PrecacheSoundtrackKeyValues(KeyValues hConf)
 		hConf.GoBack();
 	}
 
-	m_hKitDefs[iIndex] = hKit;
-	m_iKitDefsLength++;
+	m_hKitDefs.PushArray(hKit);
 
 	return iIndex;
 }
 
 public int PrecacheEventKeyValues(KeyValues hConf)
 {
-	int iIndex = m_iEventDefsLength;
+	int iIndex = m_hEventDefs.Length;
 	Event_t hEvent;
 
 	hEvent.m_iPriority = hConf.GetNum("priority", 0);
@@ -400,15 +407,14 @@ public int PrecacheEventKeyValues(KeyValues hConf)
 		hConf.GoBack();
 	}
 
-	m_hEventDefs[iIndex] = hEvent;
-	m_iEventDefsLength++;
+	m_hEventDefs.PushArray(hEvent);
 
 	return iIndex;
 }
 
 public int PrecacheSampleKeyValues(KeyValues hConf)
 {
-	int iIndex = m_iSampleDefsLength;
+	int iIndex = m_hSampleDefs.Length;
 	Sample_t hSample;
 
 	hSample.m_flDuration = hConf.GetFloat("duration");
@@ -427,8 +433,7 @@ public int PrecacheSampleKeyValues(KeyValues hConf)
 
 	hSample.m_bPreserveSample = hConf.GetNum("preserve_sample", 0) == 1;
 
-	m_hSampleDefs[iIndex] = hSample;
-	m_iSampleDefsLength++;
+	m_hSampleDefs.PushArray(hSample);
 
 	return iIndex;
 }
@@ -480,31 +485,32 @@ public Action teamplay_broadcast_audio(Event hEvent, const char[] szName, bool b
 
 public int GetKitIndexByDefID(int defid)
 {
-	for (int i = 0; i < m_iKitDefsLength; i++)
+	for (int i = 0; i < m_hKitDefs.Length; i++)
 	{
-		if (m_hKitDefs[i].m_iDefIndex == defid)return i;
+		Soundtrack_t xKit;
+		if (xKit.m_iDefIndex == defid)return i;
 	}
 	return -1;
 }
 
 public bool GetKitByIndex(int id, Soundtrack_t hKit)
 {
-	if(id >= m_iKitDefsLength || id < 0) return false;
-	hKit = m_hKitDefs[id];
+	if(id >= m_hKitDefs.Length || id < 0) return false;
+	m_hKitDefs.GetArray(id, hKit);
 	return true;
 }
 
 public bool GetEventByIndex(int id, Event_t hEvent)
 {
-	if(id >= m_iEventDefsLength || id < 0) return false;
-	hEvent = m_hEventDefs[id];
+	if(id >= m_hEventDefs.Length || id < 0) return false;
+	m_hEventDefs.GetArray(id, hEvent);
 	return true;
 }
 
 public bool GetSampleByIndex(int id, Sample_t hSample)
 {
-	if(id >= m_iSampleDefsLength || id < 0) return false;
-	hSample = m_hSampleDefs[id];
+	if(id >= m_hSampleDefs.Length || id < 0) return false;
+	m_hSampleDefs.GetArray(id, hSample);
 	return true;
 }
 
