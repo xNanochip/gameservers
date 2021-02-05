@@ -71,7 +71,7 @@
 #include <steamtools>
 #pragma newdecls required
 
-#define BACKEND_ATTRIBUTE_UPDATE_INTERVAL 10.0
+#define BACKEND_ATTRIBUTE_UPDATE_INTERVAL 30.0 // Every 30 seconds.
 
 public Plugin myinfo =
 {
