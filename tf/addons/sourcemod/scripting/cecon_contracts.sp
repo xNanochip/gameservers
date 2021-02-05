@@ -805,16 +805,40 @@ public bool HasClientCompletedObjective(int client, CEQuestObjectiveDefinition x
 	return false;
 }
 
-public void CEcon_OnClientEvent(int client, const char[] event, int add, int unique_id)
+public void CEcon_OnClientEvent(int client, const char[] event, int add, int unique)
+{
+	IterateAndTickleClientQuests(client, client, event, add, unique);
+	
+	SendEventToFriends(client, event, add, unique);
+}
+
+public void IterateAndTickleClientQuests(int client, int source, const char[] event, int add, int unique)
 {
 	CEQuestDefinition xQuest;
 	if(GetClientActiveQuest(client, xQuest))
 	{
-		CEQuest_TickleObjectives(client, xQuest, client, event, add, unique_id);
+		TickleClientQuestObjectives(client, xQuest, client, event, add, unique);
 	}
 }
 
-public void CEQuest_TickleObjectives(int client, CEQuestDefinition xQuest, int source, const char[] event, int add, int unique)
+public void SendEventToFriends(int client, const char[] event, int add, int unique)
+{
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if(IsClientReady(i))
+		{
+			if(GetClientTeam(client) == GetClientTeam(i))
+			{
+				if(AreClientsFriends(client, i))
+				{
+					IterateAndTickleClientQuests(i, client, event, add, unique);
+				}
+			}
+		}
+	}
+}
+
+public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, int source, const char[] event, int add, int unique)
 {
 	if (!CanClientTriggerQuest(client, xQuest))return;
 	
@@ -1072,6 +1096,37 @@ public bool AddPointsToClientObjective(int client, CEQuestObjectiveDefinition xO
 		}
 		
 	}
+}
+
+public bool AreClientsFriends(int client, int target)
+{
+	// Check if users are friends
+	char szAuth[256];
+	GetClientAuthId(target, AuthId_SteamID64, szAuth, sizeof(szAuth));
+
+	bool bFriends = false;
+
+	if(m_hFriends[client] != null)
+	{
+		if(m_hFriends[client].FindString(szAuth) != -1)
+		{
+			return true;
+		}
+	}
+
+	if(!bFriends)
+	{
+		GetClientAuthId(client, AuthId_SteamID64, szAuth, sizeof(szAuth));
+		if(m_hFriends[target] != null)
+		{
+			if(m_hFriends[target].FindString(szAuth) != -1)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 /*
