@@ -61,8 +61,8 @@ enum struct CEQuestClientProgress
 	int m_iClient;
 	int m_iQuest;
 
-	int m_iProgress[MAX_OBJECTIVES];
-	int m_iVariable[MAX_OBJECTIVES];
+	int m_iProgress[MAX_OBJECTIVES + 1];
+	int m_iVariable[MAX_OBJECTIVES + 1];
 
 	int m_iSource;
 }
