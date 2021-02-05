@@ -38,25 +38,16 @@ ArrayList m_hQuestDefinitions;
 ArrayList m_hObjectiveDefinitions;
 ArrayList m_hHooksDefinitions;
 
+ArrayList m_hFriends[MAXPLAYERS + 1];
+ArrayList m_hProgress[MAXPLAYERS + 1];
+
+int m_iActiveQuest[MAXPLAYERS + 1];
+
 bool m_bWaitingForFriends[MAXPLAYERS + 1];
+bool m_bWaitingForProgress[MAXPLAYERS + 1];
 
 public void OnPluginStart()
 {
-	/*
-	for (int i = 1; i <= MaxClients; i++) // just in case plugin late loads
-	{
-		if (!IsClientValid(i))continue;
-
-		CEQuest_InitClient(i);
-	}
-
-	CreateTimer(QUEST_HUD_REFRESH_RATE, Timer_HudRefresh, _, TIMER_REPEAT);
-
-	RegConsoleCmd("sm_quest", cQuest, "Check your Contract progress");
-	RegConsoleCmd("sm_q", cQuest, "Check your Contract progress");
-	RegConsoleCmd("sm_contract", cQuest, "Check your Contract progress");
-
-	RegAdminCmd("ce_quest_activate", cQuestActivate, ADMFLAG_ROOT, "Check your Contract progress");*/
 	RegServerCmd("ce_contracts_dump", cDump, "");
 	
 	OnLateLoad();
@@ -75,6 +66,8 @@ public void CEcon_OnSchemaUpdated(KeyValues hSchema)
 
 public void ParseEconomyConfig(KeyValues kv)
 {
+	if (kv == null)return;
+	
 	FlushQuestDefinitions();
 	m_hQuestDefinitions = 		new ArrayList(sizeof(CEQuestDefinition));
 	m_hObjectiveDefinitions = 	new ArrayList(sizeof(CEQuestObjectiveDefinition));
@@ -355,8 +348,6 @@ public void RequestClientSteamFriends(int client)
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "steamid", sSteamID64);
 
 	Steam_SendHTTPRequest(httpRequest, RequestClientSteamFriends_Callback, client);
-	
-	PrintToServer("RequestClientSteamFriends()");
 	return;
 }
 
@@ -377,7 +368,133 @@ public void RequestClientSteamFriends_Callback(HTTPRequestHandle request, bool s
 	Steam_GetHTTPResponseBodyData(request, content, size);
 	Steam_ReleaseHTTPRequest(request);
 	
-	PrintToServer("RequestClientSteamFriends_Callback()");
+	KeyValues Response = new KeyValues("Response");
+
+	// ======================== //
+	// Parsing loadout response.
+
+	// If we fail to import content return.
+	if (!Response.ImportFromString(content))return;
+
+	delete m_hFriends[client];
+	m_hFriends[client] = new ArrayList(ByteCountToCells(64));
+
+	if(Response.JumpToKey("friends"))
+	{
+		if(Response.GotoFirstSubKey(false))
+		{
+			do {
+				
+				char sSteamID[64];
+				Response.GetString(NULL_STRING, sSteamID, sizeof(sSteamID));
+				m_hFriends[client].PushString(sSteamID);
+				
+			} while (Response.GotoNextKey(false));
+		}
+	}
+	
+	// Make a Callback.
+	
+	delete Response;
+}
+
+public void RequestClientContractProgress(int client)
+{	
+	if (!IsClientReady(client))return;
+	if (m_bWaitingForFriends[client])return;
+	
+	char sSteamID64[64];
+	GetClientAuthId(client, AuthId_SteamID64, sSteamID64, sizeof(sSteamID64));
+
+	HTTPRequestHandle httpRequest = CEconHTTP_CreateBaseHTTPRequest("/api/IEconomySDK/UserQuests", HTTPMethod_GET);
+	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "get", "progress");
+	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "steamid", sSteamID64);
+
+	Steam_SendHTTPRequest(httpRequest, RequestClientContractProgress_Callback, client);
+	return;
+}
+
+public void RequestClientContractProgress_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code, any client)
+{
+	// We are not processing bots.
+	if (!IsClientReady(client))return;
+	
+	// If request was not succesful, return.
+	if (!success)return;
+	if (code != HTTPStatusCode_OK)return;
+
+	// Getting response size.
+	int size = Steam_GetHTTPResponseBodySize(request);
+	char[] content = new char[size + 1];
+
+	// Getting actual response content body.
+	Steam_GetHTTPResponseBodyData(request, content, size);
+	Steam_ReleaseHTTPRequest(request);
+	
+	KeyValues Response = new KeyValues("Response");
+
+	// ======================== //
+	// Parsing loadout response.
+
+	// If we fail to import content return.
+	if (!Response.ImportFromString(content))return;
+
+	delete m_hProgress[client];
+
+	if(Response.JumpToKey("progress"))
+	{
+		if(Response.GotoFirstSubKey())
+		{
+			do {
+				
+				char sSectionName[11];
+				Response.GetSectionName(sSectionName, sizeof(sSectionName));
+				
+				int iIndex = StringToInt(sSectionName);
+				
+				CEQuestClientProgress xProgress;
+				xProgress.m_iClient = client;
+				xProgress.m_iQuest = iIndex;
+				
+				if(Response.GotoFirstSubKey(false))
+				{
+					do {
+				
+						Response.GetSectionName(sSectionName, sizeof(sSectionName));
+						iIndex = StringToInt(sSectionName);
+						
+						if (iIndex < 0 || iIndex >= MAX_OBJECTIVES)continue;
+						
+						xProgress.m_iProgress[iIndex] = Response.GetNum(NULL_STRING);
+						
+					} while (Response.GotoNextKey(false));
+					
+					Response.GoBack();
+				}
+				
+				//m_hProgress.PushArray(xProgress);
+				
+				PrintToServer("CEQuestClientProgress");
+				PrintToServer("	m_iClient = %N", xProgress.m_iClient);
+				PrintToServer("	m_iQuest = %d", xProgress.m_iQuest);
+				PrintToServer("	m_iProgress =");
+				PrintToServer("	[");
+				
+				for (int i = 0; i < MAX_OBJECTIVES; i++)
+				{
+					PrintToServer("		%d = %d", i, xProgress.m_iProgress[i]);
+				}
+				
+				PrintToServer("	]");
+				PrintToServer("");
+				
+			} while (Response.GotoNextKey());
+		}
+	}
+	
+	// TODO: Make a forward call.
+	
+	delete Response;
 }
 
 public bool IsClientReady(int client)
@@ -407,12 +524,31 @@ public void OnLateLoad()
 
 public void OnClientPostAdminCheck(int client)
 {
+	FlushClientData(client);
 	PrepareClientData(client);
+}
+
+public void OnClientDisconnect(int client)
+{
+	FlushClientData(client);
 }
 
 public void PrepareClientData(int client)
 {
 	RequestClientSteamFriends(client);
+	RequestClientContractProgress(client);
+}
+
+public void FlushClientData(int client)
+{
+	delete m_hFriends[client];
+}
+
+public void UpdateClientQuestProgress(int client, CEQuestClientProgress xProgress)
+{
+	m_hProgress[client] = new ArrayList(sizeof(CEQuestClientProgress));
+	
+	
 }
 
 /*

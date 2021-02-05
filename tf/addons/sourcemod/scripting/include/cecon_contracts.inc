@@ -1,9 +1,6 @@
 #define MAX_OBJECTIVES 10
 #define MAX_HOOKS 4
 
-#define QUEST_OBJECTIVE_PRIMARY 0
-#define QUEST_INDEX_ACTIVE -1
-
 enum CEQuestActions
 {
 	CEQuestAction_Singlefire,
@@ -12,48 +9,6 @@ enum CEQuestActions
 	CEQuestAction_Subtract,
 	CEQuestAction_Set
 }
-
-enum struct CEObjective
-{
-	int m_iProgress;
-	int m_iCounter;
-
-	char m_sName[64];
-	int m_iEnd;
-	int m_iPoints;
-	int m_iLimit;
-
-	bool m_bMarked;
-	bool m_bUpdated;
-
-	CEQuestActions m_nActions[MAX_HOOKS];
-
-	int m_iCEWeaponIndex;
-}
-
-enum struct CEQuest
-{
-	int m_iIndex;
-
-	ArrayList m_hObjectives;
-
-	char m_sPostfix[5];
-	char m_sName[64];
-
-	int m_iSource;
-	int m_iLastIndex;
-
-	// Restrictions
-	char m_sRestrictionMap[64];
-	char m_sRestrictionStrictMap[64];
-	TFClassType m_nRestrictionClass;
-	int m_iCEWeaponIndex;
-}
-
-native void CEQuest_SetPlayerQuest(int client, int contract);
-native bool CEQuest_CanObjectiveTrigger(int client, int objective);
-native KeyValues CEQuest_FindQuestByIndex(int index);
-native void CEQuest_GetObjectiveName(int client, int objective, char[] buffer, int length);
 
 enum struct CEQuestDefinition
 {
@@ -96,4 +51,15 @@ enum struct CEQuestObjectiveHookDefinition
 	char m_sEvent[128];
 
 	CEQuestActions m_Action;
+}
+
+enum struct CEQuestClientProgress
+{
+	int m_iClient;
+	int m_iQuest;
+
+	int m_iProgress[MAX_OBJECTIVES];
+	int m_iVariable[MAX_OBJECTIVES];
+
+	int m_iSource;
 }
