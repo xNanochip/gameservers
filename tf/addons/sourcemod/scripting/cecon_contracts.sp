@@ -41,17 +41,37 @@ ArrayList m_hHooksDefinitions;
 ArrayList m_hFriends[MAXPLAYERS + 1];
 ArrayList m_hProgress[MAXPLAYERS + 1];
 
-int m_iActiveQuest[MAXPLAYERS + 1];
-
 bool m_bWaitingForFriends[MAXPLAYERS + 1];
 bool m_bWaitingForProgress[MAXPLAYERS + 1];
+
+CEQuestDefinition m_xActiveQuestStruct[MAXPLAYERS + 1];
+
+int m_iLastUniqueEvent[MAXPLAYERS + 1];
+bool m_bIsObjectiveMarked[MAXPLAYERS + 1][MAX_OBJECTIVES + 1];
 
 public void OnPluginStart()
 {
 	RegServerCmd("ce_contracts_dump", cDump, "");
+	RegServerCmd("ce_contracts_set", cQuestActivate, "");
 	
 	OnLateLoad();
 
+	CreateTimer(QUEST_HUD_REFRESH_RATE, Timer_HudRefresh, _, TIMER_REPEAT);
+}
+
+public Action cQuestActivate(int args)
+{
+	char sArg1[MAX_NAME_LENGTH], sArg2[11];
+	GetCmdArg(1, sArg1, sizeof(sArg1));
+	GetCmdArg(2, sArg2, sizeof(sArg2));
+
+	int iTarget = FindTargetBySteamID64(sArg1);
+	if (!IsClientValid(iTarget))return Plugin_Handled;
+
+	int iQuest = StringToInt(sArg2);
+
+	SetClientActiveQuestByIndex(iTarget, iQuest);
+	return Plugin_Handled;
 }
 
 public void OnAllPluginsLoaded()
@@ -78,7 +98,8 @@ public void ParseEconomyConfig(KeyValues kv)
 		if(kv.GotoFirstSubKey())
 		{
 			do {
-
+				int iQuestWorldIndex = m_hQuestDefinitions.Length;
+				
 				char sSectionName[11];
 				kv.GetSectionName(sSectionName, sizeof(sSectionName));
 				
@@ -86,6 +107,9 @@ public void ParseEconomyConfig(KeyValues kv)
 				xQuest.m_iIndex = StringToInt(sSectionName);
 				
 				xQuest.m_bBackground = kv.GetNum("background", 0) == 1;
+				
+				kv.GetString("name", xQuest.m_sName, sizeof(xQuest.m_sName));
+				kv.GetString("postfix", xQuest.m_sPostfix, sizeof(xQuest.m_sPostfix), "CP");
 				
 				// Map Restrictions
 				kv.GetString("restrictions/map", xQuest.m_sRestrictedToMap, sizeof(xQuest.m_sRestrictedToMap));
@@ -121,11 +145,11 @@ public void ParseEconomyConfig(KeyValues kv)
 							
 							CEQuestObjectiveDefinition xObjective;
 							xObjective.m_iIndex = iObjectiveLocalIndex;
-							xObjective.m_iQuestIndex = xQuest.m_iIndex;
+							xObjective.m_iQuestIndex = iQuestWorldIndex;
 							
 							kv.GetString("name", xObjective.m_sName, sizeof(xObjective.m_sName));
 							
-							xObjective.m_iLimit = kv.GetNum("end", 100);
+							xObjective.m_iLimit = kv.GetNum("limit", 100);
 							xObjective.m_iPoints = kv.GetNum("points", 0);
 							xObjective.m_iEnd = kv.GetNum("end", 0);
 							
@@ -162,8 +186,8 @@ public void ParseEconomyConfig(KeyValues kv)
 										
 										CEQuestObjectiveHookDefinition xHook;
 										xHook.m_iIndex = iHookLocalIndex;
-										xHook.m_iObjectiveIndex = xObjective.m_iIndex;
-										xHook.m_iQuestIndex = xQuest.m_iIndex;
+										xHook.m_iObjectiveIndex = iObjectiveWorldIndex;
+										xHook.m_iQuestIndex = iQuestWorldIndex;
 										xHook.m_Action = nAction;
 										
 										kv.GetString("event", xHook.m_sEvent, sizeof(xHook.m_sEvent));
@@ -215,7 +239,7 @@ public Action cDump(int args)
 		for (int j = 0; j < xQuest.m_iObjectivesCount; j++)
 		{
 			CEQuestObjectiveDefinition xObjective;
-			if(GetQuestObjectiveByIndex(i, j, xObjective))
+			if(GetQuestObjectiveByIndex(xQuest, j, xObjective))
 			{
 				LogMessage("    %d => CEQuestObjectiveDefinition", j);
 				LogMessage("    {");
@@ -233,7 +257,7 @@ public Action cDump(int args)
 				for (int k = 0; k < xObjective.m_iHooksCount; k++)
 				{
 					CEQuestObjectiveHookDefinition xHook;
-					if(GetQuestObjectiveHookByIndex(i, j, k, xHook))
+					if(GetObjectiveHookByIndex(xObjective, k, xHook))
 					{
 						LogMessage("        %d => CEQuestObjectiveHookDefinition", k);
 						LogMessage("        {");
@@ -299,41 +323,55 @@ public bool GetHookByIndex(int index, CEQuestObjectiveHookDefinition xStruct)
 	return true;
 }
 
-public bool GetQuestObjectiveByIndex(int quest, int index, CEQuestObjectiveDefinition xStruct)
+public bool GetQuestObjectiveByIndex(CEQuestDefinition xQuest, int index, CEQuestObjectiveDefinition xStruct)
 {
-	if (quest < 0)return false;
 	if (index < 0)return false;
 	
-	CEQuestDefinition xQuest;
-	if(GetQuestByIndex(quest, xQuest))
+	if (index >= xQuest.m_iObjectivesCount)return false;
+	int iWorldIndex = xQuest.m_Objectives[index];
+	
+	GetObjectiveByIndex(iWorldIndex, xStruct);
+	return true;
+}
+
+public bool GetObjectiveHookByIndex(CEQuestObjectiveDefinition xObjective, int index, CEQuestObjectiveHookDefinition xStruct)
+{
+	if (index < 0)return false;
+
+	if (index >= xObjective.m_iHooksCount)return false;
+	int iWorldIndex = xObjective.m_Hooks[index];
+	
+	GetHookByIndex(iWorldIndex, xStruct);
+	return true;
+}
+
+public bool GetQuestByDefIndex(int defid, CEQuestDefinition xBuffer)
+{
+	if (m_hQuestDefinitions == null)return false;
+	
+	for (int i = 0; i < m_hQuestDefinitions.Length; i++)
 	{
-		if (index >= xQuest.m_iObjectivesCount)return false;
-		int iWorldIndex = xQuest.m_Objectives[index];
+		CEQuestDefinition xStruct;
+		m_hQuestDefinitions.GetArray(i, xStruct);
 		
-		GetObjectiveByIndex(iWorldIndex, xStruct);
-		return true;
+		if(xStruct.m_iIndex == defid)
+		{
+			xBuffer = xStruct;
+			return true;
+		}
 	}
 	
 	return false;
 }
 
-public bool GetQuestObjectiveHookByIndex(int quest, int objective, int index, CEQuestObjectiveHookDefinition xStruct)
+public bool GetQuestByObjective(CEQuestObjectiveDefinition xObjective, CEQuestDefinition xBuffer)
 {
-	if (quest < 0)return false;
-	if (objective < 0)return false;
-	if (index < 0)return false;
-	
-	CEQuestObjectiveDefinition xObjective;
-	if(GetQuestObjectiveByIndex(quest, objective, xObjective))
-	{
-		if (index >= xObjective.m_iHooksCount)return false;
-		int iWorldIndex = xObjective.m_Hooks[index];
-		
-		GetHookByIndex(iWorldIndex, xStruct);
-		return true;
-	}
-	
-	return false;
+	return GetQuestByIndex(xObjective.m_iQuestIndex, xBuffer);
+}
+
+public bool GetObjectiveByHook(CEQuestObjectiveHookDefinition xHook, CEQuestObjectiveDefinition xBuffer)
+{
+	return GetObjectiveByIndex(xHook.m_iObjectiveIndex, xBuffer);
 }
 
 public void RequestClientSteamFriends(int client)
@@ -440,6 +478,8 @@ public void RequestClientContractProgress_Callback(HTTPRequestHandle request, bo
 	if (!Response.ImportFromString(content))return;
 
 	delete m_hProgress[client];
+	
+	int iActive = Response.GetNum("activated");
 
 	if(Response.JumpToKey("progress"))
 	{
@@ -464,7 +504,6 @@ public void RequestClientContractProgress_Callback(HTTPRequestHandle request, bo
 						iIndex = StringToInt(sSectionName);
 						
 						if (iIndex < 0 || iIndex >= MAX_OBJECTIVES)continue;
-						
 						xProgress.m_iProgress[iIndex] = Response.GetNum(NULL_STRING);
 						
 					} while (Response.GotoNextKey(false));
@@ -472,25 +511,13 @@ public void RequestClientContractProgress_Callback(HTTPRequestHandle request, bo
 					Response.GoBack();
 				}
 				
-				//m_hProgress.PushArray(xProgress);
-				
-				PrintToServer("CEQuestClientProgress");
-				PrintToServer("	m_iClient = %N", xProgress.m_iClient);
-				PrintToServer("	m_iQuest = %d", xProgress.m_iQuest);
-				PrintToServer("	m_iProgress =");
-				PrintToServer("	[");
-				
-				for (int i = 0; i < MAX_OBJECTIVES; i++)
-				{
-					PrintToServer("		%d = %d", i, xProgress.m_iProgress[i]);
-				}
-				
-				PrintToServer("	]");
-				PrintToServer("");
+				UpdateClientQuestProgress(client, xProgress);
 				
 			} while (Response.GotoNextKey());
 		}
 	}
+	
+	SetClientActiveQuestByIndex(client, iActive);
 	
 	// TODO: Make a forward call.
 	
@@ -542,96 +569,103 @@ public void PrepareClientData(int client)
 public void FlushClientData(int client)
 {
 	delete m_hFriends[client];
+	delete m_hProgress[client];
+	
+	m_xActiveQuestStruct[client].m_iIndex = 0;
+	m_iLastUniqueEvent[client] = 0;
 }
 
 public void UpdateClientQuestProgress(int client, CEQuestClientProgress xProgress)
 {
-	m_hProgress[client] = new ArrayList(sizeof(CEQuestClientProgress));
-	
-	
-}
-
-/*
-public void CEQuest_InitClient(int client)
-{
-	if (!IsClientReady(client))return;
-
-	CEQuest_SetPlayerActiveQuest(client);
-	CEQuest_PlayerLoadFriends(client);
-}
-
-public APLRes AskPluginLoad2(Handle plugin, bool late, char[] error, int err_max)
-{
-	RegPluginLibrary("ce_contracts");
-
-	CreateNative("CEQuest_SetPlayerQuest", Native_SetPlayerQuest);
-	CreateNative("CEQuest_FindQuestByIndex", Native_FindQuestByIndex);
-	CreateNative("CEQuest_GetObjectiveName", Native_GetObjectiveName);
-	CreateNative("CEQuest_CanObjectiveTrigger", Native_CanObjectiveTrigger);
-
- 	return APLRes_Success;
-}
-
-public void OnClientPostAdminCheck(int client)
-{
-	CEQuest_InitClient(client);
-}
-
-public void CEQuest_PlayerLoadFriends(int client)
-{
-	FlushFriendsCache(client);
-	
-	char sSteamID[64];
-	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-	
-	HTTPRequestHandle httpRequest = CEcon_CreateBaseHTTPRequest("/api/ISteamInterface/GUserFriends", HTTPMethod_GET);
-	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "steamid", sSteamID);
-	Steam_SendHTTPRequest(httpRequest, httpFetchFriends, client);
-}
-
-public void httpFetchFriends(HTTPRequestHandle request, bool success, HTTPStatusCode code, any client)
-{
-	if (!IsClientReady(client))return;
-
-	if(code == HTTPStatusCode_OK)
+	if(m_hProgress[client] == null)
 	{
-		// Getting response content length.
-		int size = Steam_GetHTTPResponseBodySize(request);
-		char[] content = new char[size + 1];
+		m_hProgress[client] = new ArrayList(sizeof(CEQuestClientProgress));
+	}
 	
-		// Getting actual response content body.
-		Steam_GetHTTPResponseBodyData(request, content, size);
-		Steam_ReleaseHTTPRequest(request);
+	for (int i = 0; i < m_hProgress[client].Length; i++)
+	{
+		CEQuestClientProgress xStruct;
+		m_hProgress[client].GetArray(i, xStruct);
+		
+		if(xStruct.m_iQuest == xProgress.m_iQuest)
+		{
+			m_hProgress[client].Erase(i);
+			i--;
+		}
+	}
 	
-		if (content[0] != '"')return;
+	m_hProgress[client].PushArray(xProgress);
+}
 
-		// Loading KeyValues of the project.
-		KeyValues hFriends = new KeyValues("Friends");
-		hFriends.ImportFromString(content);
+public bool GetClientQuestProgress(int client, CEQuestDefinition xQuest, CEQuestClientProgress xBuffer)
+{
+	xBuffer.m_iClient = client;
+	xBuffer.m_iQuest = xQuest.m_iIndex;
+	
+	for (int i = 0; i < m_hProgress[client].Length; i++)
+	{
+		CEQuestClientProgress xStruct;
+		m_hProgress[client].GetArray(i, xStruct);
+		
+		if(xStruct.m_iQuest == xQuest.m_iIndex)
+		{
+			xBuffer = xStruct;
+			return true;
+		}
+	}
+	
+	return false;
+}
 
-		if(hFriends.JumpToKey("friends", false))
-	    {
-		    delete m_hFriends[client];
-		    m_hFriends[client] = new ArrayList(ByteCountToCells(64));
+public bool IsClientProgressLoaded(int client)
+{
+	return m_hProgress[client] != null;
+}
 
-		    if(hFriends.GotoFirstSubKey(false))
-		    {
-		   		do {
-					char sSteamID[64];
-					hFriends.GetString(NULL_STRING, sSteamID, sizeof(sSteamID), "");
-					m_hFriends[client].PushString(sSteamID);
+public void SetClientActiveQuestByIndex(int client, int quest)
+{
+	// We can't change contract if we didn't load progress yet.
+	if (!IsClientProgressLoaded(client))return;
+	// We don't reactivate the quest if it's already active.
+	if (m_xActiveQuestStruct[client].m_iIndex == quest)return;
+	
+	CEQuestDefinition xQuest;
+	if(GetQuestByDefIndex(quest, xQuest))
+	{
+		m_xActiveQuestStruct[client] = xQuest;
+		
+		PrintToChat(client, "\x03You have activated '\x05%s\x03' contract. Type \x05!quest \x03or \x05!contract \x03to view current completion progress.", xQuest.m_sName);
+		PrintToChat(client, "\x03You can change your contract on \x05creators.tf \x03in \x05ConTracker \x03tab.");
 
-		   		} while (hFriends.GotoNextKey(false));
-		   	}
-			PrintToConsole(client, "[INFO] Steam Friends Found: %d", m_hFriends[client].Length);
-	  	}
-		delete hFriends;
+		char sDecodeSound[64];
+		strcopy(sDecodeSound, sizeof(sDecodeSound), "Quest.Decode");
+		if(StrEqual(xQuest.m_sPostfix, "MP"))
+		{
+			Format(sDecodeSound, sizeof(sDecodeSound), "%sHalloween", sDecodeSound);
+		}
+
+		ClientCommand(client, "playgamesound %s", sDecodeSound);
 	}
 }
 
-public void CEQuest_SetPlayerActiveQuest(int client)
+public bool GetClientActiveQuest(int client, CEQuestDefinition xBuffer)
 {
-	CEQuest_SetPlayerQuest(client, QUEST_INDEX_ACTIVE);
+	if (m_xActiveQuestStruct[client].m_iIndex <= 0)return false;
+	
+	xBuffer = m_xActiveQuestStruct[client];
+	return true;
+}
+
+public bool IsQuestActive(CEQuestDefinition xQuest)
+{
+	// Checking what is the current map.
+	char sMap[64];
+	GetCurrentMap(sMap, sizeof(sMap));
+
+	if (!StrEqual(xQuest.m_sRestrictedToMap, "") && StrContains(sMap, xQuest.m_sRestrictedToMap) == -1)return false;
+	if (!StrEqual(xQuest.m_sStrictRestrictedToMap, "") && !StrEqual(xQuest.m_sStrictRestrictedToMap, sMap))return false;
+
+	return true;
 }
 
 public Action Timer_HudRefresh(Handle timer, any data)
@@ -639,281 +673,269 @@ public Action Timer_HudRefresh(Handle timer, any data)
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
-		if (m_hQuest[i].m_iIndex == 0)continue;
-
-		char sText[256];
-		Format(sText, sizeof(sText), "%s: \n", m_hQuest[i].m_sName);
-
-		if(CEQuest_IsQuestActive(i))
-		{
-			for (int j = 0; j < m_hQuest[i].m_hObjectives.Length; j++)
-			{
-				CEObjective hObj;
-				m_hQuest[i].m_hObjectives.GetArray(j, hObj);
-
-				int iLimit = hObj.m_iLimit;
-				int iProgress = hObj.m_iProgress;
-
-				if(j == QUEST_OBJECTIVE_PRIMARY)
-				{
-					Format(sText, sizeof(sText), "%s%d/%d%s \n", sText, iProgress, iLimit, m_hQuest[i].m_sPostfix);
-
-				} else {
-
-					if (iLimit == 0)continue;
-					Format(sText, sizeof(sText), "%s[%d/%d] ", sText, iProgress, iLimit);
-				}
-			}
-		} else {
-
-			Format(sText, sizeof(sText), "%s- Inactive - ", sText);
-		}
-
-		bool bByMe = m_hQuest[i].m_iSource == i;
-		bool bByFriend = !bByMe && IsClientValid(m_hQuest[i].m_iSource);
-
-		if(bByFriend)
-		{
-			Format(sText, sizeof(sText), "%s\n%N ", sText, m_hQuest[i].m_iSource);
-			SetHudTextParams(1.0, -1.0, QUEST_HUD_REFRESH_RATE + 0.1, 50, 200, 50, 255);
-
-		} else {
-
-			if(bByMe)
-			{
-				SetHudTextParams(1.0, -1.0, QUEST_HUD_REFRESH_RATE + 0.1, 255, 200, 50, 255);
-			} else {
-				SetHudTextParams(1.0, -1.0, QUEST_HUD_REFRESH_RATE + 0.1, 255, 255, 255, 255);
-			}
-			Format(sText, sizeof(sText), "%s\n", sText);
-		}
-
-		ShowHudText(i, -1, sText);
-		if (m_hQuest[i].m_iSource > 0)m_hQuest[i].m_iSource = 0;
-	}
-
-}
-
-public any Native_SetPlayerQuest(Handle plugin, int numParams)
-{
-	int client = GetNativeCell(1);
-	int quest = GetNativeCell(2);
-	if (m_hQuest[client].m_iIndex == quest)return;
-
-	FlushClientCache(client);
-
-	char sUrl[128];
-	Format(sUrl, sizeof(sUrl), "/api/IUsers/GContracker?get=contract&contract=%d", quest);
-
-	m_iWaitingForQuest[client] = quest;
-	
-	char sSteamID[64];
-	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-	
-	char sQuest[11];
-	IntToString(quest, sQuest, sizeof(sQuest));
-	
-	HTTPRequestHandle httpRequest = CEcon_CreateBaseHTTPRequest("/api/IEconomySDK/UserQuests", HTTPMethod_GET);
-	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "steamid", sSteamID);
-	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "contract", sQuest);
-	Steam_SendHTTPRequest(httpRequest, httpFetchFriends, client);
-}
-
-public void httpFetchContracker(HTTPRequestHandle request, bool success, HTTPStatusCode code, any client)
-{
-	if(code == HTTPStatusCode_OK)
-	{
-		// Getting response content length.
-		int size = Steam_GetHTTPResponseBodySize(request);
-		char[] content = new char[size + 1];
-	
-		// Getting actual response content body.
-		Steam_GetHTTPResponseBodyData(request, content, size);
-		Steam_ReleaseHTTPRequest(request);
 		
-		if (content[0] != '"')return;
-
-		// Loading KeyValues of the project.
-		KeyValues hProgress = new KeyValues("Progress");
-		hProgress.ImportFromString(content);
-
-		// Checking if result was succesful.
-		char sResult[32];
-		hProgress.GetString("result", sResult, sizeof(sResult));
-		if(!StrEqual(sResult, "SUCCESS"))
+		CEQuestDefinition xQuest;
+		if(GetClientActiveQuest(i, xQuest))
 		{
-			// Nvm, we've failed. Flush everything.
-			m_hQuest[client].m_iIndex = 0;
-			delete hProgress;
-			return;
-		}
-
-		if(hProgress.JumpToKey("contract", false))
-		{
-			// Getting the Index of the quest.
-			int iIndex = hProgress.GetNum("id");
-
-			if(m_iWaitingForQuest[client] > -1 && m_iWaitingForQuest[client] != iIndex)
+			CEQuestClientProgress xProgress;
+			GetClientQuestProgress(i, xQuest, xProgress);
+			
+			char sText[256];
+			Format(sText, sizeof(sText), "%s: \n", xQuest.m_sName);
+			
+			if(IsQuestActive(xQuest))
 			{
-				m_hQuest[client].m_iIndex = 0;
-				delete hProgress;
-				return;
-			}
-
-			// Let's check if this quest even exists.
-			KeyValues hQuest = CEQuest_FindQuestByIndex(iIndex);
-
-			FlushClientCache(client);
-			if (hQuest != null)
-			{
-				// Saving the index of the quest and the definition config.
-				m_hQuest[client].m_iIndex = hProgress.GetNum("id");
-
-				//PrintToChat(client, "Loading quest: %d", m_hQuest[client].m_iIndex);
-
-				// Getting static contract info.
-				hQuest.GetString("name", m_hQuest[client].m_sName, 64);
-				hQuest.GetString("postfix", m_hQuest[client].m_sPostfix, 64, "CP");
-
-				//PrintToChat(client, "∟ Name: %s", m_hQuest[client].m_sName);
-				//PrintToChat(client, "∟ Postfix: %s", m_hQuest[client].m_sPostfix);
-
-				char sClass[16];
-				// Getting restrictions.
-				hQuest.GetString("restrictions/map", m_hQuest[client].m_sRestrictionMap, 64);
-				hQuest.GetString("restrictions/map_s", m_hQuest[client].m_sRestrictionStrictMap, 64);
-				hQuest.GetString("restrictions/class", sClass, sizeof(sClass));
-				m_hQuest[client].m_nRestrictionClass = TF2_GetClass(sClass);
-
-				char sCEWeapon[128];
-				hQuest.GetString("restrictions/ce_weapon", sCEWeapon, sizeof(sCEWeapon));
-
-				if(!StrEqual(sCEWeapon, ""))
+				for (int j = 0; j < xQuest.m_iObjectivesCount; j++)
 				{
-					CEItemDefinition xDef;
-					if(CEconItems_GetItemDefinitionByName(sCEWeapon, xDef))
+					CEQuestObjectiveDefinition xObjective;
+					if(GetQuestObjectiveByIndex(xQuest, j, xObjective))
 					{
-						m_hQuest[client].m_iCEWeaponIndex = xDef.m_iIndex;
-					} else {
-						m_hQuest[client].m_iCEWeaponIndex = hQuest.GetNum("restrictions/ce_weapon", -1);
+						int iLimit = xObjective.m_iLimit;
+						int iProgress = xProgress.m_iProgress[j];
+					
+						if(j == 0)
+						{
+							Format(sText, sizeof(sText), "%s%d/%d%s \n", sText, iProgress, iLimit, xQuest.m_sPostfix);
+						} else {
+							if (iLimit == 0)continue;
+							Format(sText, sizeof(sText), "%s[%d/%d] ", sText, iProgress, iLimit);
+						}
 					}
 				}
-
-				if(hQuest.JumpToKey("objectives/0", false))
-				{
-					do {
-						char sIndex[11];
-						hQuest.GetSectionName(sIndex, sizeof(sIndex));
-						int iObjective = StringToInt(sIndex);
-
-						CEObjective hObjective;
-						hQuest.GetString("name", hObjective.m_sName, 64);
-						hObjective.m_iEnd = hQuest.GetNum("end", 0);
-						hObjective.m_iPoints = hQuest.GetNum("points", 0);
-						hObjective.m_iLimit = hQuest.GetNum("limit", 100);
-
-						hQuest.GetString("restrictions/ce_weapon", sCEWeapon, sizeof(sCEWeapon));
-
-						if(!StrEqual(sCEWeapon, ""))
-						{
-							CEItemDefinition xDef;
-							if(CEconItems_GetItemDefinitionByName(sCEWeapon, xDef))
-							{
-								m_hQuest[client].m_iCEWeaponIndex = xDef.m_iIndex;
-							} else {
-								m_hQuest[client].m_iCEWeaponIndex = hQuest.GetNum("restrictions/ce_weapon", -1);
-							}
-						}
-
-						for (int i = 0; i < MAX_HOOKS; i++)
-						{
-							char sKey[32];
-							Format(sKey, sizeof(sKey), "hooks/%d", i);
-							if(hQuest.JumpToKey(sKey, false))
-							{
-								//PrintToChat(client, "	∟ Reading hook %d", i);
-								char sAction[32], sEvent[128];
-								hQuest.GetString("action", sAction, sizeof(sAction), "singlefire");
-								hQuest.GetString("event", sEvent, sizeof(sEvent));
-
-								if (StrEqual(sAction, "increment"))hObjective.m_nActions[i] = ACTION_INCREMENT;
-								else if (StrEqual(sAction, "reset"))hObjective.m_nActions[i] = ACTION_RESET;
-								else if (StrEqual(sAction, "substract"))hObjective.m_nActions[i] = ACTION_SUBSTRACT;
-								else if (StrEqual(sAction, "set"))hObjective.m_nActions[i] = ACTION_SET;
-								else hObjective.m_nActions[i] = ACTION_SINGLEFIRE;
-
-								strcopy(m_sQuestEvents[client][iObjective][i], sizeof(m_sQuestEvents[][][]), sEvent);
-
-								hQuest.GoBack();
-							} else {
-								break;
-							}
-						}
-
-						char sKey[32];
-						Format(sKey, sizeof(sKey), "objectives/%s", sIndex);
-						if(hProgress.JumpToKey(sKey, false))
-						{
-							hObjective.m_iProgress = hProgress.GetNum("progress", 0);
-							//PrintToChat(client, "	∟ Progress: %d", hObjective.m_iProgress);
-							hProgress.GoBack();
-						}
-
-						if (m_hQuest[client].m_hObjectives == null)m_hQuest[client].m_hObjectives = new ArrayList(sizeof(CEObjective));
-						m_hQuest[client].m_hObjectives.PushArray(hObjective);
-
-					} while (hQuest.GotoNextKey());
-				}
-
-				PrintToChat(client, "\x03You have activated '\x05%s\x03' contract. Type \x05!quest \x03or \x05!contract \x03to view current completion progress.", m_hQuest[client].m_sName);
-				PrintToChat(client, "\x03You can change your contract on \x05creators.tf \x03in \x05ConTracker \x03tab.");
-
-				char sDecodeSound[64];
-				strcopy(sDecodeSound, sizeof(sDecodeSound), "Quest.Decode");
-				if(StrEqual(m_hQuest[client].m_sPostfix, "MP"))
-				{
-					Format(sDecodeSound, sizeof(sDecodeSound), "%sHalloween", sDecodeSound);
-				}
-
-				ClientCommand(client, "playgamesound %s", sDecodeSound);
+			} else {
+				Format(sText, sizeof(sText), "%s- Inactive - ", sText);
 			}
-			delete hQuest;
-		}
-		delete hProgress;
-	}
-}
-
-public void FlushClientCache(int client)
-{
-	m_iWaitingForQuest[client] = 0;
-	m_hQuest[client].m_iIndex = 0;
-
-	strcopy(m_hQuest[client].m_sName, 64, "");
-	strcopy(m_hQuest[client].m_sPostfix, 5, "");
-
-	m_hQuest[client].m_iSource = 0;
-	m_hQuest[client].m_iLastIndex = 0;
-
-	strcopy(m_hQuest[client].m_sRestrictionMap, 64, "");
-	strcopy(m_hQuest[client].m_sRestrictionStrictMap, 64, "");
-	m_hQuest[client].m_nRestrictionClass = TFClass_Unknown;
-	m_hQuest[client].m_iCEWeaponIndex = 0;
-
-	delete m_hQuest[client].m_hObjectives;
+			
+			bool bByMe = xProgress.m_iSource == i;
+			bool bByFriend = !bByMe && IsClientValid(xProgress.m_iSource);
+			
+			if(bByFriend)
+			{
+				Format(sText, sizeof(sText), "%s\n%N ", sText, xProgress.m_iSource);
+				SetHudTextParams(1.0, -1.0, QUEST_HUD_REFRESH_RATE + 0.1, 50, 200, 50, 255);
 	
-	for (int i = 0; i < sizeof(m_sQuestEvents[]); i++)
-	{
-		for (int j = 0; j < sizeof(m_sQuestEvents[][]); j++)
-		{
-			strcopy(m_sQuestEvents[client][i][j], sizeof(m_sQuestEvents[][][]), "");
+			} else {
+	
+				if(bByMe)
+				{
+					SetHudTextParams(1.0, -1.0, QUEST_HUD_REFRESH_RATE + 0.1, 255, 200, 50, 255);
+				} else {
+					SetHudTextParams(1.0, -1.0, QUEST_HUD_REFRESH_RATE + 0.1, 255, 255, 255, 255);
+				}
+				Format(sText, sizeof(sText), "%s\n", sText);
+			}
+
+			ShowHudText(i, -1, sText);
+			
+			if (xProgress.m_iSource > 0)
+			{
+				xProgress.m_iSource = 0;
+				UpdateClientQuestProgress(i, xProgress);
+			}
 		}
 	}
 }
 
-public void FlushFriendsCache(int client)
+public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 {
-	delete m_hFriends[client];
+	if (!IsQuestActive(xQuest))return false;
+
+	// Class Restriction.
+	if (xQuest.m_nRestrictedToClass != TFClass_Unknown && 
+		xQuest.m_nRestrictedToClass != TF2_GetPlayerClass(client)
+	)return false;
+
+	int iLastWeapon = CEcon_GetLastUsedWeapon(client);
+	int iItemDef = xQuest.m_iRestrictedToCEWeaponIndex;
+	if(iItemDef > 0)
+	{
+		if (!IsValidEntity(iLastWeapon))return false;
+		if (!CEconItems_IsEntityCustomEconItem(iLastWeapon))return false;
+
+		CEItem xItem;
+		if(CEconItems_GetEntityItemStruct(iLastWeapon, xItem))
+		{
+			if (xItem.m_iItemDefinitionIndex != iItemDef)return false;
+		} else {
+			return false;
+		}
+	}
+
+	return true;
 }
+
+public bool CanClientTriggerObjective(int client, CEQuestObjectiveDefinition xObjective)
+{
+	int iLastWeapon = CEcon_GetLastUsedWeapon(client);
+	int iItemDef = xObjective.m_iRestrictedToCEWeaponIndex;
+	if(iItemDef > 0)
+	{
+		if (!IsValidEntity(iLastWeapon))return false;
+		if (!CEconItems_IsEntityCustomEconItem(iLastWeapon))return false;
+
+		CEItem xItem;
+		if(CEconItems_GetEntityItemStruct(iLastWeapon, xItem))
+		{
+			if (xItem.m_iItemDefinitionIndex != iItemDef)return false;
+		} else {
+			return false;
+		}
+	}
+	return true;
+}
+
+public bool HasClientCompletedObjective(int client, CEQuestObjectiveDefinition xObjective)
+{
+	if (xObjective.m_iLimit <= 0)return false;
+	
+	CEQuestDefinition xQuest;
+	if(GetQuestByObjective(xObjective, xQuest))
+	{
+		CEQuestClientProgress xProgress;
+		GetClientQuestProgress(client, xQuest, xProgress);
+		
+		return xProgress.m_iProgress[xObjective.m_iIndex] >= xObjective.m_iLimit;
+	}
+	return false;
+}
+
+public void CEcon_OnClientEvent(int client, const char[] event, int add, int unique_id)
+{
+	CEQuestDefinition xQuest;
+	if(GetClientActiveQuest(client, xQuest))
+	{
+		CEQuest_TickleObjectives(client, xQuest, client, event, add, unique_id);
+	}
+}
+
+public void CEQuest_TickleObjectives(int client, CEQuestDefinition xQuest, int source, const char[] event, int add, int unique)
+{
+	if (!CanClientTriggerQuest(client, xQuest))return;
+	
+	bool bShouldResetObjectiveMark = false;
+	
+	if (m_iLastUniqueEvent[client] == 0)		bShouldResetObjectiveMark = true;
+	if (m_iLastUniqueEvent[client] != unique)	bShouldResetObjectiveMark = true;
+	
+	// Event is new, unmark all events.
+	if (bShouldResetObjectiveMark)
+	{
+		for (int i = 0; i < MAX_OBJECTIVES; i++)
+		{
+			m_bIsObjectiveMarked[client][i] = false;
+		}
+	}
+	
+	m_iLastUniqueEvent[client] = unique;
+
+	CEQuestClientProgress xProgress;
+	GetClientQuestProgress(client, xQuest, xProgress);
+
+	for (int i = 0; i < xQuest.m_iObjectivesCount; i++)
+	{
+		if (m_bIsObjectiveMarked[client][i])continue;
+		
+		CEQuestObjectiveDefinition xObjective;
+		if(GetQuestObjectiveByIndex(xQuest, i, xObjective))
+		{
+			if (!CanClientTriggerObjective(client, xObjective))continue;
+			
+			for (int j = 0; j < xObjective.m_iHooksCount; j++)
+			{
+				CEQuestObjectiveHookDefinition xHook;
+				if(GetObjectiveHookByIndex(xObjective, j, xHook))
+				{
+					if (StrEqual(xHook.m_sEvent, ""))continue;
+					if (!StrEqual(xHook.m_sEvent, event))continue;
+					
+					if(client == source)
+					{
+						// Send progress to friends.
+					}
+					
+					m_bIsObjectiveMarked[client][i] = true;
+					
+					if (HasClientCompletedObjective(client, xObjective))continue;
+					
+					switch(xHook.m_Action)
+					{
+						// Just straight up fires the event.
+						case CEQuestAction_Singlefire:
+						{
+							PrintToChatAll("CEQuestAction_Singlefire %d", add * xObjective.m_iPoints);
+							PrintToChatAll("Trigger %d points", add * xObjective.m_iPoints);
+							// Trigger add * xObjective.m_iPoints points.
+						}
+						
+						// Increments the internal objective variable by `add`.
+						case CEQuestAction_Increment:
+						{
+							PrintToChatAll("CEQuestAction_Increment %d", add);
+							
+							if(xObjective.m_iEnd > 0)
+							{
+								int iPrevValue = xProgress.m_iVariable[i];
+								xProgress.m_iVariable[i] += add;
+								
+								int iToAdd = 0;
+								while(xProgress.m_iVariable[i] >= xObjective.m_iEnd)
+								{
+									xProgress.m_iVariable[i] -= xObjective.m_iEnd;
+									iToAdd += xObjective.m_iPoints;
+								}
+								
+								// We only run update quest progress if we're really sure,
+								// that variables have changed.
+								if(iPrevValue != xProgress.m_iVariable[i])
+								{
+									UpdateClientQuestProgress(client, xProgress);
+								}
+								
+								if(iToAdd > 0)
+								{
+									PrintToChatAll("Trigger %d points", iToAdd);
+									// Trigger iToAdd points.
+								}
+							}
+						}
+						
+						// Resets the internal objective value back to zero.
+						case CEQuestAction_Reset:
+						{
+							PrintToChatAll("CEQuestAction_Reset %d", add * xObjective.m_iPoints);
+							
+							// We only update values if we're really sure that something 
+							// has changed.
+							if(xProgress.m_iVariable[i] > 0)
+							{
+								xProgress.m_iVariable[i] = 0;
+								UpdateClientQuestProgress(client, xProgress);
+							}
+						}
+						
+						// Subtracts the internal var by `var`.
+						case CEQuestAction_Subtract:
+						{
+							PrintToChatAll("CEQuestAction_Subtract %d", add * xObjective.m_iPoints);
+							
+							int iPrevValue = xProgress.m_iVariable[i];
+							xProgress.m_iVariable[i] -= add;
+								
+							// We only run update quest progress if we're really sure,
+							// that variables have changed.
+							if(iPrevValue != xProgress.m_iVariable[i])
+							{
+								UpdateClientQuestProgress(client, xProgress);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+/*
 
 public Action cQuestActivate(int client, int args)
 {
@@ -1405,21 +1427,7 @@ public bool CEQuest_CanUseQuest(int client)
 	return true;
 }
 
-
-public bool IsClientReady(int client)
-{
-	if (!IsClientValid(client))return false;
-	if (IsFakeClient(client))return false;
-	return true;
-}
-
-public bool IsClientValid(int client)
-{
-	if (client <= 0 || client > MaxClients)return false;
-	if (!IsClientInGame(client))return false;
-	if (!IsClientAuthorized(client))return false;
-	return true;
-}
+*/
 
 public int FindTargetBySteamID64(const char[] steamid)
 {
@@ -1447,4 +1455,4 @@ public int MIN(int iNum1, int iNum2)
 	if (iNum1 < iNum2)return iNum1;
 	if (iNum2 < iNum1)return iNum2;
 	return iNum1;
-}*/
+}

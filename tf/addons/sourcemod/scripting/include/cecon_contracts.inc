@@ -14,6 +14,9 @@ enum struct CEQuestDefinition
 {
 	int m_iIndex;
 
+	char m_sName[128];
+	char m_sPostfix[5];
+
 	bool m_bBackground;
 
 	int m_iObjectivesCount;
