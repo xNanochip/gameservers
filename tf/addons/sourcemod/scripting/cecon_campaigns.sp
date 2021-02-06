@@ -350,6 +350,7 @@ public Action Timer_BackendUpdateInterval(Handle timer, any data)
 public void BackendUpdate_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
 {
 	PrintToChatAll("BackendUpdate_Callback");
+	Steam_ReleaseHTTPRequest(request);
 	
 	// If request was not succesful, return.
 	if (!success)return;

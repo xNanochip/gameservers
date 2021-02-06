@@ -1370,6 +1370,8 @@ public Action Timer_QuestUpdateInterval(Handle timer, any data)
 
 public void QuestUpdate_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
 {
+	Steam_ReleaseHTTPRequest(request);
+	
 	// If request was not succesful, return.
 	if (!success)return;
 	if (code != HTTPStatusCode_OK)return;

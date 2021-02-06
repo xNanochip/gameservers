@@ -1,8 +1,11 @@
+#include <steamtools> 
+
 #pragma semicolon 1
 #pragma newdecls required
 
 #include <sdktools>
 #include <cecon_items>
+#include <cecon_http>
 
 #define Q_UNIQUE 6
 #define TF_TEAM_DEFENDERS 2
@@ -30,6 +33,9 @@ int m_iWaveTime;
 
 bool m_bWaitForGameRestart;
 bool m_bWeJustFailed;
+bool m_bJustFinishedTheMission;
+
+char m_sLastTourLootHash[128];
 
 public void OnPluginStart()
 {
@@ -41,6 +47,8 @@ public void OnPluginStart()
 	HookEvent("mvm_begin_wave", mvm_begin_wave);
 	HookEvent("mvm_wave_complete", mvm_wave_complete);
 	HookEvent("mvm_wave_failed", mvm_wave_failed);
+	HookEvent("mvm_mission_complete", mvm_mission_complete);
+	
 	HookEvent("teamplay_round_win", teamplay_round_win);
 	HookEvent("teamplay_round_start", teamplay_round_start);
 }
@@ -172,6 +180,10 @@ public void ResetStats()
 	m_iWaveTime = 0;
 	m_iTotalTime = 0;
 	ClearWaveStartTime();
+	
+	m_bJustFinishedTheMission = false;
+	
+	strcopy(m_sLastTourLootHash, sizeof(m_sLastTourLootHash), "");
 }
 
 public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroadcast)
@@ -189,17 +201,25 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 	SetWaveStartTime();
 }
 
+public Action mvm_mission_complete(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	m_bJustFinishedTheMission = true;
+}
+
 public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	int iAdvanced = GetEventInt(hEvent, "advanced");
-
-	PrintToChatAll("mvm_wave_complete (advanced %d)", iAdvanced);
+	// int iAdvanced = GetEventInt(hEvent, "advanced");
+	// PrintToChatAll("mvm_wave_complete (advanced %d)", iAdvanced);
+	
 	OnDefendersWon();
+	
+	int iWave = m_iCurrentWave;
+	int iTime = GetTotalWaveTime();
+	SendWaveCompletionTime(iWave, iTime);
 }
 
 public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	PrintToChatAll("mvm_wave_failed");
 	if(m_bWaitForGameRestart)
 	{
 		m_bWaitForGameRestart = false;
@@ -393,4 +413,156 @@ public void TimeToStopwatchTimer(int time, char[] buffer, int size)
 	Format(timer, size, "%s%d sec", timer, iSeconds);
 
 	strcopy(buffer, size, timer);
+}
+
+public void GetPopFileName(char[] buffer, int length)
+{
+	char filename[256];
+	
+	int ObjectiveEntity = FindEntityByClassname(-1, "tf_objective_resource");
+	GetEntPropString(ObjectiveEntity, Prop_Send, "m_iszMvMPopfileName", filename, sizeof(filename));
+	
+	char explode[6][256];
+	int count = ExplodeString(filename, "/", explode, sizeof(explode), sizeof(explode[]));
+	
+	char name[256];
+	strcopy(name, sizeof(name), explode[count - 1]);
+	ReplaceString(name, sizeof(name), ".pop", "");
+	
+	strcopy(buffer, length, name);
+}
+
+public void SendWaveCompletionTime(int wave, int seconds)
+{
+	char sPopFile[256];
+	GetPopFileName(sPopFile, sizeof(sPopFile));
+	
+	HTTPRequestHandle hRequest = CEconHTTP_CreateBaseHTTPRequest("/api/IEconomySDK/UserMvMWaveProgress", HTTPMethod_POST);
+	
+	int iCount = 0;
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientReady(i))continue;
+		
+		char sSteamID[64];
+		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
+		
+		char sKey[32];
+		Format(sKey, sizeof(sKey), "steamids[%d]", iCount);
+		
+		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sSteamID);
+		
+		iCount++;
+	}
+	
+	// Setting wave number.
+	char sValue[64];
+	IntToString(wave, sValue, sizeof(sValue));
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "wave", sValue);
+	
+	// Setting time number.
+	IntToString(seconds, sValue, sizeof(sValue));
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "time", sValue);
+	
+	// Setting mission name.
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "mission", sPopFile);
+	
+	Steam_SendHTTPRequest(hRequest, SendWaveCompletionTime_Callback);
+}
+
+public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
+{
+	Steam_ReleaseHTTPRequest(request);
+	
+	if(m_bJustFinishedTheMission)
+	{
+		RequestTourLoot();
+		m_bJustFinishedTheMission = false;
+	}
+
+	// Getting response size.
+}
+
+public void RequestTourLoot()
+{
+	char sPopFile[256];
+	GetPopFileName(sPopFile, sizeof(sPopFile));
+	
+	HTTPRequestHandle hRequest = CEconHTTP_CreateBaseHTTPRequest("/api/IEconomySDK/UserMvMTourLoot", HTTPMethod_POST);
+	
+	int iCount = 0;
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientReady(i))continue;
+		
+		char sSteamID[64];
+		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
+		
+		char sKey[32];
+		Format(sKey, sizeof(sKey), "steamids[%d]", iCount);
+		
+		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sSteamID);
+		
+		iCount++;
+	}
+	
+	// Setting mission name.
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "mission", sPopFile);
+	
+	Steam_SendHTTPRequest(hRequest, RequestTourLoot_Callback);
+}
+
+public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
+{
+	PrintToChatAll("RequestTourLoot_Callback %d", code);
+	
+	// If request was not succesful, return.
+	if (!success)return;
+	if (code != HTTPStatusCode_OK)return;
+
+	// Getting response size.
+	int size = Steam_GetHTTPResponseBodySize(request);
+	char[] content = new char[size + 1];
+	
+	Steam_GetHTTPResponseBodyData(request, content, size);
+	Steam_ReleaseHTTPRequest(request);
+
+	KeyValues Response = new KeyValues("Response");
+
+	// ======================== //
+	// Parsing loadout response.
+
+	// If we fail to import content return.
+	if (!Response.ImportFromString(content))return;
+	Response.GetString("hash", m_sLastTourLootHash, sizeof(m_sLastTourLootHash));
+	delete Response;
+	
+	CreateTimer(2.0, Timer_OpenTourLootPageToAll);
+}
+
+public Action Timer_OpenTourLootPageToAll(Handle timer, any data)
+{
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientReady(i))continue;
+		
+		OpenLastTourLootPage(i);
+	}
+}
+
+public void OpenLastTourLootPage(int client)
+{
+	if (StrEqual(m_sLastTourLootHash, ""))return;
+	
+	char url[PLATFORM_MAX_PATH];
+	Format(url, sizeof(url), "/tourloot?hash=%s", m_sLastTourLootHash);
+	
+	CEconHTTP_CreateAbsoluteBackendURL(url, url, sizeof(url));
+	
+	KeyValues hConf = new KeyValues("data");
+	hConf.SetNum("type", 2);
+	hConf.SetString("msg", url);
+	hConf.SetNum("customsvr", 1);
+	ShowVGUIPanel(client, "info", hConf);
+	delete hConf;
 }
