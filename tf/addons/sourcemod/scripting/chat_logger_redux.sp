@@ -88,6 +88,7 @@ public void OnConfigsExecuted()
 	sv_bFormatting = GetConVarBool(ConVars[11]);
 	sv_bConsole = GetConVarBool(ConVars[12]);
 	GetConVarString(ConVars[13], cv_sFolder, sizeof(cv_sFolder));
+	sv_bVoteKick = GetConVarBool(ConVars[14]);
 }
 
 public int HandleCvars (Handle cvar, const char[] oldValue, const char[] newValue)
@@ -156,7 +157,7 @@ public int HandleCvars (Handle cvar, const char[] oldValue, const char[] newValu
 	{
 		strcopy(cv_sFolder, sizeof(cv_sFolder), newValue);
 	}
-	else if (cvar == ConVars[13])
+	else if (cvar == ConVars[14])
 	{
 		sv_bVoteKick = bValue;
 	}

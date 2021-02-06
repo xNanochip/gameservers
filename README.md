@@ -1,2 +1,2 @@
 hi
-cicd bump
+test ci

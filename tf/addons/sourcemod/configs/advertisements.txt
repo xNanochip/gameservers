@@ -19,11 +19,11 @@
 {
     "1"
     {
-        "chat"                  "{green}Think someone's breaking the rules? Use {lightgreen}/call"
+        "chat"                  "{green}Think someone's breaking the rules? Use {lightgreen}/call{white}!"
     }
     "2"
     {
-        "chat"                  "{green}Join our Discord community here: {lightgreen}creators.tf/discord"
+        "chat"                  "{green}Join our Discord community at {lightgreen}creators.tf/discord"
     }
     "3"
     {
@@ -31,7 +31,7 @@
     }
     "4"
     {
-        "chat"                  "{fullred}Seeing red errors? {lightgreen}creators.tf/assetpack"
+        "chat"                  "{green}Seeing {red}red ERRORs{green}? Type {lightgreen}/ctfhats{green} in chat to disable custom cosmetics, or download our asset pack at {lightgreen}creators.tf/assetpack{green}!"
     }
     "5"
     {
@@ -39,7 +39,7 @@
     }
     "6"
     {
-        "chat"                  "{gold}Tired of fighting? Join the {yellow}Creators.TF Silly Servers{gold}! More information on our Discord: {lightgreen}creators.tf/discord""
+        "chat"                  "{gold}Tired of fighting? Join the {yellow}Creators.TF Silly Servers{gold}! More information on our Discord: {lightgreen}creators.tf/discord"
     }
     "7"
     {
@@ -49,8 +49,12 @@
     {
         "chat"                  "{green}See any hate speech or prohibited content in chat or on decals? Screenshot it and send it directly to {lightgreen}@ModMail {green}on our Discord."
     }
-	  "9"
+    "9"
     {
         "chat"                  "{green}Don't forget to {lightgreen}!nominate {green}the next map you want to play!"
+    }
+    "10"
+    {
+        "chat"                  "{green}Wanna play on another server? Type {lightgreen}!servers {green}, or visit {lightgreen}https://creators.tf/servers {green}to see a list of all Creators.TF servers."
     }
 }

@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.5.9b"
+#define PLUGIN_VERSION  "3.6.3"
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 public Plugin myinfo =
@@ -25,7 +25,7 @@ public Plugin myinfo =
     author           =  "steph&nie",
     description      =  "Anticheat plugin [tf2 only] written by Stephanie. Originally forked from IntegriTF2 by Miggy (RIP)",
     version          =   PLUGIN_VERSION,
-    url              =  "https://steph.anie.dev/"
+    url              =  "https://sappho.io"
 }
 
 // TIMER HANDLES
@@ -42,6 +42,7 @@ int fakeAngDetects          [MAXPLAYERS+1];
 int aimsnapDetects          [MAXPLAYERS+1] = -1; // set to -1 to ignore first detections, as theyre most likely junk
 int pSilentDetects          [MAXPLAYERS+1] = -1; // ^
 int bhopDetects             [MAXPLAYERS+1] = -1; // set to -1 to ignore single jumps
+int cmdnumSpikeDetects      [MAXPLAYERS+1];
 bool isConsecStringOfBhops  [MAXPLAYERS+1];
 int bhopConsecDetects       [MAXPLAYERS+1];
 // TIME SINCE LAST ACTION PER CLIENT
@@ -66,6 +67,9 @@ bool userBanQueued          [MAXPLAYERS+1];
 float sensFor               [MAXPLAYERS+1];
 // get last 6 ticks
 float engineTime            [6] [MAXPLAYERS+1];
+
+// time since map start
+float timeSinceMapStart;
 
 //float maxEngineTimeFor[MAXPLAYERS+1];
 //
@@ -101,7 +105,7 @@ bool kickForPingMasking     = false;
 bool banForMiscCheats       = true;
 bool optimizeCvars          = true;
 int maxAimsnapDetections    = 999;
-int maxPsilentDetections    = 15;
+int maxPsilentDetections    = 10;
 int maxFakeAngDetections    = 10;
 int maxBhopDetections       = 10;
 // this gets set later
@@ -185,9 +189,11 @@ public void OnPluginStart()
         }
     }
 
+    timeSinceMapStart = GetEngineTime();
 
     StacLog("[StAC] Plugin vers. ---- %s ---- loaded", PLUGIN_VERSION);
 }
+
 
 void initCvars()
 {
@@ -584,10 +590,11 @@ void RunOptimizeCvars()
     // limit fakelag abuse
     SetConVarFloat(FindConVar("sv_maxunlag"), 0.2);
     // dont error out on server start
-    if (FindConVar("backtrack_behavior") != INVALID_HANDLE)
+    if (FindConVar("jay_backtrack_enable") != INVALID_HANDLE)
     {
         // fix backtracking
-        SetConVarInt(FindConVar("backtrack_behavior"), 1);
+        SetConVarInt(FindConVar("jay_backtrack_enable"), 1);
+        SetConVarInt(FindConVar("jay_backtrack_tolerance"), 0);
     }
     // get rid of any possible exploits by using teleporters and fov
     SetConVarInt(FindConVar("tf_teleporter_fov_start"), 90);
@@ -621,7 +628,8 @@ public Action checkEveryone(Handle timer)
 
 public Action ShowDetections(int callingCl, int args)
 {
-    ReplyToCommand(callingCl, "[StAC] == CURRENT DETECTIONS == ");
+    ReplyToCommand(callingCl, "Check your console!");
+    PrintToConsole(callingCl, "\n[StAC] == CURRENT DETECTIONS == ");
     for (int Cl = 1; Cl <= MaxClients; Cl++)
     {
         if (IsValidClient(Cl))
@@ -632,33 +640,39 @@ public Action ShowDetections(int callingCl, int args)
                     || pSilentDetects[Cl]      >= 1
                     || fakeAngDetects[Cl]      >= 1
                     || bhopConsecDetects[Cl]   >= 1
+                    || cmdnumSpikeDetects[Cl]  >= 1
                 )
             {
-                ReplyToCommand(callingCl, "Detections for %L", Cl);
+
+                PrintToConsole(callingCl, "Detections for %L", Cl);
                 if (turnTimes[Cl] >= 1)
                 {
-                    ReplyToCommand(callingCl, "- %i turn bind frames for %N", turnTimes[Cl], Cl);
+                    PrintToConsole(callingCl, "- %i turn bind frames for %N", turnTimes[Cl], Cl);
                 }
                 if (aimsnapDetects[Cl] >= 1)
                 {
-                    ReplyToCommand(callingCl, "- %i aimsnap detections for %N", aimsnapDetects[Cl], Cl);
+                    PrintToConsole(callingCl, "- %i aimsnap detections for %N", aimsnapDetects[Cl], Cl);
                 }
                 if (pSilentDetects[Cl] >= 1)
                 {
-                    ReplyToCommand(callingCl, "- %i silent aim detections for %N", pSilentDetects[Cl], Cl);
+                    PrintToConsole(callingCl, "- %i silent aim detections for %N", pSilentDetects[Cl], Cl);
                 }
                 if (fakeAngDetects[Cl] >= 1)
                 {
-                    ReplyToCommand(callingCl, "- %i fake angle detections for %N", fakeAngDetects[Cl], Cl);
+                    PrintToConsole(callingCl, "- %i fake angle detections for %N", fakeAngDetects[Cl], Cl);
                 }
                 if (bhopConsecDetects[Cl] >= 1)
                 {
-                    ReplyToCommand(callingCl, "- %i consecutive bhop strings for %N", bhopConsecDetects[Cl], Cl);
+                    PrintToConsole(callingCl, "- %i consecutive bhop strings for %N", bhopConsecDetects[Cl], Cl);
+                }
+                if (cmdnumSpikeDetects[Cl] >= 1)
+                {
+                    PrintToConsole(callingCl, "- %i cmdnum spikes for %N", cmdnumSpikeDetects[Cl], Cl);
                 }
             }
         }
     }
-    ReplyToCommand(callingCl, "[StAC] == END DETECTIONS == ");
+    PrintToConsole(callingCl, "[StAC] == END DETECTIONS == \n");
 }
 
 /*
@@ -688,7 +702,7 @@ public Action PrintMaxMouse(int callingCl, int args)
 
 public Action PrintMaxTicks(int callingCl, int args)
 {
-    ReplyToCommand(callingCl, "[StAC] == CURRENT MOUSE MOVEMENT == ");
+    ReplyToCommand(callingCl, "[StAC] == CURRENT MAX TICKS == ");
     for (int Cl = 1; Cl <= MaxClients; Cl++)
     {
         if (IsValidClient(Cl))
@@ -696,7 +710,7 @@ public Action PrintMaxTicks(int callingCl, int args)
             ReplyToCommand(callingCl, "maxTick: %f | client %N", maxEngineTimeFor[Cl], Cl);
         }
     }
-    ReplyToCommand(callingCl, "[StAC] == END MOUSE MOVEMENT REPORT == ");
+    ReplyToCommand(callingCl, "[StAC] == END MAX TICKS REPORT == ");
 }
 */
 
@@ -907,6 +921,7 @@ public void OnMapStart()
     {
         RunOptimizeCvars();
     }
+    timeSinceMapStart = GetEngineTime();
 }
 
 public void OnMapEnd()
@@ -936,6 +951,7 @@ void ClearClBasedVars(int userid)
     aimsnapDetects          [Cl] = -1; // ignore likely false positives
     pSilentDetects          [Cl] = -1; // ^
     bhopDetects             [Cl] = -1; // set to -1 to ignore single jumps
+    cmdnumSpikeDetects      [Cl] = 0;
     isConsecStringOfBhops   [Cl] = false;
     bhopConsecDetects       [Cl] = 0;
     timeSinceSpawn          [Cl] = 0.0;
@@ -994,6 +1010,7 @@ public Action ForceCheckAll(int client, int args)
 
 /*
     in OnPlayerRunCmd, we check for:
+    - CMDNUM SPIKES
     - SILENT AIM
     - AIM SNAPS
     - FAKE ANGLES
@@ -1047,12 +1064,19 @@ public Action OnPlayerRunCmd
         //}
 
         // set previous tick times to test lagginess (THANK YOU BACKWARDS FOR HELP WITH THIS)
-        engineTime[5][Cl] = engineTime[4][Cl];
-        engineTime[4][Cl] = engineTime[3][Cl];
-        engineTime[3][Cl] = engineTime[2][Cl];
-        engineTime[2][Cl] = engineTime[1][Cl];
-        engineTime[1][Cl] = engineTime[0][Cl];
+        //engineTime[5][Cl] = engineTime[4][Cl];
+        //engineTime[4][Cl] = engineTime[3][Cl];
+        //engineTime[3][Cl] = engineTime[2][Cl];
+        //engineTime[2][Cl] = engineTime[1][Cl];
+        //engineTime[1][Cl] = engineTime[0][Cl];
+        //engineTime[0][Cl] = GetEngineTime();
+
+        for (int i = 5; i > 0; --i)
+        {
+            engineTime[i][Cl] = engineTime[i-1][Cl];
+        }
         engineTime[0][Cl] = GetEngineTime();
+
 
         // grab current time to compare to time since last spawn/taunt/tele
         // convert to percentages
@@ -1103,7 +1127,7 @@ public Action OnPlayerRunCmd
             fuzzyClangles[0][0] = RoundFloat(clangles[0][Cl][0] * 10.0) / 10.0;
             fuzzyClangles[0][1] = RoundFloat(clangles[0][Cl][1] * 10.0) / 10.0;
 
-            // we need this later for decrimenting psilent detections after 20 minutes!
+            // we need this later for decrimenting psilent detections after 10 minutes!
             int userid = GetClientUserId(Cl);
 
             // we have to do all these annoying checks to make sure we get as few false positives as possible.
@@ -1125,8 +1149,38 @@ public Action OnPlayerRunCmd
                 && !IsClientTimingOut(Cl)
                 // this is just for halloween shit
                 && playerInBadCond[Cl] == 0
+                // DON'T TOUCH IF MAP JUST STARTED
+                && engineTime[0][Cl] - 10.0 > timeSinceMapStart
             )
             {
+                /* cmdnum test, taken from ssac */
+                int spikeamt = abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]);
+                if (spikeamt > 128)
+                {
+                    cmdnumSpikeDetects[Cl]++;
+                    PrintToImportant("{hotpink}[StAC]{white} CmdNum SPIKE of {yellow}%i{white} on %N.\nDetections so far: {palegreen}%i{white}.", spikeamt, Cl,  cmdnumSpikeDetects[Cl]);
+                    StacLog("\n[StAC] CmdNum SPIKE of %i on %L.\nDetections so far: %i.", spikeamt, Cl,  cmdnumSpikeDetects[Cl]);
+
+                    //LogMessage("[StAC] cmdnum SPIKE of %i!", abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]));
+                    //LogMessage("%i , %i",clcmdnum[1][Cl], clcmdnum[0][Cl])
+                    //cmdnum = 0;
+                    //return Plugin_Handled;
+                }
+
+                //if (clcmdnum[1][Cl] == clcmdnum[0][Cl])
+                //{
+                //    LogMessage("[StAC] SAME CMDNUM REPORTED!!!");
+                //    cmdnum = cmdnum++;
+                //    return Plugin_Handled;
+                //}
+                //if (clcmdnum[1][Cl] > clcmdnum[0][Cl])
+                //{
+                //    LogMessage("[StAC] cmdnum DROP of %i!", clcmdnum[1][Cl] - clcmdnum[0][Cl]);
+                //    LogMessage("%i , %i", clcmdnum[1][Cl], clcmdnum[0][Cl]);
+                //    //cmdnum = cmdnum
+                //    return Plugin_Handled;
+                //}
+
                 /*
                     EYE ANGLES TEST
                     if clients are outside of allowed angles in tf2, which are
@@ -1153,7 +1207,7 @@ public Action OnPlayerRunCmd
                 {
                     fakeAngDetects[Cl]++;
                     PrintToImportant("{hotpink}[StAC]{white} Player %N has {mediumpurple}invalid eye angles{white}!\nCurrent angles: {mediumpurple}%.2f %.2f %.2f{white}.\nDetections so far: {palegreen}%i", Cl, angles[0], angles[1], angles[2], fakeAngDetects[Cl]);
-                    StacLog("[StAC] Player %N has invalid eye angles!\nCurrent angles: %.2f %.2f %.2f.\nDetections so far: %i", Cl, angles[0], angles[1], angles[2], fakeAngDetects[Cl]);
+                    StacLog("\n[StAC] Player %N has invalid eye angles!\nCurrent angles: %.2f %.2f %.2f.\nDetections so far: %i", Cl, angles[0], angles[1], angles[2], fakeAngDetects[Cl]);
                     if (fakeAngDetects[Cl] >= maxFakeAngDetections && maxFakeAngDetections > 0)
                     {
                         char reason[128];
@@ -1275,18 +1329,18 @@ public Action OnPlayerRunCmd
                             )
                             {
                                 pSilentDetects[Cl]++;
-                                // have this detection expire in 20 minutes
-                                CreateTimer(1200.0, Timer_decr_pSilent, userid);
+                                // have this detection expire in 10 minutes
+                                CreateTimer(600.0, Timer_decr_pSilent, userid);
                                 // first detection is LIKELY bullshit
                                 if (pSilentDetects[Cl] > 0)
                                 {
                                     // print a bunch of bullshit
                                     PrintToImportant("{hotpink}[StAC]{white} SilentAim detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}. fuzzy = {blue}%i", aDiffReal, Cl,  pSilentDetects[Cl], fuzzy);
-                                    PrintToImportant("{white}User Net Info: {palegreen}%.2f{white}%% loss, {palegreen}%.2f{white}%% choke, {palegreen}%.2f{white} ms ping", loss, choke, ping);
+                                    CPrintToSTV("{white}User Net Info: {palegreen}%.2f{white}%% loss, {palegreen}%.2f{white}%% choke, {palegreen}%.2f{white} ms ping", loss, choke, ping);
                                     CPrintToSTV("clangles0: x %.2f y %.2f clangles1: x %.2f y %.2f clangles2: x %.2f y %.2f", clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1], clangles[2][Cl][0], clangles[2][Cl][1]);
                                     CPrintToSTV("clcmdnum0: %i clcmdnum1: %i clcmdnum2: %i", clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
-                                    PrintToImportant("Time between last 5 client ticks (most recent first):\n1 %f 2 %f 3 %f 4 %f 5 %f", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
-                                    StacLog("[StAC] SilentAim detection of %.2f° on \n%L.\nDetections so far: %i.\nfuzzy = %i", aDiffReal, Cl,  pSilentDetects[Cl], fuzzy);
+                                    CPrintToSTV("Time between last 5 client ticks (most recent first):\n1 %f 2 %f 3 %f 4 %f 5 %f", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
+                                    StacLog("\n[StAC] SilentAim detection of %.2f° on \n%L.\nDetections so far: %i.\nfuzzy = %i", aDiffReal, Cl,  pSilentDetects[Cl], fuzzy);
                                     StacLog("\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\n angles2: x %.2f y %.2f\nCmdnum:\n clcmdnum[0]: %i\n clcmdnum[1]: %i\n clcmdnum[2]: %i", loss, choke, ping, clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1], clangles[2][Cl][0], clangles[2][Cl][1], clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
                                     StacLog("\nTime between last 5 client ticks (most recent first):\n1 %f\n2 %f\n3 %f\n4 %f\n5 %f\n", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
                                     // BAN USER if they trigger too many detections
@@ -1306,6 +1360,9 @@ public Action OnPlayerRunCmd
                         AIMSNAP DETECTION
                         Now lets be fair here - this also detects silent aim a lot too, but it's more for checking plain snaps.
                     */
+                    char weaponname[256];
+                    GetClientWeapon(Cl, weaponname, sizeof(weaponname));
+
                     if
                     (
                         // don't check if disabled
@@ -1315,7 +1372,11 @@ public Action OnPlayerRunCmd
                         &&
                         // only go further if sens is definitely valid and not crazy high
                         (
-                            5.0 > sensFor[Cl] > 0.0
+                            4.0 > sensFor[Cl] > 0.0
+                        )
+                        &&
+                        (
+                            isWeaponHitscan(weaponname)
                         )
                     )
                     {
@@ -1326,54 +1387,56 @@ public Action OnPlayerRunCmd
                         {
                             aDiffReal = FloatAbs(aDiffReal - 360.0);
                         }
-                        // 30 seems reasonable, considering that we're working mouse movement into this as well
-                        if (aDiffReal >= 30.0)
+                        //
+                        if (aDiffReal >= 45.0)
                         {
                             // TODO: MAKE SURE sensFor IS AS ACC AS POSSIBLE
                             int wx = abs(RoundFloat(mouse[0] * ( 1 / sensFor[Cl])));
                             int wy = abs(RoundFloat(mouse[1] * ( 1 / sensFor[Cl])));
-                            if
-                            (   // literally no mouse movement on both axes
-                                (
-                                    wx == 0
-                                    &&
-                                    wy == 0
-                                )
-                                ||
-                                // stupidly big amts of mouse movement on either axis
-                                (
-                                    wx >= 5000
-                                    ||
-                                    wy >= 5000
-                                )
-                            )
+
+                            //if
+                            //(
+                            //    // literally no mouse movement on both axes - buggy, don't enable
+                            //    //(
+                            //    //    wx == 0
+                            //    //    &&
+                            //    //    wy == 0
+                            //    //)
+                            //    //||
+                            //    // stupidly big amts of mouse movement on either axis
+                            //    //(
+                            //    //    wx >= 5000
+                            //    //    ||
+                            //    //    wy >= 5000
+                            //    //)
+                            //)
+                            //{
+                            aimsnapDetects[Cl]++;
+                            // have this detection expire in 10 minutes
+                            CreateTimer(600.0, Timer_decr_aimsnaps, userid);
+                            if (aimsnapDetects[Cl] > 0)
                             {
-                                aimsnapDetects[Cl]++;
-                                // have this detection expire in 20 minutes
-                                CreateTimer(1200.0, Timer_decr_aimsnaps, userid);
-                                if (aimsnapDetects[Cl] > 0)
+                                PrintToImportant("{hotpink}[StAC]{white} Aimsnap detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.", aDiffReal, Cl,  aimsnapDetects[Cl]);
+                                CPrintToSTV("{white}User Net Info: {palegreen}%.2f{white}%% loss, {palegreen}%.2f{white}%% choke, {palegreen}%.2f{white} ms ping", loss, choke, ping);
+                                CPrintToSTV("User Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i. sens: %f", wx, wy, sensFor[Cl]);
+                                CPrintToSTV("User Mouse Movement (unweighted): x: %i, y: %i.", mouse[0], mouse[1]);
+                                CPrintToSTV("clangles0: x %.2f y %.2f clangles1: x %.2f y %.2f", clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1]);
+                                CPrintToSTV("clcmdnum0: %i clcmdnum1: %i clcmdnum2: %i", clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
+                                CPrintToSTV("Time between last 5 client ticks (most recent first):\n1 %f 2 %f 3 %f 4 %f 5 %f", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
+                                StacLog("\n[StAC] Aimsnap detection of %.2f° on \n%L.\nDetections so far: %i.", aDiffReal, Cl, aimsnapDetects[Cl]);
+                                StacLog("\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\n\nCmdnum:\n clcmdnum[0]: %i\n clcmdnum[1]: %i\n clcmdnum[2]: %i", loss, choke, ping, clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1], clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
+                                StacLog("\nTime between last 5 client ticks (most recent first):\n1 %f\n2 %f\n3 %f\n4 %f\n5 %f\n", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
+                                StacLog("User Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i.", wx, wy);
+                                StacLog("User Mouse Movement (unweighted): x: %i, y: %i.", mouse[0], mouse[1]);
+                                StacLog("Weapon used: %s", weaponname);
+                                // BAN USER if they trigger too many detections
+                                if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
                                 {
-                                    PrintToImportant("{hotpink}[StAC]{white} Aimsnap detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.", aDiffReal, Cl,  aimsnapDetects[Cl]);
-                                    PrintToImportant("{white}User Net Info: {palegreen}%.2f{white}%% loss, {palegreen}%.2f{white}%% choke, {palegreen}%.2f{white} ms ping", loss, choke, ping);
-                                    PrintToImportant("User Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i. sens: %f", wx, wy, sensFor[Cl]);
-                                    PrintToImportant("User Mouse Movement (unweighted): x: %i, y: %i.", mouse[0], mouse[1]);
-                                    CPrintToSTV("clangles0: x %.2f y %.2f clangles1: x %.2f y %.2f", clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1]);
-                                    CPrintToSTV("clcmdnum0: %i clcmdnum1: %i clcmdnum2: %i", clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
-                                    PrintToImportant("Time between last 5 client ticks (most recent first):\n1 %f 2 %f 3 %f 4 %f 5 %f", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
-                                    StacLog("[StAC] Aimsnap detection of %.2f° on \n%L.\nDetections so far: %i.", aDiffReal, Cl,  aimsnapDetects[Cl]);
-                                    StacLog("\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\n\nCmdnum:\n clcmdnum[0]: %i\n clcmdnum[1]: %i\n clcmdnum[2]: %i", loss, choke, ping, clangles[0][Cl][0], clangles[0][Cl][1], clangles[1][Cl][0], clangles[1][Cl][1], clcmdnum[0][Cl], clcmdnum[1][Cl], clcmdnum[2][Cl]);
-                                    StacLog("\nTime between last 5 client ticks (most recent first):\n1 %f\n2 %f\n3 %f\n4 %f\n5 %f\n", engineTime[0][Cl] - engineTime[1][Cl],  engineTime[1][Cl] - engineTime[2][Cl],  engineTime[2][Cl] - engineTime[3][Cl],  engineTime[3][Cl] - engineTime[4][Cl],  engineTime[4][Cl] - engineTime[5][Cl]);
-                                    StacLog("User Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i.", wx, wy);
-                                    StacLog("User Mouse Movement (unweighted): x: %i, y: %i.", mouse[0], mouse[1]);
-                                    // BAN USER if they trigger too many detections
-                                    if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
-                                    {
-                                        char reason[128];
-                                        Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
-                                        BanUser(userid, reason);
-                                        MC_PrintToChatAll("%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
-                                        StacLog("%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
-                                    }
+                                    char reason[128];
+                                    Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
+                                    BanUser(userid, reason);
+                                    MC_PrintToChatAll("%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
+                                    StacLog("%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
                                 }
                             }
                         }
@@ -1424,7 +1487,7 @@ public Action OnPlayerRunCmd
                             // print to admins if we get a consec detection
                             // i don't want to ban legits who are REALLY fucking good at real bhopping, so I removed the consec ban code for now
                             PrintToImportant("{hotpink}[StAC]{white} Player %N {mediumpurple}bhopped consecutively {yellow}%i{mediumpurple} or more times{white}!\nDetections so far: {palegreen}%i", Cl, maxBhopDetectionsScaled, bhopConsecDetects[Cl]);
-                            StacLog("[StAC] Player %N bhopped consecutively %i or more times! Detections so far: %i", Cl, maxBhopDetectionsScaled, bhopConsecDetects[Cl]);
+                            StacLog("\n[StAC] Player %N bhopped consecutively %i or more times! Detections so far: %i", Cl, maxBhopDetectionsScaled, bhopConsecDetects[Cl]);
                         }
                     }
                     // if a client didn't trigger the reset conditions above, they bhopped
@@ -1447,13 +1510,15 @@ public Action OnPlayerRunCmd
                     )
                     {
                         bhopDetects[Cl]++;
-                        // print to player if halfway to getting punished
+                        // print to admin if halfway to getting yeeted
+                        if (bhopDetects[Cl] >= RoundToFloor(maxBhopDetectionsScaled / 2.0) )
+                        {
+                            PrintToImportant("{hotpink}[StAC]{white} Player %N {mediumpurple}bhopped{white}!\nConsecutive detections so far: {palegreen}%i" , Cl, bhopDetects[Cl]);
+                            StacLog("\n[StAC] Player %N bhopped! Consecutive detections so far: %i" , Cl, bhopDetects[Cl]);
+                        }
                         if (bhopDetects[Cl] >= maxBhopDetectionsScaled)
                         {
                             isConsecStringOfBhops[Cl] = true;
-                            // print to admin
-                            PrintToImportant("{hotpink}[StAC]{white} Player %N {mediumpurple}bhopped{white}!\nConsecutive detections so far: {palegreen}%i" , Cl, bhopDetects[Cl]);
-                            StacLog("[StAC] Player %N bhopped! Consecutive detections so far: %i" , Cl, bhopDetects[Cl]);
 
                             // don't run antibhop if cvar is 0 or somehow -1 (sanity check)
                             if (maxBhopDetections > 0)
@@ -2042,6 +2107,7 @@ void StacLog(const char[] format, any ...)
         LogMessage("[StAC] File handle invalid!");
         LogMessage("%s", buffer);
     }
+    PrintToConsoleAllAdmins("%s", buffer);
 }
 
 // i hope youre proud of me, 9th grade geometry teacher
@@ -2143,6 +2209,23 @@ void PrintToImportant(const char[] format, any ...)
     CPrintToSTV("%s", buffer);
 }
 
+
+// print to all server/sourcemod admin's consoles
+PrintToConsoleAllAdmins(const char[] format, any ...)
+{
+    char buffer[254];
+
+    for (int i = 1; i <= MaxClients; i++)
+    {
+        if (IsClientInGame(i) && CheckCommandAccess(i, "sm_ban", ADMFLAG_ROOT))
+        {
+            SetGlobalTransTarget(i);
+            VFormat(buffer, sizeof(buffer), format, 2);
+            PrintToConsole(i, "%s", buffer);
+        }
+    }
+}
+
 // adapted & deuglified from f2stocks
 // Finds STV Bot to use for CPrintToSTV
 int CachedSTV;
@@ -2213,4 +2296,44 @@ int TF2_GetNumWearables(int client)
 any abs(x)
 {
    return x > 0 ? x : -x;
+}
+
+
+bool isWeaponHitscan(char weaponname[256])
+{
+    if
+    (
+     // multiclass shotgun
+        StrEqual(weaponname, "tf_weapon_shotgun")
+    // multiclass pistol
+    ||  StrEqual(weaponname, "tf_weapon_pistol")
+    // scout
+    ||  StrEqual(weaponname, "tf_weapon_scattergun")
+    ||  StrEqual(weaponname, "tf_weapon_handgun_scout_primary")
+    ||  StrEqual(weaponname, "tf_weapon_soda_popper")
+    ||  StrEqual(weaponname, "tf_weapon_pep_brawler_blaster")
+    ||  StrEqual(weaponname, "tf_weapon_handgun_scout_secondary")
+    // soldier
+    ||  StrEqual(weaponname, "tf_weapon_shotgun_soldier")
+    // pyro
+    ||  StrEqual(weaponname, "tf_weapon_shotgun_pyro")
+    // pootis
+    ||  StrEqual(weaponname, "tf_weapon_minigun")
+    ||  StrEqual(weaponname, "tf_weapon_shotgun_hwg")
+    // engie
+    ||  StrEqual(weaponname, "tf_weapon_shotgun_primary")
+    ||  StrEqual(weaponname, "tf_weapon_sentry_revenge")
+    // sniper
+    ||  StrEqual(weaponname, "tf_weapon_sniperrifle")
+    ||  StrEqual(weaponname, "tf_weapon_sniperrifle_decap")
+    ||  StrEqual(weaponname, "tf_weapon_sniperrifle_classic")
+    ||  StrEqual(weaponname, "tf_weapon_smg")
+    ||  StrEqual(weaponname, "tf_weapon_charged_smg")
+    // spy
+    ||  StrEqual(weaponname, "tf_weapon_revolver")
+    )
+    {
+        return true;
+    }
+    return false;
 }

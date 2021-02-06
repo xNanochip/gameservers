@@ -1,5 +1,4 @@
 /*
-!do.sh
 !build.sh
 !start.sh
 !.gitignore
@@ -11,13 +10,22 @@ tf/*
 tf/addons/sourcemod/configs/items.cfg
 tf/addons/*/scripting/**/*.smx
 tf/addons/*/plugins/*.smx
+
 tf/addons/*/logs
+!tf/addons/*/logs/chat/.gitkeep
+!tf/addons/*/logs/stac/.gitkeep
+!tf/addons/*/logs/.gitkeep
+
+
 tf/addons/*/data/sqlite/clientprefs-sqlite.sq3
 tf/addons/*/data/_*.data
 tf/addons/*/configs/sourcebans/sb_admins.cfg
 tf/addons/*/configs/sourcebans/sb_admin_groups.cfg
 tf/addons/*/configs/sourcebans/sourcebans.cfg
+tf/addons/*/configs/item_schema.cfg
 tf/addons/*/backup/*
+!tf/addons/sourcemod/scripting/fixes/*
+!tf/addons/sourcemod/scripting/fixes/
 !tf/maps
 !tf/maps/*
 tf/maps/graphs
@@ -60,11 +68,9 @@ tf/maps/cp_mountainlab.bsp
 tf/maps/cp_powerhouse.bsp
 tf/maps/cp_process_final.bsp
 tf/maps/cp_snakewater_final1.bsp
-tf/maps/cp_snowlodge_b5.bsp
 tf/maps/cp_snowplow.bsp
 tf/maps/cp_standin_final.bsp
 tf/maps/cp_steel.bsp
-tf/maps/cp_stoneyridge_rc2.bsp
 tf/maps/cp_sunshine.bsp
 tf/maps/cp_sunshine_event.bsp
 tf/maps/cp_vanguard.bsp
@@ -78,7 +84,6 @@ tf/maps/ctf_gorge.bsp
 tf/maps/ctf_hellfire.bsp
 tf/maps/ctf_landfall.bsp
 tf/maps/ctf_sawmill.bsp
-tf/maps/ctf_snowfort.bsp
 tf/maps/ctf_thundermountain.bsp
 tf/maps/ctf_turbine.bsp
 tf/maps/ctf_well.bsp
@@ -169,6 +174,7 @@ tf/cfg/*
 !tf/cfg/cp_powerhouse.cfg
 !tf/cfg/pure_server_whitelist.txt
 !tf/cfg/sd_doomsday_event.cfg
+!tf/cfg/ctf_*.cfg
 
 # private
 #tf/addons/sourcemod/configs/databases.cfg
