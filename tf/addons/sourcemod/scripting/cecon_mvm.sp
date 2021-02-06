@@ -1,23 +1,15 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_AUTHOR "Creators.TF Team"
-#define PLUGIN_VERSION "1.00"
-
 #include <sdktools>
-#include <ce_util>
-#include <ce_core>
-#include <ce_manager_items>
-#include <ce_manager_attributes>
-
-#define Q_UNIQUE 6
+#include <cecon_items>
 
 public Plugin myinfo =
 {
 	name = "Creators.TF - Mann vs Machines",
-	author = PLUGIN_AUTHOR,
+	author = "Creators.TF Team",
 	description = "Creators.TF - Mann vs Machines",
-	version = PLUGIN_VERSION,
+	version = "1.00",
 	url = "https://creators.tf"
 };
 
@@ -48,16 +40,15 @@ public Action cMvMEquipItemName(int args)
 	
 	if (!StrEqual(sArg2, "")) 
 	{
-		int iIndex = CE_FindItemIndexByItemName(sArg2);
-		if(iIndex > 0)
+		if (IsClientValid(iClient))
 		{
-			if(IsClientValid(iClient))
+			CEItem xItem;
+			if(CEconItems_CreateNamedItem(xItem, sArg2, 6, null))
 			{
-				CE_EquipItem(iClient, -1, iIndex, Q_UNIQUE, null);
+				CEconItems_GiveItemToClient(iClient, xItem);
 			}
 		}
 	}
-	
 	
 	return Plugin_Handled;
 }
@@ -72,15 +63,14 @@ public Action cMvMGetItemDefID(int args)
 	
 	if (!StrEqual(sArg1, "")) 
 	{
-		KeyValues hConf = CE_FindItemConfigByItemName(sArg1);
-		if(hConf != null)
+		CEItemDefinition xDef;
+		if(CEconItems_GetItemDefinitionByName(sArg1, xDef))
 		{
-			ce_mvm_check_itemname_cvar.SetInt(hConf.GetNum("item_index", -1));
+			ce_mvm_check_itemname_cvar.SetInt(xDef.m_iIndex);
 			return Plugin_Handled;
 		}
 	}
 	ce_mvm_check_itemname_cvar.SetInt(-1);
-	
 	
 	return Plugin_Handled;
 }
@@ -99,7 +89,22 @@ public Action cMvMSetEntityAttribute(int args)
 	GetCmdArg(3, sValue, sizeof(sValue));
 	float flValue = StringToFloat(sValue);
 	
-	CE_SetAttributeFloat(iEntity, sName, flValue);
+	CEconItems_SetEntityAttributeFloat(iEntity, sName, flValue);
 	
 	return Plugin_Handled;
+}
+
+public bool IsClientReady(int client)
+{
+	if (!IsClientValid(client))return false;
+	if (IsFakeClient(client))return false;
+	return true;
+}
+
+public bool IsClientValid(int client)
+{
+	if (client <= 0 || client > MaxClients)return false;
+	if (!IsClientInGame(client))return false;
+	if (!IsClientAuthorized(client))return false;
+	return true;
 }

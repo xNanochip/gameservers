@@ -382,8 +382,11 @@ public void OnDrawWeapon(int client, int iWeapon)
 	// Draw models only if we're supposed to be drawing them in the first place.
 	if(ShouldDrawWeaponModel(client, iWeapon))
 	{
-		// If client is a bot, don't bother with Wearables bs and just change the model of the weapon.
-		// However, this breaks animations in first person, so we can't really do that with real players.
+		// If client is a bot, don't bother with Wearables bullshit, 
+		// and just change the model of the weapon. However, this 
+		// breaks animations in first person, so we can't really do 
+		// that with real players.
+		
 		if(IsFakeClient(client))
 		{
 			for (int i = 0; i <= 3; i++)
