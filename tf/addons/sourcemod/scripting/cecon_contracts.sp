@@ -55,12 +55,99 @@ public void OnPluginStart()
 	RegServerCmd("ce_quest_dump", cDump, "");
 	RegServerCmd("ce_quest_activate", cQuestActivate, "");
 	
+	RegConsoleCmd("sm_q", cQuestPanel);
+	RegConsoleCmd("sm_quest", cQuestPanel);
+	RegConsoleCmd("sm_contract", cQuestPanel);
+	
 	OnLateLoad();
 
 	CreateTimer(QUEST_HUD_REFRESH_RATE, Timer_HudRefresh, _, TIMER_REPEAT);
 	CreateTimer(BACKEND_QUEST_UPDATE_INTERVAL, Timer_QuestUpdateInterval, _, TIMER_REPEAT);
 	
 	HookEvent("teamplay_round_win", teamplay_round_win);
+}
+
+public Action cQuestPanel(int client, int args)
+{
+	ClientShowQuestPanel(client);
+	return Plugin_Handled;
+}
+
+public void ClientShowQuestPanel(int client)
+{
+	CEQuestDefinition xQuest;
+	if(GetClientActiveQuest(client, xQuest))
+	{
+		Menu hMenu = new Menu(mQuestMenu);
+		char sQuest[128];
+	
+		CEQuestClientProgress xProgress;
+		GetClientQuestProgress(client, xQuest, xProgress);
+		
+		CEQuestObjectiveDefinition xPrimary;
+		GetQuestObjectiveByIndex(xQuest, 0, xPrimary);
+	
+		Format(sQuest, sizeof(sQuest), "%s [%d/%d]\n ", xQuest.m_sName, xProgress.m_iProgress[0], xPrimary.m_iLimit);
+		hMenu.SetTitle(sQuest);
+	
+		for (int i = 0; i < xQuest.m_iObjectivesCount; i++)
+		{
+			CEQuestObjectiveDefinition xObjective;
+			GetQuestObjectiveByIndex(xQuest, i, xObjective);
+	
+			char sItem[512];
+	
+			int iLimit = xObjective.m_iLimit;
+			int iPoints = xObjective.m_iPoints;
+			int iProgress = xProgress.m_iProgress[i];
+	
+			Format(sItem, sizeof(sItem), "%s: %d%s", xObjective.m_sName, iPoints, xQuest.m_sPostfix);
+	
+			if(i > 0 && iLimit > 0)
+			{
+				Format(sItem, sizeof(sItem), "[%d/%d] %s", iProgress, iLimit, sItem);
+			}
+	
+			if(i == 0)
+			{
+				char sProgress[128];
+				int iFilled = RoundToCeil(float(iProgress) / float(iLimit) * QUEST_PANEL_MAX_CHARS);
+	
+				for (int j = 1; j <= QUEST_PANEL_MAX_CHARS; j++)
+				{
+					if (j <= iFilled)
+					{
+						StrCat(sProgress, sizeof(sProgress), CHAR_FULL);
+					} else if(j == iFilled + 1 && iFilled > 0)
+					{
+						StrCat(sProgress, sizeof(sProgress), CHAR_PROGRESS);
+	
+					} else {
+						StrCat(sProgress, sizeof(sProgress), CHAR_EMPTY);
+					}
+				}
+	
+				Format(sItem, sizeof(sItem), "%s\n%s\n ", sItem, sProgress, iProgress, iLimit);
+			}
+	
+			hMenu.AddItem("", sItem);
+		}
+	
+		hMenu.ExitButton = true;
+		hMenu.Display(client, 60);
+	
+		delete hMenu;
+	} else {
+		PrintToChat(client, "\x01Go to \x03Creators.TF\x01 website and select a contract you want to complete in \x03Contracker \x01tab.");
+	}
+}
+
+public int mQuestMenu(Menu menu, MenuAction action, int param1, int param2)
+{
+	if (action == MenuAction_End)
+	{
+		delete menu;
+	}
 }
 
 public Action cQuestActivate(int args)
@@ -616,6 +703,8 @@ public bool GetClientQuestProgress(int client, CEQuestDefinition xQuest, CEQuest
 	xBuffer.m_iClient = client;
 	xBuffer.m_iQuest = xQuest.m_iIndex;
 	
+	if (m_hProgress[client] == null)return false;
+	
 	for (int i = 0; i < m_hProgress[client].Length; i++)
 	{
 		CEQuestClientProgress xStruct;
@@ -643,22 +732,30 @@ public void SetClientActiveQuestByIndex(int client, int quest)
 	// We don't reactivate the quest if it's already active.
 	if (m_xActiveQuestStruct[client].m_iIndex == quest)return;
 	
-	CEQuestDefinition xQuest;
-	if(GetQuestByDefIndex(quest, xQuest))
+	if(quest == 0)
 	{
-		m_xActiveQuestStruct[client] = xQuest;
-		
-		PrintToChat(client, "\x03You have activated '\x05%s\x03' contract. Type \x05!quest \x03or \x05!contract \x03to view current completion progress.", xQuest.m_sName);
-		PrintToChat(client, "\x03You can change your contract on \x05creators.tf \x03in \x05ConTracker \x03tab.");
-
-		char sDecodeSound[64];
-		strcopy(sDecodeSound, sizeof(sDecodeSound), "Quest.Decode");
-		if(StrEqual(xQuest.m_sPostfix, "MP"))
+		m_xActiveQuestStruct[client].m_iIndex = 0;
+	} else {
+		CEQuestDefinition xQuest;
+		if(GetQuestByDefIndex(quest, xQuest))
 		{
-			Format(sDecodeSound, sizeof(sDecodeSound), "%sHalloween", sDecodeSound);
+			// We can't activate background quests.
+			if (xQuest.m_bBackground)return;
+			
+			m_xActiveQuestStruct[client] = xQuest;
+			
+			PrintToChat(client, "\x03You have activated '\x05%s\x03' contract. Type \x05!quest \x03or \x05!contract \x03to view current completion progress.", xQuest.m_sName);
+			PrintToChat(client, "\x03You can change your contract on \x05creators.tf \x03in \x05ConTracker \x03tab.");
+	
+			char sDecodeSound[64];
+			strcopy(sDecodeSound, sizeof(sDecodeSound), "Quest.Decode");
+			if(StrEqual(xQuest.m_sPostfix, "MP"))
+			{
+				Format(sDecodeSound, sizeof(sDecodeSound), "%sHalloween", sDecodeSound);
+			}
+	
+			ClientCommand(client, "playgamesound %s", sDecodeSound);
 		}
-
-		ClientCommand(client, "playgamesound %s", sDecodeSound);
 	}
 }
 
@@ -828,11 +925,35 @@ public void IterateAndTickleClientQuests(int client, int source, const char[] ev
 		TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
 	}
 	
+	DataPack hPack = new DataPack();
+	hPack.WriteCell(client);
+	hPack.WriteCell(source);
+	hPack.WriteString(event);
+	hPack.WriteCell(add);
+	hPack.WriteCell(unique);
+	hPack.Reset();
+	
+	RequestFrame(RF_BackgroundQuests, hPack);
+}
+
+public void RF_BackgroundQuests(any pack)
+{
+	DataPack hPack = pack;
+	int client = hPack.ReadCell();
+	int source = hPack.ReadCell();
+	char event[128];
+	hPack.ReadString(event, sizeof(event));
+	int add = hPack.ReadCell();
+	int unique = hPack.ReadCell();
+	delete hPack;
+	
 	if(m_hBackgroundQuests != null)
 	{
 		for (int i = 0; i < m_hBackgroundQuests.Length; i++)
 		{
 			int iIndex = m_hBackgroundQuests.Get(i);
+			
+			CEQuestDefinition xQuest;
 			if(GetQuestByIndex(iIndex, xQuest))
 			{
 				TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
@@ -1055,7 +1176,7 @@ public bool AddPointsToClientObjective(int client, CEQuestObjectiveDefinition xO
 				// ------------------------ //
 				// SOUND					//
 				
-				if(!silent)
+				if(!silent && !xQuest.m_bBackground)
 				{
 					char sSound[128];
 					Format(sSound, sizeof(sSound), "Quest.StatusTick");
