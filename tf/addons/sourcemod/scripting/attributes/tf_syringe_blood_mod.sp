@@ -1,20 +1,16 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_AUTHOR "Creators.TF Team"
-#define PLUGIN_VERSION "1.00"
-
 #include <sdkhooks>
 #include <tf2_stocks>
-#include <ce_manager_attributes>
-#include <ce_core>
-#include <ce_util>
-#include <ce_models>
+#include <cecon_items>
+#include <tf2wearables>
 
 #define HEAL_SOUND "creators/weapons/syringe_heal.wav"
 #define HEAL_READY "player/recharged.wav"
 #define HEAL_READY_VO "vo/medic_mvm_say_ready01.mp3"
 #define HEAL_DONE_VO "vo/medic_specialcompleted07.mp3"
+
 #define MEDIGUN_CLASSNAME "tf_weapon_medigun"
 #define DEFAULT_OVERHEAL 1.5
 #define HUD_RATE 0.5
@@ -26,9 +22,9 @@
 public Plugin myinfo =
 {
 	name = "[CE Attribute] syringe blood mod",
-	author = PLUGIN_AUTHOR,
+	author = "Creators.TF Team",
 	description = "syringe blood mod",
-	version = PLUGIN_VERSION,
+	version = "1.00",
 	url = "https://creators.tf"
 };
 
@@ -73,14 +69,21 @@ public Action evRoundStart(Handle hEvent, const char[] szName, bool bDontBroadca
 			for (int j = 0; j < 5; j++)
 			{
 				int iWeapon = GetPlayerWeaponSlot(i, j);
-				if(IsValidEntity(iWeapon) && CE_GetAttributeInteger(iWeapon, "syringe blood mode") > 0)
-				{
-					CEModels_WearSetEntPropFloatOfWeapon(iWeapon, Prop_Send, "m_flPoseParameter", 0.0);
-				}
+				
+				if (!IsValidEntity(iWeapon))continue;
+				if (!CEconItems_IsEntityCustomEconItem(iWeapon))continue;
+				if (!CEconItems_GetEntityAttributeBool(iWeapon, "syringe blood mode"))continue;
+				
+				TF2Wear_SetEntPropFloatOfWeapon(iWeapon, Prop_Send, "m_flPoseParameter", 0.0);
 			}
 		}
 	}
 	return Plugin_Continue;
+}
+
+public bool IsSyringeBloodMod(int weapon)
+{
+	return CEconItems_GetEntityAttributeBool(weapon, "syringe blood mode");
 }
 
 public void OnMapStart()
@@ -90,17 +93,18 @@ public void OnMapStart()
 	PrecacheSound(HEAL_READY_VO);
 }
 
-public void CE_OnPostEquip(int client, int entity, int index, int defid, int quality, ArrayList hAttributes, const char[] type)
+public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem xItem, const char[] type)
 {
 	if (!StrEqual(type, "weapon"))return;
-	if(CE_GetAttributeInteger(entity, "syringe blood mode") > 0)
+	if(CEconItems_GetEntityAttributeBool(entity, "syringe blood mode"))
 	{
-		int m_iCapacity = CE_GetAttributeInteger(entity, "syringe blood mode capacity");
+		int m_iCapacity = CEconItems_GetEntityAttributeInteger(entity, "syringe blood mode capacity");
 		m_iCap[client] = m_iCapacity;
+		
 		if(m_iCapacity > 0)
 		{
 			float flPose = float(m_iBlood[client]) / float(m_iCapacity);
-			CEModels_WearSetEntPropFloatOfWeapon(entity, Prop_Send, "m_flPoseParameter", flPose);
+			TF2Wear_SetEntPropFloatOfWeapon(entity, Prop_Send, "m_flPoseParameter", flPose);
 		}
 	}
 }
@@ -151,7 +155,7 @@ public void Syringe_UpdateCheck(int client)
 	for (int j = 0; j <= 5; j++)
 	{
 		int iWeapon = GetPlayerWeaponSlot(client, j);
-		if(iWeapon > 0 && IsValidEntity(iWeapon) && CE_GetAttributeInteger(iWeapon, "syringe blood mode") > 0)
+		if(iWeapon > 0 && IsValidEntity(iWeapon) && IsSyringeBloodMod(iWeapon))
 		{
 			m_bChecked[client] = true;
 			break;
@@ -188,9 +192,9 @@ public void Syringe_UpdateCharge(int client)
 		for (int j = 0; j <= 5; j++)
 		{
 			int iWeapon = GetPlayerWeaponSlot(client, j);
-			if(iWeapon > 0 && IsValidEntity(iWeapon) && CE_GetAttributeInteger(iWeapon, "syringe blood mode") > 0)
+			if(iWeapon > 0 && IsValidEntity(iWeapon) && IsSyringeBloodMod(iWeapon))
 			{
-				CEModels_WearSetEntPropFloatOfWeapon(iWeapon, Prop_Send, "m_flPoseParameter", flPose);
+				TF2Wear_SetEntPropFloatOfWeapon(iWeapon, Prop_Send, "m_flPoseParameter", flPose);
 			}
 		}
 	}
@@ -236,7 +240,7 @@ public Action TraceAttack(int victim, int &attacker, int &inflictor, float &dama
 	if(GetClientTeam(attacker) != GetClientTeam(victim)) return Plugin_Continue;
 
 	int iWeapon = GetEntPropEnt(attacker, Prop_Send, "m_hActiveWeapon");
-	if(iWeapon > 0 && CE_GetAttributeInteger(iWeapon, "syringe blood mode") > 0 && m_iCap[attacker] > 0)
+	if(iWeapon > 0 && IsSyringeBloodMod(iWeapon) && m_iCap[attacker] > 0)
 	{
 		int iHealth = GetClientHealth(victim);
 		int iMaxHealth = TF2_GetOverheal(victim, 1.5);
@@ -254,7 +258,7 @@ public void Syringe_ApplyEffect(int victim, int attacker, int iWeapon)
 	int iHealth = GetClientHealth(victim);
 	int iMaxHealth = TF2_GetOverheal(victim, 1.5);
 
-	int iHeal = CE_GetAttributeInteger(iWeapon, "syringe blood mode heal");
+	int iHeal = CEconItems_GetEntityAttributeInteger(iWeapon, "syringe blood mode heal");
 	EmitSoundToAll(HEAL_SOUND, victim);
 
 	EmitSoundToAll(HEAL_DONE_VO, attacker);
@@ -265,7 +269,7 @@ public void Syringe_ApplyEffect(int victim, int attacker, int iWeapon)
 	m_iBlood[attacker] = 0;
 	m_bReady[attacker] = false;
 
-	CEModels_WearSetEntPropFloatOfWeapon(iWeapon, Prop_Send, "m_flPoseParameter", 0.0);
+	TF2Wear_SetEntPropFloatOfWeapon(iWeapon, Prop_Send, "m_flPoseParameter", 0.0);
 
 	// Getting Ubercharge type
 	int iMedigun = GetPlayerWeaponSlot(attacker, 1);
@@ -293,7 +297,7 @@ public void Syringe_ApplyEffect(int victim, int attacker, int iWeapon)
 				}
 				default:iCond = TFCond_DefenseBuffed; 	// Stock Uber
 			}
-			TF2_AddCondition(victim, iCond, CE_GetAttributeFloat(iWeapon, "syringe blood mode uber"), attacker);
+			TF2_AddCondition(victim, iCond, CEconItems_GetEntityAttributeFloat(iWeapon, "syringe blood mode uber"), attacker);
 		}
 	}
 
@@ -340,4 +344,19 @@ public int TF2_GetOverheal(int iClient, float flOverHeal)
 public int TF2_GetMaxHealth(int iClient)
 {
     return GetEntProp(iClient, Prop_Data, "m_iMaxHealth");
+}
+
+public bool IsClientReady(int client)
+{
+	if (!IsClientValid(client))return false;
+	if (IsFakeClient(client))return false;
+	return true;
+}
+
+public bool IsClientValid(int client)
+{
+	if (client <= 0 || client > MaxClients)return false;
+	if (!IsClientInGame(client))return false;
+	if (!IsClientAuthorized(client))return false;
+	return true;
 }

@@ -2,8 +2,7 @@
 #pragma newdecls required
 
 #include <sdkhooks>
-#include <ce_core>
-#include <ce_manager_attributes>
+#include <cecon_items>
 
 public Plugin myinfo =
 {
@@ -34,8 +33,8 @@ public Action SapperDamage(int building, int &attacker, int &inflictor, float &d
 		int iWeapon = GetEntPropEnt(attacker, Prop_Send, "m_hActiveWeapon");
 		if (IsValidEntity(iWeapon))
 		{
-			float flDamage = CE_GetAttributeFloat(iWeapon, "fixed damage against sappers");
-			int iMetalRequired = CE_GetAttributeInteger(iWeapon, "metal for sapper removal");
+			float flDamage = CEconItems_GetEntityAttributeFloat(iWeapon, "fixed damage against sappers");
+			int iMetalRequired = CEconItems_GetEntityAttributeInteger(iWeapon, "metal for sapper removal");
 			int iMetal = GetEntProp(attacker, Prop_Data, "m_iAmmo", 4, 3);
 
 			if(flDamage > 0.0)

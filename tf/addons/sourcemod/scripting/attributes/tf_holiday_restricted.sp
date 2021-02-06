@@ -1,19 +1,15 @@
 #pragma semicolon 1
 
-#define PLUGIN_AUTHOR "Creators.TF Team"
-#define PLUGIN_VERSION "1.0"
-
 #include <sdkhooks>
-#include <ce_core>
-#include <ce_manager_attributes>
+#include <cecon_items>
 #include <tf2_stocks>
 
 public Plugin myinfo =
 {
 	name = "[CE Attribute] holiday restricted",
-	author = PLUGIN_AUTHOR,
+	author = "Creators.TF Team",
 	description = "holiday restricted",
-	version = PLUGIN_VERSION,
+	version = "1.0",
 	url = "https://creators.tf"
 }
 
@@ -25,32 +21,23 @@ enum CEHoliday
 	CEHoliday_HalloweenOrFullMoon
 }
 
-public bool CE_OnShouldBlock(int client, int index, int def, int quality, ArrayList hAttributes, const char[] type)
+public bool CEconItems_ShouldItemBeBlocked(int client, CEItem xItem, const char[] type)
 {
 	if (!StrEqual(type, "cosmetic"))return false;
 	
+	CEHoliday nHoliday = view_as<CEHoliday>(CEconItems_GetAttributeIntegerFromArray(xItem.m_Attributes, "holiday restricted"));
 	
-	for (int i = 0; i < hAttributes.Length; i++)
+	switch(nHoliday)
 	{
-		// TODO: Make this a native to check an attr in ArrayList.
-		CEAttribute hAttr;
-		hAttributes.GetArray(i, hAttr);
-		
-		if(StrEqual(hAttr.m_sName, "holiday restricted"))
-		{	
-			CEHoliday nHoliday = view_as<CEHoliday>(hAttr.m_hValue);
-			switch(nHoliday)
-			{
-				case CEHoliday_Halloween:
-				{
-					return !TF2_IsHolidayActive(TFHoliday_Halloween); 
-				}
-				case CEHoliday_HalloweenOrFullMoon:
-				{
-					return !TF2_IsHolidayActive(TFHoliday_HalloweenOrFullMoon); 
-				}
-			}
+		case CEHoliday_Halloween:
+		{
+			return !TF2_IsHolidayActive(TFHoliday_Halloween); 
+		}
+		case CEHoliday_HalloweenOrFullMoon:
+		{
+			return !TF2_IsHolidayActive(TFHoliday_HalloweenOrFullMoon); 
 		}
 	}
+	
 	return false;
 }

@@ -1,13 +1,12 @@
 #pragma semicolon 1
 #pragma newdecls required
 
+// TODO: Adapt to new econ before Halloween.
+
 #include <sourcemod>
 #include <tf2_stocks>
-#include <ce_core>
-#include <ce_manager_attributes>
+#include <cecon_items>
 #include <ce_manager_responses>
-#include <ce_manager_items>
-#include <ce_loadout>
 
 #define VOICE_PACK_TAINTED_TOME 1
 
@@ -34,7 +33,7 @@ public Plugin myinfo =
 
 public void OnEconItemNewLevel(int client, int index, const char[] name)
 {
-	if(!CE_IsPlayerWearingEconIndex(client, index)) return;
+	if(!CEconItems_IsClientWearingItem( (client, index)) return;
 
 	int wear = -1;
 	while ((wear = FindEntityByClassname(wear, "tf_wearable*")) != -1)
