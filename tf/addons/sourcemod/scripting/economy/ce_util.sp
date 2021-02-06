@@ -178,7 +178,6 @@ public any Native_IsEntityValid(Handle plugin, int numParams)
 }
 
 // Logic is taken from CRTime::RTime32FromFmtString method. 
-
 public any Native_TimeFromString(Handle plugin, int numParams)
 {
 	enum tm

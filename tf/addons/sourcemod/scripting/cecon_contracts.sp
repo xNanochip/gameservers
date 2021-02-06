@@ -1,4 +1,4 @@
-//============= Copyright Amper Software 2021, All rights reserved. ============//
+//============= Copyright Amper Software, All rights reserved. ============//
 //
 // Purpose: Contracts handler for Creators.TF Economy.
 //
