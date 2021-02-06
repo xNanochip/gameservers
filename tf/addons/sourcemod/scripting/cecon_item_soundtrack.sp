@@ -443,6 +443,12 @@ public Action teamplay_broadcast_audio(Event hEvent, const char[] szName, bool b
 	int iTeam = hEvent.GetInt("team");
 	char sOldSound[MAX_SOUND_NAME];
 	hEvent.GetString("sound", sOldSound, sizeof(sOldSound));
+	
+	bool bWillOverride = false;
+	if (StrContains(sOldSound, "YourTeamWon") != -1)bWillOverride = true;
+	if (StrContains(sOldSound, "YourTeamLost") != -1)bWillOverride = true;
+	
+	if (!bWillOverride)return Plugin_Continue;
 
 	for (int i = 1; i < MaxClients; i++)
 	{
