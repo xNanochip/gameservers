@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.7.7b"
+#define PLUGIN_VERSION  "3.7.8b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -59,7 +59,7 @@ float clangles           [3][TFMAXPLAYERS+1][2];
 // STORED POS PER CLIENT
 float clpos              [2][TFMAXPLAYERS+1][3];
 // STORED cmdnum PER CLIENT
-int clcmdnum             [3][TFMAXPLAYERS+1];
+int clcmdnum             [6][TFMAXPLAYERS+1];
 // STORED BUTTONS PER CLIENT
 int buttonsPrev             [TFMAXPLAYERS+1];
 // STORED GRAVITY STATE PER CLIENT
@@ -1282,9 +1282,12 @@ public Action OnPlayerRunCmd
     clangles[0][Cl][1] = angles[1];
 
     // grab cmdnum
-    clcmdnum[2][Cl] = clcmdnum[1][Cl];
-    clcmdnum[1][Cl] = clcmdnum[0][Cl];
+    for (int i = 5; i > 0; --i)
+    {
+        clcmdnum[i][Cl] = clcmdnum[i-1][Cl];
+    }
     clcmdnum[0][Cl] = cmdnum;
+
 
     // grab position
     clpos[1][Cl] = clpos[0][Cl];
@@ -1466,16 +1469,26 @@ public Action OnPlayerRunCmd
             cmdnumSpikeDetects[Cl],
             heldWeapon
         );
+        StacLog
+        (
+            "\nPrevious cmdnums:\n 0 %i\n1 %i\n2 %i\n3 %i\n4 %i\n5 %i\n",
+            clcmdnum[0][Cl],
+            clcmdnum[1][Cl],
+            clcmdnum[2][Cl],
+            clcmdnum[3][Cl],
+            clcmdnum[4][Cl],
+            clcmdnum[5][Cl]
+        );
         // TEMP hardcoded for now
-        if (cmdnumSpikeDetects[Cl] >= 25)
-        {
-            char reason[128];
-            Format(reason, sizeof(reason), "%t", "cmdnumSpikesBanMsg", cmdnumSpikeDetects[Cl]);
-            BanUser(userid, reason);
-            MC_PrintToChatAll("%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
-            StacLog("%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
-            return Plugin_Handled;
-        }
+        //if (cmdnumSpikeDetects[Cl] >= 25)
+        //{
+        //    char reason[128];
+        //    Format(reason, sizeof(reason), "%t", "cmdnumSpikesBanMsg", cmdnumSpikeDetects[Cl]);
+        //    BanUser(userid, reason);
+        //    MC_PrintToChatAll("%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
+        //    StacLog("%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
+        //    return Plugin_Handled;
+        //}
     }
 
     //if (clcmdnum[1][Cl] == clcmdnum[0][Cl])
