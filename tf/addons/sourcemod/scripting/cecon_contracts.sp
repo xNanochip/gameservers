@@ -37,6 +37,7 @@ public Plugin myinfo =
 ArrayList m_hQuestDefinitions;
 ArrayList m_hObjectiveDefinitions;
 ArrayList m_hHooksDefinitions;
+ArrayList m_hBackgroundQuests;
 
 ArrayList m_hFriends[MAXPLAYERS + 1];
 ArrayList m_hProgress[MAXPLAYERS + 1];
@@ -95,6 +96,7 @@ public void ParseEconomyConfig(KeyValues kv)
 	m_hQuestDefinitions = 		new ArrayList(sizeof(CEQuestDefinition));
 	m_hObjectiveDefinitions = 	new ArrayList(sizeof(CEQuestObjectiveDefinition));
 	m_hHooksDefinitions = 		new ArrayList(sizeof(CEQuestObjectiveHookDefinition));
+	m_hBackgroundQuests = new ArrayList();
 	
 	if(kv.JumpToKey("Contracker/Quests", false))
 	{
@@ -110,6 +112,11 @@ public void ParseEconomyConfig(KeyValues kv)
 				xQuest.m_iIndex = StringToInt(sSectionName);
 				
 				xQuest.m_bBackground = kv.GetNum("background", 0) == 1;
+				
+				if(xQuest.m_bBackground)
+				{
+					m_hBackgroundQuests.Push(iQuestWorldIndex);
+				}
 				
 				kv.GetString("name", xQuest.m_sName, sizeof(xQuest.m_sName));
 				kv.GetString("postfix", xQuest.m_sPostfix, sizeof(xQuest.m_sPostfix), "CP");
@@ -294,6 +301,7 @@ public void FlushQuestDefinitions()
 	delete m_hQuestDefinitions;
 	delete m_hObjectiveDefinitions;
 	delete m_hHooksDefinitions;
+	delete m_hBackgroundQuests;
 }
 
 public bool GetQuestByIndex(int index, CEQuestDefinition xStruct)
@@ -817,7 +825,19 @@ public void IterateAndTickleClientQuests(int client, int source, const char[] ev
 	CEQuestDefinition xQuest;
 	if(GetClientActiveQuest(client, xQuest))
 	{
-		TickleClientQuestObjectives(client, xQuest, client, event, add, unique);
+		TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
+	}
+	
+	if(m_hBackgroundQuests != null)
+	{
+		for (int i = 0; i < m_hBackgroundQuests.Length; i++)
+		{
+			int iIndex = m_hBackgroundQuests.Get(i);
+			if(GetQuestByIndex(iIndex, xQuest))
+			{
+				TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
+			}
+		}
 	}
 }
 
