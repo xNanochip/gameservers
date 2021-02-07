@@ -60,6 +60,8 @@ public void ce_campaign_force_activate__CHANGED(ConVar convar, const char[] oldV
 
 public void ParseCampaignList(KeyValues kv)
 {
+	if (kv == null)return;
+	
 	delete m_hCampaigns;
 	m_hCampaigns = new ArrayList(sizeof(CECampaign));
 
