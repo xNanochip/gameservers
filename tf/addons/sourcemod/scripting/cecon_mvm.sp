@@ -313,9 +313,8 @@ public Action cMvMSetEntityAttribute(int args)
 
 	GetCmdArg(2, sName, sizeof(sName));
 	GetCmdArg(3, sValue, sizeof(sValue));
-	float flValue = StringToFloat(sValue);
 
-	CEconItems_SetEntityAttributeFloat(iEntity, sName, flValue);
+	CEconItems_SetEntityAttributeString(iEntity, sName, sValue);
 
 	return Plugin_Handled;
 }
