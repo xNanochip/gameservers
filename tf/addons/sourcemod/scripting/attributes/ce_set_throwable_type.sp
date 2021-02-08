@@ -296,6 +296,8 @@ public void CreateWeaponThrowableProjectile_BreadMonster(int weapon)
 		}
 		
 		SetDelayedProjectileLauncher(iProjectile, weapon);
+		
+		EmitGameSoundToAll("Passtime.Throw", iClient);
 	}
 }
 #endif
@@ -348,6 +350,8 @@ public void CreateWeaponThrowableProjectile_SmokeGrenade(int weapon)
 		CreateTimer(tf_throwable_smoke_grenade_delay.FloatValue, Timer_SmokeGrenade_StartSmokeCycle, iProjectile);
 		
 		SetDelayedProjectileLauncher(iProjectile, weapon);
+		
+		EmitGameSoundToAll("Passtime.Throw", iClient);
 	}
 }
 #endif
