@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.7.8b"
+#define PLUGIN_VERSION  "3.7.9b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -1088,29 +1088,15 @@ public Action OnPlayerRunCmd
     }
 
     // originally from ssac - block invalid usercmds with invalid data
-    // update from future steph: THIS IS A WASTE OF FUCKING TIME
-    //if (cmdnum <= 0 || tickcount <= 0)
-    //{
-    //    // airstuck doesn't technically exist anymore, but blocking nullcmds makes it possible to abuse. let's add a check for that
-    //    if (IsClientPlaying(Cl))
-    //    {
-    //        if (!(flags & FL_ONGROUND))
-    //        {
-    //            nullCmdsFor[Cl]++;
-    //            if (nullCmdsFor[Cl] >= 5)
-    //            {
-    //                KickClient(Cl, "[StAC] Kicked for attempted airstuck");
-    //                MC_PrintToChatAll("{hotpink}[StAC]{white} Player %N was kicked for {mediumpurple}attempted airstuck{white}.", Cl);
-    //            }
-    //        }
-    //        else
-    //        {
-    //            nullCmdsFor[Cl] = 0;
-    //        }
-    //    }
-    //    // technically we don't need to return here, but this is more defensive programming than anything
-    //    return Plugin_Stop;
-    //}
+    if (cmdnum <= 0 || tickcount <= 0)
+    {
+        if (cmdnum < 0 || tickcount < 0)
+        {
+            KickClient(Cl, "[StAC] Invalid usercmd data");
+            return Plugin_Handled;
+        }
+        return Plugin_Continue;
+    }
 
     // need this basically no matter what
     int userid = GetClientUserId(Cl);
@@ -1448,7 +1434,7 @@ public Action OnPlayerRunCmd
 
     /* cmdnum test, heavily modified from ssac */
     int spikeamt = abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]);
-    if (spikeamt > 256)
+    if (spikeamt >= 256)
     {
         char heldWeapon[256];
         GetClientWeapon(Cl, heldWeapon, sizeof(heldWeapon));
@@ -1480,15 +1466,15 @@ public Action OnPlayerRunCmd
             clcmdnum[5][Cl]
         );
         // TEMP hardcoded for now
-        //if (cmdnumSpikeDetects[Cl] >= 25)
-        //{
-        //    char reason[128];
-        //    Format(reason, sizeof(reason), "%t", "cmdnumSpikesBanMsg", cmdnumSpikeDetects[Cl]);
-        //    BanUser(userid, reason);
-        //    MC_PrintToChatAll("%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
-        //    StacLog("%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
-        //    return Plugin_Handled;
-        //}
+        if (cmdnumSpikeDetects[Cl] >= 25)
+        {
+            char reason[128];
+            Format(reason, sizeof(reason), "%t", "cmdnumSpikesBanMsg", cmdnumSpikeDetects[Cl]);
+            BanUser(userid, reason);
+            MC_PrintToChatAll("%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
+            StacLog("%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
+            return Plugin_Handled;
+        }
     }
 
     //if (clcmdnum[1][Cl] == clcmdnum[0][Cl])
