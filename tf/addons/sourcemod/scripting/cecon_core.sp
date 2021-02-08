@@ -89,6 +89,8 @@ public int Steam_FullyLoaded()
 public void Steam_OnReady()
 {
 	ReloadEconomyCredentials();
+	
+	Schema_CheckForUpdates(false);
 }
 
 // Used to refresh economy credentials from economy.cfg file.

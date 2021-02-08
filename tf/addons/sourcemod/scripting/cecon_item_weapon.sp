@@ -137,7 +137,8 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 			int iWeapon = CreateWeapon(client, hDef.m_iBaseIndex, hDef.m_sClassName, item.m_nQuality);
 			if(iWeapon > -1)
 			{
-				int item_slot = TF2Econ_GetItemSlot(hDef.m_iBaseIndex, TF2_GetPlayerClass(client));
+				int iBaseDefID = GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex");
+				int item_slot = TF2Econ_GetItemSlot(iBaseDefID, TF2_GetPlayerClass(client));
 				
 				//----------------------------------------------//
 				// Some weapons	have their slot index mismatched with the real value.
@@ -268,7 +269,7 @@ public void ProcessEconSchema(KeyValues kv)
 				
 				CEItemDefinitionWeapon hDef;
 				hDef.m_iIndex = StringToInt(sIndex);
-				hDef.m_iBaseIndex = kv.GetNum("item_index");
+				hDef.m_iBaseIndex = kv.GetNum("item_index", -1);
 				
 				hDef.m_iClip = kv.GetNum("weapon_clip");
 				hDef.m_iAmmo = kv.GetNum("weapon_ammo");
@@ -325,6 +326,26 @@ public int CreateWeapon(int client, int index, const char[] classname, int quali
 		{
 			case TFClass_Scout: Format(class, sizeof(class), "tf_weapon_pistol_scout");
 			case TFClass_Engineer: Format(class, sizeof(class), "tf_weapon_pistol");
+		}
+	} else if(StrEqual(class, "tf_weapon_throwable"))
+	{
+		switch (TF2_GetPlayerClass(client))
+		{
+			case TFClass_Scout:
+			{
+				Format(class, sizeof(class), "tf_weapon_jar_milk");
+				if (index == -1)index = 222;
+			}
+			case TFClass_Pyro:
+			{
+				Format(class, sizeof(class), "tf_weapon_jar_gas");
+				if (index == -1)index = 1180;
+			}
+			case TFClass_Sniper:
+			{
+				Format(class, sizeof(class), "tf_weapon_jar");
+				if (index == -1)index = 58;
+			}
 		}
 	}
 
