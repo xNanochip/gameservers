@@ -201,6 +201,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 				}
 	
 				strcopy(m_sWeaponModel[iWeapon], sizeof(m_sWeaponModel[]), hDef.m_sWorldModel);
+				ParseCosmeticModel(client, m_sWeaponModel[iWeapon], sizeof(m_sWeaponModel[]));
 	
 				// Making weapon visible.
 				SetEntProp(iWeapon, Prop_Send, "m_bValidatedAttachedEntity", 1);
@@ -336,15 +337,45 @@ public int CreateWeapon(int client, int index, const char[] classname, int quali
 				Format(class, sizeof(class), "tf_weapon_jar_milk");
 				if (index == -1)index = 222;
 			}
+			case TFClass_Soldier:
+			{
+				Format(class, sizeof(class), "tf_weapon_shovel");
+				if (index == -1)index = 196;
+			}
 			case TFClass_Pyro:
 			{
 				Format(class, sizeof(class), "tf_weapon_jar_gas");
 				if (index == -1)index = 1180;
 			}
+			case TFClass_DemoMan:
+			{
+				Format(class, sizeof(class), "tf_weapon_bottle");
+				if (index == -1)index = 191;
+			}
+			case TFClass_Heavy:
+			{
+				Format(class, sizeof(class), "tf_weapon_fists");
+				if (index == -1)index = 195;
+			}
+			case TFClass_Engineer:
+			{
+				Format(class, sizeof(class), "tf_weapon_wrench");
+				if (index == -1)index = 197;
+			}
+			case TFClass_Medic:
+			{
+				Format(class, sizeof(class), "tf_weapon_bonesaw");
+				if (index == -1)index = 198;
+			}
 			case TFClass_Sniper:
 			{
 				Format(class, sizeof(class), "tf_weapon_jar");
 				if (index == -1)index = 58;
+			}
+			case TFClass_Spy:
+			{
+				Format(class, sizeof(class), "tf_weapon_knife");
+				if (index == -1)index = 194;
 			}
 		}
 	}
@@ -554,5 +585,24 @@ public void TF2_OnConditionRemoved(int client, TFCond cond)
 
 			OnDrawWeapon(client, iWeapon);
 		}
+	}
+}
+
+//--------------------------------------------------------------------
+// Purpose: Replaces %s symbol in model path with TF2 class name.
+//--------------------------------------------------------------------
+public void ParseCosmeticModel(int client, char[] sModel, int size)
+{
+	switch (TF2_GetPlayerClass(client))
+	{
+		case TFClass_Scout:ReplaceString(sModel, size, "%s", "scout");
+		case TFClass_Soldier:ReplaceString(sModel, size, "%s", "soldier");
+		case TFClass_Pyro:ReplaceString(sModel, size, "%s", "pyro");
+		case TFClass_DemoMan:ReplaceString(sModel, size, "%s", "demo");
+		case TFClass_Heavy:ReplaceString(sModel, size, "%s", "heavy");
+		case TFClass_Engineer:ReplaceString(sModel, size, "%s", "engineer");
+		case TFClass_Medic:ReplaceString(sModel, size, "%s", "medic");
+		case TFClass_Sniper:ReplaceString(sModel, size, "%s", "sniper");
+		case TFClass_Spy:ReplaceString(sModel, size, "%s", "spy");
 	}
 }

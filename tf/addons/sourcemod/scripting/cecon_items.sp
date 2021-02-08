@@ -191,6 +191,14 @@ public void OnAllPluginsLoaded()
     PrecacheItemsFromSchema(CEcon_GetEconomySchema());
 }
 
+//---------------------------------------------------------------------
+// Purpose: Precache item definitions on late schema update.
+//---------------------------------------------------------------------
+public void CEcon_OnSchemaUpdated(KeyValues hSchema)
+{
+    PrecacheItemsFromSchema(hSchema);
+}
+
 public void OnPluginStart()
 {
 	// Attributes
@@ -240,14 +248,6 @@ public Action cResetLoadout(int args)
 
 	}
 	return Plugin_Handled;
-}
-
-//---------------------------------------------------------------------
-// Purpose: Precache item definitions on late schema update.
-//---------------------------------------------------------------------
-public void CEcon_OnSchemaUpdated(KeyValues hSchema)
-{
-    PrecacheItemsFromSchema(hSchema);
 }
 
 //---------------------------------------------------------------------
