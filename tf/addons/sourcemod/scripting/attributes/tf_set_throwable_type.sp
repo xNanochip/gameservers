@@ -21,6 +21,7 @@ public Plugin myinfo =
 };
 
 int m_nThrowableType[2049];
+bool m_bRemoveNextProjectile[MAXPLAYERS + 1];
 
 ConVar tf_throwable_brick_force;
 
@@ -94,95 +95,22 @@ public void OnEntityCreated(int entity, const char[] classname)
 	
 	m_nThrowableType[entity] = 0;
 	
-	if(StrContains(classname, "tf_projectile_") != -1)
+	if(StrContains(classname, "tf_projectile_jar") != -1)
 	{
-		// We would use SpawnPost, but m_hLauncher is not available 
-		// at the time.
-		RequestFrame(RF_OnBaseProjectile_Spawn, entity);
+		SDKHook(entity, SDKHook_Spawn, SDKHook_Projectile_OnSpawn);
 	}
 }
 
-public void RF_OnBaseProjectile_Spawn(any entity)
+public Action SDKHook_Projectile_OnSpawn(int entity)
 {
-	int iLauncher = GetEntPropEnt(entity, Prop_Send, "m_hLauncher");
-	
-	if(iLauncher > -1)
-	{
-		if (!CEconItems_IsEntityCustomEconItem(iLauncher))return;
-		if (m_nThrowableType[iLauncher] <= 0)return;
-		
-		KillNextFrame(entity);
-	}
-}
-
-public Action BaseThrowable_OnSpawnPost(int entity)
-{
-	
-	return Plugin_Handled;
-	/*	char classname[64];
-	GetEntityClassname(entity, classname, sizeof(classname));
-	
-	int iTeamNum = GetEntProp(entity, Prop_Send, "m_iTeamNum");
 	int iClient = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
-	
-	int iWeapon = GetPlayerWeaponSlot(iClient, 1);
-	
-	if(iWeapon > -1)
+	if(iClient > 0)
 	{
-		// if (!m_bIsBrickLauncher[iWeapon])return Plugin_Handled;
-		
-		float flSpeed = tf_throwable_brick_force.FloatValue;
-		
-		float vecPos[3], vecAng[3], vecVel[3];
-		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", vecPos);
-		GetEntPropVector(entity, Prop_Data, "m_angRotation", vecAng);
-		
-		KillNextFrame(entity);
-		
-		int iProjectile = CreateEntityByName("tf_projectile_throwable_brick");
-		if(iProjectile > -1)
+		if(m_bRemoveNextProjectile[iClient])
 		{
-			DispatchSpawn(iProjectile);
-			SetEntityModel(iProjectile, TF_THROWABLE_BRICK_MODEL);
-			
-			SetEntProp(iProjectile, Prop_Send, "m_iTeamNum", iTeamNum);
-			SetEntPropEnt(iProjectile, Prop_Send, "m_hOwnerEntity", iClient);
-			
-			SetEntProp(iProjectile, Prop_Send, "m_bCritical", 0);
-			
-			if(iClient != -1)
-			{
-				SetEntPropEnt(iProjectile, Prop_Send, "m_hOwnerEntity", iClient);
-				GetClientEyeAngles(iClient, vecAng);
-			}
-			
-			SetEntPropEnt(iProjectile, Prop_Send, "m_hOriginalLauncher", iWeapon);
-			SetEntPropEnt(iProjectile, Prop_Send, "m_hLauncher", iWeapon);
-			
-			float vecVelAng[3];
-			vecVelAng = vecAng;
-			vecVelAng[0] -= 10.0;
-			
-			GetAngleVectors(vecVelAng, vecVel, NULL_VECTOR, NULL_VECTOR);
-			NormalizeVector(vecVel, vecVel);
-			ScaleVector(vecVel, flSpeed);
-			
-			ActivateEntity(iProjectile);
-			TeleportEntity(iProjectile, vecPos, vecAng, vecVel);
+			AcceptEntityInput(entity, "Kill");
 		}
 	}
-	
-	return Plugin_Continue;*/
-}
-
-public void KillNextFrame(int entity)
-{
-	RequestFrame(RF_KillNextFrame, entity);
-}
-
-public void RF_KillNextFrame(any entity)
-{
-	AcceptEntityInput(entity, "Kill");
 }
 
 public Action TF2_CalcIsAttackCritical(int client, int weapon, char[] name, bool &result)
@@ -191,6 +119,11 @@ public Action TF2_CalcIsAttackCritical(int client, int weapon, char[] name, bool
 	if (m_nThrowableType[weapon] <= 0)return;
 	
 	CreateTimer(0.035, Timer_DelayedCreateThrowableProjectile, weapon);
+	
+	if(StrContains(name, "tf_weapon_jar") != -1) 
+	{
+		m_bRemoveNextProjectile[client] = true;
+	}
 }
 
 public Action Timer_DelayedCreateThrowableProjectile(Handle timer, any data)

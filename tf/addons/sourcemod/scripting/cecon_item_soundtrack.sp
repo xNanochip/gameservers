@@ -422,7 +422,7 @@ public int PrecacheSampleKeyValues(KeyValues hConf)
 
 	hConf.GetString("move_to_event", hSample.m_sMoveToEvent, sizeof(hSample.m_sMoveToEvent));
 	hConf.GetString("sound", hSample.m_sSound, sizeof(hSample.m_sSound));
-	
+
 	if(!StrEqual(hSample.m_sSound, ""))
 	{
 		PrecacheSound(hSample.m_sSound);

@@ -82,8 +82,11 @@ public void Schema_CheckForUpdates(bool bIsForced)
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "field", "Version");
 	Steam_SetHTTPRequestNetworkActivityTimeout(httpRequest, 10);
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
-	
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Authorization", m_sAuthorizationKey);
+	
+	char sAccessHeader[256];
+	Format(sAccessHeader, sizeof(sAccessHeader), "Provider %s", m_sEconomyAccessKey);
+	Steam_SetHTTPRequestHeaderValue(httpRequest, "Access", sAccessHeader);
 
 	PrintToChatAll("Schema_CheckForUpdates()");
 	Steam_SendHTTPRequest(httpRequest, Schema_CheckForUpdates_Callback);
@@ -151,6 +154,10 @@ public void Schema_ForceUpdate()
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
 	
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Authorization", m_sAuthorizationKey);
+	
+	char sAccessHeader[256];
+	Format(sAccessHeader, sizeof(sAccessHeader), "Provider %s", m_sEconomyAccessKey);
+	Steam_SetHTTPRequestHeaderValue(httpRequest, "Access", sAccessHeader);
 
 	PrintToChatAll("Schema Update Send");
 	Steam_SendHTTPRequest(httpRequest, Schema_ForceUpdate_Callback);

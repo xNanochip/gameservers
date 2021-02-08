@@ -69,11 +69,11 @@ public Action evRoundStart(Handle hEvent, const char[] szName, bool bDontBroadca
 			for (int j = 0; j < 5; j++)
 			{
 				int iWeapon = GetPlayerWeaponSlot(i, j);
-				
+
 				if (!IsValidEntity(iWeapon))continue;
 				if (!CEconItems_IsEntityCustomEconItem(iWeapon))continue;
 				if (!CEconItems_GetEntityAttributeBool(iWeapon, "syringe blood mode"))continue;
-				
+
 				TF2Wear_SetEntPropFloatOfWeapon(iWeapon, Prop_Send, "m_flPoseParameter", 0.0);
 			}
 		}
@@ -100,7 +100,7 @@ public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem xItem, co
 	{
 		int m_iCapacity = CEconItems_GetEntityAttributeInteger(entity, "syringe blood mode capacity");
 		m_iCap[client] = m_iCapacity;
-		
+
 		if(m_iCapacity > 0)
 		{
 			float flPose = float(m_iBlood[client]) / float(m_iCapacity);
@@ -255,15 +255,20 @@ public Action TraceAttack(int victim, int &attacker, int &inflictor, float &dama
 
 public void Syringe_ApplyEffect(int victim, int attacker, int iWeapon)
 {
-	int iHealth = GetClientHealth(victim);
+	int iBaseHealth = GetClientHealth(victim);
 	int iMaxHealth = TF2_GetOverheal(victim, 1.5);
 
 	int iHeal = CEconItems_GetEntityAttributeInteger(iWeapon, "syringe blood mode heal");
 	EmitSoundToAll(HEAL_SOUND, victim);
 
 	EmitSoundToAll(HEAL_DONE_VO, attacker);
-	iHealth = iHealth + iHeal;
-	if (iHealth > iMaxHealth)iHealth = iMaxHealth;
+	int iHealth = iBaseHealth + iHeal;
+	if (iHealth > iMaxHealth) iHealth = iMaxHealth;
+
+	int iDelta = iHealth - iBaseHealth;
+	m_iLastValue[attacker] += iHeal;
+	SetEntProp(attacker, Prop_Send, "m_iHealPoints", m_iLastValue[attacker]);
+
 	SetEntityHealth(victim, iHealth);
 
 	m_iBlood[attacker] = 0;
@@ -306,11 +311,11 @@ public void Syringe_ApplyEffect(int victim, int attacker, int iWeapon)
 	hEvent.SetInt("sourcemod", 1);
 	hEvent.SetInt("patient", GetClientUserId(victim));
 	hEvent.SetInt("healer", GetClientUserId(attacker));
-	hEvent.SetInt("amount", iHeal);
+	hEvent.SetInt("amount", iDelta);
 	hEvent.Fire();
 
 	hEvent = CreateEvent("player_healonhit", true);
-	hEvent.SetInt("amount", iHeal);
+	hEvent.SetInt("amount", iDelta);
 	hEvent.SetInt("entindex", victim);
 	hEvent.Fire();
 }

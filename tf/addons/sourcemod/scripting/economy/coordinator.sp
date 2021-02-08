@@ -83,15 +83,17 @@ public void StartCoordinatorLongPolling()
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "processed_jobs", sProcessedJobs);
 	Steam_SetHTTPRequestNetworkActivityTimeout(httpRequest, 40);
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
-	
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Authorization", m_sAuthorizationKey);
+	
+	char sAccessHeader[256];
+	Format(sAccessHeader, sizeof(sAccessHeader), "Provider %s", m_sEconomyAccessKey);
+	Steam_SetHTTPRequestHeaderValue(httpRequest, "Access", sAccessHeader);
 
 	Steam_SendHTTPRequest(httpRequest, Coordinator_Request_Callback);
 }
 
 public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
 {
-	// PrintToServer("Coordinator_Request_Callback()");
 	bool bError = true;
 
 	// If response was succesful...

@@ -536,6 +536,8 @@ public void RequestClientSteamFriends_Callback(HTTPRequestHandle request, bool s
 
 public void RequestClientContractProgress(int client)
 {	
+	PrintToChatAll("RequestClientContractProgress()");
+	
 	if (!IsClientReady(client))return;
 	if (m_bWaitingForProgress[client])return;
 	
@@ -552,6 +554,7 @@ public void RequestClientContractProgress(int client)
 
 public void RequestClientContractProgress_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code, any client)
 {
+	PrintToChatAll("RequestClientContractProgress_Callback() %d", code);
 	// We are not processing bots.
 	if (!IsClientReady(client))return;
 	
@@ -567,6 +570,8 @@ public void RequestClientContractProgress_Callback(HTTPRequestHandle request, bo
 	Steam_GetHTTPResponseBodyData(request, content, size);
 	Steam_ReleaseHTTPRequest(request);
 	
+	PrintToServer(content);
+	
 	KeyValues Response = new KeyValues("Response");
 
 	// ======================== //
@@ -576,6 +581,7 @@ public void RequestClientContractProgress_Callback(HTTPRequestHandle request, bo
 	if (!Response.ImportFromString(content))return;
 
 	delete m_hProgress[client];
+	m_hProgress[client] = new ArrayList(sizeof(CEQuestClientProgress));
 	
 	int iActive = Response.GetNum("activated");
 
