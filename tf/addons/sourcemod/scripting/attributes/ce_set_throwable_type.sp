@@ -23,15 +23,23 @@ public Plugin myinfo =
 int m_nThrowableType[2049];
 bool m_bRemoveNextProjectile[MAXPLAYERS + 1];
 
-ConVar tf_throwable_brick_force;
+int m_iSmokeEffectCycles[2049];
+
+ConVar 	tf_throwable_brick_force,
+		tf_throwable_bread_force,
+		tf_throwable_smoke_grenade_force,
+		tf_throwable_smoke_grenade_delay,
+		tf_throwable_smoke_grenade_duration;
 
 #define THROWABLE_TYPE_BRICK 1
 #define THROWABLE_TYPE_SMOKE_GRENADE 2
 #define THROWABLE_TYPE_KNIFE 3
-#define THROWABLE_BREAD_MONSTER 4
+#define THROWABLE_TYPE_BREAD 4
 
 #define TF_THROWABLE_BRICK_MODEL "models/weapons/c_models/c_brick/c_brick.mdl"
 #define TF_PROJECTILE_THROWABLE_BRICK "tf_projectile_throwable_brick"
+
+#define TF_THROWABLE_SMOKE_GRENADE_INTERVAL 0.1
 
 public void OnMapStart()
 {
@@ -43,6 +51,12 @@ Handle g_hSdkInitThrowable;
 public void OnPluginStart()
 {
 	tf_throwable_brick_force = CreateConVar("tf_throwable_brick_force", "1200");
+	
+	tf_throwable_bread_force = CreateConVar("tf_throwable_bread_force", "900");
+	
+	tf_throwable_smoke_grenade_force = CreateConVar("tf_throwable_smoke_grenade_force", "1200");
+	tf_throwable_smoke_grenade_delay = CreateConVar("tf_throwable_smoke_grenade_delay", "2.0");
+	tf_throwable_smoke_grenade_duration = CreateConVar("tf_throwable_smoke_grenade_duration", "5.0");
 	
 	Handle hGameConf = LoadGameConfigFile("tf2.throwables");
 	if (hGameConf != null)
@@ -109,6 +123,7 @@ public Action SDKHook_Projectile_OnSpawn(int entity)
 		if(m_bRemoveNextProjectile[iClient])
 		{
 			AcceptEntityInput(entity, "Kill");
+			m_bRemoveNextProjectile[iClient] = false;
 		}
 	}
 }
@@ -142,6 +157,20 @@ public void CreateWeaponThrowableProjectile(int weapon)
 		case THROWABLE_TYPE_BRICK:
 		{
 			CreateWeaponThrowableProjectile_Brick(weapon);
+		}
+		#endif
+		
+		#if defined HAS_BREAD_MONSTER
+		case THROWABLE_TYPE_BREAD:
+		{
+			CreateWeaponThrowableProjectile_BreadMonster(weapon);
+		}
+		#endif
+		
+		#if defined HAS_SMOKE_GRENADE
+		case THROWABLE_TYPE_SMOKE_GRENADE:
+		{
+			CreateWeaponThrowableProjectile_SmokeGrenade(weapon);
 		}
 		#endif
 	}
@@ -205,6 +234,120 @@ public void CreateWeaponThrowableProjectile_Brick(int weapon)
 		}
 		
 		SetDelayedProjectileLauncher(iProjectile, weapon);
+		
+		EmitGameSoundToAll("Passtime.Throw", iClient);
+	}
+}
+#endif
+
+#if defined HAS_BREAD_MONSTER
+public void CreateWeaponThrowableProjectile_BreadMonster(int weapon)
+{
+	int iTeamNum = GetEntProp(weapon, Prop_Send, "m_iTeamNum");
+	int iClient = GetEntPropEnt(weapon, Prop_Send, "m_hOwnerEntity");
+	
+	if (iClient < 0)return;
+	
+	
+	float vecPos[3], vecAng[3];
+	GetClientEyeAngles(iClient, vecAng);
+	GetClientEyePosition(iClient, vecPos);
+		
+	float flSpeed = tf_throwable_bread_force.FloatValue;
+	
+	int iProjectile = CreateEntityByName("tf_projectile_throwable_breadmonster");
+	if(iProjectile > -1)
+	{
+		DispatchSpawn(iProjectile);
+		
+		SetEntProp(iProjectile, Prop_Send, "m_iTeamNum", iTeamNum);
+		SetEntPropEnt(iProjectile, Prop_Send, "m_hOwnerEntity", iClient);
+		SetEntProp(iProjectile, Prop_Send, "m_bCritical", 0);
+		SetEntPropEnt(iProjectile, Prop_Send, "m_hOriginalLauncher", weapon);
+		
+		float vecVelAng[3];
+		vecVelAng = vecAng;
+		vecVelAng[0] -= 10.0;
+		
+		float vecVel[3], vecShift[3];
+		
+		GetAngleVectors(vecVelAng, vecVel, vecShift, NULL_VECTOR);
+		NormalizeVector(vecVel, vecVel);
+		ScaleVector(vecVel, flSpeed);
+		
+		NormalizeVector(vecShift, vecShift);
+		ScaleVector(vecShift, 8.0); // Shift by 8HU.
+		
+		AddVectors(vecPos, vecShift, vecPos);
+		
+		ActivateEntity(iProjectile);
+		TeleportEntity(iProjectile, vecPos, vecAng, vecVel);
+		
+		switch(iTeamNum)
+		{
+			case 2: 
+			{
+				TF_StartAttachedParticle("peejar_trail_red", iProjectile, 5.0);
+			}
+			case 3:
+			{
+				TF_StartAttachedParticle("peejar_trail_blu", iProjectile, 5.0);
+			}
+		}
+		
+		SetDelayedProjectileLauncher(iProjectile, weapon);
+	}
+}
+#endif
+
+#if defined HAS_SMOKE_GRENADE
+public void CreateWeaponThrowableProjectile_SmokeGrenade(int weapon)
+{
+	int iTeamNum = GetEntProp(weapon, Prop_Send, "m_iTeamNum");
+	int iClient = GetEntPropEnt(weapon, Prop_Send, "m_hOwnerEntity");
+	
+	if (iClient < 0)return;
+	
+	float vecPos[3], vecAng[3];
+	GetClientEyeAngles(iClient, vecAng);
+	GetClientEyePosition(iClient, vecPos);
+		
+	float flSpeed = tf_throwable_smoke_grenade_force.FloatValue;
+	
+	int iProjectile = CreateEntityByName("tf_projectile_stun_ball");
+	if(iProjectile > -1)
+	{
+		DispatchSpawn(iProjectile);
+		
+		SetEntProp(iProjectile, Prop_Send, "m_iTeamNum", iTeamNum);
+		SetEntPropEnt(iProjectile, Prop_Send, "m_hOwnerEntity", iClient);
+		SetEntProp(iProjectile, Prop_Send, "m_bCritical", 0);
+		SetEntPropEnt(iProjectile, Prop_Send, "m_hOriginalLauncher", weapon);
+		
+		float vecVelAng[3];
+		vecVelAng = vecAng;
+		vecVelAng[0] -= 10.0;
+		
+		float vecVel[3], vecShift[3];
+		
+		GetAngleVectors(vecVelAng, vecVel, vecShift, NULL_VECTOR);
+		NormalizeVector(vecVel, vecVel);
+		ScaleVector(vecVel, flSpeed);
+		
+		NormalizeVector(vecShift, vecShift);
+		ScaleVector(vecShift, 8.0); // Shift by 8HU.
+		
+		AddVectors(vecPos, vecShift, vecPos);
+		
+		ActivateEntity(iProjectile);
+		TeleportEntity(iProjectile, vecPos, vecAng, vecVel);
+		
+			
+		m_iSmokeEffectCycles[iProjectile] = SmokeGrenade_GetMaxCycleCount();
+		
+		CreateTimer(tf_throwable_smoke_grenade_delay.FloatValue, Timer_SmokeGrenade_StartSmokeCycle, iProjectile);
+		
+		SetDelayedProjectileLauncher(iProjectile, weapon);
 	}
 }
 #endif
@@ -255,6 +398,31 @@ public int TF_StartAttachedParticle(const char[] system, int entity, float lifet
 	return iParticle;
 }
 
+public int TF_StartParticleOnEntity(const char[] system, int entity, float lifetime)
+{
+	int iParticle = CreateEntityByName("info_particle_system");
+	if (IsValidEntity(iParticle) && iParticle > 0)
+	{
+		float vecPos[3];
+		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", vecPos);
+		TeleportEntity(iParticle, vecPos, NULL_VECTOR, NULL_VECTOR);
+
+		DispatchKeyValue(iParticle, "effect_name", system);
+		DispatchSpawn(iParticle);
+
+		ActivateEntity(iParticle);
+		AcceptEntityInput(iParticle, "Start");
+
+		char info[64];
+		Format(info, sizeof(info), "OnUser1 !self:kill::%d:1", RoundFloat(lifetime));
+		SetVariantString(info);
+		AcceptEntityInput(iParticle, "AddOutput");
+		AcceptEntityInput(iParticle, "FireUser1");
+	}
+	return iParticle;
+}
+
+
 public void SetBaseThrowableDamage(int entity, float damage)
 {
 	SetBaseThrowableCharge(entity, (damage - 40) / 30);
@@ -278,4 +446,41 @@ public bool IsClientValid(int client)
 	if (!IsClientInGame(client))return false;
 	if (!IsClientAuthorized(client))return false;
 	return true;
+}
+
+public int SmokeGrenade_GetMaxCycleCount()
+{
+	float flIntervalMult = 1 / TF_THROWABLE_SMOKE_GRENADE_INTERVAL;
+	return RoundToFloor(tf_throwable_smoke_grenade_duration.FloatValue * flIntervalMult);
+}
+
+public Action Timer_SmokeGrenade_StartSmokeCycle(Handle timer, any grenade)
+{
+	CreateTimer(0.1, Timer_SmokeGrenade_CycleSmoke, grenade);
+}
+
+public Action Timer_SmokeGrenade_CycleSmoke(Handle timer, any grenade)
+{
+	// Only perform smoke cycle if we more cycles.
+	if(m_iSmokeEffectCycles[grenade] > 0)
+	{
+		// Spawn explosion on first cycle.
+			
+		if(m_iSmokeEffectCycles[grenade] == SmokeGrenade_GetMaxCycleCount())
+		{
+			TF_StartParticleOnEntity("ExplosionCore_MidAir", grenade, 2.0);
+			SetEntityMoveType(grenade, MOVETYPE_CUSTOM);
+			SetEntityRenderMode(grenade, RENDER_NONE);
+		}
+		
+		TF_StartParticleOnEntity("grenade_smoke_cycle", grenade, 2.0);
+		m_iSmokeEffectCycles[grenade]--;
+		
+		if(m_iSmokeEffectCycles[grenade] == 0)
+		{
+			AcceptEntityInput(grenade, "Kill");
+		} else {
+			CreateTimer(TF_THROWABLE_SMOKE_GRENADE_INTERVAL, Timer_SmokeGrenade_CycleSmoke, grenade);
+		}
+	}
 }
