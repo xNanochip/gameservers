@@ -83,6 +83,8 @@ public void StartCoordinatorLongPolling()
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "processed_jobs", sProcessedJobs);
 	Steam_SetHTTPRequestNetworkActivityTimeout(httpRequest, 40);
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
+	
+	Steam_SetHTTPRequestHeaderValue(httpRequest, "Authorization", m_sAuthorizationKey);
 
 	Steam_SendHTTPRequest(httpRequest, Coordinator_Request_Callback);
 }
