@@ -33,6 +33,8 @@ native int CEcon_GetLastUsedWeapon(int client);
 
 // Puts economy access key in the buffer.
 native bool CEcon_GetAccessKey(const char[] buffer, int size);
+// Puts Authorization key in the buffer.
+native bool CEcon_GetAuthorizationKey(const char[] buffer, int size);
 // Puts base backend url link in the buffer.
 native bool CEcon_GetBaseBackendURL(const char[] buffer, int size);
 

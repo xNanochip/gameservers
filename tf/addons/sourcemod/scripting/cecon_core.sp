@@ -35,6 +35,7 @@ char m_sBaseEconomyURL[64];
 char m_sEconomyAccessKey[150];
 char m_sBranchName[32];
 char m_sBranchPassword[64];
+char m_sAuthorizationKey[128];
 
 bool m_bCredentialsLoaded = false;
 
@@ -74,6 +75,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 	CreateNative("CEcon_GetAccessKey", Native_GetAccessKey);
 	CreateNative("CEcon_GetBaseBackendURL", Native_GetBaseBackendURL);
+	CreateNative("CEcon_GetAuthorizationKey", Native_GetAuthorizationKey);
 
 	Schema_AskPluginLoad2(myself, late, error, err_max); // schema.sp
 	Events_AskPluginLoad2(myself, late, error, err_max); // schema.sp
@@ -89,7 +91,7 @@ public int Steam_FullyLoaded()
 public void Steam_OnReady()
 {
 	ReloadEconomyCredentials();
-	
+
 	Schema_CheckForUpdates(false);
 }
 
@@ -108,6 +110,7 @@ public void ReloadEconomyCredentials()
 	kv.GetString("Branch", m_sBranchName, sizeof(m_sBranchName));
 	kv.GetString("Password", m_sBranchPassword, sizeof(m_sBranchPassword));
 	kv.GetString("Domain", m_sBaseEconomyURL, sizeof(m_sBaseEconomyURL), DEFAULT_ECONOMY_BASE_URL);
+	kv.GetString("Authorization", m_sAuthorizationKey, sizeof(m_sAuthorizationKey));
 	delete kv;
 
 	m_bCredentialsLoaded = true;
@@ -165,13 +168,17 @@ public bool IsEntityValid(int entity)
 public any Native_GetBaseBackendURL(Handle plugin, int numParams)
 {
 	int size = GetNativeCell(2);
-	
 	SetNativeString(1, m_sBaseEconomyURL, size);
 }
 
 public any Native_GetAccessKey(Handle plugin, int numParams)
 {
 	int size = GetNativeCell(2);
-	
 	SetNativeString(1, m_sEconomyAccessKey, size);
+}
+
+public any Native_GetAuthorizationKey(Handle plugin, int numParams)
+{
+	int size = GetNativeCell(2);
+	SetNativeString(1, m_sAuthorizationKey, size);
 }

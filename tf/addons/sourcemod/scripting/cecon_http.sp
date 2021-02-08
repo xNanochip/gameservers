@@ -76,6 +76,9 @@ public any Native_CreateBaseHTTPRequest(Handle plugin, int numParams)
 	Format(sAccessHeader, sizeof(sAccessHeader), "Provider %s", sAccessHeader);
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Access", sAccessHeader);
 	
+	CEcon_GetAuthorizationKey(sAccessHeader, sizeof(sAccessHeader));
+	Steam_SetHTTPRequestHeaderValue(httpRequest, "Authorization", sAccessHeader);
+	
 	
 	return httpRequest;
 }
