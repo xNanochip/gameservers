@@ -70,6 +70,28 @@ Handle g_hOnClientEvent;
 int m_iLastWeapon[MAXPLAYERS + 1];
 
 //-------------------------------------------------------------------
+// Coordinator
+//-------------------------------------------------------------------
+
+// Stores all jobs indexes that we've already processed,
+// and we need to mark as such on next coordiantor request.
+char sProcessedJobs[256];
+bool m_bCoordinatorActive = false;			// True if coordiantor is currently in process of making requests.
+bool m_bIsBackendUnreachable = false;		// True if we can't reach backend for an extended period of time.
+
+int m_iFailureCount = 0;					// Amount of failures that we have encountered in a row.
+
+// Maximum amount of failures before we initiate a timeout.
+#define COORDINATOR_MAX_FAILURES 5
+
+// To prevent infinite spam to the backend,
+// we timeout our requests if a certain amount of failures were made.
+#define COORDINATOR_FAILURE_TIMEOUT 20.0
+
+ConVar ce_coordinator_enabled;				// If true, coordinator will be online.
+
+
+//-------------------------------------------------------------------
 // Purpose: Fired when plugin starts.
 //-------------------------------------------------------------------
 public void OnPluginStart()
@@ -80,6 +102,9 @@ public void OnPluginStart()
 	{
 		Steam_OnReady();
 	}
+	// ----------- COORD ------------ //
+
+	ce_coordinator_enabled = CreateConVar("ce_coordinator_enabled", "1", "If true, coordinator will be online.");
 
 	// ----------- SCHEMA ----------- //
 
@@ -310,21 +335,6 @@ public any Native_GetAuthorizationKey(Handle plugin, int numParams)
 */
 //===============================//
 
-// Stores all jobs indexes that we've already processed,
-// and we need to mark as such on next coordiantor request.
-char sProcessedJobs[256];
-bool m_bCoordinatorActive = false;			// True if coordiantor is currently in process of making requests.
-bool m_bIsBackendUnreachable = false;		// True if we can't reach backend for an extended period of time.
-
-int m_iFailureCount = 0;					// Amount of failures that we have encountered in a row.
-
-// Maximum amount of failures before we initiate a timeout.
-#define COORDINATOR_MAX_FAILURES 5
-
-// To prevent infinite spam to the backend,
-// we timeout our requests if a certain amount of failures were made.
-#define COORDINATOR_FAILURE_TIMEOUT 20.0
-
 //-------------------------------------------------------------------
 // Purpose: Timer that reenables coordinator queue if it's offline,
 // but it should be online.
@@ -360,6 +370,9 @@ public void StartCoordinatorLongPolling()
 	// m_bCoordinatorActive will be false at this point, and this will mean that plugin stopped
 	// making requests in queue. And it will not do any until this function is called again
 	// and all these conditions are met.
+
+	// If we decided not to have coordiantor feature, don't do it.
+	if (!ce_coordinator_enabled.BoolValue)return;
 
 	// If we failed to read economy credentials (Backend Domain, API Key, etc..).
 	if (!m_bCredentialsLoaded)return;
