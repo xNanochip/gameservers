@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.7.1b"
+#define PLUGIN_VERSION  "3.7.9b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -46,7 +46,6 @@ int aimsnapDetects          [TFMAXPLAYERS+1] = -1; // set to -1 to ignore first 
 int pSilentDetects          [TFMAXPLAYERS+1] = -1; // ^
 int bhopDetects             [TFMAXPLAYERS+1] = -1; // set to -1 to ignore single jumps
 int cmdnumSpikeDetects      [TFMAXPLAYERS+1];
-int nullCmdsFor             [TFMAXPLAYERS+1];
 bool isConsecStringOfBhops  [TFMAXPLAYERS+1];
 int bhopConsecDetects       [TFMAXPLAYERS+1];
 int settingsChangesFor      [TFMAXPLAYERS+1];
@@ -60,7 +59,7 @@ float clangles           [3][TFMAXPLAYERS+1][2];
 // STORED POS PER CLIENT
 float clpos              [2][TFMAXPLAYERS+1][3];
 // STORED cmdnum PER CLIENT
-int clcmdnum             [3][TFMAXPLAYERS+1];
+int clcmdnum             [6][TFMAXPLAYERS+1];
 // STORED BUTTONS PER CLIENT
 int buttonsPrev             [TFMAXPLAYERS+1];
 // STORED GRAVITY STATE PER CLIENT
@@ -116,7 +115,7 @@ int maxFakeAngDetections    = 10;
 int maxBhopDetections       = 10;
 
 // max settings changes per...
-int maxSettingsChanges      = 30;
+int maxSettingsChanges      = 40;
 // ...this time in seconds
 float SettingsChangeWindow  = 60.0;
 
@@ -975,14 +974,15 @@ void ClearClBasedVars(int userid)
     turnTimes               [Cl] = 0;
     fovDesired              [Cl] = 0;
     fakeAngDetects          [Cl] = 0;
-    aimsnapDetects          [Cl] = -1; // ignore likely false positives
+    aimsnapDetects          [Cl] = -1; // set to -1 to ignore first detections, as theyre most likely junk
     pSilentDetects          [Cl] = -1; // ^
     bhopDetects             [Cl] = -1; // set to -1 to ignore single jumps
     cmdnumSpikeDetects      [Cl] = 0;
-    nullCmdsFor             [Cl] = 0;
-    settingsChangesFor      [Cl] = 0;
     isConsecStringOfBhops   [Cl] = false;
     bhopConsecDetects       [Cl] = 0;
+    settingsChangesFor      [Cl] = 0;
+
+    // TIME SINCE LAST ACTION PER CLIENT
     timeSinceSpawn          [Cl] = 0.0;
     timeSinceTaunt          [Cl] = 0.0;
     timeSinceTeled          [Cl] = 0.0;
@@ -996,7 +996,10 @@ void ClearClBasedVars(int userid)
     userBanQueued           [Cl] = false;
     // STORED SENS PER CLIENT
     sensFor                 [Cl] = 0.0;
+
+    // time since player did damage, for aimsnap check
     timeSinceDidHurt        [Cl] = 0.0;
+
     // don't bother clearing arrays
 }
 
@@ -1078,32 +1081,27 @@ public Action OnPlayerRunCmd
     int mouse[2]
 )
 {
-    // make sure client is real & not a bot.
+    // make sure client is real & not a bot - don't bother checking if so
     if (!IsValidClient(Cl))
     {
         return Plugin_Continue;
     }
 
-    // from ssac - block invalid cmds
+    // originally from ssac - block invalid usercmds with invalid data
     if (cmdnum <= 0 || tickcount <= 0)
     {
-        if (TF2_GetClientTeam(Cl) != TFTeam_Unassigned)
+        if (cmdnum < 0 || tickcount < 0)
         {
-            nullCmdsFor[Cl]++;
-            LogMessage("client %n had invalid usercmd data - %i times", nullCmdsFor[Cl]);
-            if (nullCmdsFor[Cl] >= 5)
-            {
-                KickClient(Cl, "[StAC] Kicked for invalid usercmd data!");
-            }
+            KickClient(Cl, "[StAC] Invalid usercmd data");
+            return Plugin_Handled;
         }
-        return Plugin_Handled;
+        return Plugin_Continue;
     }
 
     // need this basically no matter what
     int userid = GetClientUserId(Cl);
 
     // neither of these tests need fancy checks, so we do them first
-
     /*
         BHOP DETECTION - using lilac and ssac as reference, this one's better tho
     */
@@ -1111,11 +1109,12 @@ public Action OnPlayerRunCmd
     // don't run this check if cvar is -1
     if (maxBhopDetections != -1)
     {
+        // get movement flags
+        int flags = GetEntityFlags(Cl);
+
         // only check on not weirdo tickrate servers
         if (bhopmult >= 1.0 && bhopmult <= 2.0)
         {
-            int flags = GetEntityFlags(Cl);
-
             // reset their gravity if it's high!
             if (highGrav[Cl])
             {
@@ -1200,6 +1199,7 @@ public Action OnPlayerRunCmd
                     BanUser(userid, reason);
                     MC_PrintToChatAll("%t", "bhopBanAllChat", Cl, bhopDetects[Cl]);
                     StacLog("%t", "bhopBanAllChat", Cl, bhopDetects[Cl]);
+                    return Plugin_Handled;
                 }
             }
             buttonsPrev[Cl] = buttons;
@@ -1234,7 +1234,8 @@ public Action OnPlayerRunCmd
         }
     }
 
-    if  // if both anglesnap detection cvars are -1, don't bother even going past this point.
+    // if both anglesnap detection cvars are -1, don't bother even going past this point.
+    if
     (
         maxAimsnapDetections == -1
         &&
@@ -1267,9 +1268,12 @@ public Action OnPlayerRunCmd
     clangles[0][Cl][1] = angles[1];
 
     // grab cmdnum
-    clcmdnum[2][Cl] = clcmdnum[1][Cl];
-    clcmdnum[1][Cl] = clcmdnum[0][Cl];
+    for (int i = 5; i > 0; --i)
+    {
+        clcmdnum[i][Cl] = clcmdnum[i-1][Cl];
+    }
     clcmdnum[0][Cl] = cmdnum;
+
 
     // grab position
     clpos[1][Cl] = clpos[0][Cl];
@@ -1305,7 +1309,7 @@ public Action OnPlayerRunCmd
         || engineTime[0][Cl] - 1.0 < timeSinceTaunt[Cl]
         // ...didn't recently teleport,
         || engineTime[0][Cl] - 1.0 < timeSinceTeled[Cl]
-        // DON'T TOUCH IF MAP JUST STARTED
+        // don't touch if map or plugin just started
         || engineTime[0][Cl] - 5.0 < timeSinceMapStart
         // ...isn't already queued to be banned,
         || userBanQueued[Cl]
@@ -1315,50 +1319,8 @@ public Action OnPlayerRunCmd
         || playerInBadCond[Cl] != 0
     )
     {
-        //StacLog("Not checking Client %N", Cl);
         return Plugin_Continue;
     }
-
-    /* cmdnum test, heavily modified from ssac */
-    int spikeamt = abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]);
-    if (spikeamt > 256)
-    {
-        cmdnumSpikeDetects[Cl]++;
-        PrintToImportant
-        (
-            "{hotpink}[StAC]{white} CmdNum SPIKE of {yellow}%i{white} on %N.\nDetections so far: {palegreen}%i{white}.",
-            spikeamt,
-            Cl,
-            cmdnumSpikeDetects[Cl]
-        );
-        StacLog
-        (
-            "\n[StAC] CmdNum SPIKE of %i on %L.\nDetections so far: %i.",
-            spikeamt,
-            Cl,
-            cmdnumSpikeDetects[Cl]
-        );
-
-        if (cmdnumSpikeDetects[Cl] >= 25)
-        {
-            KickClient(Cl, "[StAC] Too many cmdnum spikes");
-            return Plugin_Handled;
-        }
-    }
-
-    //if (clcmdnum[1][Cl] == clcmdnum[0][Cl])
-    //{
-    //    StacLog("[StAC] SAME CMDNUM REPORTED!!!");
-    //    //cmdnum = cmdnum++;
-    //    return Plugin_Changed;
-    //}
-    //if (clcmdnum[1][Cl] > clcmdnum[0][Cl])
-    //{
-    //    LogMessage("[StAC] cmdnum DROP of %i!", clcmdnum[1][Cl] - clcmdnum[0][Cl]);
-    //    LogMessage("%i , %i", clcmdnum[1][Cl], clcmdnum[0][Cl]);
-    //    cmdnum = cmdnum;
-    //    //return Plugin_Handled;
-    //}
 
     /*
         EYE ANGLES TEST
@@ -1412,6 +1374,7 @@ public Action OnPlayerRunCmd
             BanUser(userid, reason);
             MC_PrintToChatAll("%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
             StacLog("%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
+            return Plugin_Handled;
         }
     }
     /*
@@ -1452,6 +1415,7 @@ public Action OnPlayerRunCmd
         || choke >= 66.6
         // if a client misses 8 ticks, its safe to assume they're lagging
         // so check the difference between the last 10 ticks
+        // if a client missed any of them, don't check
         || (engineTime[0][Cl] - engineTime[1][Cl])  >= (tickinterv*8.0)
         || (engineTime[1][Cl] - engineTime[2][Cl])  >= (tickinterv*8.0)
         || (engineTime[2][Cl] - engineTime[3][Cl])  >= (tickinterv*8.0)
@@ -1467,6 +1431,66 @@ public Action OnPlayerRunCmd
     {
         return Plugin_Continue;
     }
+
+    /* cmdnum test, heavily modified from ssac */
+    int spikeamt = abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]);
+    if (spikeamt >= 256)
+    {
+        char heldWeapon[256];
+        GetClientWeapon(Cl, heldWeapon, sizeof(heldWeapon));
+
+        cmdnumSpikeDetects[Cl]++;
+        PrintToImportant
+        (
+            "{hotpink}[StAC]{white} Cmdnum SPIKE of {yellow}%i{white} on %N.\nDetections so far: {palegreen}%i{white}.",
+            spikeamt,
+            Cl,
+            cmdnumSpikeDetects[Cl]
+        );
+        StacLog
+        (
+            "\n[StAC] Cmdnum SPIKE of %i on %L.\nDetections so far: %i. Held weapon: %s",
+            spikeamt,
+            Cl,
+            cmdnumSpikeDetects[Cl],
+            heldWeapon
+        );
+        StacLog
+        (
+            "\nPrevious cmdnums:\n 0 %i\n1 %i\n2 %i\n3 %i\n4 %i\n5 %i\n",
+            clcmdnum[0][Cl],
+            clcmdnum[1][Cl],
+            clcmdnum[2][Cl],
+            clcmdnum[3][Cl],
+            clcmdnum[4][Cl],
+            clcmdnum[5][Cl]
+        );
+        // TEMP hardcoded for now
+        if (cmdnumSpikeDetects[Cl] >= 25)
+        {
+            char reason[128];
+            Format(reason, sizeof(reason), "%t", "cmdnumSpikesBanMsg", cmdnumSpikeDetects[Cl]);
+            BanUser(userid, reason);
+            MC_PrintToChatAll("%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
+            StacLog("%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
+            return Plugin_Handled;
+        }
+    }
+
+    //if (clcmdnum[1][Cl] == clcmdnum[0][Cl])
+    //{
+    //    StacLog("[StAC] SAME CMDNUM REPORTED!!!");
+    //    KickClient(Cl, "gay");
+    //    return Plugin_Handled;
+    //}
+    //if (clcmdnum[1][Cl] > clcmdnum[0][Cl])
+    //{
+    //    LogMessage("[StAC] cmdnum DROP of %i!", clcmdnum[1][Cl] - clcmdnum[0][Cl]);
+    //    LogMessage("%i , %i", clcmdnum[1][Cl], clcmdnum[0][Cl]);
+    //    cmdnum = cmdnum;
+    //    //return Plugin_Handled;
+    //}
+
     // we can reuse this for aimsnap as well!
     float aDiffReal = CalcAngDeg(clangles[0][Cl], clangles[1][Cl]);
     // refactored from smac - make sure we don't fuck up angles near the x/y axes!
@@ -1595,6 +1619,7 @@ public Action OnPlayerRunCmd
                     BanUser(userid, reason);
                     MC_PrintToChatAll("%t", "pSilentBanAllChat", Cl, pSilentDetects[Cl]);
                     StacLog("%t", "pSilentBanAllChat", Cl, pSilentDetects[Cl]);
+                    return Plugin_Handled;
                 }
             }
         }
@@ -1683,6 +1708,7 @@ public Action OnPlayerRunCmd
                     BanUser(userid, reason);
                     MC_PrintToChatAll("%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
                     StacLog("%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
+                    return Plugin_Handled;
                 }
             }
         }
@@ -1751,7 +1777,7 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
     // log something about cvar errors xcept for cheat only cvars
     if (result != ConVarQuery_Okay)
     {
-        PrintToImportant("{hotpink}[StAC]{white} Could not query CVar %s on Player %N", Cl);
+        PrintToImportant("{hotpink}[StAC]{white} Could not query cvar %s on Player %N", Cl);
         StacLog("[StAC] Could not query cvar %s on player %N", cvarName, Cl);
     }
 
@@ -1800,6 +1826,7 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
             BanUser(userid, reason);
             MC_PrintToChatAll("%t", "fovBanAllChat", Cl);
             StacLog("%t", "fovBanAllChat", Cl);
+
         }
     }
     if (DEBUG)
@@ -1829,7 +1856,7 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
         }
         else
         {
-            StacLog("[StAC] [Detection] Blocked newline print from player %L!", Cl);
+            StacLog("[StAC] [Detection] Blocked newline print from player %L", Cl);
         }
         return Plugin_Stop;
     }
@@ -1837,9 +1864,9 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
 }
 
 // block long commands - i don't know if this actually does anything but it makes me feel better
-public Action OnClientCommand(int client, int args)
+public Action OnClientCommand(int Cl, int args)
 {
-    if (IsValidClient(client))
+    if (IsValidClient(Cl))
     {
         // init var
         char ClientCommandChar[512];
@@ -1861,13 +1888,13 @@ public Action OnClientCommand(int client, int args)
 
         if (DEBUG)
         {
-            StacLog("[StAC] '%L' issued client side command '%s' - '%i' length.", client, ClientCommandChar, strlen(ClientCommandChar));
+            StacLog("[StAC] '%L' issued client side command '%s' - '%i' length.", Cl, ClientCommandChar, strlen(ClientCommandChar));
         }
         // total length CAN NOT be more than 254 char (from my own testing), first arg can't be more than 128 (from my own testing)
         if (strlen(ClientCommandChar) > 254 || len > 128)
         {
-            StacLog("[StAC] '%L' issued client side command '%s' - '%i' length.", client, ClientCommandChar, strlen(ClientCommandChar));
-            KickClient(client, "[StAC] Issued too large of a command to the server!");
+            StacLog("[StAC] '%L' issued client side command '%s' - '%i' length.", Cl, ClientCommandChar, strlen(ClientCommandChar));
+            KickClient(Cl, "[StAC] Issued too large of a command to the server");
             return Plugin_Stop;
         }
     }
@@ -2085,7 +2112,7 @@ void NetPropCheck(int userid)
             // fix broken equip slots. Note: this was patched by valve but you can still equip invalid items...
             // ...just without the annoying unequipping other people's items part.
             // cathook is cringe
-            // only check if player has 3 valid hats on
+            // only check if player has 3 (or more, hello creators.tf) valid hats on
             if (TF2_GetNumWearables(Cl) >= 3)
             {
                 int slot1wearable = TF2_GetWearable(Cl, 0);
@@ -2320,6 +2347,7 @@ bool IsValidClient(int client)
         (0 < client <= MaxClients)
         && IsClientInGame(client)
         && !IsFakeClient(client)
+        && !IsClientInKickQueue(client)
     );
 }
 
@@ -2332,6 +2360,7 @@ bool IsValidClientOrBot(int client)
         // don't bother sdkhooking stv or replay bots lol
         && !IsClientSourceTV(client)
         && !IsClientReplay(client)
+        && !IsClientInKickQueue(client)
     );
 }
 

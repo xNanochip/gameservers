@@ -60,6 +60,10 @@ stages:
                         chmod 744 build.sh;
                         chmod 744 start.sh;
 
+                        # don't run this often
+                        # echo "garbage collecting"
+                        # git gc --force ;
+
                         echo "building"
                         ./build.sh $COMMIT_OLD;
 
@@ -84,7 +88,7 @@ deploy-russia:
     - russiapub
     <<: *deploy_template
 
-#deploy-la:
-#    tags:
-#    - lapub
-#    <<: *deploy_template
+deploy-la:
+    tags:
+    - lapub
+    <<: *deploy_template
