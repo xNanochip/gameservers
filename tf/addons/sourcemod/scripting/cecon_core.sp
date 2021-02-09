@@ -96,15 +96,14 @@ ConVar ce_coordinator_enabled;				// If true, coordinator will be online.
 //-------------------------------------------------------------------
 public void OnPluginStart()
 {
-	// If SteamTools is already connected, load
-	// credentials right away.
-	if(Steam_IsConnected())
-	{
-		Steam_OnReady();
-	}
 	// ----------- COORD ------------ //
 
+	// ConVars
 	ce_coordinator_enabled = CreateConVar("ce_coordinator_enabled", "1", "If true, coordinator will be online.");
+
+	// We check every 5 seconds if coordinator is running, if it is not
+	// but it should, restart it.
+	// CreateTimer(5.0, Timer_CoordinatorWatchDog);
 
 	// ----------- SCHEMA ----------- //
 
@@ -122,10 +121,6 @@ public void OnPluginStart()
 
 	// Hook all needed entities when plugin late loads.
 	LateHooking();
-
-	// We check every 5 seconds if coordinator is running, if it is not
-	// but it should, restart it.
-	CreateTimer(5.0, Timer_CoordinatorWatchDog);
 }
 
 //-------------------------------------------------------------------
@@ -133,10 +128,13 @@ public void OnPluginStart()
 //-------------------------------------------------------------------
 public void OnMapStart()
 {
-	// Process economy precached schema.
-	Schema_ProcessCachedItemSchema();
-	// But we also try to see if there are any updates.
-	Schema_CheckForUpdates(false);
+	if(Steam_IsConnected())
+	{
+		// Process economy precached schema.
+		Schema_ProcessCachedItemSchema();
+		// But we also try to see if there are any updates.
+		Steam_OnReady();
+	}
 }
 
 //-------------------------------------------------------------------
@@ -381,13 +379,26 @@ public void StartCoordinatorLongPolling()
 	m_bCoordinatorActive = true;
 
 	char sURL[64];
-	Format(sURL, sizeof(sURL), "%s/api/coordiantor", m_sBaseEconomyURL);
+	Format(sURL, sizeof(sURL), "%s/api/coordinator", m_sBaseEconomyURL);
 
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "processed_jobs", sProcessedJobs);
 	Steam_SetHTTPRequestNetworkActivityTimeout(httpRequest, 40);
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Authorization", m_sAuthorizationKey);
+	
+	char sSteamID[64], sKey[24];
+	
+	// Let's provide some data for this request.
+	int iPlayerCount = 0;
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientReady(i))continue;
+		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
+		
+		Format(sKey, sizeof(sKey), "steamids[%d]", iPlayerCount);
+		Steam_SetHTTPRequestGetOrPostParameter(httpRequest, sKey, sSteamID);
+	}
 
 	char sAccessHeader[256];
 	Format(sAccessHeader, sizeof(sAccessHeader), "Provider %s", m_sEconomyAccessKey);
@@ -519,6 +530,8 @@ public bool CoordinatorProcessRequestContent(HTTPRequestHandle request)
 {
 	// Getting response content length.
 	int size = Steam_GetHTTPResponseBodySize(request);
+	if (size < 0)return true;
+	
 	char[] content = new char[size + 1];
 
 	// Getting actual response content body.
