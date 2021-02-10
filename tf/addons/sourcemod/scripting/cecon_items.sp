@@ -112,6 +112,8 @@ bool m_bWaitingForLoadout[MAXPLAYERS + 1];
 bool m_bInRespawn[MAXPLAYERS + 1];
 bool m_bFullReapplication[MAXPLAYERS + 1];
 
+ConVar ce_items_use_backend_loadout;
+
 // Native and Forward creation.
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
@@ -232,6 +234,8 @@ public void OnPluginStart()
 	RegServerCmd("ce_loadout_reset", cResetLoadout);
 	
 	CreateTimer(BACKEND_ATTRIBUTE_UPDATE_INTERVAL, Timer_AttributeUpdateInterval, _, TIMER_REPEAT);
+	
+	ce_items_use_backend_loadout = CreateConVar("ce_items_use_backend_loadout", "1");
 }
 
 public Action cResetLoadout(int args)
@@ -1106,13 +1110,6 @@ public any Native_GiveItemToClient(Handle plugin, int numParams)
 	m_MyItems[client].PushArray(xItem);
 
 	GivePlayerCEItem(client, xItem);
-	
-	/*
-	CEItemDefinition hDef;
-	if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, hDef))
-	{
-		PrintToChatAll("Equipped: %s", hDef.m_sName);
-	}*/
 }
 
 //---------------------------------------------------------------------
@@ -1240,6 +1237,9 @@ public void RF_LoadoutApplication(int client)
 //---------------------------------------------------------------------
 public any Native_RequestClientLoadoutUpdate(Handle plugin, int numParams)
 {
+	// If we decided not to use backend loadout, don't do anything.
+	if (!ce_items_use_backend_loadout.BoolValue)return false;
+	
 	int client = GetNativeCell(1);
 	if (m_bWaitingForLoadout[client])return false;
 	

@@ -1,0 +1,53 @@
+"Games"
+{
+	/* Team Fortress 2 */
+	"tf"
+	{
+		"Signatures"
+		{
+            "CTFGameRules::DistributeCurrencyAmount"	//(int)
+			{
+				"library"			"server"
+				"windows"			"\x56\x8B\xF1\x8B\x46\x2A\x85\xC0\x75\x2A\xE8\x2A\x2A\x2A\x2A\xFF\x76\x20\x8B\xC8\x8B\x10\xFF\x52\x44\x85\xC0\x74\x2A\xFF\x76\x14\x8B\xC8\xFF\x76\x10\xE8\x2A\x2A\x2A\x2A\x5E"
+				"linux"				"@_ZN12CTFGameRules24DistributeCurrencyAmountEiP9CTFPlayerbbb"
+				"mac"				"@_ZN12CTFGameRules24DistributeCurrencyAmountEiP9CTFPlayerbbb"
+			}
+            "CPopulationManager::JumpToWave" //int
+            {
+				"library"			"server"
+				"windows"			"\x56\x8B\xF1\x8B\x46\x2A\x85\xC0\x75\x2A\xE8\x2A\x2A\x2A\x2A\xFF\x76\x20\x8B\xC8\x8B\x10\xFF\x52\x44\x85\xC0\x74\x2A\xFF\x76\x14\x8B\xC8\xFF\x76\x10\xE8\x2A\x2A\x2A\x2A\x5E"
+				"linux"				"@_ZN18CPopulationManager10JumpToWaveEjf"
+				"mac"				"@_ZN18CPopulationManager10JumpToWaveEjf"
+			}
+			"CAttributeManager::AttribHookValueFloat" //float (float, char const*, CBaseEntity const*, CUtlVector<CBaseEntity*, CUtlMemory<CBaseEntity*, int> >*, bool)
+            {
+				"library"			"server"
+				"windows"			"\x56\x8B\xF1\x8B\x46\x2A\x85\xC0\x75\x2A\xE8\x2A\x2A\x2A\x2A\xFF\x76\x20\x8B\xC8\x8B\x10\xFF\x52\x44\x85\xC0\x74\x2A\xFF\x76\x14\x8B\xC8\xFF\x76\x10\xE8\x2A\x2A\x2A\x2A\x5E"
+				"linux"				"@_ZN17CAttributeManager15AttribHookValueIfEET_S1_PKcPK11CBaseEntityP10CUtlVectorIPS4_10CUtlMemoryIS8_iEEb"
+				"mac"				"@_ZN17CAttributeManager15AttribHookValueIfEET_S1_PKcPK11CBaseEntityP10CUtlVectorIPS4_10CUtlMemoryIS8_iEEb"
+			}
+			"AllocPooledString"
+			{
+				"library"			"server"
+				"linux"				"@_Z17AllocPooledStringPKc"
+				"mac"				"@_Z17AllocPooledStringPKc"
+			}
+			"CBaseServer::GetClient" 
+			{
+				"library"			"server"
+				"linux"				"@_ZN11CBaseServer9GetClientEi"
+				"mac"				"@_ZN11CBaseServer9GetClientEi"
+			}
+			
+        }
+		"Offsets"
+		{
+			"CTFPlayer::EquipWearable"
+			{
+				"windows"	"430"
+				"linux"		"431"
+				"mac"		"431"
+			}
+		}
+    }
+}
