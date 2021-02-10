@@ -309,10 +309,11 @@ public Action cMvMSetEntityAttribute(int args)
 	char sName[128], sEntity[11], sValue[11];
 	GetCmdArg(1, sEntity, sizeof(sEntity));
 	int iEntity = StringToInt(sEntity);
-	if (!IsValidEntity(iEntity))return Plugin_Handled;
-
+	
 	GetCmdArg(2, sName, sizeof(sName));
 	GetCmdArg(3, sValue, sizeof(sValue));
+	
+	if (!IsValidEntity(iEntity))return Plugin_Handled;
 
 	CEconItems_SetEntityAttributeString(iEntity, sName, sValue);
 
@@ -448,7 +449,6 @@ public void SendWaveCompletionTime(int wave, int seconds)
 		
 		char sKey[32];
 		Format(sKey, sizeof(sKey), "steamids[%d]", iCount);
-		
 		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sSteamID);
 		
 		iCount++;
@@ -471,17 +471,14 @@ public void SendWaveCompletionTime(int wave, int seconds)
 
 public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
 {
-	PrintToChatAll("SendWaveCompletionTime_Callback %d", code);
-	
-	Steam_ReleaseHTTPRequest(request);
-
 	// Getting response size.
 	int size = Steam_GetHTTPResponseBodySize(request);
 	char[] content = new char[size + 1];
 	
-	PrintToServer(content);
-	
 	Steam_GetHTTPResponseBodyData(request, content, size);
+	
+	Steam_ReleaseHTTPRequest(request);
+	PrintToServer(content);
 	
 	if(m_bJustFinishedTheMission)
 	{
@@ -517,7 +514,6 @@ public void RequestTourLoot()
 	
 	// Setting mission name.
 	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "mission", sPopFile);
-	
 	Steam_SendHTTPRequest(hRequest, RequestTourLoot_Callback);
 }
 
@@ -535,6 +531,8 @@ public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HT
 	
 	Steam_GetHTTPResponseBodyData(request, content, size);
 	Steam_ReleaseHTTPRequest(request);
+	
+	PrintToServer(content);
 
 	KeyValues Response = new KeyValues("Response");
 

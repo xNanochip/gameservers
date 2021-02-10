@@ -1,7 +1,7 @@
  //============= Copyright Amper Software 2021, All rights reserved. ============//
 //
 // Purpose: Handler for the Weapon custom item type.
-// 
+//
 //=========================================================================//
 
 #include <tf2items>
@@ -19,25 +19,25 @@
 #include <tf_econ_data>
 #include <sdkhooks>
 
-public Plugin myinfo = 
+public Plugin myinfo =
 {
-	name = "Creators.TF (Weapon)", 
-	author = "Creators.TF Team", 
-	description = "Handler for the Weapon custom item type.", 
-	version = "1.0", 
+	name = "Creators.TF (Weapon)",
+	author = "Creators.TF Team",
+	description = "Handler for the Weapon custom item type.",
+	version = "1.0",
 	url = "https://creators.tf"
 };
 
 enum struct CEItemDefinitionWeapon
 {
 	int m_iIndex;
-	
+
     char m_sClassName[64];
 	int m_iBaseIndex;
-	
+
     int m_iClip;
     int m_iAmmo;
-    
+
 	char m_sWorldModel[256];
 }
 
@@ -70,7 +70,7 @@ public Action player_death(Event hEvent, const char[] szName, bool bDontBroadcas
 public void OnAllPluginsLoaded()
 {
 	ProcessEconSchema(CEcon_GetEconomySchema());
-	
+
 	// Hook all players that are already in game.
 	LateSDKHooks();
 }
@@ -125,24 +125,24 @@ public void CEcon_OnSchemaUpdated(KeyValues hSchema)
 public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 {
 	if (!StrEqual(type, "weapon"))return -1;
-	
+
 	CEItemDefinitionWeapon hDef;
 	if (FindWeaponDefinitionByIndex(item.m_iItemDefinitionIndex, hDef))
 	{
 		if(StrEqual(hDef.m_sClassName, "tf_wearable"))
 		{
-			
+
 		} else {
 			int iWeapon = CreateWeapon(client, hDef.m_iBaseIndex, hDef.m_sClassName, item.m_nQuality);
 			if(iWeapon > -1)
 			{
 				int iBaseDefID = GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex");
 				int item_slot = TF2Econ_GetItemSlot(iBaseDefID, TF2_GetPlayerClass(client));
-				
+
 				//----------------------------------------------//
 				// Some weapons	have their slot index mismatched with the real value.
 				// Here are some weapons that have a different slot index.
-				
+
 				// Hardcode revolvers to 0th slot.
 				if(StrEqual(hDef.m_sClassName, "tf_weapon_revolver"))
 				{
@@ -165,7 +165,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 				{
 					item_slot = 3;
 				}
-				
+
 				// Removing all wearables that take up the same slot as this weapon.
 				// Some weapons are also considered to be wearables. For example Manntreads.
 				// We need to get rid of them too.
@@ -173,14 +173,14 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 				while((iEdict = FindEntityByClassname(iEdict, "tf_wearable*")) != -1)
 				{
 					if (GetEntPropEnt(iEdict, Prop_Send, "m_hOwnerEntity") != client) continue;
-	
+
 					char sClass[32];
 					GetEntityNetClass(iEdict, sClass, sizeof(sClass));
 					if (!StrEqual(sClass, "CTFWearable")) continue;
-	
+
 					int iDefIndex = GetEntProp(iEdict, Prop_Send, "m_iItemDefinitionIndex");
 					if (iDefIndex == 0xFFFF)continue;
-					
+
 					int iSlot = TF2Econ_GetItemSlot(iDefIndex, TF2_GetPlayerClass(client));
 					if (iSlot == item_slot)
 					{
@@ -188,33 +188,33 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 						AcceptEntityInput(iEdict, "Kill");
 					}
 				}
-	
+
 				if(hDef.m_iClip > 0)
 				{
 					SetEntProp(iWeapon, Prop_Send, "m_iClip1", hDef.m_iClip);
 				}
-	
+
 				if(hDef.m_iAmmo > 0)
 				{
 					SetEntData(client, FindSendPropInfo("CTFPlayer", "m_iAmmo") + (item_slot == 0 ? 4 : 8), hDef.m_iAmmo);
 				}
-	
+
 				strcopy(m_sWeaponModel[iWeapon], sizeof(m_sWeaponModel[]), hDef.m_sWorldModel);
 				ParseCosmeticModel(client, m_sWeaponModel[iWeapon], sizeof(m_sWeaponModel[]));
-	
+
 				// Making weapon visible.
 				SetEntProp(iWeapon, Prop_Send, "m_bValidatedAttachedEntity", 1);
-	
+
 				TF2_RemoveWeaponSlot(client, item_slot);
 				EquipPlayerWeapon(client, iWeapon);
-				
+
 				DataPack hPack = new DataPack();
 				hPack.WriteCell(client);
 				hPack.WriteCell(iWeapon);
 				hPack.Reset();
-				
+
 				RequestFrame(RF_OnWeaponDraw, hPack);
-				
+
 				return iWeapon;
 			}
 		}
@@ -224,24 +224,24 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 
 //--------------------------------------------------------------------
 // Purpose: Finds a weapon's definition by the definition index.
-// Returns true if found, false otherwise. 
+// Returns true if found, false otherwise.
 //--------------------------------------------------------------------
 public bool FindWeaponDefinitionByIndex(int defid, CEItemDefinitionWeapon output)
 {
 	if (m_hDefinitions == null)return false;
-	
+
 	for (int i = 0; i < m_hDefinitions.Length; i++)
 	{
 		CEItemDefinitionWeapon hDef;
 		m_hDefinitions.GetArray(i, hDef);
-		
+
 		if (hDef.m_iIndex == defid)
 		{
 			output = hDef;
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
@@ -251,10 +251,10 @@ public bool FindWeaponDefinitionByIndex(int defid, CEItemDefinitionWeapon output
 public void ProcessEconSchema(KeyValues kv)
 {
 	if (kv == null)return;
-	
+
 	delete m_hDefinitions;
 	m_hDefinitions = new ArrayList(sizeof(CEItemDefinitionWeapon));
-	
+
 	if (kv.JumpToKey("Items"))
 	{
 		if (kv.GotoFirstSubKey())
@@ -263,25 +263,25 @@ public void ProcessEconSchema(KeyValues kv)
 				char sType[16];
 				kv.GetString("type", sType, sizeof(sType));
 				if (!StrEqual(sType, "weapon"))continue;
-				
+
 				char sIndex[11];
 				kv.GetSectionName(sIndex, sizeof(sIndex));
-				
+
 				CEItemDefinitionWeapon hDef;
 				hDef.m_iIndex = StringToInt(sIndex);
 				hDef.m_iBaseIndex = kv.GetNum("item_index", -1);
-				
+
 				hDef.m_iClip = kv.GetNum("weapon_clip");
 				hDef.m_iAmmo = kv.GetNum("weapon_ammo");
-				
+
 				kv.GetString("world_model", hDef.m_sWorldModel, sizeof(hDef.m_sWorldModel));
 				kv.GetString("item_class", hDef.m_sClassName, sizeof(hDef.m_sClassName));
-				
+
 				m_hDefinitions.PushArray(hDef);
 			} while (kv.GotoNextKey());
 		}
 	}
-	
+
 	kv.Rewind();
 }
 
@@ -385,7 +385,7 @@ public int CreateWeapon(int client, int index, const char[] classname, int quali
 
 	int iWep = TF2Items_GiveNamedItem(client, hWeapon);
 	delete hWeapon;
-	
+
 	SetEntProp(iWep, Prop_Send, "m_iEntityLevel", -1);
 	return iWep;
 }
@@ -429,30 +429,30 @@ public void OnDrawWeapon(int client, int iWeapon)
 {
 	// Make sure to remove all tied wearables before we do anything else.
 	TF2Wear_RemoveAllTiedWearables(iWeapon);
-	
+
 	// Draw models only if we're supposed to be drawing them in the first place.
 	if(ShouldDrawWeaponModel(client, iWeapon))
 	{
-		
-		// If client is a bot, don't bother with Wearables bullshit, 
-		// and just change the model of the weapon. However, this 
-		// breaks animations in first person, so we can't really do 
+
+		// If client is a bot, don't bother with Wearables bullshit,
+		// and just change the model of the weapon. However, this
+		// breaks animations in first person, so we can't really do
 		// that with real players.
-		
+
 		if(IsFakeClient(client))
 		{
-			
+
 			for (int i = 0; i < 4; i++)
 			{
 				SetEntProp(iWeapon, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(m_sWeaponModel[iWeapon]), _, i);
 			}
 		} else {
-		
+
 			SetEntityRenderMode(iWeapon, RENDER_TRANSALPHA);
 			SetEntityRenderColor(iWeapon, 0, 0, 0, 0);
-			
+
 			SetEntProp(iWeapon, Prop_Send, "m_bBeingRepurposedForTaunt", 1);
-			
+
 			TF2Wear_CreateWeaponTiedWearable(iWeapon, false, m_sWeaponModel[iWeapon]);
 			TF2Wear_CreateWeaponTiedWearable(iWeapon, true, m_sWeaponModel[iWeapon]);
 		}
@@ -531,7 +531,7 @@ public bool IsClientValid(int client)
 {
 	if (client <= 0 || client > MaxClients)return false;
 	if (!IsClientInGame(client))return false;
-	if (!IsClientAuthorized(client))return false;
+	// if (!IsClientAuthorized(client))return false;
 	return true;
 }
 
@@ -540,33 +540,33 @@ public void TF2_OnConditionAdded(int client, TFCond cond)
 	if (cond == TFCond_Taunting)
 	{
 		bool bShouldHideWeapon = false;
-		
+
 		int iTaunt = GetEntProp(client, Prop_Send, "m_iTauntItemDefIndex");
 		if(iTaunt > 0)
 		{
 			bShouldHideWeapon = true;
 		} else {
 			int iActiveWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
-			
+
 			if(IsValidEntity(iActiveWeapon))
 			{
 				char sClassName[32];
 				GetEntityClassname(iActiveWeapon, sClassName, sizeof(sClassName));
-				
+
 				if (StrEqual("tf_weapon_rocketlauncher", sClassName))bShouldHideWeapon = true;
 			}
 		}
-		
+
 		if(bShouldHideWeapon)
 		{
 			for (int i = 0; i < 5; i++)
 			{
 				int iWeapon = GetPlayerWeaponSlot(client, i);
 				if (!IsValidEntity(iWeapon))continue;
-	
+
 				SetEntityRenderMode(iWeapon, RENDER_NORMAL);
 				SetEntityRenderColor(iWeapon, 255, 255, 255, 255);
-				
+
 				TF2Wear_RemoveAllTiedWearables(iWeapon);
 				SetEntProp(iWeapon, Prop_Send, "m_bBeingRepurposedForTaunt", 0);
 			}

@@ -386,18 +386,19 @@ public void StartCoordinatorLongPolling()
 	Steam_SetHTTPRequestNetworkActivityTimeout(httpRequest, 40);
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Authorization", m_sAuthorizationKey);
-	
+
 	char sSteamID[64], sKey[24];
-	
+
 	// Let's provide some data for this request.
 	int iPlayerCount = 0;
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
 		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-		
+
 		Format(sKey, sizeof(sKey), "steamids[%d]", iPlayerCount);
 		Steam_SetHTTPRequestGetOrPostParameter(httpRequest, sKey, sSteamID);
+		iPlayerCount++;
 	}
 
 	char sAccessHeader[256];
@@ -531,7 +532,6 @@ public bool CoordinatorProcessRequestContent(HTTPRequestHandle request)
 	// Getting response content length.
 	int size = Steam_GetHTTPResponseBodySize(request);
 	if (size < 0)return true;
-	
 	char[] content = new char[size + 1];
 
 	// Getting actual response content body.

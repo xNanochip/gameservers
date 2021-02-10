@@ -1419,7 +1419,12 @@ public void ApplyClientLoadout(int client)
 
 public void ClearClientLoadout(int client, bool full)
 {
-	CEconLoadoutClass nCurrentClass = GetCEconLoadoutClassFromTFClass(TF2_GetPlayerClass(client));
+	CEconLoadoutClass nCurrentClass = CEconLoadoutClass_Unknown; 
+	
+	if(IsClientValid(client))
+	{
+		nCurrentClass = GetCEconLoadoutClassFromTFClass(TF2_GetPlayerClass(client));
+	}
 	
 	for (int i = 0; i < view_as<int>(CEconLoadoutClass); i++)
 	{
