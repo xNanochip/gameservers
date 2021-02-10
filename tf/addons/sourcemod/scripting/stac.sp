@@ -14,7 +14,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.7.10b"
+#define PLUGIN_VERSION  "3.7.11b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -88,10 +88,12 @@ ConVar stac_verbose_info;
 ConVar stac_max_allowed_turn_secs;
 ConVar stac_ban_for_misccheats;
 ConVar stac_optimize_cvars;
+
 ConVar stac_max_aimsnap_detections;
 ConVar stac_max_psilent_detections;
 ConVar stac_max_bhop_detections;
 ConVar stac_max_fakeang_detections;
+ConVar stac_max_cmdnum_detections;
 
 ConVar stac_max_settings_changes;
 ConVar stac_settings_changes_window;
@@ -109,10 +111,12 @@ float maxAllowedTurnSecs    = -1.0;
 bool kickForPingMasking     = false;
 bool banForMiscCheats       = true;
 bool optimizeCvars          = true;
+
 int maxAimsnapDetections    = 25;
 int maxPsilentDetections    = 10;
 int maxFakeAngDetections    = 10;
 int maxBhopDetections       = 10;
+int maxCmdnumDetections     = 25;
 
 // max settings changes per...
 int maxSettingsChanges      = 40;
@@ -171,8 +175,6 @@ public void OnPluginStart()
     HookEvent("teamplay_round_start", eRoundStart);
     // grab player spawns
     HookEvent("player_spawn", ePlayerSpawned);
-    // grab player name changes
-    HookEvent("player_changename", ePlayerChangedName, EventHookMode_Pre);
 
     // check natives capibility
     CreateTimer(2.0, checkNatives);
@@ -393,6 +395,22 @@ void initCvars()
         _
     );
     HookConVarChange(stac_max_fakeang_detections, stacVarChanged);
+
+    // cmdnum spike detections
+    IntToString(maxCmdnumDetections, buffer, sizeof(buffer));
+    stac_max_cmdnum_detections =
+    AutoExecConfig_CreateConVar
+    (
+        "stac_max_cmdnum_detections",
+        buffer,
+        "[StAC] maximum cmdnum spikes a client can have before getting banned. lmaobox does this with nospread on certain weapons, other cheats may also utilize it. legit users should not ever trigger this!\n(recommended 25)",
+        FCVAR_NONE,
+        true,
+        -1.0,
+        false,
+        _
+    );
+    HookConVarChange(stac_max_cmdnum_detections, stacVarChanged);
 
     // userinfo spam changes
     IntToString(maxSettingsChanges, buffer, sizeof(buffer));
@@ -792,12 +810,6 @@ public Action ePlayerSpawned(Handle event, char[] name, bool dontBroadcast)
     {
         timeSinceSpawn[Cl] = GetEngineTime();
     }
-}
-
-public Action ePlayerChangedName(Handle event, char[] name, bool dontBroadcast)
-{
-    int Cl = GetClientOfUserId(GetEventInt(event, "userid"));
-    QueryClientConVar(Cl, "name", ConVarCheck);
 }
 
 Action hOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3])
@@ -1435,6 +1447,7 @@ public Action OnPlayerRunCmd
 
     /* cmdnum test, heavily modified from ssac */
     int spikeamt = abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]);
+    // 256 is a nice number but this could be raised or lowered, haven't done TOO much testing and so far zero legits have managed to trigger this since we ignore nullcmds
     if (spikeamt >= 256)
     {
         char heldWeapon[256];
@@ -1458,7 +1471,7 @@ public Action OnPlayerRunCmd
         );
         StacLog
         (
-            "\nPrevious cmdnums:\n 0 %i\n1 %i\n2 %i\n3 %i\n4 %i\n5 %i\n",
+            "\nPrevious cmdnums:\n0 %i\n1 %i\n2 %i\n3 %i\n4 %i\n5 %i\n",
             clcmdnum[0][Cl],
             clcmdnum[1][Cl],
             clcmdnum[2][Cl],
@@ -1467,7 +1480,7 @@ public Action OnPlayerRunCmd
             clcmdnum[5][Cl]
         );
         // TEMP hardcoded for now
-        if (cmdnumSpikeDetects[Cl] >= 25)
+        if (cmdnumSpikeDetects[Cl] >= maxCmdnumDetections)
         {
             char reason[128];
             Format(reason, sizeof(reason), "%t", "cmdnumSpikesBanMsg", cmdnumSpikeDetects[Cl]);
@@ -1765,8 +1778,6 @@ char cvarsToCheck[][] =
     "cl_interpolate",
     // this is a useless check but we leave it here to set fov randomly to annoy cheaters
     "fov_desired",
-    // check client's name - more reliable than using GetClientName
-    "name"
 };
 
 public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue)
@@ -1831,43 +1842,6 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
             StacLog("%t", "fovBanAllChat", Cl);
         }
     }
-
-    // name check
-    else if (StrEqual(cvarName, "name"))
-    {
-        // ban for invalid characters in names - now plays nice with modified names via SetClientName
-        if
-        (
-            // nullcore uses \xE0\xB9\x8A (and possibly others) for namestealing but you can put it in your steam name so we cant check for it
-            // might look into kicking for combining chars but who honestly cares
-            // apparently other cheats use these:
-            // thanks pazer - left to right and right to left marks
-               StrContains(cvarValue, "\xE2\x80\x8F", false) != -1
-            || StrContains(cvarValue, "\xE2\x80\x8E", false) != -1
-            // cathook uses this
-            || StrContains(cvarValue, "\x1B", false)         != -1
-            // just in case
-            || StrContains(cvarValue, "\n", false)           != -1
-            || StrContains(cvarValue, "\r", false)           != -1
-        )
-        {
-            if (banForMiscCheats)
-            {
-                char reason[128];
-                Format(reason, sizeof(reason), "%t", "illegalNameBanMsg");
-                BanUser(userid, reason);
-                MC_PrintToChatAll("%t", "illegalNameBanAllChat", Cl);
-                StacLog("%t", "illegalNameBanAllChat", Cl);
-                // for double checking our work
-                StacLog("\nClient name:\n%s\nDon't believe it? Paste their name here: https://www.soscisurvey.de/tools/view-chars.php", cvarValue);
-            }
-            else
-            {
-                StacLog("[StAC] Player %N has illegal chars in their name!", Cl);
-            }
-        }
-    }
-
     if (DEBUG)
     {
         StacLog("[StAC] Checked cvar %s value %s on %N", cvarName, cvarValue, Cl);
