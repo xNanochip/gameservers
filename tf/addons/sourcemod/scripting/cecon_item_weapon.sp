@@ -89,12 +89,11 @@ public void OnEntityCreated(int entity, const char[] classname)
 		// Hook dropped weapon and remove them immediately.
 		SDKHook(entity, SDKHook_SpawnPost, OnWeaponDropped);
 	}
+}
 
-	if(StrEqual(classname, "player"))
-	{
-		// Hook player's weapon switch.
-		SDKHook(entity, SDKHook_WeaponSwitchPost, OnWeaponSwitch);
-	}
+public void OnClientConnected(int client)
+{
+	SDKHook(client, SDKHook_WeaponSwitchPost, OnWeaponSwitch);
 }
 
 //--------------------------------------------------------------------
@@ -215,7 +214,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 				hPack.Reset();
 				
 				RequestFrame(RF_OnWeaponDraw, hPack);
-	
+				
 				return iWeapon;
 			}
 		}
@@ -434,6 +433,7 @@ public void OnDrawWeapon(int client, int iWeapon)
 	// Draw models only if we're supposed to be drawing them in the first place.
 	if(ShouldDrawWeaponModel(client, iWeapon))
 	{
+		
 		// If client is a bot, don't bother with Wearables bullshit, 
 		// and just change the model of the weapon. However, this 
 		// breaks animations in first person, so we can't really do 
@@ -441,15 +441,16 @@ public void OnDrawWeapon(int client, int iWeapon)
 		
 		if(IsFakeClient(client))
 		{
-			for (int i = 0; i <= 3; i++)
+			
+			for (int i = 0; i < 4; i++)
 			{
-				SetEntProp(iWeapon, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(m_sWeaponModel[iWeapon]), 4, i);
+				SetEntProp(iWeapon, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(m_sWeaponModel[iWeapon]), _, i);
 			}
 		} else {
-	
+		
 			SetEntityRenderMode(iWeapon, RENDER_TRANSALPHA);
 			SetEntityRenderColor(iWeapon, 0, 0, 0, 0);
-	
+			
 			SetEntProp(iWeapon, Prop_Send, "m_bBeingRepurposedForTaunt", 1);
 			
 			TF2Wear_CreateWeaponTiedWearable(iWeapon, false, m_sWeaponModel[iWeapon]);
