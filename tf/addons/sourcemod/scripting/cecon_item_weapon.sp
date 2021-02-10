@@ -91,7 +91,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 	}
 }
 
-public void OnClientConnected(int client)
+public void OnClientPutInServer(int client)
 {
 	SDKHook(client, SDKHook_WeaponSwitchPost, OnWeaponSwitch);
 }
