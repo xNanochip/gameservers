@@ -48,6 +48,8 @@ public void CEcon_OnSchemaUpdated(KeyValues hSchema)
 
 public void ParseEconomySchema(KeyValues hConf)
 {
+	if (hConf == null)return;
+	
 	FlushPartsMemory();
 	
 	m_hPartsDefinitions = new ArrayList(sizeof(CEStrangePartDefinition));
