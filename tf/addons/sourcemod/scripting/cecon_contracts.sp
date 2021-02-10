@@ -564,13 +564,13 @@ public void RequestClientContractProgress_Callback(HTTPRequestHandle request, bo
 
 	// Getting response size.
 	int size = Steam_GetHTTPResponseBodySize(request);
+	if(size < 0)return;
+
 	char[] content = new char[size + 1];
 
 	// Getting actual response content body.
 	Steam_GetHTTPResponseBodyData(request, content, size);
 	Steam_ReleaseHTTPRequest(request);
-
-	PrintToServer(content);
 
 	KeyValues Response = new KeyValues("Response");
 
