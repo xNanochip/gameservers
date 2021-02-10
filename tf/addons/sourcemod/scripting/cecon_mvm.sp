@@ -471,7 +471,17 @@ public void SendWaveCompletionTime(int wave, int seconds)
 
 public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
 {
+	PrintToChatAll("SendWaveCompletionTime_Callback %d", code);
+	
 	Steam_ReleaseHTTPRequest(request);
+
+	// Getting response size.
+	int size = Steam_GetHTTPResponseBodySize(request);
+	char[] content = new char[size + 1];
+	
+	PrintToServer(content);
+	
+	Steam_GetHTTPResponseBodyData(request, content, size);
 	
 	if(m_bJustFinishedTheMission)
 	{
