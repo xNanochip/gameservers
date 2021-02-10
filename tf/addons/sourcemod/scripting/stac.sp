@@ -4,8 +4,6 @@
 // i love my partners
 #pragma semicolon 1
 #pragma newdecls required
-
-#include <sourcemod>
 #include <morecolors>
 #include <regex>
 #include <sdktools>
@@ -16,11 +14,13 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.7.9b"
+#define PLUGIN_VERSION  "3.7.10b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 public Plugin myinfo =
+
+#include <sourcemod>
 {
     name             =  "Steph's AntiCheat (StAC)",
     author           =  "steph&nie",
@@ -148,6 +148,7 @@ public void OnPluginStart()
     {
         SetFailState("[StAC] This plugin (and TF2 in general) does not support more than 33 players. Aborting!");
     }
+
     // updater
     if (LibraryExists("updater"))
     {
@@ -795,8 +796,8 @@ public Action ePlayerSpawned(Handle event, char[] name, bool dontBroadcast)
 
 public Action ePlayerChangedName(Handle event, char[] name, bool dontBroadcast)
 {
-    int userid = GetEventInt(event, "userid");
-    NameCheck(userid);
+    int Cl = GetClientOfUserId(GetEventInt(event, "userid"));
+    QueryClientConVar(Cl, "name", ConVarCheck);
 }
 
 Action hOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3])
@@ -1764,6 +1765,8 @@ char cvarsToCheck[][] =
     "cl_interpolate",
     // this is a useless check but we leave it here to set fov randomly to annoy cheaters
     "fov_desired",
+    // check client's name - more reliable than using GetClientName
+    "name"
 };
 
 public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue)
@@ -1774,7 +1777,7 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
         return;
     }
     int userid = GetClientUserId(Cl);
-    // log something about cvar errors xcept for cheat only cvars
+    // log something about cvar errors
     if (result != ConVarQuery_Okay)
     {
         PrintToImportant("{hotpink}[StAC]{white} Could not query cvar %s on Player %N", Cl);
@@ -1826,9 +1829,45 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
             BanUser(userid, reason);
             MC_PrintToChatAll("%t", "fovBanAllChat", Cl);
             StacLog("%t", "fovBanAllChat", Cl);
-
         }
     }
+
+    // name check
+    else if (StrEqual(cvarName, "name"))
+    {
+        // ban for invalid characters in names - now plays nice with modified names via SetClientName
+        if
+        (
+            // nullcore uses \xE0\xB9\x8A (and possibly others) for namestealing but you can put it in your steam name so we cant check for it
+            // might look into kicking for combining chars but who honestly cares
+            // apparently other cheats use these:
+            // thanks pazer - left to right and right to left marks
+               StrContains(cvarValue, "\xE2\x80\x8F", false) != -1
+            || StrContains(cvarValue, "\xE2\x80\x8E", false) != -1
+            // cathook uses this
+            || StrContains(cvarValue, "\x1B", false)         != -1
+            // just in case
+            || StrContains(cvarValue, "\n", false)           != -1
+            || StrContains(cvarValue, "\r", false)           != -1
+        )
+        {
+            if (banForMiscCheats)
+            {
+                char reason[128];
+                Format(reason, sizeof(reason), "%t", "illegalNameBanMsg");
+                BanUser(userid, reason);
+                MC_PrintToChatAll("%t", "illegalNameBanAllChat", Cl);
+                StacLog("%t", "illegalNameBanAllChat", Cl);
+                // for double checking our work
+                StacLog("\nClient name:\n%s\nDon't believe it? Paste their name here: https://www.soscisurvey.de/tools/view-chars.php", cvarValue);
+            }
+            else
+            {
+                StacLog("[StAC] Player %N has illegal chars in their name!", Cl);
+            }
+        }
+    }
+
     if (DEBUG)
     {
         StacLog("[StAC] Checked cvar %s value %s on %N", cvarName, cvarValue, Cl);
@@ -2009,54 +2048,12 @@ public void BanUser(int userid, char[] reason)
     }
 }
 
-void NameCheck(int userid)
-{
-    int Cl = GetClientOfUserId(userid);
-    if (IsValidClient(Cl))
-    {
-        char curName[64];
-        GetClientName(Cl, curName, sizeof(curName));
-        // ban for invalid characters in names
-        if
-        (
-            // nullcore uses \xE0\xB9\x8A for namestealing but you can put it in your steam name so we cant check for it
-            // might look into kicking for combining chars but who honestly cares
-            // apparently other cheats use these:
-            // thanks pazer
-               StrContains(curName, "\xE2\x80\x8F", false) != -1
-            || StrContains(curName, "\xE2\x80\x8E", false) != -1
-            // cathook uses this
-            || StrContains(curName, "\x1B", false)         != -1
-            // just in case
-            || StrContains(curName, "\n", false)           != -1
-            || StrContains(curName, "\r", false)           != -1
-        )
-        {
-            if (banForMiscCheats)
-            {
-                char reason[128];
-                Format(reason, sizeof(reason), "%t", "illegalNameBanMsg");
-                BanUser(userid, reason);
-                MC_PrintToChatAll("%t", "illegalNameBanAllChat", Cl);
-                StacLog("%t", "illegalNameBanAllChat", Cl);
-            }
-            else
-            {
-                StacLog("[StAC] Player %N has illegal chars in their name!", Cl);
-            }
-        }
-    }
-}
-
 void NetPropCheck(int userid)
 {
     int Cl = GetClientOfUserId(userid);
 
     if (IsValidClient(Cl))
     {
-        // not a net prop. Whatever though.
-        NameCheck(userid);
-
         // set real fov from client here - overrides cheat values (mostly works with ncc, untested on others)
         // we don't want to touch fov if a client is zoomed in while sniping or if they're in a bumper car or some other dumb halloween bullshit
         // we also don't want to check fov if they're dead or if cvars aren't optimized, because fov gets raised temporarily above 90 by teleporters if it isn't explicitly disabled by stac
