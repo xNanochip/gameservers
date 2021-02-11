@@ -23,8 +23,11 @@ public void OnPluginStart()
 		CreateConVar("sm_maxplayers", "24", "Amount of clients allowed on a server.", _, true, 1.0);
 	sm_maxplayers_mirror_visiblemaxplayers = 
 		CreateConVar("sm_maxplayers_mirror_visiblemaxplayers", "1", "Setting this cvar to true will make `sv_visiblemaxplayers` convar to also change when sm_maxplayers changes.");
-		
+	
+	// We could probably wrap these two hooks under one callback, but maybe
+	// we'll want to change something somewhere so, i'll keep them separate.
 	HookConVarChange(sm_maxplayers, sm_maxplayers__CHANGED);
+	HookConVarChange(FindConVar("sv_visiblemaxplayers"), sv_visiblemaxplayers__CHANGED);
 }
 
 //-------------------------------------------------------------------
@@ -32,10 +35,15 @@ public void OnPluginStart()
 //-------------------------------------------------------------------
 public void sm_maxplayers__CHANGED(ConVar convar, const char[] oldval, const char[] newval)
 {
-	if(sm_maxplayers_mirror_visiblemaxplayers.BoolValue)
-	{
-		FindConVar("sv_visiblemaxplayers").IntValue = sm_maxplayers.IntValue;	
-	}
+	UpdateVisibleMaxPlayers();
+}
+
+//-------------------------------------------------------------------
+// Purpose: Fired when sv_visiblemaxplayers cvar changes its value.
+//-------------------------------------------------------------------
+public void sv_visiblemaxplayers__CHANGED(ConVar convar, const char[] oldval, const char[] newval)
+{
+	UpdateVisibleMaxPlayers();
 }
 
 //-------------------------------------------------------------------
@@ -81,4 +89,12 @@ public int GetRealClientCount()
     }
 
     return count;
+}
+
+public void UpdateVisibleMaxPlayers()
+{
+	if(sm_maxplayers_mirror_visiblemaxplayers.BoolValue)
+	{
+		FindConVar("sv_visiblemaxplayers").IntValue = sm_maxplayers.IntValue;	
+	}
 }
