@@ -1360,7 +1360,7 @@ public Action Timer_QuestUpdateInterval(Handle timer, any data)
 		m_QuestUpdateBatches.GetArray(i, xBatch);
 
 		char sKey[128];
-		Format(sKey, sizeof(sKey), "quests[%s][%d][%d]", xBatch.sSteamID, xBatch.m_iQuest, xBatch.m_iObjective);
+		Format(sKey, sizeof(sKey), "quests[%s][%d][%d]", xBatch.m_sSteamID, xBatch.m_iQuest, xBatch.m_iObjective);
 
 		char sValue[11];
 		IntToString(xBatch.m_iPoints, sValue, sizeof(sValue));
