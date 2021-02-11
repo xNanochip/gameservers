@@ -1305,11 +1305,9 @@ public int MIN(int iNum1, int iNum2)
 	return iNum1;
 }
 
-
-
 enum struct CEQuestUpdateBatch
 {
-	int m_iClient;
+	char m_sSteamID[64];
 	int m_iQuest;
 
 	int m_iObjective;
@@ -1325,12 +1323,15 @@ public void AddQuestUpdateBatch(int client, int quest, int objective, int points
 		m_QuestUpdateBatches = new ArrayList(sizeof(CEQuestUpdateBatch));
 	}
 
+	char sSteamID[64];
+	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
+
 	for (int i = 0; i < m_QuestUpdateBatches.Length; i++)
 	{
 		CEQuestUpdateBatch xBatch;
 		m_QuestUpdateBatches.GetArray(i, xBatch);
 
-		if (xBatch.m_iClient != client)continue;
+		if (StrEqual(xBatch.m_sSteamID, sSteamID))continue;
 		if (xBatch.m_iQuest != quest)continue;
 		if (xBatch.m_iObjective != objective)continue;
 
@@ -1339,7 +1340,7 @@ public void AddQuestUpdateBatch(int client, int quest, int objective, int points
 	}
 
 	CEQuestUpdateBatch xBatch;
-	xBatch.m_iClient 	= client;
+	strcopy(xBatch.m_sSteamID, sizeof(xBatch.m_sSteamID), sSteamID);
 	xBatch.m_iQuest 	= quest;
 	xBatch.m_iObjective = objective;
 	xBatch.m_iPoints 	= points;
@@ -1358,11 +1359,8 @@ public Action Timer_QuestUpdateInterval(Handle timer, any data)
 		CEQuestUpdateBatch xBatch;
 		m_QuestUpdateBatches.GetArray(i, xBatch);
 
-		char sSteamID[64];
-		GetClientAuthId(xBatch.m_iClient, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-
 		char sKey[128];
-		Format(sKey, sizeof(sKey), "quests[%s][%d][%d]", sSteamID, xBatch.m_iQuest, xBatch.m_iObjective);
+		Format(sKey, sizeof(sKey), "quests[%s][%d][%d]", xBatch.sSteamID, xBatch.m_iQuest, xBatch.m_iObjective);
 
 		char sValue[11];
 		IntToString(xBatch.m_iPoints, sValue, sizeof(sValue));
