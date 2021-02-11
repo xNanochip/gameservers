@@ -11,14 +11,31 @@ public Plugin myinfo =
 	url = "https://moonlydays.com"
 };
 
-ConVar sm_maxplayers;
+ConVar 	sm_maxplayers,
+		sm_maxplayers_mirror_visiblemaxplayers;
 
 //-------------------------------------------------------------------
 // Purpose: Fired when plugin starts
 //-------------------------------------------------------------------
 public void OnPluginStart()
 {
-	sm_maxplayers = CreateConVar("sm_maxplayers", "24", "Amount of clients allowed on a server.", _, true, 1.0);
+	sm_maxplayers = 
+		CreateConVar("sm_maxplayers", "24", "Amount of clients allowed on a server.", _, true, 1.0);
+	sm_maxplayers_mirror_visiblemaxplayers = 
+		CreateConVar("sm_maxplayers_mirror_visiblemaxplayers", "1", "Setting this cvar to true will make `sv_visiblemaxplayers` convar to also change when sm_maxplayers changes.");
+		
+	HookConVarChange(sm_maxplayers, sm_maxplayers__CHANGED);
+}
+
+//-------------------------------------------------------------------
+// Purpose: Fired when sm_maxplayers cvar changes its value.
+//-------------------------------------------------------------------
+public void sm_maxplayers__CHANGED(ConVar convar, const char[] oldval, const char[] newval)
+{
+	if(sm_maxplayers_mirror_visiblemaxplayers.BoolValue)
+	{
+		FindConVar("sv_visiblemaxplayers").IntValue = sm_maxplayers.IntValue;	
+	}
 }
 
 //-------------------------------------------------------------------
