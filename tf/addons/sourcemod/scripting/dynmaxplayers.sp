@@ -2,6 +2,8 @@
 #pragma newdecls required
 #pragma tabsize 0
 
+#include <tf2_stocks>
+
 public Plugin myinfo =
 {
 	name = "Dynamic Max Players Limit",
@@ -93,8 +95,11 @@ public int GetRealClientCount()
 
 public void UpdateVisibleMaxPlayers()
 {
-	if(sm_maxplayers_mirror_visiblemaxplayers.BoolValue)
-	{
-		FindConVar("sv_visiblemaxplayers").IntValue = sm_maxplayers.IntValue;	
-	}
+	// This will should not work in MvM.
+	if (GameRules_GetProp("m_bPlayingMannVsMachine") != 0)return;
+	
+	// Only mirror the value if we allow it to.
+	if (!sm_maxplayers_mirror_visiblemaxplayers.BoolValue)return;
+	
+	FindConVar("sv_visiblemaxplayers").IntValue = sm_maxplayers.IntValue;
 }
