@@ -141,6 +141,7 @@ native int CEconItems_GetClientWearedItemsCount(int client);
 // Stores the nth item that client is wearing right now in the buffer, where n is index. Returns false if item does not exist.
 native bool CEconItems_GetClientWearedItemByIndex(int client, int index, any buffer[sizeof(CEItem)]);
 
+native int CEconItems_SetItemStyle(int entity, int style);
 
 //========================================//
 // FORWARDS
@@ -156,3 +157,5 @@ forward void CEconItems_OnItemIsEquipped(int client, int entity, CEItem item, co
 
 // Called when user's loadout was updated.
 forward void CEconItems_OnClientLoadoutUpdated(int client);
+
+forward void CEconItems_OnItemStyleUpdated(int client, int entity, int style);

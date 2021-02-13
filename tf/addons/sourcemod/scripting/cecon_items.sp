@@ -87,8 +87,11 @@ Handle 	g_CEcon_ShouldItemBeBlocked,
 		g_CEcon_OnEquipItem,
 		g_CEcon_OnItemIsEquipped,
 		g_CEcon_OnClientLoadoutUpdated,
+		
 		g_CEcon_OnUnequipItem,
-		g_CEcon_OnItemIsUnequipped;
+		g_CEcon_OnItemIsUnequipped,
+		
+		g_CEcon_OnItemStyleUpdated;
 
 // SDKCalls for native TF2 economy reading.
 Handle 	g_SDKCallGetEconItemSchema,
@@ -124,6 +127,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	
 	g_CEcon_OnUnequipItem 			= new GlobalForward("CEconItems_OnUnequipItem", ET_Single, Param_Cell, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnItemIsUnequipped		= new GlobalForward("CEconItems_OnItemIsUnequipped", ET_Single, Param_Cell, Param_Array, Param_String);
+	
+	g_CEcon_OnItemStyleUpdated		= new GlobalForward("CEconItems_OnItemStyleUpdated", ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
 
 	// Items
     CreateNative("CEconItems_CreateNamedItem", Native_CreateNamedItem);
@@ -180,6 +185,9 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
     
     CreateNative("CEconItems_GetClientWearedItemsCount", Native_GetClientWearedItemsCount);
     CreateNative("CEconItems_GetClientWearedItemByIndex", Native_GetClientWearedItemByIndex);
+    
+    // Styles
+    CreateNative("CEconItems_SetItemStyle", Native_SetItemStyle);
     
     return APLRes_Success;
 }
@@ -1555,6 +1563,11 @@ public any Native_GetEntityItemStruct(Handle plugin, int numParams)
 	return false;
 }
 
+public any Native_SetItemStyle(Handle plugin, int numParams)
+{
+	int entity = GetNativeCell(1);
+	int style = GetNativeCell(1);
+}
 
 public bool IsEntityValid(int entity)
 {
