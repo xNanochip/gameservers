@@ -88,7 +88,8 @@ int m_iFailureCount = 0;					// Amount of failures that we have encountered in a
 // we timeout our requests if a certain amount of failures were made.
 #define COORDINATOR_FAILURE_TIMEOUT 20.0
 
-ConVar ce_coordinator_enabled;				// If true, coordinator will be online.
+ConVar 	ce_coordinator_enabled,		// If true, coordinator will be online.
+		ce_credentials_filename;	// Filename of the econome config.
 
 
 //-------------------------------------------------------------------
@@ -100,6 +101,9 @@ public void OnPluginStart()
 
 	// ConVars
 	ce_coordinator_enabled = CreateConVar("ce_coordinator_enabled", "1", "If true, coordinator will be online.");
+	ce_credentials_filename = CreateConVar("ce_credentials_filename", "economy.cfg", "Filename of the econome config.");
+	
+	HookConVarChange(ce_credentials_filename, ce_credentials_filename__CHANGED);
 
 	// We check every 5 seconds if coordinator is running, if it is not
 	// but it should, restart it.
@@ -187,6 +191,11 @@ public void Steam_OnReady()
 	Schema_CheckForUpdates(false);
 }
 
+public void ce_credentials_filename__CHANGED(ConVar cvar, char[] oldval, char[] newval)
+{
+	ReloadEconomyCredentials();
+}
+
 //-------------------------------------------------------------------
 // Purpose: Used to refresh economy credentials from economy.cfg
 // file.
@@ -197,9 +206,17 @@ public void ReloadEconomyCredentials()
 	// in case if something fails and this function is returned.
 	m_bCredentialsLoaded = false;
 
+	char sFileName[32];
+	ce_credentials_filename.GetString(sFileName, sizeof(sFileName));
+
 	// Format the economy.cfg location.
 	char sLoc[96];
-	BuildPath(Path_SM, sLoc, 96, "configs/economy.cfg");
+	BuildPath(Path_SM, sLoc, 96, "configs/%s", sFileName);
+	
+	if(!FileExists(sLoc))
+	{
+		LogError("Invalid economy credentials file name.");
+	}
 
 	// Create a new KeyValues to store the credentials in.
 	KeyValues kv = new KeyValues("Economy");
@@ -217,6 +234,7 @@ public void ReloadEconomyCredentials()
 
 	// Everything was succesful, mark it as true again.
 	m_bCredentialsLoaded = true;
+	LogMessage("Loaded custom cconomy backend credentials.");
 
 	// Start coordinator request, if it's not started already.
 	SafeStartCoordinatorPolling();
