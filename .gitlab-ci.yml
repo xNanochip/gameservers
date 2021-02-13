@@ -1,6 +1,6 @@
 stages:
-    - deploy
     - fastdl
+    - deploy
 
 .deploy_template: &deploy_template
     stage: deploy
@@ -100,7 +100,11 @@ deploy-fastdl:
     - whoami
     - shopt -s globstar
 
-    - echo "$CI_COMMIT_BEFORE_SHA"
+    - SHA_BEFORE="$CI_COMMIT_BEFORE_SHA"
+    - SHA_AFTER="$CI_COMMIT_SHA"
+
+    - echo "Comparing $SHA_BEFORE // $SHA_AFTER"
+
     - exit
 
     - cd $CI_PROJECT_DIR
