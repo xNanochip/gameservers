@@ -1,5 +1,6 @@
 stages:
     - deploy
+    - fastdl
 
 .deploy_template: &deploy_template
     stage: deploy
@@ -92,3 +93,8 @@ deploy-la:
     tags:
     - lapub
     <<: *deploy_template
+
+deploy-fastdl:
+    stage: fastdl
+    script:
+    - whoami
