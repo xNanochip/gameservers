@@ -1,6 +1,6 @@
 stages:
-    - fastdl
     - deploy
+    - fastdl
 
 .deploy_template: &deploy_template
     stage: deploy
