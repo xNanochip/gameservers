@@ -107,8 +107,6 @@ deploy-fastdl:
     - GIT_DIFF=`git diff --name-only $SHA_AFTER $SHA_BEFORE`
     - echo $GIT_DIFF
 
-    - exit
-
     - cd $CI_PROJECT_DIR
     - git checkout $CI_COMMIT_REF_NAME
     - git reset --hard origin/$CI_COMMIT_REF_NAME
