@@ -105,7 +105,7 @@ deploy-fastdl:
 
         echo "[INFO] Repository path: $CI_PROJECT_DIR"
 
-        FASTDL_PATH="/var/www/fastdl/content/branches/$CI_COMMIT_REF_NAME"
+        FASTDL_PATH=/var/www/fastdl/content/branches/$CI_COMMIT_REF_NAME
         echo "[INFO] Export Path: $FASTDL_PATH"
 
         while read pattern; do
