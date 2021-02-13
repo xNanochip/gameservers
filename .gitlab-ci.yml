@@ -98,8 +98,9 @@ deploy-fastdl:
     stage: fastdl
     script:
     - whoami
-    - cd $CI_PROJECT_DIR
+    - shopt -s globstar
 
+    - cd $CI_PROJECT_DIR
     - git checkout $CI_COMMIT_REF_NAME
     - git reset --hard origin/$CI_COMMIT_REF_NAME
 
