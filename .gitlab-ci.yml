@@ -104,6 +104,8 @@ deploy-fastdl:
     - SHA_AFTER="$CI_COMMIT_SHA"
 
     - echo "Comparing $SHA_BEFORE // $SHA_AFTER"
+    - GIT_DIFF=`git diff --name-only $SHA_AFTER $SHA_BEFORE`
+    - echo `$GIT_DIFF`
 
     - exit
 
