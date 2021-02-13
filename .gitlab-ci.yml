@@ -157,6 +157,7 @@ deploy-fastdl:
                     echo "[INFO] Archiving $ASSET_FASTDL_PATH";
                     bzip2 $ASSET_FASTDL_PATH;
                 fi
+                echo "Finished this file.";
 
             done
         done < ../.ci-fastdl
