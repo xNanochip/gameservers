@@ -98,24 +98,26 @@ deploy-fastdl:
     stage: fastdl
     script:
     - whoami
+    - cd $CI_PROJECT_DIR
+
+    - git checkout $CI_COMMIT_REF_NAME
+    - git reset --hard origin/$CI_COMMIT_REF_NAME
+
+    - echo "[INFO] Repository path = $CI_PROJECT_DIR"
+
+    - FASTDL_PATH="/var/www/fastdl/content/branches/$CI_COMMIT_REF_NAME";
+    - echo $FASTDL_PATH;
+
     - >
-        cd $CI_PROJECT_DIR
-        git checkout $CI_COMMIT_REF_NAME
-        git reset --hard origin/$CI_COMMIT_REF_NAME
-
-        echo "[INFO] Repository path: $CI_PROJECT_DIR"
-
-        FASTDL_PATH=/var/www
-        echo $FASTDL_PATH
-
         while read pattern; do
+
             # We go through all the files of this pattern and see if bz2 version is valid.
             for i in ./$pattern; do
 
-                echo "[INFO] Checking $i"
+                echo "[INFO] Checking $i";
 
                 # Skip directories
-                [[ ! -f $i ]] && continue
+                [[ ! -f $i ]] && continue;
 
 
                 # if [[ ! -f "../../fastdl/`basename $d`/`realpath --relative-to ./content $i`.bz2" ]]; then
