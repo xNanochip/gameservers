@@ -1,9 +1,8 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#include <ce_core>
-#include <ce_manager_attributes>
-#include <ce_events>
+#include <cecon>
+#include <cecon_items>
 #include <sdktools>
 #include <tf2_stocks>
 
@@ -40,7 +39,7 @@ public void OnEntityCreated(int ent, const char[] strClassname)
 	if (ent < 0) return;
 	g_bTurnsToSilver[ent] = false;
 	
-	if (strcmp(strClassname,"tf_ragdoll") == 0)
+	if (strcmp(strClassname, "tf_ragdoll") == 0)
 	{
 		RequestFrame(RemoveBody, ent);
 	}
@@ -65,10 +64,11 @@ public void OnPlayerDeath(Event ev, const char[] name, bool dontBroadcast)
 	int client = GetClientOfUserId(ev.GetInt("userid"));
 	if (client == attacker || !IsValidClient(attacker) || !IsValidClient(client)) return;
 	
-	int weapon = CEEvents_LastUsedWeapon(attacker);
+	int weapon = CEcon_GetLastUsedWeapon(attacker);
 	if (IsValidEntity(weapon) && g_bTurnsToSilver[weapon])
 	{
 		g_bShouldBeSilver[client] = true;
+		
 		switch(GetRandomInt(1, 3))
 		{
 			case 1: EmitSoundToAll(SILVER1, client, SNDCHAN_AUTO, 100);
@@ -116,10 +116,10 @@ public void CreateSilverBody(int client)
 	AcceptEntityInput(ragdoll, "FireUser1");
 }
 
-public void CE_OnPostEquip(int client, int entity, int index, int defid, int quality, ArrayList hAttributes, char[] type)
+public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem xItem, const char[] type)
 {
 	if (strcmp(type, "weapon") != 0) return;
-	if (CE_GetAttributeInteger(entity, "is new zealium item") > 0)
+	if (CEconItems_GetEntityAttributeBool(entity, "is new zealium item"))
 	{
 		g_bTurnsToSilver[entity] = true;
 	}
