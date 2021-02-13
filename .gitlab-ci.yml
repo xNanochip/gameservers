@@ -105,8 +105,8 @@ deploy-fastdl:
 
         echo "[INFO] Repository path: $CI_PROJECT_DIR"
 
-        FASTDL_PATH=/var/www/fastdl/content/branches/$CI_COMMIT_REF_NAME
-        echo "[INFO] Export Path: $FASTDL_PATH"
+        FASTDL_PATH=/var/www
+        echo $FASTDL_PATH
 
         while read pattern; do
             # We go through all the files of this pattern and see if bz2 version is valid.
