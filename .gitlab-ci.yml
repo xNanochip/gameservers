@@ -130,7 +130,7 @@ deploy-fastdl:
                 [[ ! -f $ASSET_BZ2_PATH ]] && RECOMPRESS=1;
 
                 # Recomress if checksums do not match.
-                [[ $RECOMPRESS = 0 ]]; then
+                if [[ $RECOMPRESS = 0 ]]; then
 
                     ASSET_MD5_FROM_SRC=`md5sum $ASSET_SRC_PATH | awk '{ print $1 }'`;
                     ASSET_MD5_FROM_BZ2=`bzip2 -d -c $ASSET_BZ2_PATH | md5sum $ASSET_SRC_PATH | awk '{ print $1 }'`;
