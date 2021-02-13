@@ -83,10 +83,10 @@ deploy-virginia:
     - virginiapub
     <<: *deploy_template
 
-deploy-russia:
-    tags:
-    - russiapub
-    <<: *deploy_template
+# deploy-russia:
+#     tags:
+#     - russiapub
+#     <<: *deploy_template
 
 deploy-la:
     tags:
