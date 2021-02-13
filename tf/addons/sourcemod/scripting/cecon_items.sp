@@ -269,6 +269,13 @@ public Action cResetLoadout(int args)
 public void PrecacheItemsFromSchema(KeyValues hSchema)
 {
 	if (hSchema == null)return;
+	
+	// Clean loadout cache for everyone.
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientInGame(i))continue;
+		ClearClientLoadout(i, false);
+	}
 
     // Make sure to remove all previous definitions if exist.
 	FlushItemDefinitionCache();
@@ -574,11 +581,18 @@ public any Native_MergeAttributes(Handle plugin, int numParams)
     ArrayList hArray1 = GetNativeCell(1);
     ArrayList hArray2 = GetNativeCell(2);
 
-	if (hArray1 == null)return hArray1;
+	if (hArray1 == null && hArray2 == null)
+	{
+		return new ArrayList(sizeof(CEAttribute));
+	} else if(hArray1 == null)
+	{	
+		return hArray2.Clone();
+	} else if(hArray2 == null)
+	{	
+		return hArray1.Clone();
+	}
 
 	ArrayList hResult = hArray1.Clone();
-
-	if (hArray2 == null)return hResult;
 
 	int size = hResult.Length;
 	for (int i = 0; i < hArray2.Length; i++)
@@ -965,7 +979,6 @@ public any Native_ApplyOriginalAttributes(Handle plugin, int numParams)
 	if(m_hEconItem[entity].m_Attributes == null) return;
 
 	// TODO: Make a check to see if entity accepts TF2 attributes.
-
 	for(int i = 0; i < m_hEconItem[entity].m_Attributes.Length; i++)
 	{
 		CEAttribute hAttr;
@@ -1100,7 +1113,7 @@ public any Native_IsClientWearingItem(Handle plugin, int numParams)
 }
 
 //---------------------------------------------------------------------
-// Native: CEconItems_IsClientWearingItem
+// Native: CEconItems_GiveItemToClient
 //---------------------------------------------------------------------
 public any Native_GiveItemToClient(Handle plugin, int numParams)
 {

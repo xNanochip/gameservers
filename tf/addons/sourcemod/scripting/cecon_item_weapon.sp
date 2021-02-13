@@ -489,9 +489,27 @@ public void OnDrawWeapon(int client, int iWeapon)
 		} else {
 
 			SetEntityRenderMode(iWeapon, RENDER_TRANSALPHA);
-			SetEntityRenderColor(iWeapon, 0, 0, 0, 0);
+			SetEntityRenderColor(iWeapon, 0, 0, 0, 0);	
 
-			SetEntProp(iWeapon, Prop_Send, "m_bBeingRepurposedForTaunt", 1);
+			bool bShouldDrawHands = false;
+			
+			// These are the only weapons that for some reason brake
+			// when this is set to 1. I guess we can go with the old way of doing things and just 
+			// create the hand as the wearable. This will bring back the random red lights issue.
+			// VALVE PLS FIX (TM).
+			
+			char sClassName[32];
+			GetEntityClassname(iWeapon, sClassName, sizeof(sClassName));
+			
+			if(	StrEqual(sClassName, "tf_weapon_flamethrower") ||
+				StrEqual(sClassName, "tf_weapon_minigun") ||
+				StrEqual(sClassName, "tf_weapon_medigun")
+			) {
+				bShouldDrawHands = true;
+			} else {
+				SetEntProp(iWeapon, Prop_Send, "m_bBeingRepurposedForTaunt", 1);
+			}
+
 
 			int iWM = TF2Wear_CreateWeaponTiedWearable(iWeapon, false, m_sWeaponModel[iWeapon]);
 			int iVM = TF2Wear_CreateWeaponTiedWearable(iWeapon, true, m_sWeaponModel[iWeapon]);
@@ -501,6 +519,24 @@ public void OnDrawWeapon(int client, int iWeapon)
 			{
 				TF2Attrib_SetByName(iWM, "killstreak idleeffect", float(iKillStreakSheen));
 				TF2Attrib_SetByName(iVM, "killstreak idleeffect", float(iKillStreakSheen));
+			}
+			
+			if(bShouldDrawHands)
+			{
+				char arms[PLATFORM_MAX_PATH];
+				switch (TF2_GetPlayerClass(client))
+				{
+					case TFClass_Scout: Format(arms, sizeof(arms), "models/weapons/c_models/c_scout_arms.mdl");
+					case TFClass_Soldier: Format(arms, sizeof(arms), "models/weapons/c_models/c_soldier_arms.mdl");
+					case TFClass_Pyro: Format(arms, sizeof(arms), "models/weapons/c_models/c_pyro_arms.mdl");
+					case TFClass_DemoMan: Format(arms, sizeof(arms), "models/weapons/c_models/c_demo_arms.mdl");
+					case TFClass_Heavy: Format(arms, sizeof(arms), "models/weapons/c_models/c_heavy_arms.mdl");
+					case TFClass_Engineer: Format(arms, sizeof(arms), "models/weapons/c_models/c_engineer_arms.mdl");
+					case TFClass_Medic: Format(arms, sizeof(arms), "models/weapons/c_models/c_medic_arms.mdl");
+					case TFClass_Sniper: Format(arms, sizeof(arms), "models/weapons/c_models/c_sniper_arms.mdl");
+					case TFClass_Spy: Format(arms, sizeof(arms), "models/weapons/c_models/c_spy_arms.mdl");
+				}
+				TF2Wear_CreateWeaponTiedWearable(iWeapon, true, arms);
 			}
 		}
 	}

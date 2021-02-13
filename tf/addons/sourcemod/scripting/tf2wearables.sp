@@ -32,11 +32,6 @@ public APLRes AskPluginLoad2(Handle plugin, bool late, char[] error, int err_max
 	
 	CreateNative("TF2Wear_SetEntPropFloatOfWeapon", Native_SetEntPropFloatOfWeapon);
 	
-	/*
-	CreateNative("CEModels_CreateTiedWearable", Native_CreateTiedWearable);
-	CreateNative("CEModels_KillCustomAttachments", Native_KillCustomAttachments);
-	CreateNative("CEModels_WearSetEntPropFloatOfWeapon", Native_WearSetEntPropFloatOfWeapon);
-	*/
 	return APLRes_Success;
 }
 
@@ -166,6 +161,8 @@ public int Native_RemoveWearable(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	int entity = GetNativeCell(2);
+	
+	if (client < 0)return;
 	
 	TF2_RemoveWearable(client, entity);
 }
