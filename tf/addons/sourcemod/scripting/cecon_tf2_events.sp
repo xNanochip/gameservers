@@ -91,11 +91,6 @@ public void OnPluginStart()
 	HookEvent("team_leader_killed", team_leader_killed);
 }
 
-public bool IsStaffMember(int client)
-{
-	return false;
-}
-
 public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
@@ -112,137 +107,137 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 
 	if(IsClientValid(client))
 	{
-		CEcon_SendEventToClientFromGameEvent(client, "TF_DEATH", 1, hEvent);
+		CEcon_SendEventToClientUnique(client, "TF_DEATH", 1);
 		if(IsClientValid(attacker))
 		{
 			if(attacker != client)
-			{				
-				CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL", 1, hEvent);
-				CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_OR_ASSIST", 1, hEvent);
+			{
+				CEcon_SendEventToClientUnique(attacker, "TF_KILL", 1);
+				CEcon_SendEventToClientUnique(attacker, "TF_KILL_OR_ASSIST", 1);
 
 				if(death_flags & TF_DEATHFLAG_KILLERDOMINATION)
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_DOMINATE", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_DOMINATE", 1);
 				}
 
 				if(death_flags & TF_DEATHFLAG_KILLERREVENGE)
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_REVENGE", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_REVENGE", 1);
 				}
 
 				switch(TF2_GetPlayerClass(client))
 				{
-					case TFClass_Scout:CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_CLASS_SCOUT", 1, hEvent);
-					case TFClass_Soldier:CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_CLASS_SOLDIER", 1, hEvent);
-					case TFClass_Pyro:CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_CLASS_PYRO", 1, hEvent);
-					case TFClass_DemoMan:CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_CLASS_DEMOMAN", 1, hEvent);
-					case TFClass_Heavy:CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_CLASS_HEAVY", 1, hEvent);
-					case TFClass_Engineer:CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_CLASS_ENGINEER", 1, hEvent);
-					case TFClass_Medic:CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_CLASS_MEDIC", 1, hEvent);
-					case TFClass_Sniper:CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_CLASS_SNIPER", 1, hEvent);
-					case TFClass_Spy:CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_CLASS_SPY", 1, hEvent);
+					case TFClass_Scout:CEcon_SendEventToClientUnique(attacker, "TF_KILL_CLASS_SCOUT", 1);
+					case TFClass_Soldier:CEcon_SendEventToClientUnique(attacker, "TF_KILL_CLASS_SOLDIER", 1);
+					case TFClass_Pyro:CEcon_SendEventToClientUnique(attacker, "TF_KILL_CLASS_PYRO", 1);
+					case TFClass_DemoMan:CEcon_SendEventToClientUnique(attacker, "TF_KILL_CLASS_DEMOMAN", 1);
+					case TFClass_Heavy:CEcon_SendEventToClientUnique(attacker, "TF_KILL_CLASS_HEAVY", 1);
+					case TFClass_Engineer:CEcon_SendEventToClientUnique(attacker, "TF_KILL_CLASS_ENGINEER", 1);
+					case TFClass_Medic:CEcon_SendEventToClientUnique(attacker, "TF_KILL_CLASS_MEDIC", 1);
+					case TFClass_Sniper:CEcon_SendEventToClientUnique(attacker, "TF_KILL_CLASS_SNIPER", 1);
+					case TFClass_Spy:CEcon_SendEventToClientUnique(attacker, "TF_KILL_CLASS_SPY", 1);
 				}
 
 				switch(customkill)
 				{
-					case TF_CUSTOM_BACKSTAB: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_BACKSTAB", 1, hEvent);
-					case TF_CUSTOM_HEADSHOT: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_HEADSHOT", 1, hEvent);
-					case TF_CUSTOM_PUMPKIN_BOMB: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_PUMPKIN_BOMB", 1, hEvent);
+					case TF_CUSTOM_BACKSTAB: CEcon_SendEventToClientUnique(attacker, "TF_KILL_BACKSTAB", 1);
+					case TF_CUSTOM_HEADSHOT: CEcon_SendEventToClientUnique(attacker, "TF_KILL_HEADSHOT", 1);
+					case TF_CUSTOM_PUMPKIN_BOMB: CEcon_SendEventToClientUnique(attacker, "TF_KILL_PUMPKIN_BOMB", 1);
 
-					case TF_CUSTOM_SPELL_BATS: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_MAGIC", 1, hEvent);
-					case TF_CUSTOM_SPELL_BLASTJUMP: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_MAGIC", 1, hEvent);
-					case TF_CUSTOM_SPELL_FIREBALL: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_MAGIC", 1, hEvent);
-					case TF_CUSTOM_SPELL_LIGHTNING: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_MAGIC", 1, hEvent);
-					case TF_CUSTOM_SPELL_METEOR: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_MAGIC", 1, hEvent);
-					case TF_CUSTOM_SPELL_MIRV: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_MAGIC", 1, hEvent);
-					case TF_CUSTOM_SPELL_MONOCULUS: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_MAGIC", 1, hEvent);
-					case TF_CUSTOM_SPELL_SKELETON: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_MAGIC", 1, hEvent);
-					case TF_CUSTOM_SPELL_TELEPORT: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_MAGIC", 1, hEvent);
-					case TF_CUSTOM_SPELL_TINY: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_MAGIC", 1, hEvent);
+					case TF_CUSTOM_SPELL_BATS: CEcon_SendEventToClientUnique(attacker, "TF_KILL_MAGIC", 1);
+					case TF_CUSTOM_SPELL_BLASTJUMP: CEcon_SendEventToClientUnique(attacker, "TF_KILL_MAGIC", 1);
+					case TF_CUSTOM_SPELL_FIREBALL: CEcon_SendEventToClientUnique(attacker, "TF_KILL_MAGIC", 1);
+					case TF_CUSTOM_SPELL_LIGHTNING: CEcon_SendEventToClientUnique(attacker, "TF_KILL_MAGIC", 1);
+					case TF_CUSTOM_SPELL_METEOR: CEcon_SendEventToClientUnique(attacker, "TF_KILL_MAGIC", 1);
+					case TF_CUSTOM_SPELL_MIRV: CEcon_SendEventToClientUnique(attacker, "TF_KILL_MAGIC", 1);
+					case TF_CUSTOM_SPELL_MONOCULUS: CEcon_SendEventToClientUnique(attacker, "TF_KILL_MAGIC", 1);
+					case TF_CUSTOM_SPELL_SKELETON: CEcon_SendEventToClientUnique(attacker, "TF_KILL_MAGIC", 1);
+					case TF_CUSTOM_SPELL_TELEPORT: CEcon_SendEventToClientUnique(attacker, "TF_KILL_MAGIC", 1);
+					case TF_CUSTOM_SPELL_TINY: CEcon_SendEventToClientUnique(attacker, "TF_KILL_MAGIC", 1);
 				}
 
 				// Airborne
 				if(!(GetEntityFlags(attacker) & FL_ONGROUND))
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_WHILE_AIRBORNE", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_WHILE_AIRBORNE", 1);
 				}
 
 				if(!(GetEntityFlags(client) & FL_ONGROUND))
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_AIRBORNE_ENEMY", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_AIRBORNE_ENEMY", 1);
 				}
 
 				// Reflect
 				if(StrContains(weapon, "deflect") != -1)
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_WITH_REFLECT", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_WITH_REFLECT", 1);
 				}
 
 				// Objects
 				if(StrContains(weapon, "obj_") != -1)
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_WITH_OBJECT", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_WITH_OBJECT", 1);
 				}
 
 				// Uber
 				if (IsUbercharged(attacker))
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_WHILE_UBERCHARGED", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_WHILE_UBERCHARGED", 1);
 				}
 
 				// Cloaked spy
 				if(TF2_IsPlayerInCondition(client, TFCond_Stealthed))
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_CLOAKED_SPY", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_CLOAKED_SPY", 1);
 				}
 
 				if(kill_streak_victim > 5)
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_STREAK_ENDED", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_STREAK_ENDED", 1);
 				}
 
 				// Crits
 				switch(crit_type)
 				{
-					case 0: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_NON_CRITICAL", 1, hEvent);
-					case 1: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_MINI_CRITICAL", 1, hEvent);
-					case 2: CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_CRITICAL", 1, hEvent);
+					case 0: CEcon_SendEventToClientUnique(attacker, "TF_KILL_NON_CRITICAL", 1);
+					case 1: CEcon_SendEventToClientUnique(attacker, "TF_KILL_MINI_CRITICAL", 1);
+					case 2: CEcon_SendEventToClientUnique(attacker, "TF_KILL_CRITICAL", 1);
 				}
 
 				if(death_flags & TF_DEATHFLAG_GIBBED)
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_GIB", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_GIB", 1);
 				}
 
 				if(TF2_IsPlayerInCondition(attacker, TFCond_Taunting))
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_WHILE_TAUNTING", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_WHILE_TAUNTING", 1);
 				}
 
 				if(TF2_IsPlayerInCondition(client, TFCond_Taunting))
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_TAUNTING", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_TAUNTING", 1);
 				}
 
 				// Halloween
 				if(TF2_IsPlayerInCondition(attacker, TFCond_HalloweenInHell))
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_IN_HELL", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_IN_HELL", 1);
 				}
 
 				if(TF2_IsPlayerInCondition(attacker, TFCond_EyeaductUnderworld))
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_IN_PURGATORY", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_IN_PURGATORY", 1);
 				}
 
 				if(TF2_IsPlayerInCondition(attacker, TFCond_HalloweenKart))
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_BUMPER_CARS_KILL", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_BUMPER_CARS_KILL", 1);
 				}
 
 				if(TF2_IsPlayerInCondition(client, TFCond_Dazed))
 				{
-					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_STUNNED", 1, hEvent);
+					CEcon_SendEventToClientUnique(attacker, "TF_KILL_STUNNED", 1);
 				}
 			}
 		}
@@ -251,23 +246,23 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 		{
 			if(assister != client)
 			{
-				CEcon_SendEventToClientFromGameEvent(assister, "TF_ASSIST", 1, hEvent);
-				CEcon_SendEventToClientFromGameEvent(assister, "TF_KILL_OR_ASSIST", 1, hEvent);
+				CEcon_SendEventToClientUnique(assister, "TF_ASSIST", 1);
+				CEcon_SendEventToClientUnique(assister, "TF_KILL_OR_ASSIST", 1);
 
 				if(death_flags & TF_DEATHFLAG_ASSISTERDOMINATION)
 				{
-					CEcon_SendEventToClientFromGameEvent(assister, "TF_KILL_DOMINATE", 1, hEvent);
+					CEcon_SendEventToClientUnique(assister, "TF_KILL_DOMINATE", 1);
 				}
 
 				if(death_flags & TF_DEATHFLAG_ASSISTERREVENGE)
 				{
-					CEcon_SendEventToClientFromGameEvent(assister, "TF_KILL_REVENGE", 1, hEvent);
+					CEcon_SendEventToClientUnique(assister, "TF_KILL_REVENGE", 1);
 				}
 
 				// Uber
 				if (IsUbercharged(assister))
 				{
-					CEcon_SendEventToClientFromGameEvent(assister, "TF_ASSIST_WHILE_UBERCHARGED", 1, hEvent);
+					CEcon_SendEventToClientUnique(assister, "TF_ASSIST_WHILE_UBERCHARGED", 1);
 				}
 			}
 		}
