@@ -136,12 +136,14 @@ deploy-fastdl:
                     echo "[INFO] ∟ Checkin sums: $ASSET_MD5_FROM_SRC // $ASSET_MD5_FROM_BZ2";
 
                     if [[ $ASSET_MD5_FROM_SRC != $ASSET_MD5_FROM_BZ2 ]]; then
+                        echo "Recompress...";
                         RECOMPRESS=1;
                     fi
                 fi
 
                 if [[ $RECOMPRESS = 1 ]]; then
 
+                    echo "[INFO] Archival needed...";
                     # Remove old bz2 if exists.
                     [[ -f $ASSET_BZ2_PATH ]] && rm $ASSET_BZ2_PATH;
 
