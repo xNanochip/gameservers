@@ -5,7 +5,7 @@
                "$phongexponent" "80"
                "$phongboost" "20"
 	"$lightwarptexture" "models\lightwarps\weapon_lightwarp"
-               "$phongfresnelranges" "[0.2 0.3 2]"
+               "$phongfresnelranges" "[0.2 0.8 2]"
 	"$halflambert" "1"
 
 	"$basemapalphaphongmask" "1"
@@ -17,7 +17,7 @@
 
                "$envmap" "cubemaps/cubemap_newzealium"
                $envmapfresnel 0.6
-	"$envmaptint" "[ 4 4 4 ]"
+               "$envmaptint" "[ 4 4 4 ]"
 
 	"$glowcolor" "1"
 

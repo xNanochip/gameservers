@@ -12,7 +12,7 @@
 
                "$envmap" "cubemaps/cubemap_newzealium"
                $envmapfresnel 0.2
-	"$envmaptint" "[ 4 4 4 ]"
+               "$envmaptint" "[ 4 4 4 ]"
 
 	//"$selfillum" "1"
 	//"$selfillumtint" "[1 .55 .1]"

@@ -12,9 +12,9 @@
                "$phongfresnelranges" "[0.2 0.8 2]"
 	"$phongwarptexture"  "models\weapons\c_items/c_ambassador_phongwarp"
 
-   "$envmap" "cubemaps/cubemap_newzealium"
-   $envmapfresnel 0.2
-	"$envmaptint" "[ 4 4 4 ]"
+               "$envmap" "cubemaps/cubemap_newzealium"
+               $envmapfresnel 0.2
+               "$envmaptint" "[ 4 4 4 ]"
 
 	"$rimlight" "1"
 	"$rimlightexponent" "30"	

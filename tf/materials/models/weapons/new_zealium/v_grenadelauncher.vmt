@@ -10,13 +10,15 @@
 	"$rimlight" "1"						
 	"$rimlightexponent" "20"				
 	"$rimlightboost" ".5"
+	"$basemapalphaphongmask" "1"
 	// Begin GOLD look
 
                "$envmap" "cubemaps/cubemap_newzealium"
                $envmapfresnel 0.4
-	"$envmaptint" "[ 4 4 4 ]"
+               "$envmaptint" "[ 4 4 4 ]"
 	
 	// End GOLD look
+
 	
 	$basealphaenvmapmask 1
 

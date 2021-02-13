@@ -6,14 +6,14 @@
 	"$phongexponent" "80"
 	"$phongboost" "10"	
 	"$lightwarptexture" "models/lightwarps/weapon_lightwarp"
-	"$phongfresnelranges" "[0.2 0.8 2]"
+               "$phongfresnelranges" "[0.2 0.8 2]"
 	"$halflambert" "1"
 	"$glowcolor" "1"
 
 	// Begin GOLD look
 
-	"$envmap" "cubemaps/cubemap_newzealium"
-	"$envmaptint" "[ 4 4 4 ]"
+	"$envmap" "cubemaps/cubemap_newzealium"	
+               "$envmaptint" "[ 4 4 4 ]"
 
 	$envmapfresnel 0.2
 	
@@ -27,6 +27,7 @@
 
 	// Cloaking
 	"$cloakPassEnabled" "1"
+
 	"$sheenPassEnabled" "1"
 
 	"$sheenmap" 		"cubemaps/cubemap_sheen001"

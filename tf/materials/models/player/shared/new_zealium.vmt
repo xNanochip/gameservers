@@ -19,7 +19,7 @@
 
                "$envmap" "cubemaps/cubemap_newzealium"
                $envmapfresnel 0.4
-	"$envmaptint" "[.14 .14 .14]" 
+	"$envmaptint" "[4 4 4]" 
 
 
 	// Rim lighting parameters

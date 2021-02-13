@@ -13,7 +13,7 @@
 	// Begin GOLD look
 
 	"$envmap" "cubemaps/cubemap_newzealium"	
-	"$envmaptint" "[ 4 4 4 ]"
+               "$envmaptint" "[ 4 4 4 ]"
 
 	$envmapfresnel 0.3
 	

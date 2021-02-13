@@ -13,7 +13,8 @@
 	
                "$envmap" "cubemaps/cubemap_newzealium"
                $envmapfresnel 0.2
-	"$envmaptint" "[ 4 4 4 ]"
+               "$envmaptint" "[ 4 4 4 ]"
+               "$envmaptint" "[ 4 4 4 ]"
 
 	"$rimlight" "1"
 	"$rimlightexponent" "40"	

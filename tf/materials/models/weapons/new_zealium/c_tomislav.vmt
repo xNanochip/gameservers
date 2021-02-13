@@ -12,7 +12,7 @@
 
                "$envmap" "cubemaps/cubemap_newzealium"
                $envmapfresnel 0.8
-	"$envmaptint" "[ 4 4 4 ]"
+               "$envmaptint" "[ 4 4 4 ]"
 
 	"$basemapalphaphongmask" "1"
 
