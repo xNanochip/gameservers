@@ -141,7 +141,6 @@ deploy-fastdl:
 
                     # If it exist, let's first check if it changed.
                     if [[ `echo $GIT_DIFF | grep $GIT_DIFF_ELEMENT` ]]; then
-                        echo "./$i changed";
                         RECOMPRESS=1;
                     fi
                 fi
