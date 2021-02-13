@@ -1,7 +1,9 @@
 stages:
+    - fastdl
     - deploy
 
 .deploy_template: &deploy_template
+    stage: deploy
     script:
     - whoami
 
@@ -93,7 +95,7 @@ deploy-la:
     <<: *deploy_template
 
 deploy-fastdl:
-    stage: deploy
+    stage: fastdl
     script:
     - whoami
     - >
