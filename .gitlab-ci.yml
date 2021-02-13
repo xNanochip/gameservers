@@ -137,8 +137,10 @@ deploy-fastdl:
                 # Recomress if checksums do not match.
                 if [[ $RECOMPRESS = 0 ]]; then
 
+                    GIT_DIFF_ELEMENT=`realpath --relative-to ./ $i`;
+
                     # If it exist, let's first check if it changed.
-                    if [[ `echo $GIT_DIFF | grep ./$i` ]]; then
+                    if [[ `echo $GIT_DIFF | grep $GIT_DIFF_ELEMENT` ]]; then
                         echo "./$i changed";
                         RECOMPRESS=1;
                     fi
