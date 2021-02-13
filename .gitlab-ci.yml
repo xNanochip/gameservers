@@ -135,10 +135,11 @@ deploy-fastdl:
 
                     echo "[INFO] ∟ Checkin sums: $ASSET_MD5_FROM_SRC // $ASSET_MD5_FROM_BZ2";
 
-                    if [[ $ASSET_MD5_FROM_SRC != $ASSET_MD5_FROM_BZ2 ]]; then
+                    if [ "$ASSET_MD5_FROM_SRC" != "$ASSET_MD5_FROM_BZ2" ]; then
                         echo "Recompress...";
                         RECOMPRESS=1;
                     fi
+                    echo "Error here?";
                 fi
 
                 if [[ $RECOMPRESS = 1 ]]; then
