@@ -13,6 +13,7 @@
 #include <cecon>
 #include <cecon_items>
 
+#include <tf2attributes>
 #include <tf2wearables>
 #include <tf2>
 #include <tf2_stocks>
@@ -453,8 +454,15 @@ public void OnDrawWeapon(int client, int iWeapon)
 
 			SetEntProp(iWeapon, Prop_Send, "m_bBeingRepurposedForTaunt", 1);
 
-			TF2Wear_CreateWeaponTiedWearable(iWeapon, false, m_sWeaponModel[iWeapon]);
-			TF2Wear_CreateWeaponTiedWearable(iWeapon, true, m_sWeaponModel[iWeapon]);
+			int iWM = TF2Wear_CreateWeaponTiedWearable(iWeapon, false, m_sWeaponModel[iWeapon]);
+			int iVM = TF2Wear_CreateWeaponTiedWearable(iWeapon, true, m_sWeaponModel[iWeapon]);
+			
+			int iKillStreakSheen = CEconItems_GetEntityAttributeInteger(iWeapon, "killstreak idleeffect");
+			if(iKillStreakSheen > 0)
+			{
+				TF2Attrib_SetByName(iWM, "killstreak idleeffect", float(iKillStreakSheen));
+				TF2Attrib_SetByName(iVM, "killstreak idleeffect", float(iKillStreakSheen));
+			}
 		}
 	}
 }
