@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "3.7.9b"
+#define PLUGIN_VERSION  "4.0.1"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -88,10 +88,12 @@ ConVar stac_verbose_info;
 ConVar stac_max_allowed_turn_secs;
 ConVar stac_ban_for_misccheats;
 ConVar stac_optimize_cvars;
+
 ConVar stac_max_aimsnap_detections;
 ConVar stac_max_psilent_detections;
 ConVar stac_max_bhop_detections;
 ConVar stac_max_fakeang_detections;
+ConVar stac_max_cmdnum_detections;
 
 ConVar stac_max_settings_changes;
 ConVar stac_settings_changes_window;
@@ -109,10 +111,12 @@ float maxAllowedTurnSecs    = -1.0;
 bool kickForPingMasking     = false;
 bool banForMiscCheats       = true;
 bool optimizeCvars          = true;
+
 int maxAimsnapDetections    = 25;
 int maxPsilentDetections    = 10;
 int maxFakeAngDetections    = 10;
 int maxBhopDetections       = 10;
+int maxCmdnumDetections     = 25;
 
 // max settings changes per...
 int maxSettingsChanges      = 40;
@@ -148,6 +152,7 @@ public void OnPluginStart()
     {
         SetFailState("[StAC] This plugin (and TF2 in general) does not support more than 33 players. Aborting!");
     }
+
     // updater
     if (LibraryExists("updater"))
     {
@@ -170,8 +175,6 @@ public void OnPluginStart()
     HookEvent("teamplay_round_start", eRoundStart);
     // grab player spawns
     HookEvent("player_spawn", ePlayerSpawned);
-    // grab player name changes
-    HookEvent("player_changename", ePlayerChangedName, EventHookMode_Pre);
 
     // check natives capibility
     CreateTimer(2.0, checkNatives);
@@ -392,6 +395,22 @@ void initCvars()
         _
     );
     HookConVarChange(stac_max_fakeang_detections, stacVarChanged);
+
+    // cmdnum spike detections
+    IntToString(maxCmdnumDetections, buffer, sizeof(buffer));
+    stac_max_cmdnum_detections =
+    AutoExecConfig_CreateConVar
+    (
+        "stac_max_cmdnum_detections",
+        buffer,
+        "[StAC] maximum cmdnum spikes a client can have before getting banned. lmaobox does this with nospread on certain weapons, other cheats may also utilize it. legit users should not ever trigger this!\n(recommended 25)",
+        FCVAR_NONE,
+        true,
+        -1.0,
+        false,
+        _
+    );
+    HookConVarChange(stac_max_cmdnum_detections, stacVarChanged);
 
     // userinfo spam changes
     IntToString(maxSettingsChanges, buffer, sizeof(buffer));
@@ -793,12 +812,6 @@ public Action ePlayerSpawned(Handle event, char[] name, bool dontBroadcast)
     }
 }
 
-public Action ePlayerChangedName(Handle event, char[] name, bool dontBroadcast)
-{
-    int userid = GetEventInt(event, "userid");
-    NameCheck(userid);
-}
-
 Action hOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3])
 {
     // get ent classname AKA the weapon name
@@ -1092,7 +1105,7 @@ public Action OnPlayerRunCmd
     {
         if (cmdnum < 0 || tickcount < 0)
         {
-            KickClient(Cl, "[StAC] Invalid usercmd data");
+            KickClient(Cl, "%t", "invalidUsercmdData");
             return Plugin_Handled;
         }
         return Plugin_Continue;
@@ -1360,7 +1373,7 @@ public Action OnPlayerRunCmd
         );
         StacLog
         (
-            "\n==========\n[StAC] Player %N has invalid eye angles!\nCurrent angles: %.2f %.2f %.2f.\nDetections so far: %i\n==========",
+            "\n==========\n[StAC] Player %N has invalid eye angles!\nCurrent angles: %f %f %f.\nDetections so far: %i\n==========",
             Cl,
             angles[0],
             angles[1],
@@ -1409,10 +1422,10 @@ public Action OnPlayerRunCmd
         // make sure client isnt using a spin bind
         || buttons & IN_LEFT
         || buttons & IN_RIGHT
-        // make sure client doesn't have 10% or more packet loss
-        || loss >= 10.0
-        // make sure client doesn't have 66.6% or more choke
-        || choke >= 66.6
+        // make sure client doesn't have 1% or more packet loss - this would be annoying to play with for cheaters - but may be tweaked in the future if cheats decide to try to get around it
+        || loss >= 1.0
+        // make sure client doesn't have 52% or more choke - nullcore fakechoke goes up to 51!
+        || choke >= 52.0
         // if a client misses 8 ticks, its safe to assume they're lagging
         // so check the difference between the last 10 ticks
         // if a client missed any of them, don't check
@@ -1434,6 +1447,7 @@ public Action OnPlayerRunCmd
 
     /* cmdnum test, heavily modified from ssac */
     int spikeamt = abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]);
+    // 256 is a nice number but this could be raised or lowered, haven't done TOO much testing and so far zero legits have managed to trigger this since we ignore nullcmds
     if (spikeamt >= 256)
     {
         char heldWeapon[256];
@@ -1457,7 +1471,7 @@ public Action OnPlayerRunCmd
         );
         StacLog
         (
-            "\nPrevious cmdnums:\n 0 %i\n1 %i\n2 %i\n3 %i\n4 %i\n5 %i\n",
+            "\nPrevious cmdnums:\n0 %i\n1 %i\n2 %i\n3 %i\n4 %i\n5 %i\n",
             clcmdnum[0][Cl],
             clcmdnum[1][Cl],
             clcmdnum[2][Cl],
@@ -1466,7 +1480,7 @@ public Action OnPlayerRunCmd
             clcmdnum[5][Cl]
         );
         // TEMP hardcoded for now
-        if (cmdnumSpikeDetects[Cl] >= 25)
+        if (cmdnumSpikeDetects[Cl] >= maxCmdnumDetections)
         {
             char reason[128];
             Format(reason, sizeof(reason), "%t", "cmdnumSpikesBanMsg", cmdnumSpikeDetects[Cl]);
@@ -1480,7 +1494,6 @@ public Action OnPlayerRunCmd
     //if (clcmdnum[1][Cl] == clcmdnum[0][Cl])
     //{
     //    StacLog("[StAC] SAME CMDNUM REPORTED!!!");
-    //    KickClient(Cl, "gay");
     //    return Plugin_Handled;
     //}
     //if (clcmdnum[1][Cl] > clcmdnum[0][Cl])
@@ -1583,7 +1596,7 @@ public Action OnPlayerRunCmd
                 );
                 StacLog
                 (
-                    "\n==========\n[StAC] SilentAim detection of %.2f° on \n%L.\nDetections so far: %i.\nfuzzy = %i",
+                    "\n==========\n[StAC] SilentAim detection of %f° on \n%L.\nDetections so far: %i.\nfuzzy = %i",
                     aDiffReal,
                     Cl,
                     pSilentDetects[Cl],
@@ -1591,7 +1604,7 @@ public Action OnPlayerRunCmd
                 );
                 StacLog
                 (
-                    "\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\n angles2: x %.2f y %.2f\n",
+                    "\nNetwork:\n %f loss\n %f choke\n %f ms ping\nAngles:\n angles0: x %f y %f\n angles1: x %f y %f\n angles2: x %f y %f\n",
                     loss,
                     choke,
                     ping,
@@ -1661,14 +1674,14 @@ public Action OnPlayerRunCmd
                 // etc
                 StacLog
                 (
-                    "\n==========\n[StAC] Aimsnap detection of %.2f° on \n%L.\nDetections so far: %i.",
+                    "\n==========\n[StAC] Aimsnap detection of %f° on \n%L.\nDetections so far: %i.",
                     aDiffReal,
                     Cl,
                     aimsnapDetects[Cl]
                 );
                 StacLog
                 (
-                    "\nNetwork:\n %.2f loss\n %.2f choke\n %.2f ms ping\nAngles:\n angles0: x %.2f y %.2f\n angles1: x %.2f y %.2f\n",
+                    "\nNetwork:\n %f loss\n %f choke\n %f ms ping\nAngles:\n angles0: x %f y %f\n angles1: x %f y %f\n",
                     loss,
                     choke,
                     ping,
@@ -1774,7 +1787,7 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
         return;
     }
     int userid = GetClientUserId(Cl);
-    // log something about cvar errors xcept for cheat only cvars
+    // log something about cvar errors
     if (result != ConVarQuery_Okay)
     {
         PrintToImportant("{hotpink}[StAC]{white} Could not query cvar %s on Player %N", Cl);
@@ -1826,7 +1839,6 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
             BanUser(userid, reason);
             MC_PrintToChatAll("%t", "fovBanAllChat", Cl);
             StacLog("%t", "fovBanAllChat", Cl);
-
         }
     }
     if (DEBUG)
@@ -1894,7 +1906,7 @@ public Action OnClientCommand(int Cl, int args)
         if (strlen(ClientCommandChar) > 254 || len > 128)
         {
             StacLog("[StAC] '%L' issued client side command '%s' - '%i' length.", Cl, ClientCommandChar, strlen(ClientCommandChar));
-            KickClient(Cl, "[StAC] Issued too large of a command to the server");
+            KickClient(Cl, "%t", "commandTooBig");
             return Plugin_Stop;
         }
     }
@@ -2009,54 +2021,12 @@ public void BanUser(int userid, char[] reason)
     }
 }
 
-void NameCheck(int userid)
-{
-    int Cl = GetClientOfUserId(userid);
-    if (IsValidClient(Cl))
-    {
-        char curName[64];
-        GetClientName(Cl, curName, sizeof(curName));
-        // ban for invalid characters in names
-        if
-        (
-            // nullcore uses \xE0\xB9\x8A for namestealing but you can put it in your steam name so we cant check for it
-            // might look into kicking for combining chars but who honestly cares
-            // apparently other cheats use these:
-            // thanks pazer
-               StrContains(curName, "\xE2\x80\x8F", false) != -1
-            || StrContains(curName, "\xE2\x80\x8E", false) != -1
-            // cathook uses this
-            || StrContains(curName, "\x1B", false)         != -1
-            // just in case
-            || StrContains(curName, "\n", false)           != -1
-            || StrContains(curName, "\r", false)           != -1
-        )
-        {
-            if (banForMiscCheats)
-            {
-                char reason[128];
-                Format(reason, sizeof(reason), "%t", "illegalNameBanMsg");
-                BanUser(userid, reason);
-                MC_PrintToChatAll("%t", "illegalNameBanAllChat", Cl);
-                StacLog("%t", "illegalNameBanAllChat", Cl);
-            }
-            else
-            {
-                StacLog("[StAC] Player %N has illegal chars in their name!", Cl);
-            }
-        }
-    }
-}
-
 void NetPropCheck(int userid)
 {
     int Cl = GetClientOfUserId(userid);
 
     if (IsValidClient(Cl))
     {
-        // not a net prop. Whatever though.
-        NameCheck(userid);
-
         // set real fov from client here - overrides cheat values (mostly works with ncc, untested on others)
         // we don't want to touch fov if a client is zoomed in while sniping or if they're in a bumper car or some other dumb halloween bullshit
         // we also don't want to check fov if they're dead or if cvars aren't optimized, because fov gets raised temporarily above 90 by teleporters if it isn't explicitly disabled by stac
@@ -2389,17 +2359,17 @@ bool HasValidAngles(int Cl)
     if
     (
         // ignore weird angle resets in mge / dm
-           clangles[0][Cl][0] != 0.000000
-        || clangles[0][Cl][1] != 0.000000
-        || clangles[1][Cl][0] != 0.000000
-        || clangles[1][Cl][1] != 0.000000
-        || clangles[2][Cl][0] != 0.000000
-        || clangles[2][Cl][1] != 0.000000
+           clangles[0][Cl][0] == 0.0
+        || clangles[0][Cl][1] == 0.0
+        || clangles[1][Cl][0] == 0.0
+        || clangles[1][Cl][1] == 0.0
+        || clangles[2][Cl][0] == 0.0
+        || clangles[2][Cl][1] == 0.0
     )
     {
-        return true;
+        return false;
     }
-    return false;
+    return true;
 }
 
 // print colored chat to all server/sourcemod admins
