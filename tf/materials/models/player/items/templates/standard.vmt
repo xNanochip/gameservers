@@ -54,6 +54,7 @@
 	// Variables for the jarate effect
 	"$yellow"               "0"
 
+
 	">=DX90"
 	{
 		"$selfillum"	"0"
