@@ -1,0 +1,11 @@
+models/**/*.mdl
+models/**/*.vvd
+models/**/*.dx90.vtx
+models/**/*.dx80.vtx
+models/**/*.sw.vtx
+models/**/*.phy
+maps/**/*.bsp
+sound/**/*.mp3
+sound/**/*.wav
+materials/**/*.vmt
+materials/**/*.vtf

@@ -2,6 +2,7 @@
 !build.sh
 !start.sh
 !.gitignore
+!.ci-fastdl
 !.gitlab-ci.yml
 !tf
 tf/*
