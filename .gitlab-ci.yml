@@ -129,6 +129,8 @@ deploy-fastdl:
                 # Recompress if bz2 file does not exist.
                 [[ ! -f $ASSET_BZ2_PATH ]] && RECOMPRESS=1;
 
+                echo "This went to check 1.";
+
                 # Recomress if checksums do not match.
                 if [[ $RECOMPRESS = 0 ]]; then
 
@@ -143,6 +145,7 @@ deploy-fastdl:
                     fi
                     echo "Error here?";
                 fi
+                echo "This went to check 2.";
 
                 if [[ $RECOMPRESS = 1 ]]; then
 
