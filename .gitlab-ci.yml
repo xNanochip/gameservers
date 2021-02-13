@@ -98,3 +98,5 @@ deploy-fastdl:
     stage: fastdl
     script:
     - whoami
+    tags:
+    - fastdl
