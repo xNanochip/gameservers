@@ -2,7 +2,6 @@ stages:
     - deploy
 
 .deploy_template: &deploy_template
-    # stage: deploy
     script:
     - whoami
 
