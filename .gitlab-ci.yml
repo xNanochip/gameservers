@@ -100,6 +100,8 @@ deploy-fastdl:
     - whoami
     - shopt -s globstar
 
+    - echo "$CI_COMMIT_BEFORE_SHA"
+    - exit
 
     - cd $CI_PROJECT_DIR
     - git checkout $CI_COMMIT_REF_NAME
