@@ -1,28 +1,25 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_AUTHOR "Creators.TF Team"
-#define PLUGIN_VERSION "1.00"
-
+#include <cecon_items>
 #include <sourcemod>
 #include <sdkhooks>
 #include <tf2_stocks>
-#include <ce_core>
 
 public Plugin myinfo =
 {
 	name = "[CE Attribute] crosshair guided projectiles",
-	author = PLUGIN_AUTHOR,
+	author = "Creators.TF Team",
 	description = "crosshair guided projectiles",
-	version = PLUGIN_VERSION,
+	version = "1.00",
 	url = "https://creators.tf"
 };
+
+#define MAX_ENTITY_LIMIT 2048
 
 bool g_bHomingEnabled[MAX_ENTITY_LIMIT + 1];
 float g_flHomingAccuracy[MAX_ENTITY_LIMIT + 1];
 int g_iLauncher[MAX_ENTITY_LIMIT + 1];
-
-float g_bOnCooldown[MAX_ENTITY_LIMIT + 1];
 
 float g_flHomingPoint[MAX_ENTITY_LIMIT + 1][3];
 int g_iLatestProjectile[MAX_ENTITY_LIMIT + 1];
@@ -33,7 +30,8 @@ int g_iBlueGlowModelID = -1;
 int g_iRedGlowModelID = -1;
 
 public void OnPluginStart()
-{}
+{
+}
 
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3])
@@ -42,7 +40,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	if (IsClientInGame(client) && IsPlayerAlive(client))
 	{
 		int weapon = GetEntPropEnt(client, Prop_Data, "m_hActiveWeapon");
-		if (CE_GetAttributeFloat(weapon, "crosshair guided projectiles") > 0.0)
+		if (CEconItems_GetEntityAttributeFloat(weapon, "crosshair guided projectiles") > 0.0)
 		{
 			if(buttons & IN_ATTACK2)
 			{
@@ -111,7 +109,7 @@ public Action Timer_OnSpawn(Handle timer, any entity)
 		int weapon = GetEntPropEnt(iOwner, Prop_Data, "m_hActiveWeapon");
 		if(IsValidEdict(weapon))
 		{
-			float flPower = CE_GetAttributeFloat(weapon, "crosshair guided projectiles");
+			float flPower = CEconItems_GetEntityAttributeFloat(weapon, "crosshair guided projectiles");
 			if(flPower > 0.0)
 			{
 				g_iLauncher[entity] = weapon;
@@ -119,7 +117,7 @@ public Action Timer_OnSpawn(Handle timer, any entity)
 				g_flHomingAccuracy[entity] = flPower;
 				g_iLatestProjectile[weapon] = entity;
 			}
-			float flLifetime = CE_GetAttributeFloat(weapon, "projectile lifetime");
+			float flLifetime = CEconItems_GetEntityAttributeFloat(weapon, "projectile lifetime");
 			if(flLifetime > 0.0)
 			{
 				g_KillTimer[entity] = CreateTimer(flLifetime, Timer_ExplodeProjectile, entity);
