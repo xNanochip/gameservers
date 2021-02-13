@@ -98,5 +98,7 @@ deploy-fastdl:
     stage: fastdl
     script:
     - whoami
+
+    - echo "$CI_PROJECT_DIR"
     tags:
     - fastdl
