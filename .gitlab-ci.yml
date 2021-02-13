@@ -118,8 +118,6 @@ deploy-fastdl:
                 # Skip missing files.
                 [[ ! -f $i ]] && continue;
 
-                echo "What the actual fuck.";
-
                 ASSET_SRC_PATH=`realpath $i`;
                 ASSET_FASTDL_PATH=$FASTDL_PATH/$i;
                 ASSET_BZ2_PATH=$ASSET_FASTDL_PATH.bz2;
@@ -129,31 +127,19 @@ deploy-fastdl:
                 # Recompress if bz2 file does not exist.
                 [[ ! -f $ASSET_BZ2_PATH ]] && RECOMPRESS=1;
 
-                echo "This went to check 1.";
-
                 # Recomress if checksums do not match.
                 if [[ $RECOMPRESS = 0 ]]; then
-                    echo "This went to check 1.1";
 
                     ASSET_MD5_FROM_SRC=`md5sum $ASSET_SRC_PATH | awk '{ print $1 }'`;
-                    echo "This went to check 1.1.1 ($ASSET_MD5_FROM_SRC)";
                     ASSET_MD5_FROM_BZ2=`bzip2 -d -c $ASSET_BZ2_PATH | md5sum | awk '{ print $1 }'`;
-                    echo "This went to check 1.1.2 ($ASSET_MD5_FROM_BZ2)";
-                    echo "This went to check 1.2";
-
-                    echo "[INFO] ∟ Checkin sums: $ASSET_MD5_FROM_SRC // $ASSET_MD5_FROM_BZ2";
 
                     if [ "$ASSET_MD5_FROM_SRC" != "$ASSET_MD5_FROM_BZ2" ]; then
-                        echo "Recompress...";
                         RECOMPRESS=1;
                     fi
-                    echo "Error here?";
                 fi
-                echo "This went to check 2.";
 
                 if [[ $RECOMPRESS = 1 ]]; then
 
-                    echo "[INFO] Archival needed...";
                     # Remove old bz2 if exists.
                     [[ -f $ASSET_BZ2_PATH ]] && rm $ASSET_BZ2_PATH;
 
@@ -166,7 +152,6 @@ deploy-fastdl:
                     echo "[INFO] Archiving $ASSET_FASTDL_PATH";
                     bzip2 $ASSET_FASTDL_PATH;
                 fi
-                echo "Finished this file.";
 
             done
         done < ../.ci-fastdl
