@@ -112,7 +112,7 @@ deploy-fastdl:
         while read pattern; do
 
             # We go through all the files of this pattern and see if bz2 version is valid.
-            for i in ./$pattern; do
+            for i in ./tf/$pattern; do
 
                 echo "[INFO] Checking $i";
 
