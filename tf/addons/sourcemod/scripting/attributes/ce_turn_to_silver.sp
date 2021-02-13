@@ -119,7 +119,7 @@ public void CreateSilverBody(int client)
 public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem xItem, const char[] type)
 {
 	if (strcmp(type, "weapon") != 0) return;
-	if (CEconItems_GetEntityAttributeBool(entity, "is new zealium item"))
+	if (CEconItems_GetEntityAttributeBool(entity, "turn to silver"))
 	{
 		g_bTurnsToSilver[entity] = true;
 	}
