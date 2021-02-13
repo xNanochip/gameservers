@@ -105,7 +105,7 @@ deploy-fastdl:
 
     - echo "Comparing $SHA_BEFORE // $SHA_AFTER"
     - GIT_DIFF=`git diff --name-only $SHA_AFTER $SHA_BEFORE`
-    - echo `$GIT_DIFF`
+    - echo $GIT_DIFF
 
     - exit
 
@@ -139,10 +139,9 @@ deploy-fastdl:
                 # Recomress if checksums do not match.
                 if [[ $RECOMPRESS = 0 ]]; then
 
-                    ASSET_MD5_FROM_SRC=`md5sum $ASSET_SRC_PATH | awk '{ print $1 }'`;
-                    ASSET_MD5_FROM_BZ2=`bzip2 -d -c $ASSET_BZ2_PATH | md5sum | awk '{ print $1 }'`;
-
-                    if [ "$ASSET_MD5_FROM_SRC" != "$ASSET_MD5_FROM_BZ2" ]; then
+                    # If it exist, let's first check if it changed.
+                    if [[ `echo $GIT_DIFF | grep ./$i` ]]; then
+                        echo "./$i changed";
                         RECOMPRESS=1;
                     fi
                 fi
