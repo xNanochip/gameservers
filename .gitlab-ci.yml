@@ -99,6 +99,7 @@ deploy-fastdl:
     script:
     - whoami
     - shopt -s globstar
+    
 
     - cd $CI_PROJECT_DIR
     - git checkout $CI_COMMIT_REF_NAME
