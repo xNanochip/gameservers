@@ -119,7 +119,7 @@ deploy-fastdl:
                 [[ ! -f $i ]] && continue;
 
                 ASSET_SRC_PATH=`realpath $i`;
-                ASSET_FASTDL_PATH=$FASTDL_PATH/`realpath $i`;
+                ASSET_FASTDL_PATH=$FASTDL_PATH/$i;
                 ASSET_BZ2_PATH=$ASSET_FASTDL_SRC_PATH.bz2;
 
                 echo "Checking $ASSET_SRC_PATH // $ASSET_BZ2_PATH";
