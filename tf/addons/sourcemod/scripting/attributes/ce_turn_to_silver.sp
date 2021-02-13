@@ -1,7 +1,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#include <cecon	>
+#include <cecon>
 #include <cecon_items>
 #include <sdktools>
 #include <tf2_stocks>

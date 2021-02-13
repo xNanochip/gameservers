@@ -91,7 +91,7 @@ Handle 	g_CEcon_ShouldItemBeBlocked,
 		g_CEcon_OnUnequipItem,
 		g_CEcon_OnItemIsUnequipped,
 		
-		g_CEcon_OnItemStyleUpdated;
+		g_CEcon_OnCustomEntityStyleUpdated;
 
 // SDKCalls for native TF2 economy reading.
 Handle 	g_SDKCallGetEconItemSchema,
@@ -128,7 +128,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	g_CEcon_OnUnequipItem 			= new GlobalForward("CEconItems_OnUnequipItem", ET_Single, Param_Cell, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnItemIsUnequipped		= new GlobalForward("CEconItems_OnItemIsUnequipped", ET_Single, Param_Cell, Param_Array, Param_String);
 	
-	g_CEcon_OnItemStyleUpdated		= new GlobalForward("CEconItems_OnItemStyleUpdated", ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
+	g_CEcon_OnCustomEntityStyleUpdated	= new GlobalForward("CEconItems_OnCustomEntityStyleUpdated", ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
 
 	// Items
     CreateNative("CEconItems_CreateNamedItem", Native_CreateNamedItem);
@@ -187,7 +187,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
     CreateNative("CEconItems_GetClientWearedItemByIndex", Native_GetClientWearedItemByIndex);
     
     // Styles
-    CreateNative("CEconItems_SetItemStyle", Native_SetItemStyle);
+    CreateNative("CEconItems_SetCustomEntityStyle", Native_SetCustomEntityStyle);
     
     return APLRes_Success;
 }
@@ -500,11 +500,11 @@ public bool GivePlayerCEItem(int client, CEItem item)
         // and apply original TF attributes if possible.
 		if(IsEntityValid(iEntity))
 		{
-			
 			m_bIsEconItem[iEntity] = true;
 			m_hEconItem[iEntity] = item;
 
 			CEconItems_ApplyOriginalAttributes(iEntity);
+			CEconItems_SetCustomEntityStyle(iEntity, 0);
 		}
 
 		// Alerting subplugins that this item was equipped.
@@ -528,11 +528,9 @@ public bool GivePlayerCEItem(int client, CEItem item)
 public any Native_IsEntityCustomEconItem(Handle plugin, int numParams)
 {
 	int iEntity = GetNativeCell(1);
-	if(IsEntityValid(iEntity))
-	{
-		return IsEntityCustomEconItem(iEntity);
-	}
-	return false;
+	if (!IsEntityValid(iEntity))return false;
+	
+	return IsEntityCustomEconItem(iEntity);
 }
 
 //=======================================================//
@@ -1563,10 +1561,21 @@ public any Native_GetEntityItemStruct(Handle plugin, int numParams)
 	return false;
 }
 
-public any Native_SetItemStyle(Handle plugin, int numParams)
+//---------------------------------------------------------------------
+// Native: CEconItems_SetCustomEntityStyle
+//---------------------------------------------------------------------
+public any Native_SetCustomEntityStyle(Handle plugin, int numParams)
 {
 	int entity = GetNativeCell(1);
-	int style = GetNativeCell(1);
+	int style = GetNativeCell(2);
+	
+	if (!CEconItems_IsEntityCustomEconItem(entity))return;
+	
+	Call_StartForward(g_CEcon_OnCustomEntityStyleUpdated);
+	Call_PushCell(m_hEconItem[entity].m_iClient);
+	Call_PushCell(entity);
+	Call_PushCell(style);
+	Call_Finish();
 }
 
 public bool IsEntityValid(int entity)

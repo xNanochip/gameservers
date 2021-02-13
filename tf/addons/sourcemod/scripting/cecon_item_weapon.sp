@@ -29,6 +29,8 @@ public Plugin myinfo =
 	url = "https://creators.tf"
 };
 
+#define MAX_STYLES 16
+
 enum struct CEItemDefinitionWeapon
 {
 	int m_iIndex;
@@ -40,9 +42,19 @@ enum struct CEItemDefinitionWeapon
     int m_iAmmo;
 
 	char m_sWorldModel[256];
+	
+	int m_iStylesCount;
+	int m_iStyles[MAX_STYLES];
+}
+
+enum struct CEItemDefinitionWeaponStyle 
+{
+	int m_iIndex;
+	char m_sWorldModel[256];
 }
 
 ArrayList m_hDefinitions;
+ArrayList m_hStyles;
 
 char m_sWeaponModel[2049][256];
 int m_hLastWeapon[MAXPLAYERS + 1];
@@ -254,7 +266,9 @@ public void ProcessEconSchema(KeyValues kv)
 	if (kv == null)return;
 
 	delete m_hDefinitions;
+	delete m_hStyles;
 	m_hDefinitions = new ArrayList(sizeof(CEItemDefinitionWeapon));
+	m_hStyles = new ArrayList(sizeof(CEItemDefinitionWeaponStyle));
 
 	if (kv.JumpToKey("Items"))
 	{
@@ -277,6 +291,31 @@ public void ProcessEconSchema(KeyValues kv)
 
 				kv.GetString("world_model", hDef.m_sWorldModel, sizeof(hDef.m_sWorldModel));
 				kv.GetString("item_class", hDef.m_sClassName, sizeof(hDef.m_sClassName));
+				
+				if(kv.JumpToKey("visuals/styles", false))
+				{
+					if(kv.GotoFirstSubKey())
+					{
+						do {
+							int iWorldStyleIndex = m_hStyles.Length;
+							int iLocalStyleIndex = hDef.m_iStylesCount;
+							
+							kv.GetSectionName(sIndex, sizeof(sIndex));
+							
+							CEItemDefinitionWeaponStyle xStyle;
+							xStyle.m_iIndex = StringToInt(sIndex);
+							kv.GetString("world_model", xStyle.m_sWorldModel, sizeof(xStyle.m_sWorldModel));
+							
+							m_hStyles.PushArray(xStyle);
+							
+							hDef.m_iStylesCount++;
+							hDef.m_iStyles[iLocalStyleIndex] = iWorldStyleIndex;
+							
+						} while (kv.GotoNextKey());
+						kv.GoBack();
+					}
+					kv.GoBack();
+				}
 
 				m_hDefinitions.PushArray(hDef);
 			} while (kv.GotoNextKey());
@@ -613,5 +652,48 @@ public void ParseCosmeticModel(int client, char[] sModel, int size)
 		case TFClass_Medic:ReplaceString(sModel, size, "%s", "medic");
 		case TFClass_Sniper:ReplaceString(sModel, size, "%s", "sniper");
 		case TFClass_Spy:ReplaceString(sModel, size, "%s", "spy");
+	}
+}
+
+//--------------------------------------------------------------------
+// Purpose: Puts the style definition of the weapon in buffer
+//--------------------------------------------------------------------
+public bool GetWeaponStyleDefinition(CEItemDefinitionWeapon xWeapon, int style, CEItemDefinitionWeaponStyle xBuffer)
+{
+	for (int i = 0; i < xWeapon.m_iStylesCount; i++)
+	{
+		int iWorldIndex = xWeapon.m_iStyles[i];
+		
+		CEItemDefinitionWeaponStyle xStyle;
+		m_hStyles.GetArray(iWorldIndex, xStyle);
+		
+		if(xStyle.m_iIndex == style)
+		{
+			xBuffer = xStyle;
+			return true;
+		}
+	}
+	return false;
+}
+
+
+//--------------------------------------------------------------------
+// Purpose: Fired when weapon style changes.
+//--------------------------------------------------------------------
+public void CEconItems_OnCustomEntityStyleUpdated(int client, int entity, int style)
+{
+	CEItem xItem;
+	if(CEconItems_GetEntityItemStruct(entity, xItem))
+	{
+		CEItemDefinitionWeapon xWeapon;
+		if(FindWeaponDefinitionByIndex(xItem.m_iItemDefinitionIndex, xWeapon))
+		{
+			CEItemDefinitionWeaponStyle xStyle;
+			if(GetWeaponStyleDefinition(xWeapon, style, xStyle))
+			{
+				strcopy(m_sWeaponModel[entity], sizeof(m_sWeaponModel[]), xStyle.m_sWorldModel);
+				OnDrawWeapon(client, entity);
+			}
+		}
 	}
 }
