@@ -115,20 +115,48 @@ deploy-fastdl:
             # We go through all the files of this pattern and see if bz2 version is valid.
             for i in ./tf/$pattern; do
 
-                echo "[INFO] Checking $i";
-
-                # Skip directories
+                # Skip missing files.
                 [[ ! -f $i ]] && continue;
 
+                ASSET_SRC_PATH=`realpath $i`;
+                ASSET_FASTDL_PATH=$FASTDL_PATH/`realpath $i`;
+                ASSET_BZ2_PATH=$ASSET_FASTDL_SRC_PATH.bz2;
 
-                # if [[ ! -f "../../fastdl/`basename $d`/`realpath --relative-to ./content $i`.bz2" ]]; then
-                #     if [[ ! -f "__bzip2/`realpath --relative-to ./content $i`" ]]; then
-                #         mkdir -p __bzip2/`realpath --relative-to ./content ${i%/*}`
-                #         cp $i __bzip2/`realpath --relative-to ./content $i`
-                #     fi
-                # fi
+                echo "Checking $ASSET_SRC_PATH // $ASSET_BZ2_PATH";
+
+                RECOMPRESS=0
+
+                # Recompress if bz2 file does not exist.
+                [[ ! -f $ASSET_BZ2_PATH ]] && RECOMPRESS=1;
+
+                # Recomress if checksums do not match.
+                [[ $RECOMPRESS = 0 ]]; then
+
+                    ASSET_MD5_FROM_SRC=`md5sum $ASSET_SRC_PATH | awk '{ print $1 }'`;
+                    ASSET_MD5_FROM_BZ2=`bzip2 -d -c $ASSET_BZ2_PATH | md5sum $ASSET_SRC_PATH | awk '{ print $1 }'`;
+
+                    echo "[INFO] ∟ Checkin sums: $ASSET_MD5_FROM_SRC // $ASSET_MD5_FROM_BZ2";
+
+                    if [[ $ASSET_MD5_FROM_SRC != $ASSET_MD5_FROM_BZ2 ]]; then
+                        RECOMPRESS=1;
+                    fi
+                fi
+
+                if [[ $RECOMPRESS = 1 ]]; then
+
+                    # Remove old bz2 if exists.
+                    [[ -f $ASSET_BZ2_PATH ]] && rm $ASSET_BZ2_PATH;
+
+                    # Copying the src file.
+                    cp $ASSET_SRC_PATH $ASSET_FASTDL_PATH;
+
+                    echo "[INFO] Archiving $ASSET_FASTDL_PATH";
+                    bzip2 $ASSET_FASTDL_PATH;
+                fi
+
             done
         done < .ci-fastdl
+    - exit
 
     tags:
     - fastdl
