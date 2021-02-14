@@ -57,7 +57,7 @@ public Action Timer_Think(Handle timer, any data)
 	{
 		if (!IsClientReady(i))continue;
 		if (!HasSpaceJumpEquipped(i))continue;
-		
+
 		SpaceJump_DrawHUD(i);
 	}
 }
@@ -128,11 +128,11 @@ public int GetSpaceJumpWearable(int client)
 		GetEntityNetClass(iEdict, sClass, sizeof(sClass));
 		if (!StrEqual(sClass, "CTFWearable"))continue;
 		if (GetEntPropEnt(iEdict, Prop_Send, "m_hOwnerEntity") != client)continue;
-		
+
 		if(!IsSpaceJump(iEdict)) continue;
 		return iEdict;
 	}
-	
+
 	return -1;
 }
 
@@ -151,9 +151,9 @@ public float SetSpaceJumpCharge(int client, float value)
 public Action OnPlayerRunCmd(int client, int &buttons)
 {
 	static bool bIsJumpPressed[MAXPLAYERS + 1];
-	
+
 	int iJump = GetSpaceJumpWearable(client);
-	
+
 	if(iJump > -1)
 	{
 		bool bIsJumping = buttons & IN_JUMP == IN_JUMP;
@@ -161,14 +161,14 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 		bool bHasCharge = GetSpaceJumpCharge(client) > tf_space_jump_use_rate.FloatValue;
 		bool bCanLaunch = GetSpaceJumpCharge(client) > SPACE_JUMP_THRUST_MIN_CHARGE_TO_LAUNCH;
 		bool bShouldLaunch = false;
-		
+
 		if(m_bIsUsingSpaceJump[client])
 		{
 			bShouldLaunch = bHasCharge;
 		} else {
 			bShouldLaunch = bCanLaunch;
 		}
-		
+
 		if(bIsJumping && !bIsOnGround && bShouldLaunch)
 		{
 			float vecVelocity[3];
@@ -178,29 +178,29 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 			{
 				vecVelocity[2] = 140.0 + flPower;
 				SetEntPropVector(client, Prop_Data, "m_vecAbsVelocity", vecVelocity);
-				
+
 				if(!m_bIsUsingSpaceJump[client])
 				{
 					EmitGameSoundToAll(SPACE_JUMP_THRUST_SOUND_START, client);
 					EmitGameSoundToAll(SPACE_JUMP_THRUST_SOUND_LOOP, client);
-					
+
 					CreateThrustParticle(iJump);
 				}
 				m_bIsUsingSpaceJump[client] = true;
 			}
-			
+
 			SetSpaceJumpCharge(client, GetSpaceJumpCharge(client) - tf_space_jump_use_rate.FloatValue);
 		} else {
 			if(bIsOnGround)
 			{
 				SetSpaceJumpCharge(client, GetSpaceJumpCharge(client) + tf_space_jump_recharge_rate.FloatValue);
-				
+
 				if(m_bIsUsingSpaceJump[client])
 				{
 					EmitGameSoundToAll(SPACE_JUMP_THRUST_SOUND_LOOP_END, client);
 					EmitGameSoundToAll(SPACE_JUMP_THRUST_SOUND_END, client);
 					m_bIsUsingSpaceJump[client] = false;
-					
+
 					StopThrustparticle(iJump);
 				}
 			} else {
@@ -209,11 +209,11 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 					EmitGameSoundToAll(SPACE_JUMP_THRUST_SOUND_END, client);
 					EmitGameSoundToAll(SPACE_JUMP_THRUST_SOUND_FAILED, client);
 					m_bIsUsingSpaceJump[client] = false;
-					
+
 					StopThrustparticle(iJump);
 				}
 			}
-				
+
 			if(bIsJumping && !bCanLaunch && !bIsJumpPressed[client])
 			{
 				EmitGameSoundToAll(SPACE_JUMP_THRUST_SOUND_FAILED, client);
@@ -242,11 +242,13 @@ public float GetSpaceJumpPowerOfClass(TFClassType nClass)
 
 public void OnEntityCreated(int entity)
 {
+	if (entity < 0)return;
 	FlushEntityData(entity);
 }
 
 public void OnEntityDestroyed(int entity)
 {
+	if (entity < 0)return;
 	FlushEntityData(entity);
 }
 
@@ -255,9 +257,9 @@ public void CreateThrustParticle(int wearable)
 	/*
 	m_iLeftThrust[wearable] = TF_StartAttachedParticle("rockettrail", "charge_LA", wearable, 1.0);
 	m_iRightThrust[wearable] = TF_StartAttachedParticle("rockettrail", "charge_RA", wearable, 1.0);
-	
+
 	int client = GetEntPropEnt(wearable, Prop_Send, "m_hOwnerEntity");
-	
+
 	if(client > 0)
 	{
 		SetEntPropEnt(m_iLeftThrust[wearable], Prop_Send, "m_hOwnerEntity", client);
@@ -271,7 +273,7 @@ public void StopThrustparticle(int wearable)
 	{
 		AcceptEntityInput(m_iLeftThrust[wearable], "Kill", 0, 0, 0);
 	}
-	
+
 	if(m_iRightThrust[wearable] > 0)
 	{
 		AcceptEntityInput(m_iRightThrust[wearable], "Kill", 0, 0, 0);
