@@ -16,6 +16,7 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	RegConsoleCmd("sm_jetpack", cGive, "Gives a jetpack");
+	HookEvent("post_inventory_application", post_inventory_application);
 }
 
 public Action cGive(int client, int args)
@@ -34,4 +35,25 @@ public Action cGive(int client, int args)
 	}
 	
 	return Plugin_Handled;
+}
+
+public Action post_inventory_application(Event hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int client = GetClientOfUserId(hEvent.GetInt("userid"));
+	RequestFrame(RF_LoadoutApplication, client);
+}
+
+public void GiveJetpack(int client)
+{
+	CEItem xItem;
+	if(CEconItems_CreateNamedItem(xItem, "Space Jumper", 6, null))
+	{
+		CEconItems_GiveItemToClient(client, xItem);
+		ReplyToCommand(client, "[SM] Given Jetpack to you");
+	}
+}
+
+public void RF_LoadoutApplication(int client)
+{
+	GiveJetpack(client);
 }
