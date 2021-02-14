@@ -49,7 +49,8 @@ public void GiveJetpack(int client)
 	if(CEconItems_CreateNamedItem(xItem, "Space Jumper", 6, null))
 	{
 		CEconItems_GiveItemToClient(client, xItem);
-		ReplyToCommand(client, "[SM] Given Jetpack to you");
+		PrintToChat(client, "[SM] Given Jetpack to you");
+		PrintToServer("[SM] Given Jetpack to %N", client);
 	}
 }
 
