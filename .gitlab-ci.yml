@@ -1,6 +1,5 @@
 stages:
     - deploy
-    - fastdl
 
 .deploy_template: &deploy_template
     stage: deploy
@@ -95,7 +94,7 @@ deploy-la:
     <<: *deploy_template
 
 deploy-fastdl:
-    stage: fastdl
+    stage: deploy
     script:
     - whoami
     - shopt -s globstar
