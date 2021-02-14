@@ -242,11 +242,13 @@ public float GetSpaceJumpPowerOfClass(TFClassType nClass)
 
 public void OnEntityCreated(int entity)
 {
+	if(entity < 0) return;
 	FlushEntityData(entity);
 }
 
 public void OnEntityDestroyed(int entity)
 {
+	if(entity < 0) return;
 	FlushEntityData(entity);
 }
 
