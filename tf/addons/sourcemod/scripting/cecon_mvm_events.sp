@@ -25,43 +25,58 @@ ConVar buster_range_cvar;
 #define TF_MAXPLAYERS 34 // 33 max players + 1 for offset
 
 
+// Player data that persist for the duration of the mission
+enum struct PlayerDataMission
+{
+	int wave_finished_counter;
+
+	void Init()
+	{
+		this.wave_finished_counter = 0;
+	}
+}
 
 enum struct PlayerData
 {
-	int steam_id;
 	int touched_cp_area;
 	int tank_damage_wave;
 	int tank_damage_last_second;
 
-	bool was_whole_mission;
 
+	// Bit mask of every client index who damaged the player
 	int hit_tracker;
 
-	int killer;
+	int killed_by;
 
-	int buster_save_sentry;
+	bool buster_save_sentry_ranged;
 
-	float fire_weapon_time;
 	int fire_weapon_gained_metal;
 	int metal_pre_shoot;
 
+	int ignited_by;
+
+	float pick_bomb_time;
+	float leave_spawn_time;
+
 	void Init(int client)
 	{
-		this.steam_id = GetSteamAccountID(client, true);
 		this.touched_cp_area = -1;
 		this.tank_damage_wave = 0;
 		this.tank_damage_last_second = 0;
-		this.was_whole_mission = false;
-		this.killer = 0;
+		this.killed_by = 0;
 		this.hit_tracker = 0;
-		this.buster_save_sentry = 0;
-		this.fire_weapon_time = 0.0;
+		this.buster_save_sentry_ranged = false;
 		this.fire_weapon_gained_metal = 0;
 		this.metal_pre_shoot = 0;
+		this.ignited_by = 0;
+		this.pick_bomb_time = 0.0;
+		this.leave_spawn_time = 0.0;
 	}
 }
 
 PlayerData player_data[TF_MAXPLAYERS];
+
+StringMap player_data_mission;
 
 Handle get_condition_provider_handle;
 Handle attrib_float_handle;
@@ -76,33 +91,54 @@ public void OnPluginStart()
 	HookEvent("mvm_mission_complete", mvm_mission_complete);
 
 	HookEvent("mvm_tank_destroyed_by_players", mvm_tank_destroyed_by_players);
-
+	
 	HookEvent("mvm_begin_wave", mvm_begin_wave);
 	HookEvent("mvm_wave_failed", mvm_wave_failed);
 	HookEvent("mvm_wave_complete", mvm_wave_complete);
 
 	HookEvent("controlpoint_starttouch", controlpoint_starttouch);
 	HookEvent("controlpoint_endtouch", controlpoint_endtouch);
-
+	
 	HookEvent("player_spawn", player_spawn);
 	HookEvent("player_death", player_death);
+	HookEvent("medic_death", medic_death);
+
 	HookEvent("player_hurt", player_hurt);
 	HookEvent("damage_resisted", damage_resisted);
 	HookEvent("player_ignited", player_ignited);
+
 	HookEvent("player_healed", player_healed);
-	HookEvent("medic_death", medic_death);
+	HookEvent("player_healonhit", player_healonhit);
+	HookEvent("revive_player_complete", revive_player_complete);
+	HookEvent("medigun_shield_blocked_damage", medigun_shield_blocked_damage);
+	HookEvent("player_chargedeployed", player_chargedeployed);
+	HookEvent("mvm_medic_powerup_shared", mvm_medic_powerup_shared);
 
 	HookEvent("mvm_pickup_currency", mvm_pickup_currency);
 	HookEvent("mvm_creditbonus_wave", mvm_creditbonus_wave);
 
+	HookEvent("mvm_sentrybuster_detonate", mvm_sentrybuster_detonate);
 	HookEvent("player_carryobject", player_carryobject);
-	HookEvent("player_dropobject", player_dropobject);
-
+	HookEvent("building_healed", building_healed);
+	
 	HookEvent("player_stunned", player_stunned);
+
+	HookEvent("deploy_buff_banner", deploy_buff_banner);
+
+	HookEvent("mvm_bomb_reset_by_player", mvm_bomb_reset_by_player);
+	HookEvent("mvm_bomb_deploy_reset_by_player", mvm_bomb_deploy_reset_by_player);
+
+	HookEvent("player_extinguished", player_extinguished);
+
+	HookEvent("teamplay_flag_event", teamplay_flag_event);
+
+	HookEvent("player_used_powerup_bottle", player_used_powerup_bottle);
+	
+	HookUserMessage(GetUserMessageId("AchievementEvent"), OnAchievementEvent);
 
 	Handle data_mvm = LoadGameConfigFile("tf2.cecon_mvm_events");
 	StartPrepSDKCall(SDKCall_Raw);
-	if (PrepSDKCall_SetFromConf(data_mvm,SDKConf_Signature,"CTFPlayerShared::GetConditionProvider"))
+	if (PrepSDKCall_SetFromConf(data_mvm,SDKConf_Signature,"CTFPlayerShared::GetConditionProvider")) 
 	{
 		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
 		PrepSDKCall_SetReturnInfo(SDKType_CBaseEntity, SDKPass_Plain);
@@ -124,12 +160,26 @@ public void OnPluginStart()
 	CreateTimer(1.0, UpdateTimer, 0, TIMER_REPEAT);
 }
 
+public void OnClientPutInServer(int client)
+{
+	player_data[client].Init(client);
+
+	if (player_data_mission != null)
+	{
+		PlayerDataMission player_data_mission_inst;
+		SetPlayerMissionData(client, player_data_mission_inst, false);
+	}
+
+	SDKHook(client, SDKHook_OnTakeDamageAlivePost, OnPlayerDamagePost);
+	SDKHook(client, SDKHook_OnTakeDamageAlive, OnPlayerDamage);
+}
+
 // Update every second events
 public Action UpdateTimer(Handle timer, any data)
 {
-	int player_resource = GetPlayerResourceEntity();
 	if (GameRules_GetRoundState() == RoundState_RoundRunning)
 	{
+		int player_resource = GetPlayerResourceEntity();
 		for (int i = 1; i <= TF_MAXPLAYERS; i++)
 		{
 			if (IsClientValid(i) && !IsFakeClient(i))
@@ -166,42 +216,14 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	}
 }
 
-
-public void OnClientPutInServer(int client)
-{
-	int steam_id = GetSteamAccountID(client);
-
-	// Copy some properties that should stay if client disconnects temponairly;
-	bool was_whole_mission = false;
-	if (steam_id != 0)
-	{
-		for (int i = 1; i <= MaxClients; i++)
-		{
-			if (player_data[client].steam_id == steam_id)
-			{
-				was_whole_mission = player_data[client].was_whole_mission;
-				break;
-			}
-		}
-	}
-
-	player_data[client].Init(client);
-	player_data[client].was_whole_mission = was_whole_mission;
-
-
-	SDKHook(client, SDKHook_OnTakeDamageAlivePost, OnPlayerDamagePost);
-	SDKHook(client, SDKHook_OnTakeDamageAlive, OnPlayerDamage);
-}
-
 public Action OnSound(int clients[MAXPLAYERS], int &numClients, char sample[PLATFORM_MAX_PATH],
 	  int &entity, int &channel, float &volume, int &level, int &pitch, int &flags,
 	  char soundEntry[PLATFORM_MAX_PATH], int &seed)
 {
 	// Widowmaker shoot hook
-	if (channel == 1 && strncmp(sample, ")weapons\\widow_maker_shot_", strlen(")weapons\\widow_maker_shot_")) == 0
+	if (channel == 1 && strncmp(sample, ")weapons\\widow_maker_shot_", strlen(")weapons\\widow_maker_shot_")) == 0 
 		&& IsClientValid(entity) && GameRules_GetRoundState() == RoundState_RoundRunning)
 	{
-		PrintToChatAll("Attacker metal hurt pre %d", GetEntProp(entity, Prop_Data, "m_iAmmo", 4, 3));
 		player_data[entity].metal_pre_shoot = GetEntProp(entity, Prop_Data, "m_iAmmo", 4, 3);
 		RequestFrame(WidowmakerShootUpdate, entity);
 	}
@@ -234,6 +256,22 @@ public void WidowmakerShootUpdate(int client)
 	}
 }
 
+public Action OnAchievementEvent(UserMsg msg_id, BfRead msg, const int[] players, int playersNum, bool reliable, bool init)
+{
+	int type = BfReadShort(msg);
+	int amount = BfReadShort(msg);
+
+	if (type == 1836) // ACHIEVEMENT_TF_ENGINEER_REPAIR_TEAM_GRIND
+	{
+		if (amount > 0)
+		{
+			CEcon_SendEventToClientUnique(players[0], "TF_MVM_REPAIR", 1);
+		}
+	}
+
+	return Plugin_Continue;
+}
+
 public Action player_changeclass(Event hEvent, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(hEvent.GetInt("userid"));
@@ -259,22 +297,37 @@ public Action mvm_mission_complete(Handle hEvent, const char[] szName, bool bDon
 	CEcon_SendEventToAll("TF_MVM_MISSION_COMPLETE", 1, GetRandomInt(0, 9999));
 
 	int resource = GetPlayerResourceEntity();
+	int objective_resource = FindEntityByClassname(-1, "tf_objective_resource");
+
+	int highest_damage_tank = 0;
+	int highest_damage_tank_player = 0;
 
 	int highest_damage = 0;
 	int highest_damage_player = 0;
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientValid(i) && player_data[i].was_whole_mission)
+		if (IsClientValid(i) && !IsFakeClient(i))
 		{
-			if (uses_custom_upgrades) {
-				CEcon_SendEventToClientFromGameEvent(i, "TF_MVM_USE_CUSTOM_UPGRADES", 1, hEvent);
+			PlayerDataMission player_data_mission_inst;
+			GetPlayerMissionData(i, player_data_mission_inst);
+
+			if (player_data_mission_inst.wave_finished_counter == GetEntProp(objective_resource, Prop_Send,"m_nMannVsMachineMaxWaveCount"))
+			{
+				if (uses_custom_upgrades) {
+					CEcon_SendEventToClientFromGameEvent(i, "TF_MVM_USE_CUSTOM_UPGRADES", 1, hEvent);
+				}
+
+				CEcon_SendEventToClientFromGameEvent(i, "TF_MVM_MISSION_COMPLETE_ALL_WAVES", 1, hEvent);
 			}
-			CEcon_SendEventToClientFromGameEvent(i, "TF_MVM_MISSION_COMPLETE_ALL_WAVES", 1, hEvent);
-		}
-		if (IsClientValid(i))
-		{
-			int damage = GetEntProp(resource, Prop_Send, "m_iDamageBoss", 4, i);
+
+			int damage_tank = GetEntProp(resource, Prop_Send, "m_iDamageBoss", 4, i);
+			if (damage_tank > highest_damage_tank) {
+				highest_damage_tank = damage_tank;
+				highest_damage_tank_player = i;
+			}
+
+			int damage = GetEntProp(resource, Prop_Send, "m_iDamage", 4, i);
 			if (damage > highest_damage) {
 				highest_damage = damage;
 				highest_damage_player = i;
@@ -282,9 +335,14 @@ public Action mvm_mission_complete(Handle hEvent, const char[] szName, bool bDon
 		}
 	}
 
-	if (highest_damage_player > 0)
+	if (highest_damage_tank_player > 0) 
 	{
-		CEcon_SendEventToClientFromGameEvent(highest_damage_player, "TF_MVM_DAMAGE_TANK_MVP", 1, hEvent);
+		CEcon_SendEventToClientFromGameEvent(highest_damage_tank_player, "TF_MVM_DAMAGE_TANK_MVP", 1, hEvent);
+	}
+
+	if (highest_damage_player > 0) 
+	{
+		CEcon_SendEventToClientFromGameEvent(highest_damage_player, "TF_MVM_DAMAGE_ROBOT_MVP", 1, hEvent);
 	}
 
 	return Plugin_Continue;
@@ -295,16 +353,17 @@ public Action player_spawn(Handle hEvent, const char[] szName, bool bDontBroadca
 	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
 
 	player_data[client].hit_tracker = 0;
-	player_data[client].killer = 0;
+	player_data[client].killed_by = 0;
 	player_data[client].touched_cp_area = -1;
 
 	return Plugin_Continue;
 }
 
-int kill_counter_single;
-int kill_counter_single_client;
-int kill_counter_single_tick;
+int player_death_attacker_last;
+int player_death_damage_custom_last;
+int player_death_tick_last;
 
+int player_hurt_attacker_decap_last;
 public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
@@ -316,7 +375,13 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 	int customkill = GetEventInt(hEvent, "customkill");
 	int kill_streak_victim = GetEventInt(hEvent, "kill_streak_victim");
 	int crit_type = GetEventInt(hEvent, "crit_type");
-
+	
+	char weapon_name[64];
+	GetEventString(hEvent, "weapon_logclassname", weapon_name, sizeof(weapon_name));
+	
+	player_death_attacker_last = attacker;
+	player_death_damage_custom_last = customkill;
+	player_death_tick_last = GetGameTickCount();
 	if (IsClientValid(client))
 	{
 		//player_data[client].ResetStreak();
@@ -324,29 +389,15 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 		{
 			if (client != attacker)
 			{
-				if (kill_counter_single_client != attacker || kill_counter_single_tick != GetGameTickCount())
-				{
-					kill_counter_single = 0;
-				}
-				kill_counter_single++;
-				kill_counter_single_client = attacker;
-				kill_counter_single_tick = GetGameTickCount();
-
-				if (kill_counter_single >= 3)
-				{
-
-				}
-
+				
 				bool is_buster = IsSentryBuster(attacker);
-				if (is_buster && GetClientTeam(client) == GetClientTeam(attacker))
+				if (IsFakeClient(client)) 
 				{
-					int bomb = GetEntPropEnt(client, Prop_Send, "m_hItem");
-					if (bomb != -1)
-						CEcon_SendEventToAll("TF_MVM_SENTRY_BUSTER_KILL_BOMB_CARRIER", 1, GetRandomInt(0, 9999));
-				}
-
-				if (IsFakeClient(client))
-				{
+					int leave_spawn_timespan = RoundToCeil(GetGameTime() - player_data[client].leave_spawn_time);
+					if (leave_spawn_timespan < 1)
+					{
+						leave_spawn_timespan = 1;
+					}
 
 					CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT", 1, hEvent);
 
@@ -369,21 +420,49 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 						// Players who assisted or dealt damage receive kill
 						for (int i = 0; i < 32; i++)
 						{
-							if ((hit_tracker & (1 << i)) != 0)
+							if ((hit_tracker & (1 << i)) != 0) 
 							{
-								CEcon_SendEventToClientFromGameEvent(i + 1, "TF_MVM_KILL_ROBOT_GIANT", 1, hEvent);
+								int scorer = i + 1;
+								CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_GIANT", 1, hEvent);
+								CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_GIANT_X_SECONDS_AFTER_SPAWN_LEAVE", leave_spawn_timespan, hEvent);
+
+								switch (TF2_GetPlayerClass(client))
+								{
+									case TFClass_Scout: CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_GIANT_SCOUT", 1, hEvent);
+									case TFClass_Soldier: CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_GIANT_SOLDIER", 1, hEvent);
+									case TFClass_Pyro: CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_GIANT_PYRO", 1, hEvent);
+									case TFClass_DemoMan: CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_GIANT_DEMOMAN", 1, hEvent);
+									case TFClass_Heavy: CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_GIANT_HEAVY", 1, hEvent);
+									case TFClass_Engineer: CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_GIANT_ENGINEER", 1, hEvent);
+									case TFClass_Medic:
+									{
+										CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_GIANT_MEDIC", 1, hEvent);
+										CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_GIANT_MEDIC_X_SECONDS_AFTER_SPAWN_LEAVE", leave_spawn_timespan, hEvent);
+									} 
+									case TFClass_Sniper: CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_GIANT_SNIPER", 1, hEvent);
+									case TFClass_Spy: CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_GIANT_SPY", 1, hEvent);
+								}
+
+								if (TF2_IsPlayerInCondition(client, TFCond_OnFire))
+								{
+									CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_GIANT_BURNING", 1, hEvent);
+
+									if (GetConditionProvider(client, TFCond_OnFire) == scorer)
+									{
+										CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_GIANT_BURNING_PROVIDER", 1, hEvent);
+									}
+								}
+
+								if (TF2_GetPlayerClass(client) == TFClass_Scout && GetAttributeValue(client, "mult_player_movespeed", 1.0) >= 2.0)
+								{
+									CEcon_SendEventToClientFromGameEvent(scorer, "TF_MVM_KILL_ROBOT_SUPER_SCOUT", 1, hEvent);
+								}
 							}
 						}
 
-						if (TF2_IsPlayerInCondition(client, TFCond_OnFire))
-						{
-							CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_GIANT_BURNING", 1, hEvent);
-						}
+						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_GIANT_FINAL", 1, hEvent);
 
-						if (TF2_GetPlayerClass(client) == TFClass_Scout && GetAttributeValue(client, "mult_player_movespeed", 1.0) >= 2.0)
-						{
-							CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SUPER_SCOUT", 1, hEvent);
-						}
+						
 					}
 					// All players receive boss kill events
 					if (IsBoss(client))
@@ -396,23 +475,38 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 						CEcon_SendEventToAll("TF_MVM_KILL_ROBOT_LARGE_HEALTH", 1, GetRandomInt(0, 9999));
 					}
 
-					if (GetEntPropEnt(client, Prop_Send, "m_hItem") != -1)
+					if (TF2_IsPlayerInCondition(client, TFCond_OnFire))
 					{
-						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_BOMB_CARRIER", 1, hEvent);
+						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_BURNING", 1, hEvent);
+
+						if (GetConditionProvider(client, TFCond_OnFire) == attacker)
+						{
+							CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_BURNING_PROVIDER", 1, hEvent);
+						}
+					}
+
+					if (TF2_IsPlayerInCondition(client, TFCond_Sapped))
+					{
+						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SAPPED", 1, hEvent);
+					}
+
+					if (TF2_IsPlayerInCondition(client, TFCond_Dazed))
+					{
+						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_STUNNED", 1, hEvent);
 					}
 
 					// Gatebot filter
 					int filter = CreateEntityByName("filter_tf_bot_has_tag");
-					if (filter != -1)
+					if (filter != -1) 
 					{
 						DispatchKeyValue(filter, "tags", "bot_gatebot");
 						DispatchSpawn(filter);
 						ActivateEntity(filter);
 
-						player_data[client].killer = attacker;
+						player_data[client].killed_by = attacker;
 
 						HookSingleEntityOutput(filter, "OnPass", OnGatebotFilterPass, true);
-						HookSingleEntityOutput(filter, "OnFail", OnGatebotFilterFail, true);
+						HookSingleEntityOutput(filter, "OnFail", OnGatebotFilterFail, true);	
 						AcceptEntityInput(filter, "TestActivator", client, attacker);
 					}
 
@@ -423,7 +517,7 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 
 					// Razorback detection
 					int child = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
-
+					
 					while (child != -1)
 					{
 						char classname[32];
@@ -454,8 +548,9 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 					{
 						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_CRIT_COLA", 1, hEvent);
 					}
+					
 
-					if (customkill == 1) // Headshot
+					if (customkill == 1 || customkill == 51) // Headshot, Headshot decapitation
 					{
 						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_HEADSHOT", 1, hEvent);
 					}
@@ -464,17 +559,51 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_NOT_HEADSHOT", 1, hEvent);
 					}
 
-					if (customkill == 21) // Baseball hit
+					switch (customkill)
 					{
-						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_BASEBALL", 1, hEvent);
+						case 2: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_BACKSTAB", 1, hEvent);
+						case 21: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_BASEBALL", 1, hEvent);
+						case 34: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_BLEEDING", 1, hEvent);
 					}
 
-					if (customkill == 21) // Baseball hit
+					if (StrContains(weapon_name, "deflect") != -1 || StrContains(weapon_name, "reflect") != -1)
 					{
-						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_BASEBALL", 1, hEvent);
+						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_DEFLECT", 1, hEvent);
 					}
+
+					if (TF2_IsPlayerInCondition(attacker, TFCond_CritMmmph)) // Baseball hit
+					{
+						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_MMMPH", 1, hEvent);
+					}
+					
+					if (GetEntProp(attacker, Prop_Send, "m_bRageDraining"))
+					{
+						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_RAGE", 1, hEvent);
+					}
+
+					CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_X_SECONDS_AFTER_SPAWN_LEAVE", leave_spawn_timespan, hEvent);
+
+					if (GetEntProp(attacker, Prop_Send, "m_iRevengeCrits") > 0 && TF2_IsPlayerInCondition(attacker, TFCond_Kritzkrieged) && GetConditionProvider(attacker, TFCond_Kritzkrieged) == -1)
+					{
+						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_REVENGE_CRIT", 1, hEvent);
+
+						if (TF2_GetPlayerClass(client) == TFClass_Sniper)
+						{
+							CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_REVENGE_CRIT_SNIPER", 1, hEvent);
+						}
+					}
+
+					int heads_add = GetEntProp(attacker, Prop_Send, "m_iDecapitations") - player_hurt_attacker_decap_last;
+					if (heads_add > 0)
+					{
+						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_HEADS", heads_add, hEvent);
+					}
+
+					
+					
 				}
 			}
+			
 		}
 	}
 }
@@ -483,7 +612,6 @@ public Action controlpoint_starttouch(Handle hEvent, const char[] szName, bool b
 {
 	int player = GetEventInt(hEvent, "player");
 	int area = GetEventInt(hEvent, "area");
-	PrintToChatAll("starttouch %d", area);
 
 	player_data[player].touched_cp_area = area;
 
@@ -494,7 +622,6 @@ public Action controlpoint_endtouch(Handle hEvent, const char[] szName, bool bDo
 {
 	int player = GetEventInt(hEvent, "player");
 	int area = GetEventInt(hEvent, "area");
-	PrintToChatAll("endtouch %d", area);
 	if (player_data[player].touched_cp_area == area)
 		player_data[player].touched_cp_area = -1;
 
@@ -509,15 +636,15 @@ public void OnGatebotFilterFail(const char[] output, int caller, int activator, 
 public void OnGatebotFilterPass(const char[] output, int caller, int activator, float delay)
 {
 	RemoveEntity(caller);
-	int killer = player_data[activator].killer;
+	int killed_by = player_data[activator].killed_by;
 
-	CEcon_SendEventToClientUnique(killer, "TF_MVM_KILL_GATEBOT", 1);
+	CEcon_SendEventToClientUnique(killed_by, "TF_MVM_KILL_GATEBOT", 1);
 
 	int cp_area = player_data[activator].touched_cp_area;
-	if (cp_area != -1 )
+	if (cp_area != -1 ) 
 	{
 		if (IsGiant(activator))
-			CEcon_SendEventToClientUnique(killer, "TF_MVM_KILL_GATEBOT_GIANT_CAPTURE", 1);
+			CEcon_SendEventToClientUnique(killed_by, "TF_MVM_KILL_GATEBOT_GIANT_CAPTURE", 1);
 
 		// count all players if they touch same cp, if its the last one, activate event
 		bool found = false;
@@ -535,7 +662,7 @@ public void OnGatebotFilterPass(const char[] output, int caller, int activator, 
 			int objective_resource = FindEntityByClassname(-1, "tf_objective_resource");
 			// If one of the cps have more than 75% progress, activate event
 			if (GetEntPropFloat(objective_resource, Prop_Send, "m_flLazyCapPerc", cp_area) < 0.25) {
-				CEcon_SendEventToClientUnique(killer, "TF_MVM_CLEAR_POINT_GATEBOT", 1);
+				CEcon_SendEventToClientUnique(killed_by, "TF_MVM_CLEAR_POINT_GATEBOT", 1);
 			}
 		}
 
@@ -546,19 +673,25 @@ public void OnGatebotFilterPass(const char[] output, int caller, int activator, 
 
 public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	int objective_resource = FindEntityByClassname(-1,"tf_objective_resource");
-	int wave_number = GetEntProp(objective_resource, Prop_Send,"m_nMannVsMachineWaveCount");
+	int wave_number = GetEventInt(hEvent, "wave_index");
 
-
-	if (wave_number == 1)
+	if (wave_number == 0)
 	{
 		for (int i = 1; i <= MaxClients; i++)
 		{
-			player_data[i].was_whole_mission = IsClientValid(i) && !IsFakeClient(i);
+			if (IsClientValid(i) && !IsFakeClient(i)) 
+			{
+				PlayerDataMission data;
+				GetPlayerMissionData(i, data);
+
+				data.wave_finished_counter = 0;
+
+				SetPlayerMissionData(i, data, true);
+			}
 		}
 		CEcon_SendEventToAll("TF_MVM_MISSION_BEGIN", 1, GetRandomInt(0, 9999));
 	}
-
+	
 	CEcon_SendEventToAll("TF_MVM_WAVE_BEGIN", 1, GetRandomInt(0, 9999));
 
 	bonus_currency_counter = 0;
@@ -592,19 +725,61 @@ public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroa
 
 	if (wave_number == 1)
 	{
+		// reset mission data
+		if (player_data_mission != null)
+		{
+			delete player_data_mission;
+		}
+		
+		player_data_mission = new StringMap();
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if (IsClientValid(i) && !IsFakeClient(i))
+			{
+				PlayerDataMission data;
+				SetPlayerMissionData(i, data, true);
+			}
+		}
+
 		CEcon_SendEventToAll("TF_MVM_MISSION_RESET", 1, GetRandomInt(0, 9999));
 	}
 
 	return Plugin_Continue;
 }
 
+bool currency_grade_a_scored = false;
 public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		player_data[i].was_whole_mission &= IsClientValid(i) && !IsFakeClient(i);
+		if (IsClientValid(i) && !IsFakeClient(i))
+		{
+			PlayerDataMission data;
+			GetPlayerMissionData(i, data);
+
+			data.wave_finished_counter += 1;
+
+			SetPlayerMissionData(i, data, true);
+		}
 	}
 	CEcon_SendEventToAll("TF_MVM_WAVE_COMPLETE", 1, GetRandomInt(0, 9999));
+
+	int wave_stats = FindEntityByClassname(-1,"tf_mann_vs_machine_stats");
+
+	currency_grade_a_scored = false;
+
+	if (wave_stats != -1)
+	{
+		int offset_prev_wave = FindSendPropInfo("CMannVsMachineStats", "m_currentWaveStats");
+		int prev_dropped = GetEntData(wave_stats, offset_prev_wave + 4,2);
+		int prev_collected = GetEntData(wave_stats, offset_prev_wave + 8,2);
+
+		if ( (prev_collected + 0.0) / prev_dropped >= 0.9)
+		{
+			currency_grade_a_scored = true;
+			CEcon_SendEventToAll("TF_MVM_COLLECT_CURRENCY_A", 1, GetRandomInt(0, 9999));
+		}
+	}
 
 	OnWaveEnd(hEvent);
 
@@ -645,7 +820,7 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 					CEcon_SendEventToClientFromGameEvent(i, "TF_MVM_DESTROY_TANK_BLIMP", 1, hEvent);
 				}
 			}
-
+			
 		}
 		player_data[i].tank_damage_wave += damage;
 	}
@@ -668,6 +843,7 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 	int damage = GetEventInt(hEvent, "damageamount");
 	bool crit = GetEventBool(hEvent, "crit");
 	bool minicrit = GetEventBool(hEvent, "minicrit");
+	int bonuseffect = GetEventInt(hEvent, "bonuseffect");
 
 	player_hurt_client_last = client;
 	player_hurt_attacker_last = attacker;
@@ -675,6 +851,8 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 
 	if (IsClientValid(attacker) && attacker != client && IsFakeClient(client))
 	{
+		player_hurt_attacker_decap_last = GetEntProp(attacker, Prop_Send, "m_iDecapitations");
+
 		// Add to hit tracker;
 		player_data[client].hit_tracker |= 1 << (attacker - 1);
 
@@ -710,9 +888,37 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 				CEcon_SendEventToClientFromGameEvent(buff_provider, "TF_MVM_DAMAGE_ASSIST_BUFF", damage, hEvent);
 			}
 		}
+
+		if (crit)
+		{
+			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_CRIT_FULL", damage, hEvent);
+		}
+		else if(minicrit)
+		{
+			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_CRIT_MINI", damage, hEvent);
+		}
+		else
+		{
+			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_CRIT_NONE", damage, hEvent);
+		}
+
+		if (bonuseffect == 2) // Double donk
+		{
+			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_DOUBLE_DONK", 1, hEvent);
+		}
+
+		if (TF2_IsPlayerInCondition(attacker, TFCond_Kritzkrieged))
+		{
+			int crits_provider = GetConditionProvider(attacker, TFCond_Kritzkrieged);
+			if (IsClientValid(crits_provider))
+			{
+				CEcon_SendEventToClientFromGameEvent(crits_provider, "TF_MVM_DAMAGE_ASSIST_KRITZKRIEG", damage, hEvent);
+			}
+		}
+		
 	}
 
-
+	
 
 	// Battalions backup check
 	if (IsClientValid(attacker) && IsFakeClient(attacker) && !IsFakeClient(client))
@@ -724,7 +930,7 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 			int healer = 0;
 			bool has_vac_uber = TF2_IsPlayerInCondition(client, TFCond_UberBulletResist) || TF2_IsPlayerInCondition(client, TFCond_UberBlastResist) || TF2_IsPlayerInCondition(client, TFCond_UberFireResist);
 			bool has_vac_heal = TF2_IsPlayerInCondition(client, TFCond_SmallBulletResist) || TF2_IsPlayerInCondition(client, TFCond_SmallBlastResist) || TF2_IsPlayerInCondition(client, TFCond_SmallFireResist);
-
+			
 			// Assume regular resist rate
 			if (has_vac_uber)
 			{
@@ -762,7 +968,7 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 			// Find vac resist medics
 			if (healer > 0)
 			{
-				CEcon_SendEventToClientUnique(healer, "TF_MVM_VAC_BLOCK_DAMAGE", RoundFloat(dmg_resisted));
+				CEcon_SendEventToClientUnique(healer, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
 			}
 		}
 
@@ -773,11 +979,15 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 
 			if (IsClientValid(buff_provider))
 			{
-				CEcon_SendEventToClientUnique(buff_provider, "TF_MVM_BATTALION_BACKUP_BLOCK_DAMAGE", damage);
+				CEcon_SendEventToClientUnique(buff_provider, "TF_MVM_BLOCK_DAMAGE_BATTALION_BACKUP", RoundFloat(damage * 1.50));
 			}
 		}
+		if (GetEntProp(client, Prop_Send, "m_bFeignDeathReady") > 0 && GetEntProp(client, Prop_Data, "m_iHealth") + damage / 4 - damage < 0)
+		{
+			CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_BLOCK_DAMAGE_NEAR_DEATH_DEAD_RINGER", 1, hEvent);
+		}
 	}
-
+	
 	return Plugin_Continue;
 }
 
@@ -785,10 +995,10 @@ public Action damage_resisted(Handle hEvent, const char[] szName, bool bDontBroa
 {
 	resist_client_last = GetEventInt(hEvent, "entindex");
 	resist_tick_last = GetGameTickCount();
-	PrintToChatAll("Resist");
 }
 
 int damagecustom_last;
+
 public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3], int damagecustom)
 {
 	damagecustom_last = damagecustom;
@@ -796,11 +1006,10 @@ public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& d
 
 public void OnPlayerDamagePost(int victim, int attacker, int inflictor, float damage, int damagetype)
 {
-	PrintToChatAll("Receive damage post %f", damage);
-	if (attacker > 0)
-	PrintToChatAll("Attacker metal hurt post %d", GetEntProp(attacker, Prop_Data, "m_iAmmo", 4, 3));
-	if (TF2_IsPlayerInCondition(victim, TFCond_Ubercharged) && damagecustom_last != 2) // backstab
+	if (IsClientValid(attacker) && attacker != victim && GetClientTeam(attacker) != GetClientTeam(victim) && TF2_IsPlayerInCondition(victim, TFCond_Ubercharged) && damagecustom_last != 2) // backstab
 	{
+		
+		
 		// Multiply crit damage
 		if ((damagetype & DMG_CRIT) == DMG_CRIT)
 		{
@@ -811,37 +1020,42 @@ public void OnPlayerDamagePost(int victim, int attacker, int inflictor, float da
 
 		int healer = GetConditionProvider(victim, TFCond_Ubercharged);
 
-		bool valid = healer != victim;
-
-		// Count damage absorbed by medic if he is healing someone
-		if (!valid)
+		if (IsClientValid(healer))
 		{
-			int medigun = GetPlayerWeaponSlot(healer, 1);
-			if (medigun != -1)
+			bool valid = healer != victim;
+
+			// Count damage absorbed by medic if he is healing someone
+			if (!valid)
 			{
-				char classname[32];
-				GetEntityClassname(medigun, classname, sizeof(classname));
-				if (strcmp(classname, "tf_weapon_medigun") == 0)
+				int medigun = GetPlayerWeaponSlot(healer, 1);
+				if (medigun != -1)
 				{
-					int target = GetEntPropEnt(medigun, Prop_Send, "m_hHealingTarget");
-					valid = target > 0;
+					char classname[32];
+					GetEntityClassname(medigun, classname, sizeof(classname));
+					if (strcmp(classname, "tf_weapon_medigun") == 0)
+					{
+						int target = GetEntPropEnt(medigun, Prop_Send, "m_hHealingTarget");
+						valid = target > 0;
+					}
 				}
 			}
-		}
 
-		if (valid)
-		{
-			CEcon_SendEventToClientUnique(healer, "TF_MVM_UBER_BLOCK_DAMAGE", RoundFloat(damage));
+			if (valid)
+			{
+				CEcon_SendEventToClientUnique(healer, "TF_MVM_BLOCK_DAMAGE_UBER", RoundFloat(damage));
+			}
 		}
 	}
 
-
+	
 }
 
 public Action player_ignited(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int client = GetEventInt(hEvent, "victim_entindex");
 	int attacker = GetEventInt(hEvent, "pyro_entindex");
+
+	player_data[client].ignited_by = attacker;
 
 	if (IsClientValid(attacker) && attacker != client && IsFakeClient(client))
 	{
@@ -870,19 +1084,46 @@ public Action player_healed(Handle hEvent, const char[] szName, bool bDontBroadc
 				CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_HEALING_TEAMMATES", amount, hEvent);
 			}
 
-			if (player_hurt_attacker_last == patient && player_hurt_madmilk_last == healer && player_hurt_tick_last == GetGameTickCount())
+			if (player_hurt_attacker_last == patient && player_hurt_tick_last == GetGameTickCount())
 			{
-				CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_HEALING_MADMILK", amount, hEvent);
-			}
+				if ( player_hurt_madmilk_last == healer)
+				{
+					CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_HEALING_MADMILK", amount, hEvent);
+				}
 
-			if (TF2_IsPlayerInCondition(patient, TFCond_RegenBuffed) && GetConditionProvider(patient, TFCond_RegenBuffed) == healer)
-			{
-				CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_HEALING_CONCHEROR", amount, hEvent);
+				if (TF2_IsPlayerInCondition(patient, TFCond_RegenBuffed) && GetConditionProvider(patient, TFCond_RegenBuffed) == healer)
+				{
+					CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_HEALING_CONCHEROR", amount, hEvent);
+				}
 			}
 		}
 	}
 
 	return Plugin_Continue;
+}
+
+public Action player_healonhit(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int client = GetEventInt(hEvent, "entindex");
+	int amount = GetEventInt(hEvent, "amount");
+	
+	int weapon_def_index = GetEventInt(hEvent, "weapon_def_index");
+	int health_before = GetEntProp(client, Prop_Data, "m_iHealth") - amount;
+
+	if (player_death_attacker_last == client && player_death_damage_custom_last == 2 && player_death_tick_last == GetGameTickCount())
+	{
+		CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_HEALING_KUNAI", amount, hEvent);
+
+		if (health_before < 35)
+		{
+			CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_HEALING_KUNAI_NEAR_DEATH", 1, hEvent);
+		}
+	}
+
+	if (weapon_def_index != 65535 && player_hurt_attacker_last == client && player_hurt_tick_last == GetGameTickCount())
+	{
+		CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_HEALING_ON_HIT", amount, hEvent);
+	}
 }
 
 public Action mvm_medic_powerup_shared(Handle hEvent, const char[] szName, bool bDontBroadcast)
@@ -898,8 +1139,9 @@ public Action mvm_medic_powerup_shared(Handle hEvent, const char[] szName, bool 
 		{
 			CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_CANTEEN_SHARE_ROBOT", 1, hEvent);
 		}
+		CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_CANTEEN_SHARE", 1, hEvent);
 	}
-
+	
 }
 
 public Action player_chargedeployed(Handle hEvent, const char[] szName, bool bDontBroadcast)
@@ -911,6 +1153,28 @@ public Action player_chargedeployed(Handle hEvent, const char[] szName, bool bDo
 	{
 		CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_UBER_DEPLOY_ROBOT", 1, hEvent);
 	}
+
+	CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_UBER_DEPLOY", 1, hEvent);
+
+	if (GetEntProp(healer, Prop_Data, "m_iHealth") < 50)
+	{
+		CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_UBER_DEPLOY_NEAR_DEATH", 1, hEvent);
+	}
+}
+
+public Action revive_player_complete(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int client = GetEventInt(hEvent, "entindex");
+
+	CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_REVIVE", 1, hEvent);
+}
+
+public Action medigun_shield_blocked_damage(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
+	int damage = GetEventInt(hEvent, "damage");
+
+	CEcon_SendEventToClientFromGameEvent(damage, "TF_MVM_BLOCK_DAMAGE_SHIELD", 1, hEvent);
 }
 
 public Action medic_death(Handle hEvent, const char[] szName, bool bDontBroadcast)
@@ -927,7 +1191,7 @@ public Action medic_death(Handle hEvent, const char[] szName, bool bDontBroadcas
 
 		if (IsGiant(healer))
 			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_GIANT_UBER_MEDIC", 1, hEvent);
-
+		
 	}
 
 	return Plugin_Continue;
@@ -941,6 +1205,24 @@ public Action mvm_pickup_currency(Handle hEvent, const char[] szName, bool bDont
 
 	CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_COLLECT_CURRENCY", currency, hEvent);
 	CEcon_SendEventToAll("TF_MVM_COLLECT_CURRENCY_ALL_PLAYERS", currency, GetRandomInt(0, 9999));
+
+	if (!currency_grade_a_scored && GameRules_GetRoundState() != RoundState_RoundRunning)
+	{
+		int wave_stats = FindEntityByClassname(-1,"tf_mann_vs_machine_stats");
+		if (wave_stats != -1)
+		{
+			int offset_prev_wave = FindSendPropInfo("CMannVsMachineStats", "m_previousWaveStats");
+			int prev_dropped = GetEntData(wave_stats, offset_prev_wave + 4,2);
+			int prev_collected = GetEntData(wave_stats, offset_prev_wave + 8,2) + currency;
+			
+			if ( (prev_collected + 0.0) / prev_dropped >= 0.9)
+			{
+				currency_grade_a_scored = true;
+				CEcon_SendEventToAll("TF_MVM_COLLECT_CURRENCY_A", 1, GetRandomInt(0, 9999));
+			}
+		}
+	}
+
 	return Plugin_Continue;
 }
 
@@ -960,6 +1242,26 @@ public Action mvm_creditbonus_wave(Handle hEvent, const char[] szName, bool bDon
 	return Plugin_Continue;
 }
 
+public Action mvm_sentrybuster_detonate(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+
+	int target = GetEventInt(hEvent, "player");
+
+	for (int i = -1 ; (i = FindEntityByClassname(i, "obj_sentrygun")) != -1;)
+	{
+		if (GetEntProp(i, Prop_Data, "m_iHealth") > 0 && GetEntPropEnt(i, Prop_Send, "m_hBuilder") == target)
+		{
+			CEcon_SendEventToClientFromGameEvent(target, "TF_MVM_SAVE_SENTRY", 1, hEvent);
+
+			if (player_data[target].buster_save_sentry_ranged)
+			{
+				CEcon_SendEventToClientFromGameEvent(target, "TF_MVM_SAVE_SENTRY_RESCUE", 1, hEvent);
+			}
+		}
+	}
+	return Plugin_Continue;
+}
+
 public Action player_carryobject(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 
@@ -968,70 +1270,7 @@ public Action player_carryobject(Handle hEvent, const char[] szName, bool bDontB
 	int entity = GetEventInt(hEvent, "index");
 	if (type == 2) //OBJ_SENTRYGUN
 	{
-		player_data[builder].buster_save_sentry = 0;
-
-		float vecobj[3];
-		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", vecobj);
-
-		float vecbuilder[3];
-		GetEntPropVector(builder, Prop_Send, "m_vecOrigin", vecbuilder);
-
-		float buster_range_sq = buster_range_cvar.FloatValue * buster_range_cvar.FloatValue;
-
-		// Only count long range grabs, exclude wrench grabs
-		if (GetVectorDistance(vecobj, vecbuilder, true) > 125.0 * 125.0)
-		{
-			// Search for sentry busters
-			for (int i = 1; i <= MaxClients; i++)
-			{
-				if (IsClientValid(i) && IsFakeClient(i) && GetClientTeam(i) != GetClientTeam(builder) && IsSentryBuster(i))
-				{
-					float vecbuster[3];
-					GetEntPropVector(i, Prop_Send, "m_vecOrigin", vecbuster);
-
-					float vecvelbuster[3];
-					GetEntPropVector(i, Prop_Data, "m_vecAbsVelocity", vecvelbuster);
-
-					PrintToChatAll("buster %f", GetVectorLength(vecvelbuster, true));
-					if (GetVectorDistance(vecobj, vecbuster, true) < buster_range_sq)
-					{
-						player_data[builder].buster_save_sentry = i;
-					}
-				}
-			}
-		}
-	}
-
-	return Plugin_Continue;
-}
-
-public Action player_dropobject(Handle hEvent, const char[] szName, bool bDontBroadcast)
-{
-	int builder = GetClientOfUserId(GetEventInt(hEvent, "userid"));
-	int type = GetEventInt(hEvent, "object");
-	int entity = GetEventInt(hEvent, "index");
-	if (type == 2) //OBJ_SENTRYGUN
-	{
-		int buster = player_data[builder].buster_save_sentry;
-		if (IsClientValid(buster) && IsPlayerAlive(buster))
-		{
-			float vecobj[3];
-			GetEntPropVector(entity, Prop_Send, "m_vecOrigin", vecobj);
-
-			float vecbuster[3];
-			GetEntPropVector(buster, Prop_Send, "m_vecOrigin", vecbuster);
-
-			float buster_range_sq = buster_range_cvar.FloatValue * buster_range_cvar.FloatValue;
-
-			if (GetVectorDistance(vecobj, vecbuster, true) > buster_range_sq)
-			{
-				CEcon_SendEventToClientFromGameEvent(builder, "TF_MVM_SAVE_SENTRY_RESCUE", 1, hEvent);
-			}
-		}
-		else if (buster > 0)
-		{
-			CEcon_SendEventToClientFromGameEvent(builder, "TF_MVM_SAVE_SENTRY_RESCUE", 1, hEvent);
-		}
+		player_data[builder].buster_save_sentry_ranged = GetAttributeValue(GetEntPropEnt(builder, Prop_Data, "m_hActiveWeapon"), "building_teleporting_pickup", 0.0) != 0.0;
 	}
 
 	return Plugin_Continue;
@@ -1043,7 +1282,6 @@ public Action player_stunned(Handle hEvent, const char[] szName, bool bDontBroad
 	int victim = GetClientOfUserId(GetEventInt(hEvent, "victim"));
 	bool capping = GetEventBool(hEvent, "victim_capping");
 	bool big_stun = GetEventBool(hEvent, "big_stun");
-	PrintToChatAll("stun %d %d", stunner, victim);
 
 
 	if (stunner == 0)
@@ -1057,10 +1295,10 @@ public Action player_stunned(Handle hEvent, const char[] szName, bool bDontBroad
 		{
 			if (IsClientValid(i) && !IsFakeClient(i) && GetClientTeam(i) != GetClientTeam(victim) && TF2_IsPlayerInCondition(i, TFCond_RocketPack))
 			{
-
+				
 				float vecpyro[3];
 				GetEntPropVector(i, Prop_Send, "m_vecOrigin", vecpyro);
-
+				
 				if (GetVectorDistance(vecvictim, vecpyro, true) < 500.0 * 500.0)
 				{
 					stunner = i;
@@ -1100,7 +1338,7 @@ public Action player_stunned(Handle hEvent, const char[] szName, bool bDontBroad
 			CEcon_SendEventToClientFromGameEvent(stunner, "TF_MVM_STUN_ROBOT_BOMB_CARRIER", 1, hEvent);
 		}
 	}
-
+	
 	return Plugin_Continue;
 }
 
@@ -1108,7 +1346,7 @@ public Action deploy_buff_banner(Handle hEvent, const char[] szName, bool bDontB
 {
 	int buff_type = GetEventInt(hEvent, "buff_type");
 	int buff_owner = GetClientOfUserId(GetEventInt(hEvent, "buff_owner"));
-
+	
 	CEcon_SendEventToClientFromGameEvent(buff_owner, "TF_MVM_BUFF_ACTIVATE", 1, hEvent);
 
 	switch (buff_type)
@@ -1119,9 +1357,94 @@ public Action deploy_buff_banner(Handle hEvent, const char[] szName, bool bDontB
 	}
 }
 
-public void TF2_OnConditionAdded(int client, TFCond cond)
+public Action mvm_bomb_reset_by_player(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int player = GetEventInt(hEvent, "player");
+
+	CEcon_SendEventToClientFromGameEvent(player, "TF_MVM_BOMB_RESET", 1, hEvent);
+}
+
+public Action mvm_bomb_deploy_reset_by_player(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int player = GetEventInt(hEvent, "player");
+
+	CEcon_SendEventToClientFromGameEvent(player, "TF_MVM_BOMB_DEPLOY_RESET", 1, hEvent);
+}
+
+public Action player_extinguished(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int victim = GetEventInt(hEvent, "victim");
+	int healer = GetEventInt(hEvent, "healer");
+
+	// The effect is already gone so you cant tell who ignited, so have to use a different way
+	if (GameRules_GetRoundState() == RoundState_RoundRunning && player_data[victim].ignited_by != victim && IsClientValid(player_data[victim].ignited_by))
+	{
+		CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_EXTINGUISH", 1, hEvent);
+	}
+}
+
+public Action mvm_bomb_carrier_killed(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 
+}
+
+public Action teamplay_flag_event(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int type = GetEventInt(hEvent, "eventtype");
+	int player = GetEventInt(hEvent, "player");
+	int carrier = GetEventInt(hEvent, "carrier");
+
+	if (type == 1 && IsFakeClient(player)) // Pickup
+	{
+		player_data[player].pick_bomb_time = GetGameTime();
+	}
+
+	if (type == 3 && IsFakeClient(carrier)) // Defend
+	{
+		
+		if (IsSentryBuster(player) && GetClientTeam(player) == GetClientTeam(carrier))
+		{
+			CEcon_SendEventToAll("TF_MVM_SENTRY_BUSTER_KILL_BOMB_CARRIER", 1, GetRandomInt(0, 9999));
+		}
+
+		CEcon_SendEventToClientFromGameEvent(player, "TF_MVM_KILL_ROBOT_BOMB_CARRIER", 1, hEvent);
+
+		float carry_time = GetGameTime() - player_data[carrier].pick_bomb_time;
+
+		if (carry_time >= 0.0)
+		{
+			CEcon_SendEventToClientFromGameEvent(player, "TF_MVM_KILL_ROBOT_BOMB_CARRIER_X_SECONDS_AFTER_PICKUP", RoundToCeil(carry_time), hEvent);
+		}
+	}
+}
+
+public Action player_used_powerup_bottle(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int player = GetEventInt(hEvent, "player");
+	int type = GetEventInt(hEvent, "type");
+
+	CEcon_SendEventToClientFromGameEvent(player, "TF_MVM_CANTEEN", 1, hEvent);
+
+	switch (type)
+	{
+		case 1: CEcon_SendEventToClientFromGameEvent(player, "TF_MVM_CANTEEN_CRIT", 1, hEvent);
+		case 2: CEcon_SendEventToClientFromGameEvent(player, "TF_MVM_CANTEEN_UBER", 1, hEvent);
+		case 3: CEcon_SendEventToClientFromGameEvent(player, "TF_MVM_CANTEEN_RECALL", 1, hEvent);
+		case 4: CEcon_SendEventToClientFromGameEvent(player, "TF_MVM_CANTEEN_AMMO", 1, hEvent);
+		case 5: CEcon_SendEventToClientFromGameEvent(player, "TF_MVM_CANTEEN_BUILDING_UPGRADE", 1, hEvent);
+	}
+}
+
+public Action building_healed(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int healer = GetEventInt(hEvent, "player");
+	int amount = GetEventInt(hEvent, "amount");
+	CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_REPAIR", 1, hEvent);
+}
+
+public void TF2_OnConditionAdded(int client, TFCond cond)
+{
+	
 	switch(cond)
 	{
 		case TFCond_Milked:
@@ -1133,24 +1456,37 @@ public void TF2_OnConditionAdded(int client, TFCond cond)
 
 				if (IsGiantNotBuster(client))
 				{
-					CEcon_SendEventToClientUnique(entity, "TF_MVM_MILK_ROBOT_GIANT", 1);
+					CEcon_SendEventToClientUnique(entity, "TF_MVM_MADMILK_ROBOT_GIANT", 1);
 
 					if (TF2_IsPlayerInCondition(client, TFCond_MarkedForDeath))
 					{
-						CEcon_SendEventToClientUnique(entity, "TF_MVM_MILK_MARK_ROBOT_GIANT", 1);
+						CEcon_SendEventToClientUnique(entity, "TF_MVM_MADMILK_MARK_ROBOT_GIANT", 1);
 					}
 				}
 
 				// Snare upgrade detection
-				if (GetAttributeValue(entity, "applies_snare_effect", 0.0) != 0.0)
+				if (GetAttributeValue(entity, "applies_snare_effect", 1.0) != 1.0)
 				{
-					CEcon_SendEventToClientUnique(entity, "TF_MVM_STUN_MILK_ROBOT", 1);
+					CEcon_SendEventToClientUnique(entity, "TF_MVM_STUN_ROBOT_JAR", 1);
 					if (IsGiantNotBuster(client) && TF2_GetPlayerClass(client) == TFClass_Scout)
 					{
-						CEcon_SendEventToClientUnique(entity, "TF_MVM_STUN_MILK_ROBOT_GIANT_SCOUT", 1);
+						CEcon_SendEventToClientUnique(entity, "TF_MVM_STUN_ROBOT_JAR_GIANT_SCOUT", 1);
 					}
-				}
+				} 
 			}
+		}
+		case TFCond_Jarated:
+		{
+			int entity = GetConditionProvider(client, cond);
+			// Snare upgrade detection
+			if (GetAttributeValue(entity, "applies_snare_effect", 1.0) != 1.0)
+			{
+				CEcon_SendEventToClientUnique(entity, "TF_MVM_STUN_ROBOT_JAR", 1);
+				if (IsGiantNotBuster(client) && TF2_GetPlayerClass(client) == TFClass_Scout)
+				{
+					CEcon_SendEventToClientUnique(entity, "TF_MVM_STUN_ROBOT_JAR_GIANT_SCOUT", 1);
+				}
+			} 
 		}
 		case TFCond_MarkedForDeath:
 		{
@@ -1165,14 +1501,22 @@ public void TF2_OnConditionAdded(int client, TFCond cond)
 
 					if (TF2_IsPlayerInCondition(client, TFCond_Milked))
 					{
-						CEcon_SendEventToClientUnique(entity, "TF_MVM_MILK_MARK_ROBOT_GIANT", 1);
+						CEcon_SendEventToClientUnique(entity, "TF_MVM_MADMILK_MARK_ROBOT_GIANT", 1);
 					}
 				}
 			}
 		}
 		case TFCond_CritOnKill:
 		{
-			//player_data[client].critboost_time = GetEngineTime();
+
+		}
+		case TFCond_Sapped:
+		{
+			int entity = GetConditionProvider(client, cond);
+			if (IsClientValid(entity) && !IsFakeClient(entity) && IsFakeClient(client))
+			{
+				CEcon_SendEventToClientUnique(entity, "TF_MVM_SAP_ROBOT", 1);
+			}
 		}
 	}
 }
@@ -1184,6 +1528,20 @@ public void TF2_OnConditionRemoved(int client, TFCond cond)
 		case TFCond_CritOnKill:
 		{
 			CEcon_SendEventToClientUnique(client, "TF_MVM_CRITBOOST_ON_KILL_STOP", 1);
+		}
+		
+		case TFCond_OnFire:
+		{
+			int ignited_by = player_data[client].ignited_by;
+			if (ignited_by != client && IsFakeClient(client) && IsClientValid(ignited_by))
+			{
+				CEcon_SendEventToClientUnique(player_data[client].ignited_by, "TF_MVM_IGNITE_STOP_ROBOT", 1);
+			}
+			player_data[client].ignited_by = 0;
+		}
+		case TFCond_UberchargedHidden:
+		{
+			player_data[client].leave_spawn_time = GetGameTime();
 		}
 	}
 }
@@ -1268,7 +1626,7 @@ public int GetConditionProvider(int client, TFCond cond)
 	int shared = FindSendPropInfo("CTFPlayer", "m_Shared");
 	int entity = SDKCall(get_condition_provider_handle, GetEntityAddress(client) + view_as<Address>(shared), view_as<int>(cond));
 	return entity;
-
+	
 }
 
 public float GetAttributeValue(int entity, char[] attribute, float inValue)
@@ -1279,7 +1637,7 @@ public float GetAttributeValue(int entity, char[] attribute, float inValue)
 	}
 
 	return SDKCall(attrib_float_handle, inValue, attribute, entity, 0, false);
-
+	
 }
 
 public bool HasFullUberOfType(int client, int type)
@@ -1293,6 +1651,32 @@ public bool HasFullUberOfType(int client, int type)
 		{
 			return type == -1 || RoundFloat(GetAttributeValue(medigun, "set_charge_type", 0.0)) == type;
 		}
-	}
+	}	
 	return false;
+}
+
+public void GetPlayerMissionData(int client, PlayerDataMission data)
+{
+	if (player_data_mission == null)
+		return;
+
+	int steam_id = GetSteamAccountID(client);
+	char steam_id_str[16];
+
+	IntToString(steam_id, steam_id_str, sizeof(steam_id_str));
+
+	player_data_mission.GetArray(steam_id_str, data, sizeof(data));
+}
+
+public void SetPlayerMissionData(int client, PlayerDataMission data, bool replace)
+{
+	if (player_data_mission == null)
+		return;
+
+	int steam_id = GetSteamAccountID(client);
+	char steam_id_str[16];
+
+	IntToString(steam_id, steam_id_str, sizeof(steam_id_str));
+
+	player_data_mission.SetArray(steam_id_str, data, sizeof(data), replace);
 }
