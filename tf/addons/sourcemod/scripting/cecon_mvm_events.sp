@@ -402,7 +402,6 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 					}
 
 					// Gatebot filter
-					LogMessage("CreateEntityByName(filter_tf_bot_has_tag)");
 					int filter = CreateEntityByName("filter_tf_bot_has_tag");
 					if (filter != -1)
 					{

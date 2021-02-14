@@ -137,7 +137,6 @@ public Action SetRoundSettings(Handle Timer)
 	iEnt = FindEntityByClassname(iEnt, "team_round_timer");
 	if (iEnt < 1)
 	{
-		LogMessage("CreateEntityByName(team_round_timer)");
 		iEnt = CreateEntityByName("team_round_timer");
 		if (IsValidEntity(iEnt))
 			DispatchSpawn(iEnt);
@@ -254,7 +253,6 @@ public void EndRound()
 	iEnt = FindEntityByClassname(iEnt, "game_round_win");
 	if (iEnt < 1)
 	{
-		LogMessage("CreateEntityByName(game_round_win)");
 		iEnt = CreateEntityByName("game_round_win");
 		if (IsValidEntity(iEnt))
 			DispatchSpawn(iEnt);

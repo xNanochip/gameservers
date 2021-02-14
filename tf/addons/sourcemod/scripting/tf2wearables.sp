@@ -97,7 +97,7 @@ public int Native_CreateWearable(Handle plugin, int numParams)
 	char sModel[256];
 	GetNativeString(3, sModel, sizeof(sModel));
 
-	LogStackTrace("CreateEntityByName(tf_wearable_vm)");
+	LogStackTrace("CreateEntityByName(%s)", bIsViewModel ? "tf_wearable_vm" : "tf_wearable");
 	int entity = CreateEntityByName(bIsViewModel ? "tf_wearable_vm" : "tf_wearable");
 	if (!IsValidEntity(entity))
 	{

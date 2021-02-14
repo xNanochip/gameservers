@@ -80,7 +80,6 @@ public void OnPlayerDeath(Event ev, const char[] name, bool dontBroadcast)
 
 public void CreateSilverBody(int client)
 {
-	LogMessage("CreateEntityByName(tf_ragdoll)");
 	int ragdoll = CreateEntityByName("tf_ragdoll");
 
 	int team = GetClientTeam(client);
