@@ -129,13 +129,13 @@ public void FlushSchema()
 
 public void ParseEconomySchema(KeyValues hConf)
 {
-	if (hConf == null)return;
-	
 	FlushSchema();
 	
 	m_hKitDefs = new ArrayList(sizeof(Soundtrack_t));
 	m_hEventDefs = new ArrayList(sizeof(Event_t));
 	m_hSampleDefs = new ArrayList(sizeof(Sample_t));
+	
+	if (hConf == null)return;
 	
 	if(hConf.JumpToKey("Items", false))
 	{

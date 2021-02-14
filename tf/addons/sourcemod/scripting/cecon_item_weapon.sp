@@ -263,12 +263,12 @@ public bool FindWeaponDefinitionByIndex(int defid, CEItemDefinitionWeapon output
 //--------------------------------------------------------------------
 public void ProcessEconSchema(KeyValues kv)
 {
-	if (kv == null)return;
-
 	delete m_hDefinitions;
 	delete m_hStyles;
 	m_hDefinitions = new ArrayList(sizeof(CEItemDefinitionWeapon));
 	m_hStyles = new ArrayList(sizeof(CEItemDefinitionWeaponStyle));
+	
+	if (kv == null)return;
 
 	if (kv.JumpToKey("Items"))
 	{

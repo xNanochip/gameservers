@@ -268,8 +268,6 @@ public Action cResetLoadout(int args)
 //---------------------------------------------------------------------
 public void PrecacheItemsFromSchema(KeyValues hSchema)
 {
-	if (hSchema == null)return;
-	
 	// Clean loadout cache for everyone.
 	for (int i = 1; i <= MaxClients; i++)
 	{
@@ -282,6 +280,8 @@ public void PrecacheItemsFromSchema(KeyValues hSchema)
 
     // Initiate the array.
 	m_ItemDefinitons = new ArrayList(sizeof(CEItemDefinition));
+	
+	if (hSchema == null)return;
 
 	if(hSchema.JumpToKey("Items"))
 	{

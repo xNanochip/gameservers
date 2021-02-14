@@ -177,13 +177,13 @@ public void CEcon_OnSchemaUpdated(KeyValues hSchema)
 
 public void ParseEconomyConfig(KeyValues kv)
 {
-	if (kv == null)return;
-
 	FlushQuestDefinitions();
 	m_hQuestDefinitions = 		new ArrayList(sizeof(CEQuestDefinition));
 	m_hObjectiveDefinitions = 	new ArrayList(sizeof(CEQuestObjectiveDefinition));
 	m_hHooksDefinitions = 		new ArrayList(sizeof(CEQuestObjectiveHookDefinition));
 	m_hBackgroundQuests = new ArrayList();
+	
+	if (kv == null)return;
 
 	if(kv.JumpToKey("Contracker/Quests", false))
 	{

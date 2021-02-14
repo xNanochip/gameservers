@@ -174,10 +174,10 @@ public bool FindCosmeticDefinitionByIndex(int defid, CEItemDefinitionCosmetic ou
 //--------------------------------------------------------------------
 public void ProcessEconSchema(KeyValues kv)
 {
-	if (kv == null)return;
-	
 	delete m_hDefinitions;
 	m_hDefinitions = new ArrayList(sizeof(CEItemDefinitionCosmetic));
+	
+	if (kv == null)return;
 	
 	if (kv.JumpToKey("Items"))
 	{
