@@ -144,7 +144,8 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 	{
 		if(StrEqual(hDef.m_sClassName, "tf_wearable"))
 		{
-
+			int iWear = TF2Wear_CreateWearable(client, false, hDef.m_sWorldModel);
+			return iWear;
 		} else {
 			int iWeapon = CreateWeapon(client, hDef.m_iBaseIndex, hDef.m_sClassName, item.m_nQuality);
 			if(iWeapon > -1)
