@@ -190,6 +190,7 @@ public void CreateWeaponThrowableProjectile_Brick(int weapon)
 
 	float flSpeed = tf_throwable_brick_force.FloatValue;
 
+	LogMessage("CreateEntityByName(TF_PROJECTILE_THROWABLE_BRICK)");
 	int iProjectile = CreateEntityByName(TF_PROJECTILE_THROWABLE_BRICK);
 	if(iProjectile > -1)
 	{
@@ -255,6 +256,7 @@ public void CreateWeaponThrowableProjectile_BreadMonster(int weapon)
 
 	float flSpeed = tf_throwable_bread_force.FloatValue;
 
+	LogMessage("CreateEntityByName(tf_projectile_throwable_breadmonster)");
 	int iProjectile = CreateEntityByName("tf_projectile_throwable_breadmonster");
 	if(iProjectile > -1)
 	{
@@ -316,6 +318,7 @@ public void CreateWeaponThrowableProjectile_SmokeGrenade(int weapon)
 
 	float flSpeed = tf_throwable_smoke_grenade_force.FloatValue;
 
+	LogMessage("CreateEntityByName(tf_projectile_stun_ball)");
 	int iProjectile = CreateEntityByName("tf_projectile_stun_ball");
 	if(iProjectile > -1)
 	{
@@ -377,6 +380,7 @@ public void RF_SetDelayedProjectileLauncher(any data)
 
 public int TF_StartAttachedParticle(const char[] system, int entity, float lifetime)
 {
+	LogMessage("CreateEntityByName(info_particle_system)");
 	int iParticle = CreateEntityByName("info_particle_system");
 	if (IsValidEntity(iParticle) && iParticle > 0)
 	{
@@ -404,6 +408,7 @@ public int TF_StartAttachedParticle(const char[] system, int entity, float lifet
 
 public int TF_StartParticleOnEntity(const char[] system, int entity, float lifetime)
 {
+	LogMessage("CreateEntityByName(info_particle_system)");
 	int iParticle = CreateEntityByName("info_particle_system");
 	if (IsValidEntity(iParticle) && iParticle > 0)
 	{

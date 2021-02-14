@@ -21,17 +21,17 @@ public APLRes AskPluginLoad2(Handle plugin, bool late, char[] error, int err_max
 	CreateNative("TF2Wear_CreateWearable", Native_CreateWearable);
 	CreateNative("TF2Wear_EquipWearable", Native_EquipWearable);
 	CreateNative("TF2Wear_RemoveWearable", Native_RemoveWearable);
-	
+
 	CreateNative("TF2Wear_GetClientWearablesCount", Native_GetClientWearablesCount);
-	
+
 	CreateNative("TF2Wear_SetModel", Native_SetModel);
 	CreateNative("TF2Wear_ParseEquipRegionString", Native_ParseEquipRegionString);
-	
+
 	CreateNative("TF2Wear_CreateWeaponTiedWearable", Native_CreateWeaponTiedWearable);
 	CreateNative("TF2Wear_RemoveAllTiedWearables", Native_RemoveAllTiedWearables);
-	
+
 	CreateNative("TF2Wear_SetEntPropFloatOfWeapon", Native_SetEntPropFloatOfWeapon);
-	
+
 	return APLRes_Success;
 }
 
@@ -52,7 +52,7 @@ public void OnPluginStart()
 }
 
 public void OnMapStart()
-{	
+{
 	for (int i = 0; i < 2049; i++)
 	{
 		m_iTiedWeapon[i] = false;
@@ -61,21 +61,21 @@ public void OnMapStart()
 
 // --------------------------------------------- //
 // Native: TF2Wear_CreateWeaponTiedWearable
-// Purpose: Creates a wearable that will only be visible while a weapon is active.  
+// Purpose: Creates a wearable that will only be visible while a weapon is active.
 // --------------------------------------------- //
 public int Native_CreateWeaponTiedWearable(Handle plugin, int numParams)
 {
 	int weapon = GetNativeCell(1);
 	if (!IsValidEntity(weapon))return -1;
-	
+
 	int client = GetEntPropEnt(weapon, Prop_Send, "m_hOwnerEntity");
-	
+
 	// Only attach this wearable if weapon is currently active.
 	if (GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon") != weapon)return -1;
-	
+
 	char sModel[256];
 	GetNativeString(3, sModel, sizeof(sModel));
-	
+
 	bool bIsViewModel = GetNativeCell(2);
 
 	int entity = TF2Wear_CreateWearable(client, bIsViewModel, sModel);
@@ -86,52 +86,53 @@ public int Native_CreateWeaponTiedWearable(Handle plugin, int numParams)
 }
 
 // --------------------------------------------- //
-// 	Native: TF2Wear_CreateWearable 
+// 	Native: TF2Wear_CreateWearable
 // --------------------------------------------- //
 public int Native_CreateWearable(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 
 	bool bIsViewModel = GetNativeCell(2);
-	
+
 	char sModel[256];
 	GetNativeString(3, sModel, sizeof(sModel));
 
+	LogMessage("CreateEntityByName(tf_wearable_vm)");
 	int entity = CreateEntityByName(bIsViewModel ? "tf_wearable_vm" : "tf_wearable");
 	if (!IsValidEntity(entity))
 	{
 		return -1;
 	}
-	
+
 	// Effects
 	SetEntProp(entity, Prop_Send, "m_fEffects", 129); // EF_BONEMERGE | EF_BONEMERGE_FASTCULL
 
 	// Collision
 	SetEntProp(entity, Prop_Send, "m_usSolidFlags", 4);	// FSOLID_NOT_SOLID
 	SetEntProp(entity, Prop_Send, "m_CollisionGroup", 11); // COLLISION_GROUP_WEAPON
-	
+
 	// CBaseEntity
 	SetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity", client);
 	SetEntProp(entity, Prop_Send, "m_iTeamNum", GetClientTeam(client));
 	SetEntProp(entity, Prop_Send, "m_nSkin", GetClientTeam(client));
-	
+
 	// This makes it visible.
 	SetEntProp(entity, Prop_Send, "m_bValidatedAttachedEntity", 1);
-	
+
 	// CEconEntity
 	SetEntProp(entity, Prop_Send, "m_iEntityLevel", -1);
 	SetEntProp(entity, Prop_Send, "m_iItemIDLow", 2048);
 	SetEntProp(entity, Prop_Send, "m_iItemIDHigh", 0);
 	SetEntProp(entity, Prop_Send, "m_iAccountID", GetSteamAccountID(client));
 	SetEntProp(entity, Prop_Send, "m_bInitialized", 1);
-	
+
 
 	DispatchSpawn(entity);
 	SetVariantString("!activator");
 	ActivateEntity(entity);
-	
+
 	TF2Wear_SetModel(entity, sModel);
-	
+
 	TF2Wear_EquipWearable(client, entity);
 
 	return entity;
@@ -147,10 +148,10 @@ public int Native_EquipWearable(Handle plugin, int numParams)
 		LogMessage("Error: Can't call EquipWearable, SDK functions not loaded!");
 		return;
 	}
-	
+
 	int client = GetNativeCell(1);
 	int entity = GetNativeCell(2);
-	
+
 	SDKCall(g_hSdkEquipWearable, client, entity);
 }
 
@@ -161,9 +162,9 @@ public int Native_RemoveWearable(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	int entity = GetNativeCell(2);
-	
+
 	if (client < 0)return;
-	
+
 	TF2_RemoveWearable(client, entity);
 }
 
@@ -173,16 +174,16 @@ public int Native_RemoveWearable(Handle plugin, int numParams)
 public int Native_SetModel(Handle plugin, int numParams)
 {
 	int iEntity = GetNativeCell(1);
-	
+
 	char sModel[512];
 	GetNativeString(2, sModel, sizeof(sModel));
-	
+
 	if (StrEqual(sModel, ""))return;
-	
+
 	if(IsValidEntity(iEntity))
 	{
 		int iModel = PrecacheModel(sModel, false);
-		
+
 		SetEntProp(iEntity, Prop_Send, "m_nModelIndex", iModel);
 		for (int i = 0; i < 4; i++)
 		{
@@ -197,7 +198,7 @@ public int Native_SetModel(Handle plugin, int numParams)
 public void OnEntityCreated(int entity, const char[] class)
 {
 	if (!(0 < entity <= 2049))return;
-	
+
 	m_iTiedWeapon[entity] = false;
 }
 
@@ -207,7 +208,7 @@ public void OnEntityCreated(int entity, const char[] class)
 public void OnEntityDestroyed(int entity)
 {
 	if (!(0 < entity <= 2049))return;
-	
+
 	m_iTiedWeapon[entity] = false;
 }
 
@@ -218,17 +219,17 @@ public void OnEntityDestroyed(int entity)
 public int Native_GetClientWearablesCount(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
-	
+
 	int iCount = 0;
-	
+
 	int iEdict = -1;
 	while((iEdict = FindEntityByClassname(iEdict, "tf_wearable*")) != -1)
 	{
 		if (GetEntPropEnt(iEdict, Prop_Send, "m_hOwnerEntity") != client)continue;
-		
+
 		iCount++;
 	}
-	
+
 	return iCount;
 }
 
@@ -240,10 +241,10 @@ public int Native_RemoveAllTiedWearables(Handle plugin, int numParams)
 	int weapon = GetNativeCell(1);
 	if (weapon <= 0)return;
 	if (!IsValidEntity(weapon))return;
-	
+
 	if (!HasEntProp(weapon, Prop_Send, "m_hOwnerEntity"))return;
 	int client = GetEntPropEnt(weapon, Prop_Send, "m_hOwnerEntity");
-	
+
 	int iEdict = -1;
 	while((iEdict = FindEntityByClassname(iEdict, "tf_wearable*")) != -1)
 	{
@@ -259,12 +260,12 @@ public int Native_SetEntPropFloatOfWeapon(Handle plugin, int numParams)
 {
 	int weapon = GetNativeCell(1);
 	if (weapon <= 0)return;
-	
+
 	PropType type = GetNativeCell(2);
-	
+
 	char sProp[PLATFORM_MAX_PATH];
 	GetNativeString(3, sProp, sizeof(sProp));
-	
+
 	float value = GetNativeCell(4);
 	int children = GetNativeCell(5);
 

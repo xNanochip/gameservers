@@ -42,16 +42,16 @@ public void OnPluginStart()
 	HookEvent("teamplay_round_start", Event_RoundStart, EventHookMode_Pre);
 	HookEvent("teamplay_flag_event", Event_FlagCapped, EventHookMode_Pre);
 	AddCommandListener(ClassListener, "joinclass");
-	
+
 	RegConsoleCmd("sm_ctfrework", Cmd_CTFRework, "Show the Capture the Flag Rework Tip Panel");
 
 	CapTimeAdd = CreateConVar("sm_ctf_time_added", "135", "How many seconds are added to the timer on capture");
 	TimerValue = CreateConVar("sm_ctf_timer", "300", "Initial round timer in seconds");
 	TimerMax = CreateConVar("sm_ctf_timer_max", "720", "Max value for round timer in seconds");
 	ReturnTime = CreateConVar("sm_ctf_return_time", "15", "Return time for intel in seconds");
-	
+
 	g_Cookie = new Cookie("ctfrework_cookie", "CTF Rework Popup Tip", CookieAccess_Public);
-	
+
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		g_bShowTipMenu[i] = true;
@@ -69,7 +69,7 @@ public Action Event_RoundStart(Handle event, const char[] name, bool dontBroadca
 {
 	if (GameRules_GetProp("m_bInWaitingForPlayers"))
 		return;
-		
+
 	CreateTimer(0.5, SetRoundSettings, _, TIMER_FLAG_NO_MAPCHANGE);
 }
 
@@ -97,7 +97,7 @@ public Action ClassListener(int client, const char[] command, int args)
 void TipMenu(int client)
 {
 	Panel panel = new Panel();
-	
+
 	panel.SetTitle("[Creators.TF] Capture The Flag Reworkedᴮᴱᵀᴬ");
 	panel.DrawText(" ");
 	panel.DrawText("To help encourage objective-based playing, a few changes have been introduced:");
@@ -112,7 +112,7 @@ void TipMenu(int client)
 	panel.DrawItem("Close", ITEMDRAW_CONTROL);
 	panel.DrawItem("", ITEMDRAW_NOTEXT);
 	panel.DrawItem("Don't show this again", ITEMDRAW_CONTROL);
-	
+
 	panel.Send(client, PanelHandler, 120);
 	delete panel;
 }
@@ -137,6 +137,7 @@ public Action SetRoundSettings(Handle Timer)
 	iEnt = FindEntityByClassname(iEnt, "team_round_timer");
 	if (iEnt < 1)
 	{
+		LogMessage("CreateEntityByName(team_round_timer)");
 		iEnt = CreateEntityByName("team_round_timer");
 		if (IsValidEntity(iEnt))
 			DispatchSpawn(iEnt);
@@ -172,7 +173,7 @@ public void TimerExpire(const char[] output, int caller, int victim, float delay
 {
 	if (GameRules_GetProp("m_bInWaitingForPlayers"))
 		return;
-	
+
 	EndRound();
 }
 
@@ -253,6 +254,7 @@ public void EndRound()
 	iEnt = FindEntityByClassname(iEnt, "game_round_win");
 	if (iEnt < 1)
 	{
+		LogMessage("CreateEntityByName(game_round_win)");
 		iEnt = CreateEntityByName("game_round_win");
 		if (IsValidEntity(iEnt))
 			DispatchSpawn(iEnt);

@@ -76,14 +76,14 @@ public void OnPluginStart()
 	HookEvent("mvm_mission_complete", mvm_mission_complete);
 
 	HookEvent("mvm_tank_destroyed_by_players", mvm_tank_destroyed_by_players);
-	
+
 	HookEvent("mvm_begin_wave", mvm_begin_wave);
 	HookEvent("mvm_wave_failed", mvm_wave_failed);
 	HookEvent("mvm_wave_complete", mvm_wave_complete);
 
 	HookEvent("controlpoint_starttouch", controlpoint_starttouch);
 	HookEvent("controlpoint_endtouch", controlpoint_endtouch);
-	
+
 	HookEvent("player_spawn", player_spawn);
 	HookEvent("player_death", player_death);
 	HookEvent("player_hurt", player_hurt);
@@ -97,12 +97,12 @@ public void OnPluginStart()
 
 	HookEvent("player_carryobject", player_carryobject);
 	HookEvent("player_dropobject", player_dropobject);
-	
+
 	HookEvent("player_stunned", player_stunned);
 
 	Handle data_mvm = LoadGameConfigFile("tf2.cecon_mvm_events");
 	StartPrepSDKCall(SDKCall_Raw);
-	if (PrepSDKCall_SetFromConf(data_mvm,SDKConf_Signature,"CTFPlayerShared::GetConditionProvider")) 
+	if (PrepSDKCall_SetFromConf(data_mvm,SDKConf_Signature,"CTFPlayerShared::GetConditionProvider"))
 	{
 		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
 		PrepSDKCall_SetReturnInfo(SDKType_CBaseEntity, SDKPass_Plain);
@@ -198,7 +198,7 @@ public Action OnSound(int clients[MAXPLAYERS], int &numClients, char sample[PLAT
 	  char soundEntry[PLATFORM_MAX_PATH], int &seed)
 {
 	// Widowmaker shoot hook
-	if (channel == 1 && strncmp(sample, ")weapons\\widow_maker_shot_", strlen(")weapons\\widow_maker_shot_")) == 0 
+	if (channel == 1 && strncmp(sample, ")weapons\\widow_maker_shot_", strlen(")weapons\\widow_maker_shot_")) == 0
 		&& IsClientValid(entity) && GameRules_GetRoundState() == RoundState_RoundRunning)
 	{
 		PrintToChatAll("Attacker metal hurt pre %d", GetEntProp(entity, Prop_Data, "m_iAmmo", 4, 3));
@@ -282,7 +282,7 @@ public Action mvm_mission_complete(Handle hEvent, const char[] szName, bool bDon
 		}
 	}
 
-	if (highest_damage_player > 0) 
+	if (highest_damage_player > 0)
 	{
 		CEcon_SendEventToClientFromGameEvent(highest_damage_player, "TF_MVM_DAMAGE_TANK_MVP", 1, hEvent);
 	}
@@ -316,7 +316,7 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 	int customkill = GetEventInt(hEvent, "customkill");
 	int kill_streak_victim = GetEventInt(hEvent, "kill_streak_victim");
 	int crit_type = GetEventInt(hEvent, "crit_type");
-	
+
 	if (IsClientValid(client))
 	{
 		//player_data[client].ResetStreak();
@@ -334,18 +334,18 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 
 				if (kill_counter_single >= 3)
 				{
-					
+
 				}
 
 				bool is_buster = IsSentryBuster(attacker);
 				if (is_buster && GetClientTeam(client) == GetClientTeam(attacker))
 				{
 					int bomb = GetEntPropEnt(client, Prop_Send, "m_hItem");
-					if (bomb != -1) 
+					if (bomb != -1)
 						CEcon_SendEventToAll("TF_MVM_SENTRY_BUSTER_KILL_BOMB_CARRIER", 1, GetRandomInt(0, 9999));
 				}
 
-				if (IsFakeClient(client)) 
+				if (IsFakeClient(client))
 				{
 
 					CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT", 1, hEvent);
@@ -369,7 +369,7 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 						// Players who assisted or dealt damage receive kill
 						for (int i = 0; i < 32; i++)
 						{
-							if ((hit_tracker & (1 << i)) != 0) 
+							if ((hit_tracker & (1 << i)) != 0)
 							{
 								CEcon_SendEventToClientFromGameEvent(i + 1, "TF_MVM_KILL_ROBOT_GIANT", 1, hEvent);
 							}
@@ -402,8 +402,9 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 					}
 
 					// Gatebot filter
+					LogMessage("CreateEntityByName(filter_tf_bot_has_tag)");
 					int filter = CreateEntityByName("filter_tf_bot_has_tag");
-					if (filter != -1) 
+					if (filter != -1)
 					{
 						DispatchKeyValue(filter, "tags", "bot_gatebot");
 						DispatchSpawn(filter);
@@ -412,7 +413,7 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 						player_data[client].killer = attacker;
 
 						HookSingleEntityOutput(filter, "OnPass", OnGatebotFilterPass, true);
-						HookSingleEntityOutput(filter, "OnFail", OnGatebotFilterFail, true);	
+						HookSingleEntityOutput(filter, "OnFail", OnGatebotFilterFail, true);
 						AcceptEntityInput(filter, "TestActivator", client, attacker);
 					}
 
@@ -423,7 +424,7 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 
 					// Razorback detection
 					int child = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
-					
+
 					while (child != -1)
 					{
 						char classname[32];
@@ -454,7 +455,7 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 					{
 						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_CRIT_COLA", 1, hEvent);
 					}
-					
+
 					if (customkill == 1) // Headshot
 					{
 						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_HEADSHOT", 1, hEvent);
@@ -514,7 +515,7 @@ public void OnGatebotFilterPass(const char[] output, int caller, int activator, 
 	CEcon_SendEventToClientUnique(killer, "TF_MVM_KILL_GATEBOT", 1);
 
 	int cp_area = player_data[activator].touched_cp_area;
-	if (cp_area != -1 ) 
+	if (cp_area != -1 )
 	{
 		if (IsGiant(activator))
 			CEcon_SendEventToClientUnique(killer, "TF_MVM_KILL_GATEBOT_GIANT_CAPTURE", 1);
@@ -558,7 +559,7 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 		}
 		CEcon_SendEventToAll("TF_MVM_MISSION_BEGIN", 1, GetRandomInt(0, 9999));
 	}
-	
+
 	CEcon_SendEventToAll("TF_MVM_WAVE_BEGIN", 1, GetRandomInt(0, 9999));
 
 	bonus_currency_counter = 0;
@@ -645,7 +646,7 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 					CEcon_SendEventToClientFromGameEvent(i, "TF_MVM_DESTROY_TANK_BLIMP", 1, hEvent);
 				}
 			}
-			
+
 		}
 		player_data[i].tank_damage_wave += damage;
 	}
@@ -712,7 +713,7 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 		}
 	}
 
-	
+
 
 	// Battalions backup check
 	if (IsClientValid(attacker) && IsFakeClient(attacker) && !IsFakeClient(client))
@@ -724,7 +725,7 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 			int healer = 0;
 			bool has_vac_uber = TF2_IsPlayerInCondition(client, TFCond_UberBulletResist) || TF2_IsPlayerInCondition(client, TFCond_UberBlastResist) || TF2_IsPlayerInCondition(client, TFCond_UberFireResist);
 			bool has_vac_heal = TF2_IsPlayerInCondition(client, TFCond_SmallBulletResist) || TF2_IsPlayerInCondition(client, TFCond_SmallBlastResist) || TF2_IsPlayerInCondition(client, TFCond_SmallFireResist);
-			
+
 			// Assume regular resist rate
 			if (has_vac_uber)
 			{
@@ -777,7 +778,7 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 			}
 		}
 	}
-	
+
 	return Plugin_Continue;
 }
 
@@ -785,7 +786,7 @@ public Action damage_resisted(Handle hEvent, const char[] szName, bool bDontBroa
 {
 	resist_client_last = GetEventInt(hEvent, "entindex");
 	resist_tick_last = GetGameTickCount();
-	PrintToChatAll("Resist");	
+	PrintToChatAll("Resist");
 }
 
 int damagecustom_last;
@@ -796,7 +797,7 @@ public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& d
 
 public void OnPlayerDamagePost(int victim, int attacker, int inflictor, float damage, int damagetype)
 {
-	PrintToChatAll("Receive damage post %f", damage);	
+	PrintToChatAll("Receive damage post %f", damage);
 	if (attacker > 0)
 	PrintToChatAll("Attacker metal hurt post %d", GetEntProp(attacker, Prop_Data, "m_iAmmo", 4, 3));
 	if (TF2_IsPlayerInCondition(victim, TFCond_Ubercharged) && damagecustom_last != 2) // backstab
@@ -835,7 +836,7 @@ public void OnPlayerDamagePost(int victim, int attacker, int inflictor, float da
 		}
 	}
 
-	
+
 }
 
 public Action player_ignited(Handle hEvent, const char[] szName, bool bDontBroadcast)
@@ -899,7 +900,7 @@ public Action mvm_medic_powerup_shared(Handle hEvent, const char[] szName, bool 
 			CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_CANTEEN_SHARE_ROBOT", 1, hEvent);
 		}
 	}
-	
+
 }
 
 public Action player_chargedeployed(Handle hEvent, const char[] szName, bool bDontBroadcast)
@@ -927,7 +928,7 @@ public Action medic_death(Handle hEvent, const char[] szName, bool bDontBroadcas
 
 		if (IsGiant(healer))
 			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_GIANT_UBER_MEDIC", 1, hEvent);
-		
+
 	}
 
 	return Plugin_Continue;
@@ -1057,10 +1058,10 @@ public Action player_stunned(Handle hEvent, const char[] szName, bool bDontBroad
 		{
 			if (IsClientValid(i) && !IsFakeClient(i) && GetClientTeam(i) != GetClientTeam(victim) && TF2_IsPlayerInCondition(i, TFCond_RocketPack))
 			{
-				
+
 				float vecpyro[3];
 				GetEntPropVector(i, Prop_Send, "m_vecOrigin", vecpyro);
-				
+
 				if (GetVectorDistance(vecvictim, vecpyro, true) < 500.0 * 500.0)
 				{
 					stunner = i;
@@ -1100,7 +1101,7 @@ public Action player_stunned(Handle hEvent, const char[] szName, bool bDontBroad
 			CEcon_SendEventToClientFromGameEvent(stunner, "TF_MVM_STUN_ROBOT_BOMB_CARRIER", 1, hEvent);
 		}
 	}
-	
+
 	return Plugin_Continue;
 }
 
@@ -1108,7 +1109,7 @@ public Action deploy_buff_banner(Handle hEvent, const char[] szName, bool bDontB
 {
 	int buff_type = GetEventInt(hEvent, "buff_type");
 	int buff_owner = GetClientOfUserId(GetEventInt(hEvent, "buff_owner"));
-	
+
 	CEcon_SendEventToClientFromGameEvent(buff_owner, "TF_MVM_BUFF_ACTIVATE", 1, hEvent);
 
 	switch (buff_type)
@@ -1121,7 +1122,7 @@ public Action deploy_buff_banner(Handle hEvent, const char[] szName, bool bDontB
 
 public void TF2_OnConditionAdded(int client, TFCond cond)
 {
-	
+
 	switch(cond)
 	{
 		case TFCond_Milked:
@@ -1149,7 +1150,7 @@ public void TF2_OnConditionAdded(int client, TFCond cond)
 					{
 						CEcon_SendEventToClientUnique(entity, "TF_MVM_STUN_MILK_ROBOT_GIANT_SCOUT", 1);
 					}
-				} 
+				}
 			}
 		}
 		case TFCond_MarkedForDeath:
@@ -1268,7 +1269,7 @@ public int GetConditionProvider(int client, TFCond cond)
 	int shared = FindSendPropInfo("CTFPlayer", "m_Shared");
 	int entity = SDKCall(get_condition_provider_handle, GetEntityAddress(client) + view_as<Address>(shared), view_as<int>(cond));
 	return entity;
-	
+
 }
 
 public float GetAttributeValue(int entity, char[] attribute, float inValue)
@@ -1279,7 +1280,7 @@ public float GetAttributeValue(int entity, char[] attribute, float inValue)
 	}
 
 	return SDKCall(attrib_float_handle, inValue, attribute, entity, 0, false);
-	
+
 }
 
 public bool HasFullUberOfType(int client, int type)
@@ -1293,6 +1294,6 @@ public bool HasFullUberOfType(int client, int type)
 		{
 			return type == -1 || RoundFloat(GetAttributeValue(medigun, "set_charge_type", 0.0)) == type;
 		}
-	}	
+	}
 	return false;
 }

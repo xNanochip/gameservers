@@ -242,13 +242,11 @@ public float GetSpaceJumpPowerOfClass(TFClassType nClass)
 
 public void OnEntityCreated(int entity)
 {
-	if (entity < 0)return;
 	FlushEntityData(entity);
 }
 
 public void OnEntityDestroyed(int entity)
 {
-	if (entity < 0)return;
 	FlushEntityData(entity);
 }
 
@@ -282,6 +280,7 @@ public void StopThrustparticle(int wearable)
 
 public int TF_StartAttachedParticle(const char[] system, const char[] attachment, int entity, float lifetime)
 {
+	LogMessage("CreateEntityByName(info_particle_system)");
 	int iParticle = CreateEntityByName("info_particle_system");
 	if (iParticle > -1)
 	{
