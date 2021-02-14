@@ -5,7 +5,7 @@
                "$phongexponent" "80"
                "$phongboost" "20"
 	"$lightwarptexture" "models\lightwarps\weapon_lightwarp"
-               "$phongfresnelranges" "[0.2 0.8 2]"
+               "$phongfresnelranges" "[2.2 3.7 4]"
 	"$halflambert" "1"
 
 	"$basemapalphaphongmask" "1"

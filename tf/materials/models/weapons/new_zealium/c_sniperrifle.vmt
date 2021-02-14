@@ -7,7 +7,7 @@
                "$phongexponent" "90"
                "$phongboost" "10"
 	"$lightwarptexture" "models/lightwarps/weapon_lightwarp"
-               "$phongfresnelranges" "[0.2 0.8 2]"
+               "$phongfresnelranges" "[2.2 3.7 4]"
 
 	// Begin GOLD look
                "$envmap" "cubemaps/cubemap_newzealium"

@@ -6,13 +6,13 @@
                "$phongexponent" "100"
                "$phongboost" "80"
 	"$lightwarptexture" "models/lightwarps/weapon_lightwarp"
-               "$phongfresnelranges" "[0.2 0.8 2]"
+               "$phongfresnelranges" "[2.2 3.7 4]"
 	"$halflambert" "1"
 
 
                "$envmap" "cubemaps/cubemap_newzealium"
                $envmapfresnel 0.2
-               "$envmaptint" "[ 4 4 4 ]"
+               "$envmaptint" "[ 5 5 5 ]"
 
 	//"$selfillum" "1"
 	//"$selfillumtint" "[1 .55 .1]"
