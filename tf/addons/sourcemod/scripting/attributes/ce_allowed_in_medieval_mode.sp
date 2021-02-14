@@ -21,7 +21,7 @@ public bool CEconItems_ShouldItemBeBlocked(int client, CEItem xItem, const char[
 	{
 		if(CEconItems_GetAttributeBoolFromArray(xItem.m_Attributes, "allowed in medieval mode"))
 		{
-			return true;
+			return false;
 		}
 		return true;
 	}
