@@ -30,6 +30,7 @@ public Action cGive(int client, int args)
 	if(CEconItems_CreateNamedItem(xItem, "Space Jumper", 6, null))
 	{
 		CEconItems_GiveItemToClient(client, xItem);
+		ReplyToCommand(client, "[SM] Given Jetpack to you");
 	}
 	
 	return Plugin_Handled;
