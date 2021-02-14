@@ -4,6 +4,7 @@ models/**/*.dx90.vtx
 models/**/*.dx80.vtx
 models/**/*.sw.vtx
 models/**/*.phy
+models/**/*.ani
 maps/**/*.bsp
 sound/**/*.mp3
 sound/**/*.wav
