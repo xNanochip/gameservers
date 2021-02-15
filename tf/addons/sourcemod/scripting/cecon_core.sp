@@ -683,8 +683,6 @@ public void Schema_CheckForUpdates(bool bIsForced)
 		strcopy(sURL, sizeof(sURL), sOverrideURL);
 	}
 
-	LogMessage("Sas: %s", sURL);
-
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "field", "Version");
 	Steam_SetHTTPRequestNetworkActivityTimeout(httpRequest, 10);
@@ -710,6 +708,21 @@ public void Schema_CheckForUpdates_Callback(HTTPRequestHandle request, bool succ
 		// And response code is 200...
 		if (code == HTTPStatusCode_OK)
 		{
+
+			if(size > 500)
+			{
+				// If for check for updates we received more than 500 bytes of data
+				// request was probably made to a different file. Which does not allow us to
+				// check for version name, because of the memory heap overflow.
+				//
+				// If we're in debug mode, update the schema anyway. Otherwise, don't.
+
+				LogMessage("Version name check failed, assumming that we have a new version. Updating the schema...");
+
+				Schema_ForceUpdate();
+				return;
+			}
+
 			// Getting response content length.
 			int size = Steam_GetHTTPResponseBodySize(request);
 			char[] content = new char[size + 1];
@@ -756,8 +769,17 @@ public void Schema_CheckForUpdates_Callback(HTTPRequestHandle request, bool succ
 //-------------------------------------------------------------------
 public void Schema_ForceUpdate()
 {
-	char sURL[64];
-	Format(sURL, sizeof(sURL), "%s/api/IEconomyItems/GScheme", m_sBaseEconomyURL);
+	char sURL[256], sOverrideURL[256];
+	ce_schema_override_url.GetString(sOverrideURL, sizeof(sOverrideURL));
+
+	if(StrEqual(sOverrideURL, ""))
+	{
+		// Otherwise use base url.
+		Format(sURL, sizeof(sURL), "%s/api/IEconomyItems/GScheme", m_sBaseEconomyURL);
+	} else {
+		// If we set to override the schema url, use value from the cvar.
+		strcopy(sURL, sizeof(sURL), sOverrideURL);
+	}
 
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
 	Steam_SetHTTPRequestNetworkActivityTimeout(httpRequest, 10);
