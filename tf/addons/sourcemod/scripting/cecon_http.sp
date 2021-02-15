@@ -25,7 +25,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 {
 	CreateNative("CEconHTTP_CreateAbsoluteBackendURL", Native_CreateAbsoluteBackendURL);
 	CreateNative("CEconHTTP_CreateBaseHTTPRequest", Native_CreateBaseHTTPRequest);
-	
+
 	return APLRes_Success;
 }
 
@@ -33,9 +33,9 @@ public any Native_CreateAbsoluteBackendURL(Handle plugin, int numParams)
 {
 	char sBaseURL[256], sURL[256];
 	GetNativeString(1, sBaseURL, sizeof(sBaseURL));
-	
+
 	int size = GetNativeCell(3);
-	
+
 	char sBaseEconomyURL[128];
 	CEcon_GetBaseBackendURL(sBaseEconomyURL, sizeof(sBaseEconomyURL));
 
@@ -53,9 +53,11 @@ public any Native_CreateAbsoluteBackendURL(Handle plugin, int numParams)
 		strcopy(sURL, sizeof(sURL), sBaseEconomyURL);
 
 		Format(sURL, sizeof(sURL), "%s%s", sURL, sBaseURL);
+	} else {
+		strcopy(sURL, sizeof(sURL), sBaseURL);
 	}
 
-	PrintToChatAll(sURL);
+	LogMessage(sURL);
 	SetNativeString(2, sURL, size);
 }
 
@@ -64,21 +66,21 @@ public any Native_CreateBaseHTTPRequest(Handle plugin, int numParams)
 	char sBaseURL[256], sURL[256];
 	GetNativeString(1, sBaseURL, sizeof(sBaseURL));
 	HTTPMethod nMethod = GetNativeCell(2);
-	
+
 	CEconHTTP_CreateAbsoluteBackendURL(sBaseURL, sURL, sizeof(sURL));
-	
+
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(nMethod, sURL);
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
-	
+
 	char sAccessHeader[256];
 	CEcon_GetAccessKey(sAccessHeader, sizeof(sAccessHeader));
-	
+
 	Format(sAccessHeader, sizeof(sAccessHeader), "Provider %s", sAccessHeader);
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Access", sAccessHeader);
-	
+
 	CEcon_GetAuthorizationKey(sAccessHeader, sizeof(sAccessHeader));
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Authorization", sAccessHeader);
-	
-	
+
+
 	return httpRequest;
 }
