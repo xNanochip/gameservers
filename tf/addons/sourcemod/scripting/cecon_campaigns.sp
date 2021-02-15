@@ -62,7 +62,7 @@ public void ParseCampaignList(KeyValues kv)
 {
 	delete m_hCampaigns;
 	m_hCampaigns = new ArrayList(sizeof(CECampaign));
-	
+
 	if (kv == null)return;
 
 	char sCvarValue[64];
@@ -79,9 +79,11 @@ public void ParseCampaignList(KeyValues kv)
 				if(!StrEqual(sTitle, sCvarValue))
 				{
 					kv.GetString("start_time", sTime, sizeof(sTime));
+					if(StrEqual(sTime, "")) continue;
 					int iStartTime = TimeFromString("YYYY-MM-DD hh:mm:ss", sTime);
 
 					kv.GetString("end_time", sTime, sizeof(sTime));
+					if(StrEqual(sTime, "")) continue;
 					int iEndTime = TimeFromString("YYYY-MM-DD hh:mm:ss", sTime);
 
 					if (!(GetTime() > iStartTime && GetTime() < iEndTime))continue;
