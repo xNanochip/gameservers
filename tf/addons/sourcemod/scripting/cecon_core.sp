@@ -708,6 +708,8 @@ public void Schema_CheckForUpdates_Callback(HTTPRequestHandle request, bool succ
 		// And response code is 200...
 		if (code == HTTPStatusCode_OK)
 		{
+			// Getting response content length.
+			int size = Steam_GetHTTPResponseBodySize(request);
 
 			if(size > 500)
 			{
@@ -723,8 +725,6 @@ public void Schema_CheckForUpdates_Callback(HTTPRequestHandle request, bool succ
 				return;
 			}
 
-			// Getting response content length.
-			int size = Steam_GetHTTPResponseBodySize(request);
 			char[] content = new char[size + 1];
 
 			// Getting actual response content body.
