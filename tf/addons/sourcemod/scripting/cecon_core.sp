@@ -48,7 +48,9 @@ bool m_bCredentialsLoaded = false;
 //-------------------------------------------------------------------
 // Schema
 //-------------------------------------------------------------------
-ConVar ce_schema_autoupdate;	// If true, plugins will autoupdate the item schema on every map change.
+ConVar 	ce_schema_autoupdate,	// If true, plugins will autoupdate the item schema on every map change.
+		ce_schema_override_url;	// If set, url for the schema source will be overriden.
+
 KeyValues m_Schema;				// Cached keyvalues handle of the schema, used for plugins that late load.
 
 char m_sSchemaBuildVersion[64];	// Build version of the locally downloaded schema.
@@ -102,7 +104,7 @@ public void OnPluginStart()
 	// ConVars
 	ce_coordinator_enabled = CreateConVar("ce_coordinator_enabled", "1", "If true, coordinator will be online.");
 	ce_credentials_filename = CreateConVar("ce_credentials_filename", "economy.cfg", "Filename of the econome config.");
-	
+
 	HookConVarChange(ce_credentials_filename, ce_credentials_filename__CHANGED);
 
 	// We check every 5 seconds if coordinator is running, if it is not
@@ -115,6 +117,8 @@ public void OnPluginStart()
 	BuildPath(Path_SM, m_sItemSchemaFilePath, sizeof(m_sItemSchemaFilePath), "configs/item_schema.cfg");
 	// ConVars
 	ce_schema_autoupdate = CreateConVar("ce_schema_autoupdate", "1", "Should auto-update item schema on every map change.");
+	ce_schema_override_url = CreateConVar("ce_schema_override_url", "", "Overrides the remote source of the schema file.");
+
 	// Commands
 	RegServerCmd("ce_schema_update", cSchemaUpdate);
 
@@ -212,7 +216,7 @@ public void ReloadEconomyCredentials()
 	// Format the economy.cfg location.
 	char sLoc[96];
 	BuildPath(Path_SM, sLoc, 96, "configs/%s", sFileName);
-	
+
 	if(!FileExists(sLoc))
 	{
 		LogError("Invalid economy credentials file name.");
@@ -667,8 +671,17 @@ public void Schema_CheckForUpdates(bool bIsForced)
 
 	LogMessage("Checking for Item Schema updates...");
 
-	char sURL[64];
-	Format(sURL, sizeof(sURL), "%s/api/IEconomyItems/GScheme", m_sBaseEconomyURL);
+	char sURL[64], sOverrideURL[64];
+	ce_schema_override_url.GetString(sOverrideURL, sizeof(sOverrideURL));
+
+	if(StrEqual(sOverrideURL, ""))
+	{
+		// Otherwise use base url.
+		Format(sURL, sizeof(sURL), "%s/api/IEconomyItems/GScheme", m_sBaseEconomyURL);
+ 	} else {
+		// If we set to override the schema url, use value from the cvar.
+		strcopy(sURL, sizeof(sURL), sOverrideURL);
+	}
 
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "field", "Version");
