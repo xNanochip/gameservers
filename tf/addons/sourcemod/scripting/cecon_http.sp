@@ -57,7 +57,7 @@ public any Native_CreateAbsoluteBackendURL(Handle plugin, int numParams)
 		strcopy(sURL, sizeof(sURL), sBaseURL);
 	}
 
-	LogMessage(sURL);
+	LogMessage("Generated URL: %s", sURL);
 	SetNativeString(2, sURL, size);
 }
 
