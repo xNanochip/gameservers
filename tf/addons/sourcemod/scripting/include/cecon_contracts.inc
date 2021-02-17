@@ -52,6 +52,9 @@ enum struct CEQuestObjectiveHookDefinition
 	int m_iQuestIndex;
 
 	char m_sEvent[128];
+	
+	float m_flDelay;
+	float m_flSubtractIn;
 
 	CEQuestActions m_Action;
 }

@@ -286,6 +286,8 @@ public void ParseEconomyConfig(KeyValues kv)
 										xHook.m_iObjectiveIndex = iObjectiveWorldIndex;
 										xHook.m_iQuestIndex = iQuestWorldIndex;
 										xHook.m_Action = nAction;
+										xHook.m_flDelay = kv.GetFloat("delay", 0.0);
+										xHook.m_flSubtractIn = kv.GetFloat("subtract_in", 0.0);
 
 										kv.GetString("event", xHook.m_sEvent, sizeof(xHook.m_sEvent));
 
@@ -361,6 +363,8 @@ public Action cDump(int args)
 						LogMessage("          m_iIndex = %d", xHook.m_iIndex);
 						LogMessage("          m_iObjectiveIndex = %d", xHook.m_iObjectiveIndex);
 						LogMessage("          m_iQuestIndex = %d", xHook.m_iQuestIndex);
+						LogMessage("          m_flDelay = %f", xHook.m_flDelay);
+						LogMessage("          m_flSubtractIn = %f", xHook.m_flSubtractIn);
 
 						LogMessage("          m_sEvent = \"%s\"", xHook.m_sEvent);
 						LogMessage("          m_Action = %d", xHook.m_Action);
@@ -1005,6 +1009,8 @@ public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, in
 
 	m_iLastUniqueEvent[client] = unique;
 
+	// m_flSubtractIn
+
 	for (int i = 0; i < xQuest.m_iObjectivesCount; i++)
 	{
 		if (m_bIsObjectiveMarked[client][i])continue;
@@ -1031,76 +1037,174 @@ public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, in
 					}
 
 					m_bIsObjectiveMarked[client][i] = true;
-
 					if (HasClientCompletedObjective(client, xObjective))continue;
-
-					switch(xHook.m_Action)
+					
+					DataPack pack = new DataPack();
+					pack.WriteCell(client);
+					pack.WriteCell(xQuest.m_iIndex);
+					pack.WriteCell(i);
+					pack.WriteCell(j);
+					pack.WriteCell(add);
+					pack.WriteCell(source);
+					pack.Reset();
+					
+					float flDelay = xHook.m_flDelay;
+					if(flDelay <= 0.0)
 					{
-						// Just straight up fires the event.
-						case CEQuestAction_Singlefire:
-						{
-							AddPointsToClientObjective(client, xObjective, add * xObjective.m_iPoints, source, false);
-						}
-
-						// Increments the internal objective variable by `add`.
-						case CEQuestAction_Increment:
-						{
-							if(xObjective.m_iEnd > 0)
-							{
-								int iPrevValue = xProgress.m_iVariable[i];
-								xProgress.m_iVariable[i] += add;
-
-								int iToAdd = 0;
-								while(xProgress.m_iVariable[i] >= xObjective.m_iEnd)
-								{
-									xProgress.m_iVariable[i] -= xObjective.m_iEnd;
-									iToAdd += xObjective.m_iPoints;
-								}
-
-								// We only run update quest progress if we're really sure,
-								// that variables have changed.
-								if(iPrevValue != xProgress.m_iVariable[i])
-								{
-									UpdateClientQuestProgress(client, xProgress);
-								}
-
-								if(iToAdd > 0)
-								{
-									AddPointsToClientObjective(client, xObjective, iToAdd, source, false);
-								}
-							}
-						}
-
-						// Resets the internal objective value back to zero.
-						case CEQuestAction_Reset:
-						{
-							// We only update values if we're really sure that something
-							// has changed.
-							if(xProgress.m_iVariable[i] > 0)
-							{
-								xProgress.m_iVariable[i] = 0;
-								UpdateClientQuestProgress(client, xProgress);
-							}
-						}
-
-						// Subtracts the internal var by `var`.
-						case CEQuestAction_Subtract:
-						{
-							int iPrevValue = xProgress.m_iVariable[i];
-							xProgress.m_iVariable[i] -= add;
-
-							// We only run update quest progress if we're really sure,
-							// that variables have changed.
-							if(iPrevValue != xProgress.m_iVariable[i])
-							{
-								UpdateClientQuestProgress(client, xProgress);
-							}
-						}
+						RequestFrame(RF_TriggerClientObjectiveHook, pack);
+					} else {
+						CreateTimer(flDelay, Timer_TriggerClientObjectiveHook, pack);
 					}
 				}
 			}
 		}
 	}
+}
+
+public void RF_TriggerClientObjectiveHook(any data)
+{
+	DataPack pack = data;
+	int client = pack.ReadCell();
+	int quest = pack.ReadCell();
+	int objective = pack.ReadCell();
+	int hook = pack.ReadCell();
+	int add = pack.ReadCell();
+	int source = pack.ReadCell();
+	delete pack;
+	
+	TriggerClientObjectiveHook(client, quest, objective, hook, add, source);
+}
+
+public Action Timer_TriggerClientObjectiveHook(Handle timer, any data)
+{
+	DataPack pack = data;
+	int client = pack.ReadCell();
+	int quest = pack.ReadCell();
+	int objective = pack.ReadCell();
+	int hook = pack.ReadCell();
+	int add = pack.ReadCell();
+	int source = pack.ReadCell();
+	delete pack;
+	
+	TriggerClientObjectiveHook(client, quest, objective, hook, add, source);
+}
+
+public void TriggerClientObjectiveHook(int client, int quest_defid, int objective, int hook, int add, int source)
+{
+	CEQuestDefinition xQuest;
+	if (!GetQuestByDefIndex(quest_defid, xQuest))return;
+	
+	CEQuestObjectiveDefinition xObjective;
+	if (!GetQuestObjectiveByIndex(xQuest, objective, xObjective))return;
+	
+	CEQuestObjectiveHookDefinition xHook;
+	if (!GetObjectiveHookByIndex(xObjective, hook, xHook))return;
+	
+	CEQuestClientProgress xProgress;
+	GetClientQuestProgress(client, xQuest, xProgress);
+	
+	switch(xHook.m_Action)
+	{
+		// Just straight up fires the event.
+		case CEQuestAction_Singlefire:
+		{
+			AddPointsToClientObjective(client, xObjective, add * xObjective.m_iPoints, source, false);
+		}
+
+		// Increments the internal objective variable by `add`.
+		case CEQuestAction_Increment:
+		{
+			if(xObjective.m_iEnd > 0)
+			{
+				int iToSubtract = add;
+				
+				int iPrevValue = xProgress.m_iVariable[objective];
+				xProgress.m_iVariable[objective] += add;
+
+				int iToAdd = 0;
+				while(xProgress.m_iVariable[objective] >= xObjective.m_iEnd)
+				{
+					xProgress.m_iVariable[objective] -= xObjective.m_iEnd;
+					iToAdd += xObjective.m_iPoints;
+					iToSubtract -= xObjective.m_iEnd;
+				}
+
+				// We only run update quest progress if we're really sure,
+				// that variables have changed.
+				if(iPrevValue != xProgress.m_iVariable[objective])
+				{
+					UpdateClientQuestProgress(client, xProgress);
+				}
+
+				if(iToAdd > 0)
+				{
+					AddPointsToClientObjective(client, xObjective, iToAdd, source, false);
+				}
+				
+				if(xHook.m_flSubtractIn > 0.0 && iToSubtract > 0)
+				{
+					DataPack pack = new DataPack();
+					pack.WriteCell(client);
+					pack.WriteCell(quest_defid);
+					pack.WriteCell(objective);
+					pack.WriteCell(iToSubtract);
+					pack.Reset();
+					
+					CreateTimer(xHook.m_flSubtractIn, Timer_QuestObjectiveHookSubtractIn_Delayed, pack);
+				}
+			}
+		}
+
+		// Resets the internal objective value back to zero.
+		case CEQuestAction_Reset:
+		{
+			// We only update values if we're really sure that something
+			// has changed.
+			if(xProgress.m_iVariable[objective] > 0)
+			{
+				xProgress.m_iVariable[objective] = 0;
+				UpdateClientQuestProgress(client, xProgress);
+			}
+		}
+
+		// Subtracts the internal var by `var`.
+		case CEQuestAction_Subtract:
+		{
+			int iPrevValue = xProgress.m_iVariable[objective];
+			xProgress.m_iVariable[objective] -= add;
+
+			// We only run update quest progress if we're really sure,
+			// that variables have changed.
+			if(iPrevValue != xProgress.m_iVariable[objective])
+			{
+				UpdateClientQuestProgress(client, xProgress);
+			}
+		}
+	}
+}
+
+public Action Timer_QuestObjectiveHookSubtractIn_Delayed(Handle timer, any data)
+{
+	DataPack pack = data;
+	
+	int client = pack.ReadCell();
+	int quest_defid = pack.ReadCell();
+	int objective = pack.ReadCell();
+	int subtract = pack.ReadCell();
+	delete pack;
+	
+	if (subtract <= 0)return Plugin_Handled;
+	
+	CEQuestDefinition xQuest;
+	if (!GetQuestByDefIndex(quest_defid, xQuest))return Plugin_Handled;
+
+	CEQuestClientProgress xProgress;
+	UpdateClientQuestProgress(client, xProgress);
+	
+	xProgress.m_iVariable[objective] -= subtract;
+	
+	UpdateClientQuestProgress(client, xProgress);
+	return Plugin_Handled;
 }
 
 public bool AddPointsToClientObjective(int client, CEQuestObjectiveDefinition xObjective, int points, int source, bool silent)
