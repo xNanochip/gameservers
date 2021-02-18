@@ -991,8 +991,6 @@ public void SendEventToFriends(int client, const char[] event, int add, int uniq
 
 public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, int source, const char[] event, int add, int unique)
 {
-		LogMessage("Tickling event %s", event);
-		
 	if (!CanClientTriggerQuest(client, xQuest))return;
 
 	bool bShouldResetObjectiveMark = false;
@@ -1032,7 +1030,6 @@ public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, in
 				{
 					if (StrEqual(xHook.m_sEvent, ""))continue;
 					if (!StrEqual(xHook.m_sEvent, event))continue;
-					LogMessage("- with %s", xHook.m_sEvent);
 
 					if(client == source)
 					{
@@ -1052,7 +1049,6 @@ public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, in
 					pack.Reset();
 
 					float flDelay = xHook.m_flDelay;
-					LogMessage("Delay: %f", flDelay);
 
 					if(flDelay <= 0.0)
 					{
@@ -1097,15 +1093,12 @@ public Action Timer_TriggerClientObjectiveHook(Handle timer, any data)
 public void TriggerClientObjectiveHook(int client, int quest_defid, int objective, int hook, int add, int source)
 {
 	CEQuestDefinition xQuest;
-	LogMessage("Finding quest by index %d", quest_defid);
 	if (!GetQuestByDefIndex(quest_defid, xQuest))return;
 
 	CEQuestObjectiveDefinition xObjective;
-	LogMessage("Finding objective by index %d", objective);
 	if (!GetQuestObjectiveByIndex(xQuest, objective, xObjective))return;
 
 	CEQuestObjectiveHookDefinition xHook;
-	LogMessage("Finding hook by index %d", hook);
 	if (!GetObjectiveHookByIndex(xObjective, hook, xHook))return;
 
 	CEQuestClientProgress xProgress;
