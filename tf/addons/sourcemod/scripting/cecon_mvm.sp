@@ -51,6 +51,8 @@ public void OnPluginStart()
 	
 	HookEvent("teamplay_round_win", teamplay_round_win);
 	HookEvent("teamplay_round_start", teamplay_round_start);
+	
+	RegConsoleCmd("sm_loot", cLoot, "Opens the latest Tour Loot page");
 }
 
 public void PrintGameStats()
@@ -572,4 +574,12 @@ public void OpenLastTourLootPage(int client)
 	hConf.SetNum("customsvr", 1);
 	ShowVGUIPanel(client, "info", hConf);
 	delete hConf;
+}
+
+public Action cLoot(int client, int args)
+{
+	GetCmdArg(1, m_sLastTourLootHash, sizeof(m_sLastTourLootHash));
+	
+	OpenLastTourLootPage(client);
+	return Plugin_Handled;
 }
