@@ -182,7 +182,7 @@ public void ParseEconomyConfig(KeyValues kv)
 	m_hObjectiveDefinitions = 	new ArrayList(sizeof(CEQuestObjectiveDefinition));
 	m_hHooksDefinitions = 		new ArrayList(sizeof(CEQuestObjectiveHookDefinition));
 	m_hBackgroundQuests = new ArrayList();
-	
+
 	if (kv == null)return;
 
 	if(kv.JumpToKey("Contracker/Quests", false))
@@ -1038,7 +1038,7 @@ public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, in
 
 					m_bIsObjectiveMarked[client][i] = true;
 					if (HasClientCompletedObjective(client, xObjective))continue;
-					
+
 					DataPack pack = new DataPack();
 					pack.WriteCell(client);
 					pack.WriteCell(xQuest.m_iIndex);
@@ -1047,8 +1047,10 @@ public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, in
 					pack.WriteCell(add);
 					pack.WriteCell(source);
 					pack.Reset();
-					
+
 					float flDelay = xHook.m_flDelay;
+					LogMessage("Delay: %f", flDelay);
+
 					if(flDelay <= 0.0)
 					{
 						RequestFrame(RF_TriggerClientObjectiveHook, pack);
@@ -1071,7 +1073,7 @@ public void RF_TriggerClientObjectiveHook(any data)
 	int add = pack.ReadCell();
 	int source = pack.ReadCell();
 	delete pack;
-	
+
 	TriggerClientObjectiveHook(client, quest, objective, hook, add, source);
 }
 
@@ -1085,24 +1087,27 @@ public Action Timer_TriggerClientObjectiveHook(Handle timer, any data)
 	int add = pack.ReadCell();
 	int source = pack.ReadCell();
 	delete pack;
-	
+
 	TriggerClientObjectiveHook(client, quest, objective, hook, add, source);
 }
 
 public void TriggerClientObjectiveHook(int client, int quest_defid, int objective, int hook, int add, int source)
 {
 	CEQuestDefinition xQuest;
+	LogMessage("Finding quest by index %d", quest_defid);
 	if (!GetQuestByDefIndex(quest_defid, xQuest))return;
-	
+
 	CEQuestObjectiveDefinition xObjective;
+	LogMessage("Finding objective by index %d", objective);
 	if (!GetQuestObjectiveByIndex(xQuest, objective, xObjective))return;
-	
+
 	CEQuestObjectiveHookDefinition xHook;
+	LogMessage("Finding hook by index %d", hook);
 	if (!GetObjectiveHookByIndex(xObjective, hook, xHook))return;
-	
+
 	CEQuestClientProgress xProgress;
 	GetClientQuestProgress(client, xQuest, xProgress);
-	
+
 	switch(xHook.m_Action)
 	{
 		// Just straight up fires the event.
@@ -1117,7 +1122,7 @@ public void TriggerClientObjectiveHook(int client, int quest_defid, int objectiv
 			if(xObjective.m_iEnd > 0)
 			{
 				int iToSubtract = add;
-				
+
 				int iPrevValue = xProgress.m_iVariable[objective];
 				xProgress.m_iVariable[objective] += add;
 
@@ -1140,7 +1145,7 @@ public void TriggerClientObjectiveHook(int client, int quest_defid, int objectiv
 				{
 					AddPointsToClientObjective(client, xObjective, iToAdd, source, false);
 				}
-				
+
 				if(xHook.m_flSubtractIn > 0.0 && iToSubtract > 0)
 				{
 					DataPack pack = new DataPack();
@@ -1149,7 +1154,7 @@ public void TriggerClientObjectiveHook(int client, int quest_defid, int objectiv
 					pack.WriteCell(objective);
 					pack.WriteCell(iToSubtract);
 					pack.Reset();
-					
+
 					CreateTimer(xHook.m_flSubtractIn, Timer_QuestObjectiveHookSubtractIn_Delayed, pack);
 				}
 			}
@@ -1186,23 +1191,23 @@ public void TriggerClientObjectiveHook(int client, int quest_defid, int objectiv
 public Action Timer_QuestObjectiveHookSubtractIn_Delayed(Handle timer, any data)
 {
 	DataPack pack = data;
-	
+
 	int client = pack.ReadCell();
 	int quest_defid = pack.ReadCell();
 	int objective = pack.ReadCell();
 	int subtract = pack.ReadCell();
 	delete pack;
-	
+
 	if (subtract <= 0)return Plugin_Handled;
-	
+
 	CEQuestDefinition xQuest;
 	if (!GetQuestByDefIndex(quest_defid, xQuest))return Plugin_Handled;
 
 	CEQuestClientProgress xProgress;
 	UpdateClientQuestProgress(client, xProgress);
-	
+
 	xProgress.m_iVariable[objective] -= subtract;
-	
+
 	UpdateClientQuestProgress(client, xProgress);
 	return Plugin_Handled;
 }
