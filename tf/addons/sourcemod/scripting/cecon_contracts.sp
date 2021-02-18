@@ -991,6 +991,8 @@ public void SendEventToFriends(int client, const char[] event, int add, int uniq
 
 public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, int source, const char[] event, int add, int unique)
 {
+		LogMessage("Tickling event %s", event);
+		
 	if (!CanClientTriggerQuest(client, xQuest))return;
 
 	bool bShouldResetObjectiveMark = false;
@@ -1030,6 +1032,7 @@ public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, in
 				{
 					if (StrEqual(xHook.m_sEvent, ""))continue;
 					if (!StrEqual(xHook.m_sEvent, event))continue;
+					LogMessage("- with %s", xHook.m_sEvent);
 
 					if(client == source)
 					{
