@@ -660,8 +660,9 @@ public void TF2_OnConditionAdded(int client, TFCond cond)
 
 public void TF2_OnConditionRemoved(int client, TFCond cond)
 {
-	if (cond == TFCond_Taunting)
-	{
+	if (cond == TFCond_Taunting ||
+		cond == TFCond_Zoomed
+	) {
 		for (int i = 0; i < 5; i++)
 		{
 			int iWeapon = GetPlayerWeaponSlot(client, i);
