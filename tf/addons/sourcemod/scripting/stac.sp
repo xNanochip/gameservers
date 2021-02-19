@@ -16,7 +16,7 @@
 #include <updater>
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION  "4.1.4"
+#define PLUGIN_VERSION  "4.1.5"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -1461,10 +1461,11 @@ public Action OnPlayerRunCmd
         // make sure client isnt using a spin bind
         || buttons & IN_LEFT
         || buttons & IN_RIGHT
-        // make sure client doesn't have 1% or more packet loss - this would be annoying to play with for cheaters - but may be tweaked in the future if cheats decide to try to get around it
-        || loss >= 1.0
+        // make sure client doesn't have 2.5% or more packet loss - this would be annoying to play with for cheaters - but may be tweaked in the future if cheats decide to try to get around it
+        || loss >= 2.5
         // make sure client doesn't have 52% or more choke - nullcore fakechoke goes up to 51!
-        || choke >= 52.0
+        // we might not need to check this !! !
+        //|| choke >= 52.0
         // if a client misses 8 ticks, its safe to assume they're lagging
         // so check the difference between the last 10 ticks
         // if a client missed any of the 10 server ticks by 8 ticks of time or more, don't check them
