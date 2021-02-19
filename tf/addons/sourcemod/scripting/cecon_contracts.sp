@@ -15,6 +15,7 @@
 #include <cecon>
 #include <tf2>
 #include <tf2_stocks>
+#include <tf_econ_data>
 #include <cecon_contracts>
 
 #define QUEST_HUD_REFRESH_RATE 0.5
@@ -181,7 +182,7 @@ public void ParseEconomyConfig(KeyValues kv)
 	m_hQuestDefinitions = 		new ArrayList(sizeof(CEQuestDefinition));
 	m_hObjectiveDefinitions = 	new ArrayList(sizeof(CEQuestObjectiveDefinition));
 	m_hHooksDefinitions = 		new ArrayList(sizeof(CEQuestObjectiveHookDefinition));
-	m_hBackgroundQuests = new ArrayList();
+	m_hBackgroundQuests = 		new ArrayList();
 
 	if (kv == null)return;
 
@@ -212,17 +213,9 @@ public void ParseEconomyConfig(KeyValues kv)
 				kv.GetString("restrictions/map", xQuest.m_sRestrictedToMap, sizeof(xQuest.m_sRestrictedToMap));
 				kv.GetString("restrictions/map_s", xQuest.m_sStrictRestrictedToMap, sizeof(xQuest.m_sStrictRestrictedToMap));
 
-				// CE Weapon Restriction
-				char sCEWeapon[64];
-				kv.GetString("restrictions/ce_weapon", sCEWeapon, sizeof(sCEWeapon));
-
-				CEItemDefinition xDef;
-				if(CEconItems_GetItemDefinitionByName(sCEWeapon, xDef))
-				{
-					xQuest.m_iRestrictedToCEWeaponIndex = xDef.m_iIndex;
-				} else {
-					xQuest.m_iRestrictedToCEWeaponIndex = StringToInt(sCEWeapon);
-				}
+				// Weapon Restriction
+				kv.GetString("restrictions/weapon", xQuest.m_sRestrictedToItemName, sizeof(xQuest.m_sRestrictedToItemName));
+				kv.GetString("restrictions/weapon_classname", xQuest.m_sRestrictedToClassname, sizeof(xQuest.m_sRestrictedToClassname));
 
 				// TF2 Class Restriction
 				char sTFClassName[64];
@@ -250,15 +243,9 @@ public void ParseEconomyConfig(KeyValues kv)
 							xObjective.m_iPoints = kv.GetNum("points", 0);
 							xObjective.m_iEnd = kv.GetNum("end", 0);
 
-							// CE Weapon Restriction
-							kv.GetString("restrictions/ce_weapon", sCEWeapon, sizeof(sCEWeapon));
-
-							if(CEconItems_GetItemDefinitionByName(sCEWeapon, xDef))
-							{
-								xObjective.m_iRestrictedToCEWeaponIndex = xDef.m_iIndex;
-							} else {
-								xObjective.m_iRestrictedToCEWeaponIndex = StringToInt(sCEWeapon);
-							}
+							// Weapon Restriction
+							kv.GetString("restrictions/weapon", xObjective.m_sRestrictedToItemName, sizeof(xObjective.m_sRestrictedToItemName));
+							kv.GetString("restrictions/weapon_classname", xObjective.m_sRestrictedToClassname, sizeof(xObjective.m_sRestrictedToClassname));
 
 							if(kv.JumpToKey("hooks", false))
 							{
@@ -331,7 +318,8 @@ public Action cDump(int args)
 		LogMessage("  m_sRestrictedToMap = \"%s\"", xQuest.m_sRestrictedToMap);
 		LogMessage("  m_sStrictRestrictedToMap = \"%s\"", xQuest.m_sStrictRestrictedToMap);
 		LogMessage("  m_nRestrictedToClass = %d", xQuest.m_nRestrictedToClass);
-		LogMessage("  m_iRestrictedToCEWeaponIndex = %d", xQuest.m_iRestrictedToCEWeaponIndex);
+		LogMessage("  m_sRestrictedToItemName = \"%s\"", xQuest.m_sRestrictedToItemName);
+		LogMessage("  m_sRestrictedToClassname = \"%s\"", xQuest.m_sRestrictedToClassname);
 		LogMessage("  m_Objectives =");
 		LogMessage("  [");
 
@@ -349,7 +337,8 @@ public Action cDump(int args)
 				LogMessage("      m_iLimit = %d", xObjective.m_iLimit);
 				LogMessage("      m_iEnd = %d", xObjective.m_iEnd);
 				LogMessage("      m_iHooksCount = %d", xObjective.m_iHooksCount);
-				LogMessage("      m_iRestrictedToCEWeaponIndex = %d", xObjective.m_iRestrictedToCEWeaponIndex);
+				LogMessage("      m_sRestrictedToItemName = \"%s\"", xObjective.m_sRestrictedToItemName);
+				LogMessage("      m_sRestrictedToClassname = \"%s\"", xObjective.m_sRestrictedToClassname);
 				LogMessage("      m_Hooks =");
 				LogMessage("      [");
 
@@ -861,47 +850,181 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 {
 	if (!IsQuestActive(xQuest))return false;
 
-	// Class Restriction.
-	if (xQuest.m_nRestrictedToClass != TFClass_Unknown &&
-		xQuest.m_nRestrictedToClass != TF2_GetPlayerClass(client)
-	)return false;
-
-	int iLastWeapon = CEcon_GetLastUsedWeapon(client);
-	int iItemDef = xQuest.m_iRestrictedToCEWeaponIndex;
-	if(iItemDef > 0)
+	bool bFailed = false;
+	
+	//------------------------------------------------
+	// TF2 Player Class restriction.
+	if(xQuest.m_nRestrictedToClass != TFClass_Unknown)
 	{
-		if (!IsValidEntity(iLastWeapon))return false;
-		if (!CEconItems_IsEntityCustomEconItem(iLastWeapon))return false;
-
-		CEItem xItem;
-		if(CEconItems_GetEntityItemStruct(iLastWeapon, xItem))
+		bFailed = true;
+		if(TF2_GetPlayerClass(client) == xQuest.m_nRestrictedToClass)
 		{
-			if (xItem.m_iItemDefinitionIndex != iItemDef)return false;
-		} else {
-			return false;
+			bFailed = false;
 		}
 	}
-
+	
+	if (bFailed)return false;
+	
+	//------------------------------------------------
+	// Item Name restriction.
+	int iLastWeapon = CEcon_GetLastUsedWeapon(client);
+	
+	
+	// This quest is restricted to a specific item, check by name.
+	if(!StrEqual(xQuest.m_sRestrictedToItemName, ""))
+	{
+		bFailed = true;
+		
+		// We are 100% sure that if we expect an item name, and target
+		// entity is not valid, we need to return false.
+		if (!IsValidEntity(iLastWeapon))return false;
+		
+		// Check if this entity was created by custom economy.
+		if (CEconItems_IsEntityCustomEconItem(iLastWeapon))
+		{
+			// Getting entity item struct.
+			CEItem xItem;
+			if(CEconItems_GetEntityItemStruct(iLastWeapon, xItem))
+			{
+				// Getting item definition of this item.
+				CEItemDefinition xDef;
+				if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, xDef))
+				{
+					// Comparing expected name with what definition has.
+					if (StrEqual(xDef.m_sName, xQuest.m_sRestrictedToItemName))
+					{
+						// If they match, this check has passed.
+						bFailed = false;
+					}
+				}
+			}
+		} else {
+			// If this is not a custom econ item, check native TF2 item name.
+			int iDefIndex = GetEntProp(iLastWeapon, Prop_Send, "m_iItemDefinitionIndex");
+			
+			// Getting item schema name.
+			char sName[64];
+			if(TF2Econ_GetItemName(iDefIndex, sName, sizeof(sName)))
+			{
+				// Comparing schema name and expected name.
+				if (StrEqual(sName, xQuest.m_sRestrictedToItemName))
+				{
+					// If match, this check has passed.
+					bFailed = false;
+				}
+			}
+		}
+		
+		// If this check didn't pass, return false.
+		if (bFailed)return false;
+	}
+	
+	//------------------------------------------------
+	// Checking entity classname.
+	
+	// This quest is restricted to a specific class name.
+	if(!StrEqual(xQuest.m_sRestrictedToClassname, ""))
+	{
+		bFailed = true;
+		
+		// If entity does not exist, return false.
+		if (!IsValidEntity(iLastWeapon))return false;
+		
+		char sClassname[64];
+		GetEntityClassname(iLastWeapon, sClassname, sizeof(sClassname));
+		
+		if(StrEqual(sClassname, xQuest.m_sRestrictedToClassname))
+		{
+			bFailed = false;
+		}
+	
+		// If this check didn't pass, return false.
+		if (bFailed)return false;
+	}
+	
 	return true;
 }
 
 public bool CanClientTriggerObjective(int client, CEQuestObjectiveDefinition xObjective)
 {
+	bool bFailed = false;
+	
+	//------------------------------------------------
+	// Item Name restriction.
 	int iLastWeapon = CEcon_GetLastUsedWeapon(client);
-	int iItemDef = xObjective.m_iRestrictedToCEWeaponIndex;
-	if(iItemDef > 0)
+	
+	// This quest is restricted to a specific item, check by name.
+	if(!StrEqual(xObjective.m_sRestrictedToItemName, ""))
 	{
+		bFailed = true;
+		
+		// We are 100% sure that if we expect an item name, and target
+		// entity is not valid, we need to return false.
 		if (!IsValidEntity(iLastWeapon))return false;
-		if (!CEconItems_IsEntityCustomEconItem(iLastWeapon))return false;
-
-		CEItem xItem;
-		if(CEconItems_GetEntityItemStruct(iLastWeapon, xItem))
+		
+		// Check if this entity was created by custom economy.
+		if (CEconItems_IsEntityCustomEconItem(iLastWeapon))
 		{
-			if (xItem.m_iItemDefinitionIndex != iItemDef)return false;
+			// Getting entity item struct.
+			CEItem xItem;
+			if(CEconItems_GetEntityItemStruct(iLastWeapon, xItem))
+			{
+				// Getting item definition of this item.
+				CEItemDefinition xDef;
+				if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, xDef))
+				{
+					// Comparing expected name with what definition has.
+					if (StrEqual(xDef.m_sName, xObjective.m_sRestrictedToItemName))
+					{
+						// If they match, this check has passed.
+						bFailed = false;
+					}
+				}
+			}
 		} else {
-			return false;
+			// If this is not a custom econ item, check native TF2 item name.
+			int iDefIndex = GetEntProp(iLastWeapon, Prop_Send, "m_iItemDefinitionIndex");
+			
+			// Getting item schema name.
+			char sName[64];
+			if(TF2Econ_GetItemName(iDefIndex, sName, sizeof(sName)))
+			{
+				// Comparing schema name and expected name.
+				if (StrEqual(sName, xObjective.m_sRestrictedToItemName))
+				{
+					// If match, this check has passed.
+					bFailed = false;
+				}
+			}
 		}
+		
+		// If this check didn't pass, return false.
+		if (bFailed)return false;
 	}
+	
+	//------------------------------------------------
+	// Checking entity classname.
+	
+	// This quest is restricted to a specific class name.
+	if(!StrEqual(xObjective.m_sRestrictedToClassname, ""))
+	{
+		bFailed = true;
+		
+		// If entity does not exist, return false.
+		if (!IsValidEntity(iLastWeapon))return false;
+		
+		char sClassname[64];
+		GetEntityClassname(iLastWeapon, sClassname, sizeof(sClassname));
+		
+		if(StrEqual(sClassname, xObjective.m_sRestrictedToClassname))
+		{
+			bFailed = false;
+		}
+	
+		// If this check didn't pass, return false.
+		if (bFailed)return false;
+	}
+	
 	return true;
 }
 

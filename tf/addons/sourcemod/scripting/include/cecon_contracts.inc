@@ -22,10 +22,16 @@ enum struct CEQuestDefinition
 	int m_iObjectivesCount;
 	int m_Objectives[MAX_OBJECTIVES];
 
+	// Map restrictions.
 	char m_sRestrictedToMap[64];
 	char m_sStrictRestrictedToMap[64];
+
+	// TF2 class restriction.
 	TFClassType m_nRestrictedToClass;
-	int m_iRestrictedToCEWeaponIndex;
+
+	// Active weapon restriction.
+	char m_sRestrictedToItemName[64];
+	char m_sRestrictedToClassname[64];
 }
 
 enum struct CEQuestObjectiveDefinition
@@ -42,7 +48,9 @@ enum struct CEQuestObjectiveDefinition
 	int m_iHooksCount;
 	int m_Hooks[MAX_HOOKS];
 
-	int m_iRestrictedToCEWeaponIndex;
+	// Active weapon restriction.
+	char m_sRestrictedToItemName[64];
+	char m_sRestrictedToClassname[64];
 }
 
 enum struct CEQuestObjectiveHookDefinition
@@ -52,7 +60,7 @@ enum struct CEQuestObjectiveHookDefinition
 	int m_iQuestIndex;
 
 	char m_sEvent[128];
-	
+
 	float m_flDelay;
 	float m_flSubtractIn;
 
