@@ -117,7 +117,6 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 		{
 			if(attacker != client)
 			{
-				PrintToChatAll("%N murdered %N", attacker, client);
 				CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL", 1, hEvent);
 				CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_OR_ASSIST", 1, hEvent);
 
