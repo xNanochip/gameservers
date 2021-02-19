@@ -6,6 +6,7 @@
 #include <sdktools>
 #include <cecon_items>
 #include <cecon_http>
+#include <tf2_stocks>
 
 #define Q_UNIQUE 6
 #define TF_TEAM_DEFENDERS 2
@@ -64,6 +65,7 @@ public void PrintGameStats()
 
 	int iSuccessTime = GetTotalSuccessTime();
 	int iPercentage = RoundToFloor(float(iSuccessTime) / float(iMissionTime) * 100.0);
+	if (iPercentage < 0)iPercentage = 0;
 	TimeToStopwatchTimer(iSuccessTime, sTimer, sizeof(sTimer));
 	PrintToChatAll("\x01Total success time in mission: \x03%s (%d%%)", sTimer, iPercentage);
 
@@ -508,8 +510,23 @@ public void RequestTourLoot()
 		
 		char sKey[32];
 		Format(sKey, sizeof(sKey), "steamids[%d]", iCount);
-		
 		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sSteamID);
+		
+		Format(sKey, sizeof(sKey), "classes[%d]", iCount);
+		char sClass[32];
+		switch(TF2_GetPlayerClass(i))
+		{
+			case TFClass_Scout:strcopy(sClass, sizeof(sClass), "scout");
+			case TFClass_Soldier:strcopy(sClass, sizeof(sClass), "soldier");
+			case TFClass_Pyro:strcopy(sClass, sizeof(sClass), "pyro");
+			case TFClass_DemoMan:strcopy(sClass, sizeof(sClass), "demo");
+			case TFClass_Heavy:strcopy(sClass, sizeof(sClass), "heavy");
+			case TFClass_Engineer:strcopy(sClass, sizeof(sClass), "engineer");
+			case TFClass_Medic:strcopy(sClass, sizeof(sClass), "medic");
+			case TFClass_Sniper:strcopy(sClass, sizeof(sClass), "sniper");
+			case TFClass_Spy:strcopy(sClass, sizeof(sClass), "spy");
+		}
+		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sClass);
 		
 		iCount++;
 	}

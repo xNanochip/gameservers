@@ -1711,6 +1711,7 @@ ArrayList m_AttributeUpdateBatches;
 
 public void AddAttributeUpdateBatch(int index, const char[] name, const char[] value)
 {
+	PrintToChatAll("Batching attribute change");
 	if(m_AttributeUpdateBatches == null)
 	{
 		m_AttributeUpdateBatches = new ArrayList(sizeof(CEAttributeUpdateBatch));
