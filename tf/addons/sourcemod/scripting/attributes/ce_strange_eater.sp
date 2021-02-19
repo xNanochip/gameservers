@@ -274,7 +274,6 @@ public void CEcon_OnClientEvent(int client, const char[] name, int add, int uniq
 
 public void TickleEntityStrangeParts(int entity, const char[] event, int add)
 {
-	PrintToChatAll("%d %s %d", entity, event, add);
 	for (int i = 0; i < MAX_STRANGE_PARTS; i++)
 	{
 		int iPart = m_xParts[entity][i].m_iIndex;
