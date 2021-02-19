@@ -370,6 +370,12 @@
 					type "sym"
 					sym  "_ZN6CTFBot15PhysicsSimulateEv"
 				}
+				"CTFBot::IsExplosiveProjectileWeapon"
+				{
+					type "sym"
+					sym  "_ZNK6CTFBot27IsExplosiveProjectileWeaponEP13CTFWeaponBase"
+				}
+
 				
 			}
 		}

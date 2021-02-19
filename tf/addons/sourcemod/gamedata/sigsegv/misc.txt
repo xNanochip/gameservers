@@ -3699,12 +3699,6 @@
 					lib  "engine"
 					sym  "_ZN11CGameServer14SetHibernatingEb"
 				}
-				"CGameServer::SetHibernating"
-				{
-					type "sym"
-					lib  "engine"
-					sym  "_ZN11CGameServer14SetHibernatingEb"
-				}
 				"CHLTVServer::StartMaster"
 				{
 					type "sym"
@@ -3964,6 +3958,31 @@
 				{
 					type "sym"
 					sym  "_ZN11CBaseFilter18InputTestActivatorER11inputdata_t"
+				}
+				"CTFSniperRifle::SniperRifleChargeRateMod"
+				{
+					type "sym"
+					sym  "_ZN14CTFSniperRifle24SniperRifleChargeRateModEv"
+				}
+				"CTFSniperRifle::ApplyChargeSpeedModifications"
+				{
+					type "sym"
+					sym  "_ZN14CTFSniperRifle29ApplyChargeSpeedModificationsERf"
+				}
+				"CTFProjectile_MechanicalArmOrb::CheckForProjectiles"
+				{
+					type "sym"
+					sym  "_ZN30CTFProjectile_MechanicalArmOrb19CheckForProjectilesEv"
+				}
+				"CServerGameDLL::SetServerHibernation"
+				{
+					type "sym"
+					sym  "_ZN14CServerGameDLL20SetServerHibernationEb"
+				}
+				"CTFGCServerSystem::SetHibernation"
+				{
+					type "sym"
+					sym  "_ZN17CTFGCServerSystem14SetHibernationEb"
 				}
 				
 			}

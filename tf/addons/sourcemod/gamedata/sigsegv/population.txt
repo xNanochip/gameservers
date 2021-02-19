@@ -51,7 +51,7 @@
 				"CPopulationManager::AdjustMinPlayerSpawnTime"                    "_ZN18CPopulationManager24AdjustMinPlayerSpawnTimeEv"
 				"CPopulationManager::PauseSpawning"                               "_ZN18CPopulationManager13PauseSpawningEv"
 				"CPopulationManager::UnpauseSpawning"                             "_ZN18CPopulationManager15UnpauseSpawningEv"
-				
+				"CPopulationManager::StartCurrentWave"                            "_ZN18CPopulationManager16StartCurrentWaveEv"
 				
 				
 				"CMissionPopulator::~CMissionPopulator [D0]"      "_ZN17CMissionPopulatorD0Ev"
