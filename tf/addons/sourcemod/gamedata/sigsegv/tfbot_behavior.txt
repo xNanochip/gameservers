@@ -441,7 +441,21 @@
 					type "sym"
 					sym  "_ZN23CTFBotEscortSquadLeader6UpdateEP6CTFBotf"
 				}
-				
+				"CTFBotEscortSquadLeader::OnEnd"
+				{
+					type "sym"
+					sym  "_ZN23CTFBotEscortSquadLeader5OnEndEP6CTFBotP6ActionIS0_E"
+				}
+				"CTFBotEscortSquadLeader::~CTFBotEscortSquadLeader [D0]"
+				{
+					type "sym"
+					sym  "_ZN23CTFBotEscortSquadLeaderD0Ev"
+				}
+				"CTFBotEscortSquadLeader::~CTFBotEscortSquadLeader [D2]"
+				{
+					type "sym"
+					sym  "_ZN23CTFBotEscortSquadLeaderD2Ev"
+				}
 			}
 		}
 	}

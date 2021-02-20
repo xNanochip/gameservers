@@ -559,6 +559,12 @@
 					type "sym"
 					sym  "_ZN15CTFPlayerShared9MakeBleedEP9CTFPlayerP13CTFWeaponBasefibi"
 				}
+
+				"CTFPlayerShared::OnRemovePhase"
+				{
+					type "sym"
+					sym  "_ZN15CTFPlayerShared13OnRemovePhaseEv"
+				}
 				
 				"CTFPlayerClassShared::SetCustomModel"
 				{
