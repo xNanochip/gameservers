@@ -42,6 +42,7 @@ enum struct CEItemDefinitionWeapon
     int m_iAmmo;
 
 	char m_sWorldModel[256];
+	
 	bool m_bPreserveAttributes;
 
 	int m_iStylesCount;
@@ -759,13 +760,13 @@ public bool CEconItems_ShouldItemBeBlocked(int client, CEItem xItem, const char[
 		if(FindWeaponDefinitionByIndex(xItem.m_iItemDefinitionIndex, xWeapon))
 		{
 			int item_slot = TF2Econ_GetItemSlot(xWeapon.m_iBaseIndex, TF2_GetPlayerClass(client));
-			
+
 			// If this weapon is a melee weapon, allow it.
-			if(item_slot == 2) 
+			if(item_slot == 2)
 			{
 				return false;
 			}
-			
+
 			// Otherwise, see if this item has "allowed in medieval mode attribute".
 			if(CEconItems_GetAttributeBoolFromArray(xItem.m_Attributes, "allowed in medieval mode"))
 			{
