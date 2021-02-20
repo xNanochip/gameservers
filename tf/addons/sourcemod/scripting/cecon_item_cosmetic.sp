@@ -286,6 +286,10 @@ public bool HasOverlappingWeapons(int client, int bits)
 	return false;
 }
 
+//--------------------------------------------------------------------
+// Purpose: Returns the amount of cosmetics a user has. 
+// NOT wearables in general. Just cosmetics.
+//--------------------------------------------------------------------
 public int GetClientCosmeticsCount(int client)
 {
 	int iCount = 0;
@@ -303,11 +307,17 @@ public int GetClientCosmeticsCount(int client)
 	return iCount;
 }
 
+//--------------------------------------------------------------------
+// Purpose: Returns true if we can get another cosmetic equipped.
+//--------------------------------------------------------------------
 public bool CanGetAnotherCosmetic(int client)
 {
 	return GetClientCosmeticsCount(client) < MAX_COSMETICS;
 }
 
+//--------------------------------------------------------------------
+// Purpose: Checks if a wearable is a real cosmetic.
+//--------------------------------------------------------------------
 public bool IsWearableCosmetic(int wearable)
 {
 	char sNetClassName[32];
