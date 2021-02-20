@@ -105,6 +105,8 @@ public void OnPluginStart()
 	ce_credentials_filename = CreateConVar("ce_credentials_filename", "economy.cfg", "Filename of the econome config.");
 
 	HookConVarChange(ce_credentials_filename, ce_credentials_filename__CHANGED);
+	
+	CreateTimer(5.0, Timer_CoordinatorWatchDog);
 
 	// We check every 5 seconds if coordinator is running, if it is not
 	// but it should, restart it.
@@ -404,6 +406,7 @@ public void StartCoordinatorLongPolling()
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
 	Steam_SetHTTPRequestNetworkActivityTimeout(httpRequest, 40);
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "session_id", m_sSessionKey);
+	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "squash_arguments", "1");
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Authorization", m_sAuthorizationKey);
 
@@ -434,7 +437,6 @@ public void StartCoordinatorLongPolling()
 //-------------------------------------------------------------------
 public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
 {
-	PrintToServer("Coordinator_Request_Callback");
 	bool bError = true;
 
 	// If response was succesful...
