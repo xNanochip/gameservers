@@ -74,10 +74,9 @@ int m_iLastWeapon[MAXPLAYERS + 1];
 //-------------------------------------------------------------------
 // Coordinator
 //-------------------------------------------------------------------
-
 // Stores all jobs indexes that we've already processed,
 // and we need to mark as such on next coordiantor request.
-char sProcessedJobs[256];
+char m_sSessionKey[16];
 bool m_bCoordinatorActive = false;			// True if coordiantor is currently in process of making requests.
 bool m_bIsBackendUnreachable = false;		// True if we can't reach backend for an extended period of time.
 
@@ -109,7 +108,6 @@ public void OnPluginStart()
 
 	// We check every 5 seconds if coordinator is running, if it is not
 	// but it should, restart it.
-	// CreateTimer(5.0, Timer_CoordinatorWatchDog);
 
 	// ----------- SCHEMA ----------- //
 
@@ -152,20 +150,20 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 {
 	RegPluginLibrary("cecon_core");
 
-	//========================//
+	//------------------------------------------------
 	// Core
 
 	CreateNative("CEcon_GetAccessKey", Native_GetAccessKey);
 	CreateNative("CEcon_GetBaseBackendURL", Native_GetBaseBackendURL);
 	CreateNative("CEcon_GetAuthorizationKey", Native_GetAuthorizationKey);
 
-	//========================//
+	//------------------------------------------------
 	// Schema
 
 	g_CEcon_OnSchemaUpdated = CreateGlobalForward("CEcon_OnSchemaUpdated", ET_Ignore, Param_Cell);
 	CreateNative("CEcon_GetEconomySchema", Native_GetEconomySchema);
 
-	//========================//
+	//------------------------------------------------
 	// Events
 
 	CreateNative("CEcon_SendEventToClient", Native_SendEventToClient);
@@ -404,8 +402,8 @@ public void StartCoordinatorLongPolling()
 	Format(sURL, sizeof(sURL), "%s/api/coordinator", m_sBaseEconomyURL);
 
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
-	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "processed_jobs", sProcessedJobs);
 	Steam_SetHTTPRequestNetworkActivityTimeout(httpRequest, 40);
+	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "session_id", m_sSessionKey);
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Accept", "text/keyvalues");
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Authorization", m_sAuthorizationKey);
 
@@ -422,6 +420,7 @@ public void StartCoordinatorLongPolling()
 		Steam_SetHTTPRequestGetOrPostParameter(httpRequest, sKey, sSteamID);
 		iPlayerCount++;
 	}
+	
 
 	char sAccessHeader[256];
 	Format(sAccessHeader, sizeof(sAccessHeader), "Provider %s", m_sEconomyAccessKey);
@@ -435,6 +434,7 @@ public void StartCoordinatorLongPolling()
 //-------------------------------------------------------------------
 public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
 {
+	PrintToServer("Coordinator_Request_Callback");
 	bool bError = true;
 
 	// If response was succesful...
@@ -514,8 +514,8 @@ public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success
 public void CoordinatorOnBackendUnreachable()
 {
 	// TODO: Make a forward.
-	PrintToChatAll("\x01Economy Backend is \x03down.");
-	PrintToServer("[WARNING] Economy Backend is down.");
+	PrintToChatAll("\x01Creators.TF Item Servers are \x03down.");
+	PrintToServer("[WARNING] Creators.TF Item Servers are down.");
 }
 
 //-------------------------------------------------------------------
@@ -524,8 +524,8 @@ public void CoordinatorOnBackendUnreachable()
 public void CoordinatorOnBackendReachable()
 {
 	// TODO: Make a forward.
-	PrintToChatAll("\x01Economy Backend is \x03up.");
-	PrintToServer("[WARNING] Economy Backend is up.");
+	PrintToChatAll("\x01Creators.TF Item Servers are \x03up.");
+	PrintToServer("[WARNING] Creators.TF Item Servers are up.");
 }
 
 //-------------------------------------------------------------------
@@ -578,25 +578,23 @@ public bool CoordinatorProcessRequestContent(HTTPRequestHandle request)
 	// If this happens we return true because some error has occured.
 	if (!kv.ImportFromString(content))return true;
 
-	// Flush the string that contains list of jobs that we've processed.
-	// We are going to send this list in the next coordinator request to let it know
-	// that these jobs are already processed by us.
-	strcopy(sProcessedJobs, sizeof(sProcessedJobs), "");
+	char sSessionKey[16];
+	kv.GetString("session_id", sSessionKey, sizeof(sSessionKey));
+	if(!StrEqual(sSessionKey, ""))
+	{
+		strcopy(m_sSessionKey, sizeof(m_sSessionKey), sSessionKey);
+		return false;
+	}
 
 	// Assuming that at this point KV handle is valid. Processing it.
 	if(kv.JumpToKey("jobs", false))
 	{
-		if(kv.GotoFirstSubKey())
+		if(kv.GotoFirstSubKey(false))
 		{
 			do {
-				// Getting index of the job and appending it to the list of processed jobs.
-				char sIndex[64];
-				kv.GetString("index", sIndex, sizeof(sIndex));
-				Format(sProcessedJobs, sizeof(sProcessedJobs), "%s%s,", sProcessedJobs, sIndex);
-
 				// Getting the actual job command that we need to excetute. And execute it.
 				char sCommand[256];
-				kv.GetString("command", sCommand, sizeof(sCommand));
+				kv.GetString(NULL_STRING, sCommand, sizeof(sCommand));
 
 				PrintToServer(sCommand);
 				ServerCommand(sCommand);
