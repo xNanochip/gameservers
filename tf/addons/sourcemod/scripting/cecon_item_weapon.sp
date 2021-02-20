@@ -43,12 +43,12 @@ enum struct CEItemDefinitionWeapon
 
 	char m_sWorldModel[256];
 	bool m_bPreserveAttributes;
-	
+
 	int m_iStylesCount;
 	int m_iStyles[MAX_STYLES];
 }
 
-enum struct CEItemDefinitionWeaponStyle 
+enum struct CEItemDefinitionWeaponStyle
 {
 	int m_iIndex;
 	char m_sWorldModel[256];
@@ -269,7 +269,7 @@ public void ProcessEconSchema(KeyValues kv)
 	delete m_hStyles;
 	m_hDefinitions = new ArrayList(sizeof(CEItemDefinitionWeapon));
 	m_hStyles = new ArrayList(sizeof(CEItemDefinitionWeaponStyle));
-	
+
 	if (kv == null)return;
 
 	if (kv.JumpToKey("Items"))
@@ -294,7 +294,7 @@ public void ProcessEconSchema(KeyValues kv)
 
 				kv.GetString("world_model", hDef.m_sWorldModel, sizeof(hDef.m_sWorldModel));
 				kv.GetString("item_class", hDef.m_sClassName, sizeof(hDef.m_sClassName));
-				
+
 				if(kv.JumpToKey("visuals/styles", false))
 				{
 					if(kv.GotoFirstSubKey())
@@ -302,18 +302,18 @@ public void ProcessEconSchema(KeyValues kv)
 						do {
 							int iWorldStyleIndex = m_hStyles.Length;
 							int iLocalStyleIndex = hDef.m_iStylesCount;
-							
+
 							kv.GetSectionName(sIndex, sizeof(sIndex));
-							
+
 							CEItemDefinitionWeaponStyle xStyle;
 							xStyle.m_iIndex = StringToInt(sIndex);
 							kv.GetString("world_model", xStyle.m_sWorldModel, sizeof(xStyle.m_sWorldModel));
-							
+
 							m_hStyles.PushArray(xStyle);
-							
+
 							hDef.m_iStylesCount++;
 							hDef.m_iStyles[iLocalStyleIndex] = iWorldStyleIndex;
-							
+
 						} while (kv.GotoNextKey());
 						kv.GoBack();
 					}
@@ -497,18 +497,18 @@ public void OnDrawWeapon(int client, int iWeapon)
 		} else {
 
 			SetEntityRenderMode(iWeapon, RENDER_TRANSALPHA);
-			SetEntityRenderColor(iWeapon, 0, 0, 0, 0);	
+			SetEntityRenderColor(iWeapon, 0, 0, 0, 0);
 
 			bool bShouldDrawHands = false;
-			
+
 			// These are the only weapons that for some reason brake
-			// when this is set to 1. I guess we can go with the old way of doing things and just 
+			// when this is set to 1. I guess we can go with the old way of doing things and just
 			// create the hand as the wearable. This will bring back the random red lights issue.
 			// VALVE PLS FIX (TM).
-			
+
 			char sClassName[32];
 			GetEntityClassname(iWeapon, sClassName, sizeof(sClassName));
-			
+
 			if(	StrEqual(sClassName, "tf_weapon_flamethrower") ||
 				StrEqual(sClassName, "tf_weapon_minigun") ||
 				StrEqual(sClassName, "tf_weapon_medigun")
@@ -521,14 +521,14 @@ public void OnDrawWeapon(int client, int iWeapon)
 
 			int iWM = TF2Wear_CreateWeaponTiedWearable(iWeapon, false, m_sWeaponModel[iWeapon]);
 			int iVM = TF2Wear_CreateWeaponTiedWearable(iWeapon, true, m_sWeaponModel[iWeapon]);
-			
+
 			int iKillStreakSheen = CEconItems_GetEntityAttributeInteger(iWeapon, "killstreak idleeffect");
 			if(iKillStreakSheen > 0)
 			{
 				TF2Attrib_SetByName(iWM, "killstreak idleeffect", float(iKillStreakSheen));
 				TF2Attrib_SetByName(iVM, "killstreak idleeffect", float(iKillStreakSheen));
 			}
-			
+
 			if(bShouldDrawHands)
 			{
 				char arms[PLATFORM_MAX_PATH];
@@ -708,10 +708,10 @@ public bool GetWeaponStyleDefinition(CEItemDefinitionWeapon xWeapon, int style, 
 	for (int i = 0; i < xWeapon.m_iStylesCount; i++)
 	{
 		int iWorldIndex = xWeapon.m_iStyles[i];
-		
+
 		CEItemDefinitionWeaponStyle xStyle;
 		m_hStyles.GetArray(iWorldIndex, xStyle);
-		
+
 		if(xStyle.m_iIndex == style)
 		{
 			xBuffer = xStyle;
@@ -741,4 +741,37 @@ public void CEconItems_OnCustomEntityStyleUpdated(int client, int entity, int st
 			}
 		}
 	}
+}
+
+//--------------------------------------------------------------------
+// Purpose: If returned value is true, this item will be blocked.
+// We check it to see if a specific weapon is allowed in a specific
+// gamemode. I.e. Medieval.
+//--------------------------------------------------------------------
+public bool CEconItems_ShouldItemBeBlocked(int client, CEItem xItem, const char[] type)
+{
+	if (!StrEqual(type, "weapon"))return false;
+
+	if(GameRules_GetProp("m_bPlayingMedieval") == 1)
+	{
+		CEItemDefinitionWeapon xWeapon;
+		if(FindWeaponDefinitionByIndex(xItem.m_iItemDefinitionIndex, xWeapon))
+		{
+			int item_slot = TF2Econ_GetItemSlot(xWeapon.m_iBaseIndex, TF2_GetPlayerClass(client));
+			
+			// If this weapon is a melee weapon, allow it.
+			if(item_slot == 2) 
+			{
+				return false;
+			}
+			
+			// Otherwise, see if this item has "allowed in medieval mode attribute".
+			if(CEconItems_GetAttributeBoolFromArray(xItem.m_Attributes, "allowed in medieval mode"))
+			{
+				return false;
+			}
+			return true;
+		}
+	}
+	return false;
 }
