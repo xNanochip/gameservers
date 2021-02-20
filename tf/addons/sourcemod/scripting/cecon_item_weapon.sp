@@ -43,8 +43,6 @@ enum struct CEItemDefinitionWeapon
 
 	char m_sWorldModel[256];
 	
-	bool m_bPreserveAttributes;
-
 	int m_iStylesCount;
 	int m_iStyles[MAX_STYLES];
 }
@@ -149,9 +147,9 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 			int iWear = TF2Wear_CreateWearable(client, false, hDef.m_sWorldModel);
 			return iWear;
 		} else {
-			int iWeapon = CreateWeapon(client, hDef.m_iBaseIndex, hDef.m_sClassName, item.m_nQuality, hDef.m_bPreserveAttributes);
+			int iWeapon = CreateWeapon(client, hDef.m_iBaseIndex, hDef.m_sClassName, item.m_nQuality);
 			if(iWeapon > -1)
-			{
+			{				
 				int iBaseDefID = GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex");
 				int item_slot = TF2Econ_GetItemSlot(iBaseDefID, TF2_GetPlayerClass(client));
 
@@ -220,7 +218,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 
 				// Making weapon visible.
 				SetEntProp(iWeapon, Prop_Send, "m_bValidatedAttachedEntity", 1);
-
+				
 				TF2_RemoveWeaponSlot(client, item_slot);
 				EquipPlayerWeapon(client, iWeapon);
 
@@ -291,7 +289,6 @@ public void ProcessEconSchema(KeyValues kv)
 
 				hDef.m_iClip = kv.GetNum("weapon_clip");
 				hDef.m_iAmmo = kv.GetNum("weapon_ammo");
-				hDef.m_bPreserveAttributes = kv.GetNum("preserve_attributes", 0) == 1;
 
 				kv.GetString("world_model", hDef.m_sWorldModel, sizeof(hDef.m_sWorldModel));
 				kv.GetString("item_class", hDef.m_sClassName, sizeof(hDef.m_sClassName));
@@ -332,13 +329,9 @@ public void ProcessEconSchema(KeyValues kv)
 //--------------------------------------------------------------------
 // Purpose: Creates a TF2 weapon, using TF2Items extension.
 //--------------------------------------------------------------------
-public int CreateWeapon(int client, int index, const char[] classname, int quality, bool preserve)
+public int CreateWeapon(int client, int index, const char[] classname, int quality)
 {
-	int nFlags = OVERRIDE_ALL | FORCE_GENERATION;
-	if(preserve)
-	{
-		nFlags |= PRESERVE_ATTRIBUTES;
-	}
+	int nFlags = OVERRIDE_ALL | FORCE_GENERATION | PRESERVE_ATTRIBUTES;
 	Handle hWeapon = TF2Items_CreateItem(nFlags);
 
 	char class[128];
