@@ -42,12 +42,6 @@
 *	when player touches ressuply locker. This happens with Cosmetics and
 *	Weapons. To prevent mismatch between equipped items and wearable items,
 *	we keep track of them separately.
-*
-*	To check if player has item equipped in their inventory you run:
-*	- CEcon_IsPlayerEquippedItemIndex(int client, CEconLoadoutClass class, int item_index);
-*
-*	To check if player has this item actually equipped right now, run:
-*	- CEcon_IsPlayerWearingItemIndex(int client, int item_index);
 */
 //===============================//
 
@@ -114,6 +108,7 @@ ArrayList m_MyItems[MAXPLAYERS + 1]; 					// Array of items this user is wearing
 bool m_bWaitingForLoadout[MAXPLAYERS + 1];
 bool m_bInRespawn[MAXPLAYERS + 1];
 bool m_bFullReapplication[MAXPLAYERS + 1];
+TFClassType m_nLoadoutUpdatedForClass[MAXPLAYERS + 1];
 
 ConVar ce_items_use_backend_loadout;
 
@@ -234,7 +229,6 @@ public void OnPluginStart()
 	HookEvent("player_spawn", player_spawn);
 	HookEvent("player_death", player_death);
 
-	//RegServerCmd("ce_loadout_reset", cLoadoutReset);
 	m_PartialReapplicationTypes = new ArrayList(ByteCountToCells(32));
 	m_PartialReapplicationTypes.PushString("cosmetic");
 	m_PartialReapplicationTypes.PushString("weapon");
@@ -256,6 +250,8 @@ public Action cResetLoadout(int args)
 	if (IsClientValid(iTarget))
 	{
 		if (m_bWaitingForLoadout[iTarget])return Plugin_Handled;
+		
+		m_nLoadoutUpdatedForClass[iTarget] = TF2_GetClass(sArg2);
 		CEconItems_RequestClientLoadoutUpdate(iTarget, false);
 
 	}
@@ -1301,7 +1297,7 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 	// We are not processing bots.
 	if (!IsClientReady(client))return;
 
-	// ======================== //
+	//-------------------------------//
 	// Making HTTP checks.
 
 	// If request was not succesful, return.
@@ -1318,7 +1314,7 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 
 	KeyValues Response = new KeyValues("Response");
 
-	// ======================== //
+	//-------------------------------//
 	// Parsing loadout response.
 
 	// If we fail to import content return.
@@ -1336,15 +1332,15 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 
 				CEconLoadoutClass nClass;
 				if(StrEqual(sClassName, "general")) nClass = CEconLoadoutClass_General;
-				if(StrEqual(sClassName, "scout")) nClass = CEconLoadoutClass_Scout;
+				if(StrEqual(sClassName, "scout")) 	nClass = CEconLoadoutClass_Scout;
 				if(StrEqual(sClassName, "soldier")) nClass = CEconLoadoutClass_Soldier;
-				if(StrEqual(sClassName, "pyro")) nClass = CEconLoadoutClass_Pyro;
-				if(StrEqual(sClassName, "demo")) nClass = CEconLoadoutClass_Demoman;
-				if(StrEqual(sClassName, "heavy")) nClass = CEconLoadoutClass_Heavy;
-				if(StrEqual(sClassName, "engineer")) nClass = CEconLoadoutClass_Engineer;
-				if(StrEqual(sClassName, "medic")) nClass = CEconLoadoutClass_Medic;
-				if(StrEqual(sClassName, "sniper")) nClass = CEconLoadoutClass_Sniper;
-				if(StrEqual(sClassName, "spy")) nClass = CEconLoadoutClass_Spy;
+				if(StrEqual(sClassName, "pyro")) 	nClass = CEconLoadoutClass_Pyro;
+				if(StrEqual(sClassName, "demo")) 	nClass = CEconLoadoutClass_Demoman;
+				if(StrEqual(sClassName, "heavy")) 	nClass = CEconLoadoutClass_Heavy;
+				if(StrEqual(sClassName, "engineer"))nClass = CEconLoadoutClass_Engineer;
+				if(StrEqual(sClassName, "medic")) 	nClass = CEconLoadoutClass_Medic;
+				if(StrEqual(sClassName, "sniper")) 	nClass = CEconLoadoutClass_Sniper;
+				if(StrEqual(sClassName, "spy")) 	nClass = CEconLoadoutClass_Spy;
 
 				m_Loadout[client][nClass] = new ArrayList(sizeof(CEItem));
 
@@ -1390,7 +1386,14 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 
 	if(m_bInRespawn[client])
 	{
-		TF2_RespawnPlayer(client);
+		if(m_nLoadoutUpdatedForClass[client] > TFClass_Unknown)
+		{
+			if(TF2_GetPlayerClass(client) == m_nLoadoutUpdatedForClass[client])
+			{
+				TF2_RespawnPlayer(client);
+			}
+			m_nLoadoutUpdatedForClass[client] = TFClass_Unknown;
+		}
 	} else if(apply)
 	{
 		LoadoutApplication(client, true);
