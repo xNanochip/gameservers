@@ -6,11 +6,7 @@
 	"$detailblendfactor" .01
 	"$detailblendmode" 6
 	"$yellow" "0"
-	
-	">=DX90"
-	{
-		"$detail" "effects/tiledfire/fireLayeredSlowTiled512.vtf"
-	}
+
 	
 	"$basemapalphaphongmask" "1"
                "$envmap" "cubemaps/cubemap_newzealium"

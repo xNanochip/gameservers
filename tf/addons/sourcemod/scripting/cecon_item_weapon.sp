@@ -522,6 +522,7 @@ public void OnDrawWeapon(int client, int iWeapon)
 			int iWM = TF2Wear_CreateWeaponTiedWearable(iWeapon, false, m_sWeaponModel[iWeapon]);
 			int iVM = TF2Wear_CreateWeaponTiedWearable(iWeapon, true, m_sWeaponModel[iWeapon]);
 
+			// Crutch to make the sheen appear on custom weapons models.
 			int iKillStreakSheen = CEconItems_GetEntityAttributeInteger(iWeapon, "killstreak idleeffect");
 			if(iKillStreakSheen > 0)
 			{
