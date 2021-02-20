@@ -41,15 +41,27 @@ public Plugin myinfo =
 	url = "https://creators.tf"
 };
 
+#define MAX_STYLES 16
+
 enum struct CEItemDefinitionCosmetic
 {
 	int m_iIndex;
 	char m_sWorldModel[256];
 	int m_iBaseIndex;
 	int m_iEquipRegion;
+	
+	int m_iStylesCount;
+	int m_iStyles[MAX_STYLES];
+}
+
+enum struct CEItemDefinitionCosmeticStyle 
+{
+	int m_iIndex;
+	char m_sWorldModel[256];
 }
 
 ArrayList m_hDefinitions;
+ArrayList m_hStyles;
 
 //--------------------------------------------------------------------
 // Purpose: Precaches all the items of a specific type on plugin
@@ -175,7 +187,9 @@ public bool FindCosmeticDefinitionByIndex(int defid, CEItemDefinitionCosmetic ou
 public void ProcessEconSchema(KeyValues kv)
 {
 	delete m_hDefinitions;
-	m_hDefinitions = new ArrayList(sizeof(CEItemDefinitionCosmetic));
+	delete m_hStyles;
+	m_hDefinitions 	= new ArrayList(sizeof(CEItemDefinitionCosmetic));
+	m_hStyles 		= new ArrayList(sizeof(CEItemDefinitionCosmeticStyle));
 	
 	if (kv == null)return;
 	
@@ -200,6 +214,31 @@ public void ProcessEconSchema(KeyValues kv)
 				hDef.m_iEquipRegion = TF2Wear_ParseEquipRegionString(sEquipRegions);
 				
 				kv.GetString("world_model", hDef.m_sWorldModel, sizeof(hDef.m_sWorldModel));
+				
+				if(kv.JumpToKey("visuals/styles", false))
+				{
+					if(kv.GotoFirstSubKey())
+					{
+						do {
+							int iWorldStyleIndex = m_hStyles.Length;
+							int iLocalStyleIndex = hDef.m_iStylesCount;
+							
+							kv.GetSectionName(sIndex, sizeof(sIndex));
+							
+							CEItemDefinitionCosmeticStyle xStyle;
+							xStyle.m_iIndex = StringToInt(sIndex);
+							kv.GetString("world_model", xStyle.m_sWorldModel, sizeof(xStyle.m_sWorldModel));
+							
+							m_hStyles.PushArray(xStyle);
+							
+							hDef.m_iStylesCount++;
+							hDef.m_iStyles[iLocalStyleIndex] = iWorldStyleIndex;
+							
+						} while (kv.GotoNextKey());
+						kv.GoBack();
+					}
+					kv.GoBack();
+				}
 				
 				m_hDefinitions.PushArray(hDef);
 			} while (kv.GotoNextKey());
@@ -283,4 +322,45 @@ public bool IsWearableCosmetic(int wearable)
 	if (iItemDefIndex == 0xFFFF) return false;
 	
 	return true;
+}
+
+//--------------------------------------------------------------------
+// Purpose: Puts the style definition of the cosmetic in buffer
+//--------------------------------------------------------------------
+public bool GetCosmeticStyleDefinition(CEItemDefinitionCosmetic xCosmetic, int style, CEItemDefinitionCosmeticStyle xBuffer)
+{
+	for (int i = 0; i < xCosmetic.m_iStylesCount; i++)
+	{
+		int iWorldIndex = xCosmetic.m_iStyles[i];
+		
+		CEItemDefinitionCosmeticStyle xStyle;
+		m_hStyles.GetArray(iWorldIndex, xStyle);
+		
+		if(xStyle.m_iIndex == style)
+		{
+			xBuffer = xStyle;
+			return true;
+		}
+	}
+	return false;
+}
+
+//--------------------------------------------------------------------
+// Purpose: Fired when cosmetic style changes.
+//--------------------------------------------------------------------
+public void CEconItems_OnCustomEntityStyleUpdated(int client, int entity, int style)
+{
+	CEItem xItem;
+	if(CEconItems_GetEntityItemStruct(entity, xItem))
+	{
+		CEItemDefinitionCosmetic xCosmetic;
+		if(FindCosmeticDefinitionByIndex(xItem.m_iItemDefinitionIndex, xCosmetic))
+		{
+			CEItemDefinitionCosmeticStyle xStyle;
+			if(GetCosmeticStyleDefinition(xCosmetic, style, xStyle))
+			{
+				TF2Wear_SetModel(entity, xStyle.m_sWorldModel);
+			}
+		}
+	}
 }
