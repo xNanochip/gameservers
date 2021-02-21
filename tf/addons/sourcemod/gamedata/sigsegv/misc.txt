@@ -3984,6 +3984,16 @@
 					type "sym"
 					sym  "_ZN17CTFGCServerSystem14SetHibernationEb"
 				}
+				"CTFBaseRocket::CheckForStunOnImpact"
+				{
+					type "sym"
+					sym  "_ZN13CTFBaseRocket20CheckForStunOnImpactEP9CTFPlayer"
+				}
+				"CTFBaseBossLocomotion::FaceTowards"
+				{
+					type "sym"
+					sym  "_ZN21CTFBaseBossLocomotion11FaceTowardsERK6Vector"
+				}
 				
 			}
 			
