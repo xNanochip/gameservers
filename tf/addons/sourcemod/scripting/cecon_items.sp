@@ -1290,6 +1290,7 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 	// Getting client index and apply boolean from datapack.
 	int client = hPack.ReadCell();
 	bool apply = hPack.ReadCell();
+	m_bWaitingForLoadout[client] = false;
 
 	// Removing Datapack.
 	delete hPack;
@@ -1378,11 +1379,12 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 	m_bLoadoutCached[client] = true;
 
 	delete Response;
-	m_bWaitingForLoadout[client] = false;
 	
 	Call_StartForward(g_CEcon_OnClientLoadoutUpdated);
 	Call_PushCell(client);
 	Call_Finish();
+
+	bool bIsRespawned = false;
 
 	if(m_bInRespawn[client])
 	{
@@ -1390,12 +1392,16 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 		{
 			if(TF2_GetPlayerClass(client) == m_nLoadoutUpdatedForClass[client])
 			{
+				bIsRespawned = true;
 				TF2_RespawnPlayer(client);
 			}
 			m_nLoadoutUpdatedForClass[client] = TFClass_Unknown;
 		}
-	} else if(apply)
+	}
+	
+	if(!bIsRespawned && apply)
 	{
+		PrintToChatAll("pog");
 		LoadoutApplication(client, true);
 	}
 }
