@@ -1388,14 +1388,15 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 
 	if(m_bInRespawn[client])
 	{
-		if(m_nLoadoutUpdatedForClass[client] > TFClass_Unknown)
+		bool bShouldRespawn = false;
+		if (m_nLoadoutUpdatedForClass[client] == TFClass_Unknown)bShouldRespawn = true;
+		if (m_nLoadoutUpdatedForClass[client] == TF2_GetPlayerClass(client))bShouldRespawn = true;
+		
+		if(bShouldRespawn)
 		{
-			if(TF2_GetPlayerClass(client) == m_nLoadoutUpdatedForClass[client])
-			{
-				bIsRespawned = true;
-				TF2_RespawnPlayer(client);
-			}
-			m_nLoadoutUpdatedForClass[client] = TFClass_Unknown;
+			bIsRespawned = true;
+			TF2_RespawnPlayer(client);
+			m_nLoadoutUpdatedForClass[client] = view_as<TFClassType>(-1);
 		}
 	}
 	
