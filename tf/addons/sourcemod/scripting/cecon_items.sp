@@ -1401,7 +1401,6 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 	
 	if(!bIsRespawned && apply)
 	{
-		PrintToChatAll("pog");
 		LoadoutApplication(client, true);
 	}
 }

@@ -601,7 +601,7 @@ public bool CoordinatorProcessRequestContent(HTTPRequestHandle request)
 				PrintToServer(sCommand);
 				ServerCommand(sCommand);
 
-			} while (kv.GotoNextKey());
+			} while (kv.GotoNextKey(false));
 
 			kv.GoBack();
 		}
