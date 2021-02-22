@@ -17,8 +17,8 @@ int m_iMapListSerial;
 
 public void OnPluginStart()
 {
-	RegServerCmd("ce_mm_empty_change_map", cChangeMapIfEmpty);
-	RegServerCmd("ce_mm_empty_change_popfile", cAutoloadPopfile);
+	RegServerCmd("ce_mm_empty_change_map", ce_mm_empty_change_map);
+	RegServerCmd("ce_mm_empty_change_popfile", ce_mm_empty_change_popfile);
 	
 	m_hMapList = new ArrayList(ByteCountToCells(PLATFORM_MAX_PATH));
 }
@@ -36,7 +36,7 @@ public void OnConfigsExecuted()
 	}
 }
 
-public Action cChangeMapIfEmpty(int args)
+public Action ce_mm_empty_change_map(int args)
 {
 	if (!CanQuickplaySwitchMaps())return Plugin_Handled;
 	
@@ -73,9 +73,9 @@ public Action cChangeMapIfEmpty(int args)
 }
 
 //------------------------------------------------------------------------
-// Purpose: Command to switch empty 
+// Purpose: ce_mm_empty_change_popfile command.
 //------------------------------------------------------------------------
-public Action cAutoloadPopfile(int args)
+public Action ce_mm_empty_change_popfile(int args)
 {
 	if (!CanQuickplaySwitchMaps())return Plugin_Handled;
 	
