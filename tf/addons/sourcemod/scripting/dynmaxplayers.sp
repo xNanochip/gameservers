@@ -63,6 +63,11 @@ public bool OnClientConnect(int client, char[] msg, int length)
 	}
 }
 
+public void OnMapStart()
+{
+	UpdateVisibleMaxPlayers();
+}
+
 //-------------------------------------------------------------------
 // Purpose: Returns true if a new potential client can join the 
 // server.
@@ -96,10 +101,11 @@ public int GetRealClientCount()
 public void UpdateVisibleMaxPlayers()
 {
 	// This will should not work in MvM.
-	if (GameRules_GetProp("m_bPlayingMannVsMachine") != 0)return;
+	if (GameRules_GetProp("m_bPlayingMannVsMachine") == 1)return;
 	
 	// Only mirror the value if we allow it to.
 	if (!sm_maxplayers_mirror_visiblemaxplayers.BoolValue)return;
+	
 	
 	FindConVar("sv_visiblemaxplayers").IntValue = sm_maxplayers.IntValue;
 }
