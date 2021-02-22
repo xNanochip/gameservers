@@ -40,18 +40,33 @@ public Action cChangeMapIfEmpty(int args)
 {
 	if (!CanQuickplaySwitchMaps())return Plugin_Handled;
 	
-	char sMap[64];
-	GetCmdArg(1, sMap, sizeof(sMap));
+	char sQuery[PLATFORM_MAX_PATH], sMap[PLATFORM_MAX_PATH];
+	GetCmdArg(1, sQuery, sizeof(sQuery));
 	
-	// We dont need to load a map if we're already on it.
-	char sCurrMap[64];
-	GetCurrentMap(sCurrMap, sizeof(sCurrMap));
-	if (StrEqual(sMap, sCurrMap))return Plugin_Handled;
-	
-	// 
-	if(m_hMapList.FindString(sMap) > -1)
+	// Trying to find a map with this popfile.
+	for (int i = 0; i < m_hMapList.Length; i++)
 	{
-		ServerCommand("changelevel %s", sMap);
+		char buffer[PLATFORM_MAX_PATH];
+		m_hMapList.GetString(i, buffer, sizeof(buffer));
+		int len = strlen(sQuery);
+		
+		if (strncmp(buffer, sQuery, len) == 0)
+		{
+			strcopy(sMap, sizeof(sMap), buffer);
+			break;
+		}
+	}
+	
+	
+	if(!StrEqual(sMap, ""))
+	{
+		char sCurr[PLATFORM_MAX_PATH];
+		GetCurrentMap(sCurr, sizeof(sCurr));
+		
+		if(!StrEqual(sCurr, sMap))
+		{
+			ServerCommand("changelevel %s", sMap);
+		}
 	}
 	
 	return Plugin_Handled;
@@ -80,6 +95,7 @@ public Action cAutoloadPopfile(int args)
 		if (strncmp(sPopFile, buffer, len) == 0)
 		{
 			strcopy(sMap, sizeof(sMap), buffer);
+			break;
 		}
 	}
 	
