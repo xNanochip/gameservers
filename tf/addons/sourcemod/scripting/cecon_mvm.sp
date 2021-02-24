@@ -38,6 +38,8 @@ bool m_bJustFinishedTheMission;
 
 char m_sLastTourLootHash[128];
 
+bool m_bIsMOTDOpen[MAXPLAYERS + 1];
+
 public void OnPluginStart()
 {
 	RegServerCmd("ce_mvm_equip_itemname", cMvMEquipItemName, "");
@@ -578,19 +580,36 @@ public Action Timer_OpenTourLootPageToAll(Handle timer, any data)
 
 public void OpenLastTourLootPage(int client)
 {
-	if (StrEqual(m_sLastTourLootHash, ""))return;
-	
-	char url[PLATFORM_MAX_PATH];
-	Format(url, sizeof(url), "/tourloot?hash=%s", m_sLastTourLootHash);
-	
-	CEconHTTP_CreateAbsoluteBackendURL(url, url, sizeof(url));
-	
-	KeyValues hConf = new KeyValues("data");
-	hConf.SetNum("type", 2);
-	hConf.SetString("msg", url);
-	hConf.SetNum("customsvr", 1);
-	ShowVGUIPanel(client, "info", hConf);
-	delete hConf;
+	QueryClientConVar(client, "cl_disablehtmlmotd", QueryConVar_Motd);
+}
+
+public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue, DataPack dPack)
+{
+	if (result == ConVarQuery_Okay)
+	{
+		if (StringToInt(cvarValue) != 0)
+		{
+			PrintToChat(client, "\x01* Please set \x03cl_disablehtmlmotd 0 \x01in your console and type \x03!loot \x01in chat to see the loot.");
+			return;
+		}
+		else
+		{
+			if (StrEqual(m_sLastTourLootHash, ""))return;
+			
+			char url[PLATFORM_MAX_PATH];
+			Format(url, sizeof(url), "/tourloot?hash=%s", m_sLastTourLootHash);
+			
+			CEconHTTP_CreateAbsoluteBackendURL(url, url, sizeof(url));
+			
+			KeyValues hConf = new KeyValues("data");
+			hConf.SetNum("type", 2);
+			hConf.SetString("msg", url);
+			hConf.SetNum("customsvr", 1);
+			ShowVGUIPanel(client, "info", hConf);
+			delete hConf;
+			m_bIsMOTDOpen[client] = true;
+		}
+	}
 }
 
 public Action cLoot(int client, int args)
@@ -599,4 +618,29 @@ public Action cLoot(int client, int args)
 	
 	OpenLastTourLootPage(client);
 	return Plugin_Handled;
+}
+
+public void CloseMOTD(int client)
+{
+	m_bIsMOTDOpen[client] = false;
+
+	KeyValues hConf = new KeyValues("data");
+	hConf.SetNum("type", 2);
+	hConf.SetString("msg", "about:blank");
+	hConf.SetNum("customsvr", 1);
+
+	ShowVGUIPanel(client, "info", hConf, false);
+	delete hConf;
+}
+
+public Action OnPlayerRunCmd(int client, int &buttons)
+{
+	// Since TF2 no longer allows us to check when a MOTD is closed, we'll have to detect player's movements (indicating that motd is no longer open).
+	if (m_bIsMOTDOpen[client])
+	{
+		if (buttons & (IN_ATTACK | IN_JUMP | IN_DUCK | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_ATTACK2))
+		{
+			CloseMOTD(client);
+		}
+	}
 }

@@ -1,8 +1,6 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#include <ce_util>
-#include <ce_core>
 #include <tf2>
 #include <tf2_stocks>
 #include <morecolors>
@@ -11,7 +9,7 @@ bool m_bIsMOTDOpen[MAXPLAYERS + 1];
 
 public Plugin myinfo =
 {
-	name = "Creators.TF Economy - MotD",
+	name = "Creators.TF MotD Module",
 	author = "Creators.TF Team",
 	description = "Creators.TF MotD",
 	version = "1.03",
@@ -85,8 +83,7 @@ public Action cOpenLoadout(int client, int args)
 */
 public Action cOpenServers(int client, int args)
 {
-
-	MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] To see a list of our servers, visit {lightgreen}https://creators.tf/servers{default} in your web browser.", client);
+	OpenURL(client, "https://creators.tf/servers");
 	return Plugin_Handled;
 }
 
@@ -151,7 +148,7 @@ public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult r
 	{
 		if (StringToInt(cvarValue) != 0)
 		{
-			MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] {teamcolor}%N{default}, to use this command, you'll need to set {lightgreen}cl_disablehtmlmotd 0 {default}in your console.", client);
+			PrintToChat(client, "\x01* To use this command, you'll need to set \x03cl_disablehtmlmotd 0 \x01in your console.");
 			return;
 		}
 		else
