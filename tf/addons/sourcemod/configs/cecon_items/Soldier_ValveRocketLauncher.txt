@@ -1,19 +1,19 @@
 Item
 {
-	name 			"Valve Rocket Launcher"
-	type 			"weapon"
-	item_class 		"tf_weapon_rocketlauncher"
-	item_index 		205
+	name 			"Valve Rocket Launcher"			// Name of the item, MUST be unique.
+	type 			"weapon"						// Type of the item, this key defines what subplugin will handle item creation.
+	item_class 		"tf_weapon_rocketlauncher"		// Classname of the weapon, support shared classnames, like tf_weapon_saxxy or tf_weapon_shotgun.
+	item_index 		205								// Base game's definition index.
 	
-	weapon_ammo 	20200000
-	weapon_clip 	64
+	weapon_ammo 	20200000						// This value will set weapon's ammo size on creation.
+	weapon_clip 	64								// This value will set weapon's clip.
 	
-	used_by_classes
-	{
+	used_by_classes									// Currently doesn't do anything, but can be used for !c -like 
+	{												// custom weapons management menu.
 		soldier 0
 	}
 	
-	attributes
+	attributes										// Attributes of the item, both custom and native TF2 attributes go here.
 	{
 		Attribute
 		{
@@ -61,7 +61,8 @@ Item
 			value 	1
 		}
 	}
-	visuals
+	
+	visuals											// Defines different kinds of styles that this item has, keys change on type-to-type basis.
 	{
 		styles
 		{
