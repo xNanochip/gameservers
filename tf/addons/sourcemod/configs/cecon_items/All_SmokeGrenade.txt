@@ -1,9 +1,9 @@
 Item
 {
-	name 			"Brick 2"
+	name 			"Smoke Grenade"
 	type 			"weapon"
 	item_class 		"tf_weapon_throwable"
-	item_logname	"brick"
+	item_logname	"smoke_grenade"
 	world_model		"models/weapons/c_models/c_brick/c_brick.mdl"
 	preserve_attributes 1
 	
@@ -12,12 +12,7 @@ Item
 		Attribute
 		{
 			name 	"set throwable type"
-			value 	1
-		}
-		Attribute
-		{
-			name 	"allowed in medieval mode"
-			value 	1
+			value 	2
 		}
 	}
 }

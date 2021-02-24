@@ -338,12 +338,9 @@ public void ParseExtraItemsAndAddToSchema(KeyValues hSchema)
 		{
 			return;
 		}
-			
-		KeyValues hBuffer = new KeyValues("Item");
 		
 		int iLastIndex = -1;
 		bool bIsAvailable;
-		char sName[11];
 		
 		DirectoryListing hDir = OpenDirectory(sPath);
 		char sFileName[PLATFORM_MAX_PATH];
@@ -352,11 +349,15 @@ public void ParseExtraItemsAndAddToSchema(KeyValues hSchema)
 			Format(sFileName, sizeof(sFileName), "%s\\%s", sPath, sFileName);
 			if (!FileExists(sFileName))continue;
 			
+			
+			KeyValues hBuffer = new KeyValues("Item");
 			if (!hBuffer.ImportFromFile(sFileName))
 			{
 				LogError("Failed to load \"%s\". Check syntax of the file.", sFileName);
 				continue;
 			}
+			
+			char sName[11];
 			
 			do {
 				
@@ -372,13 +373,15 @@ public void ParseExtraItemsAndAddToSchema(KeyValues hSchema)
 				}
 				
 			} while (!bIsAvailable);
-			
+					
 			if(hSchema.JumpToKey(sName, true))
 			{
 				LogMessage("Asigning \"%s\" to item index %s", sFileName, sName);
 				hSchema.Import(hBuffer);
 				hSchema.GoBack();
 			}
+			
+			delete hBuffer;
 			
 		}
 	}

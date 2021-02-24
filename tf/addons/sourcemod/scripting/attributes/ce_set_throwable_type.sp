@@ -40,10 +40,12 @@ ConVar 	tf_throwable_brick_force,
 #define TF_PROJECTILE_THROWABLE_BRICK "tf_projectile_throwable_brick"
 
 #define TF_THROWABLE_SMOKE_GRENADE_INTERVAL 0.1
+#define TF_THROWABLE_SMOKE_GRENADE_EXPLOSION_SOUND "creators/weapons/smoke_explosion.mp3"
 
 public void OnMapStart()
 {
 	PrecacheModel(TF_THROWABLE_BRICK_MODEL);
+	PrecacheSound(TF_THROWABLE_SMOKE_GRENADE_EXPLOSION_SOUND);
 }
 
 Handle g_hSdkInitThrowable;
@@ -465,14 +467,16 @@ public Action Timer_SmokeGrenade_StartSmokeCycle(Handle timer, any grenade)
 
 public Action Timer_SmokeGrenade_CycleSmoke(Handle timer, any grenade)
 {
+	int iMaxCycleCount = SmokeGrenade_GetMaxCycleCount();
+	
 	// Only perform smoke cycle if we more cycles.
 	if(m_iSmokeEffectCycles[grenade] > 0)
 	{
 		// Spawn explosion on first cycle.
 
-		if(m_iSmokeEffectCycles[grenade] == SmokeGrenade_GetMaxCycleCount())
+		if(m_iSmokeEffectCycles[grenade] == iMaxCycleCount)
 		{
-			TF_StartParticleOnEntity("ExplosionCore_MidAir", grenade, 2.0);
+			SmokeGrenade_ExplodeEffects(grenade);
 			SetEntityMoveType(grenade, MOVETYPE_CUSTOM);
 			SetEntityRenderMode(grenade, RENDER_NONE);
 		}
@@ -487,4 +491,10 @@ public Action Timer_SmokeGrenade_CycleSmoke(Handle timer, any grenade)
 			CreateTimer(TF_THROWABLE_SMOKE_GRENADE_INTERVAL, Timer_SmokeGrenade_CycleSmoke, grenade);
 		}
 	}
+}
+
+public void SmokeGrenade_ExplodeEffects(int grenade)
+{
+	TF_StartParticleOnEntity("ExplosionCore_MidAir", grenade, 2.0);
+	EmitSoundToAll(TF_THROWABLE_SMOKE_GRENADE_EXPLOSION_SOUND, grenade);
 }
