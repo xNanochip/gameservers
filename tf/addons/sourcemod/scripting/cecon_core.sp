@@ -986,6 +986,10 @@ public void LateHooking()
 public any Native_LastUsedWeapon(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
+	
+	// Never return 0, always return -1 if not found.
+	if (m_iLastWeapon[client] <= 0)return 0;
+	
 	return m_iLastWeapon[client];
 }
 
