@@ -876,12 +876,6 @@ public void OnEntityCreated(int entity, const char[] classname)
 		SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
 	}
 
-	// Hook players with OnTakeDamage SDKHook
-	if(StrEqual(classname, "player"))
-	{
-		SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
-	}
-
 	// Hook players with OnTouch SDKHook
 	if(StrContains(classname, "item_healthkit") != -1)
 	{
@@ -989,8 +983,20 @@ public void LateHooking()
 		if(IsClientValid(i))
 		{
 			SDKHook(i, SDKHook_OnTakeDamage, OnTakeDamage);
+			SDKHook(i, SDKHook_WeaponSwitchPost, OnWeaponSwitch);
 		}
 	}
+}
+
+public void OnClientPutInServer(int client)
+{
+	SDKHook(client, SDKHook_WeaponSwitchPost, OnWeaponSwitch);
+	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
+}
+
+public void OnWeaponSwitch(int client, int weapon)
+{
+	m_iLastWeapon[client] = weapon;
 }
 
 //-------------------------------------------------------------------
