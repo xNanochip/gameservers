@@ -1,0 +1,74 @@
+Item
+{
+	name 			"Valve Rocket Launcher"
+	type 			"weapon"
+	item_class 		"tf_weapon_rocketlauncher"
+	item_index 		205
+	
+	weapon_ammo 	20200000
+	weapon_clip 	64
+	
+	used_by_classes
+	{
+		soldier 0
+	}
+	
+	attributes
+	{
+		Attribute
+		{
+			name 	"damage bonus"
+			value 	1010000
+		}
+		Attribute
+		{
+			name	"clip size bonus"
+			value 	1010000
+		}
+		Attribute
+		{
+			name 	"fire rate bonus"
+			value	0.25
+		}
+		Attribute
+		{
+			name 	"heal on hit for rapidfire"
+			value 	250
+		}
+		Attribute
+		{
+			name 	"critboost on kill"
+			value 	10
+		}
+		Attribute
+		{
+			name 	"Projectile speed increased"
+			value 	1.5
+		}
+		Attribute
+		{
+			name 	"move speed bonus"
+			value 	2
+		}
+		Attribute
+		{
+			name 	"maxammo primary increased"
+			value 	1010000
+		}
+		Attribute
+		{
+			name 	"attach particle effect"
+			value 	1
+		}
+	}
+	visuals
+	{
+		styles
+		{
+			1
+			{
+				world_model "models/weapons/c_models/new_zealium/c_wasp_launcher.mdl"
+			}
+		}
+	}
+}

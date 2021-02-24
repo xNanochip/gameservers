@@ -56,7 +56,9 @@ KeyValues m_Schema;				// Cached keyvalues handle of the schema, used for plugin
 char m_sSchemaBuildVersion[64];	// Build version of the locally downloaded schema.
 char m_sItemSchemaFilePath[96];	// File path to the items_config.cfg (Usually "addons/sourcemod/configs/items_config.cfg")
 
-Handle g_CEcon_OnSchemaUpdated;	// Forward, that notifies the sub plugins, if the schema has changed.
+Handle 	g_CEcon_OnSchemaUpdated,	// Forward, that notifies the sub plugins, if the schema has changed.
+		g_CEcon_OnSchemaPreUpdate;	// Forward, that notifies the sub plugins, that schema is about to be updated. This is used by plugins 
+									// that wish to override the schema somehow.
 
 
 //-------------------------------------------------------------------
@@ -121,6 +123,7 @@ public void OnPluginStart()
 
 	// Commands
 	RegServerCmd("ce_schema_update", cSchemaUpdate);
+	RegServerCmd("ce_schema_reload", cSchemaReload);
 
 	// ----------- EVENTS ----------- //
 
@@ -162,6 +165,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	//------------------------------------------------
 	// Schema
 
+	g_CEcon_OnSchemaPreUpdate = CreateGlobalForward("CEcon_OnSchemaPreUpdate", ET_Ignore, Param_Cell);
 	g_CEcon_OnSchemaUpdated = CreateGlobalForward("CEcon_OnSchemaUpdated", ET_Ignore, Param_Cell);
 	CreateNative("CEcon_GetEconomySchema", Native_GetEconomySchema);
 
@@ -629,6 +633,14 @@ public Action cSchemaUpdate(int args)
 	Schema_CheckForUpdates(true);
 	return Plugin_Handled;
 }
+//-------------------------------------------------------------------
+// Purpose: Command callback to manually reload item schema.
+//-------------------------------------------------------------------
+public Action cSchemaReload(int args)
+{
+	Schema_ProcessCachedItemSchema();
+	return Plugin_Handled;
+}
 
 //-------------------------------------------------------------------
 // Purpose: Processes cached item schema and notifies plugins about
@@ -642,6 +654,11 @@ public void Schema_ProcessCachedItemSchema()
 	// Print build version in chat.
 	kv.GetString("Version/build", m_sSchemaBuildVersion, sizeof(m_sSchemaBuildVersion), "");
 	LogMessage("Current Item Schema version: %s", m_sSchemaBuildVersion);
+
+	// Make a forward call to notify other plugins prior to the change.
+	Call_StartForward(g_CEcon_OnSchemaPreUpdate);
+	Call_PushCell(kv);
+	Call_Finish();
 
 	// Make a forward call to notify other plugins about the change.
 	Call_StartForward(g_CEcon_OnSchemaUpdated);

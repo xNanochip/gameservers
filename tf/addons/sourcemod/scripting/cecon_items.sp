@@ -318,6 +318,75 @@ public void PrecacheItemsFromSchema(KeyValues hSchema)
 }
 
 //---------------------------------------------------------------------
+// Purpose: Fired before the schema is loaded.
+//---------------------------------------------------------------------
+public void CEcon_OnSchemaPreUpdate(KeyValues hSchema)
+{
+	ParseExtraItemsAndAddToSchema(hSchema);
+}
+
+//---------------------------------------------------------------------
+// Purpose: Add items from override folder to the item list.
+//---------------------------------------------------------------------
+public void ParseExtraItemsAndAddToSchema(KeyValues hSchema)
+{
+	if(hSchema.JumpToKey("Items"))
+	{
+		char sPath[64];
+		BuildPath(Path_SM, sPath, sizeof(sPath), "configs/cecon_items");
+		if(!DirExists(sPath))
+		{
+			return;
+		}
+			
+		KeyValues hBuffer = new KeyValues("Item");
+		
+		int iLastIndex = -1;
+		bool bIsAvailable;
+		char sName[11];
+		
+		DirectoryListing hDir = OpenDirectory(sPath);
+		char sFileName[PLATFORM_MAX_PATH];
+		while(hDir.GetNext(sFileName, sizeof(sFileName)))
+		{
+			Format(sFileName, sizeof(sFileName), "%s\\%s", sPath, sFileName);
+			if (!FileExists(sFileName))continue;
+			
+			if (!hBuffer.ImportFromFile(sFileName))
+			{
+				LogError("Failed to load \"%s\". Check syntax of the file.", sFileName);
+				continue;
+			}
+			
+			do {
+				
+				iLastIndex++;
+				IntToString(iLastIndex, sName, sizeof(sName));
+				
+				if(hSchema.JumpToKey(sName, false))
+				{
+					bIsAvailable = false;
+					hSchema.GoBack();
+				} else {
+					bIsAvailable = true;
+				}
+				
+			} while (!bIsAvailable);
+			
+			if(hSchema.JumpToKey(sName, true))
+			{
+				LogMessage("Asigning \"%s\" to item index %s", sFileName, sName);
+				hSchema.Import(hBuffer);
+				hSchema.GoBack();
+			}
+			
+		}
+	}
+	
+	hSchema.Rewind();
+}
+
+//---------------------------------------------------------------------
 // Native: CEconItems_GetItemDefinitionByIndex
 //---------------------------------------------------------------------
 public any Native_GetItemDefinitionByIndex(Handle plugin, int numParams)
@@ -1122,6 +1191,7 @@ public any Native_GiveItemToClient(Handle plugin, int numParams)
 	CEItem xItem;
 	GetNativeArray(2, xItem, sizeof(CEItem));
 
+	xItem.m_iClient = client;
 	m_MyItems[client].PushArray(xItem);
 
 	GivePlayerCEItem(client, xItem);
@@ -1650,6 +1720,15 @@ public void OnEntityCreated(int entity, const char[] class)
 // --------------------------------------------- //
 public void OnEntityDestroyed(int entity)
 {
+	if(CEconItems_IsEntityCustomEconItem(entity))
+	{
+		CEItem xItem;
+		if(CEconItems_GetEntityItemStruct(entity, xItem))
+		{
+			CEconItems_RemoveItemFromClient(xItem.m_iClient, xItem);
+		}
+	}
+	
 	ClearEntityData(entity);
 }
 

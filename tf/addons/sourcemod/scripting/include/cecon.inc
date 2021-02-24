@@ -13,6 +13,8 @@
 native KeyValues CEcon_GetEconomySchema();
 // Called when economy schema is updated.
 forward void CEcon_OnSchemaUpdated(KeyValues hSchema);
+// Called after economy was parsed, but not subplugins were not yet notified about it.
+forward void CEcon_OnSchemaPreUpdate(KeyValues hSchema);
 
 //======================================//
 // Events
