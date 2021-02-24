@@ -1000,10 +1000,13 @@ public any Native_LastUsedWeapon(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	
-	// Never return 0, always return -1 if not found.
-	if (m_iLastWeapon[client] <= 0)return -1;
+	int iWeapon = m_iLastWeapon[client];
 	
-	return m_iLastWeapon[client];
+	if (iWeapon <= 0)return -1;
+	if (!IsValidEntity(iWeapon))return -1;
+	if (!HasEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex"))return -1;
+	
+	return iWeapon;
 }
 
 //-------------------------------------------------------------------
