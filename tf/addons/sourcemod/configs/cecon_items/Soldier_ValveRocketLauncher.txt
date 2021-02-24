@@ -4,6 +4,7 @@ Item
 	type 			"weapon"						// Type of the item, this key defines what subplugin will handle item creation.
 	item_class 		"tf_weapon_rocketlauncher"		// Classname of the weapon, support shared classnames, like tf_weapon_saxxy or tf_weapon_shotgun.
 	item_index 		205								// Base game's definition index.
+	preserve_attributes 1
 	
 	weapon_ammo 	20200000						// This value will set weapon's ammo size on creation.
 	weapon_clip 	64								// This value will set weapon's clip.
