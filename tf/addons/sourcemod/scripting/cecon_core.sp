@@ -133,6 +133,8 @@ public void OnPluginStart()
 
 	// Hook all needed entities when plugin late loads.
 	LateHooking();
+	
+	HookEvent("player_spawn", player_spawn);
 }
 
 //-------------------------------------------------------------------
@@ -180,6 +182,17 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("CEcon_GetLastUsedWeapon", Native_LastUsedWeapon);
 
 	return APLRes_Success;
+}
+
+//-------------------------------------------------------------------
+// Purpose: Event callback for the spawn event
+//-------------------------------------------------------------------
+public Action player_spawn(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
+	m_iLastWeapon[client] = -1;
+
+	return Plugin_Continue;
 }
 
 //-------------------------------------------------------------------
