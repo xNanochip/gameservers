@@ -106,6 +106,7 @@ public void OnPluginStart()
 	ce_coordinator_enabled = CreateConVar("ce_coordinator_enabled", "1", "If true, coordinator will be online.");
 	ce_credentials_filename = CreateConVar("ce_credentials_filename", "economy.cfg", "Filename of the econome config.");
 
+	HookConVarChange(ce_coordinator_enabled, ce_coordinator_enabled__CHANGED);
 	HookConVarChange(ce_credentials_filename, ce_credentials_filename__CHANGED);
 	
 	CreateTimer(5.0, Timer_CoordinatorWatchDog);
@@ -202,6 +203,11 @@ public void Steam_OnReady()
 public void ce_credentials_filename__CHANGED(ConVar cvar, char[] oldval, char[] newval)
 {
 	ReloadEconomyCredentials();
+}
+
+public void ce_coordinator_enabled__CHANGED(ConVar cvar, char[] oldval, char[] newval)
+{
+	SafeStartCoordinatorPolling();
 }
 
 //-------------------------------------------------------------------
@@ -441,6 +447,7 @@ public void StartCoordinatorLongPolling()
 //-------------------------------------------------------------------
 public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
 {
+	m_bCoordinatorActive = false;
 	bool bError = true;
 
 	// If response was succesful...

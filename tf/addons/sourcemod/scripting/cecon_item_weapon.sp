@@ -46,6 +46,7 @@ enum struct CEItemDefinitionWeapon
 	
 	int m_iStylesCount;
 	int m_iStyles[MAX_STYLES];
+	char m_sLogName[PLATFORM_MAX_PATH];
 }
 
 enum struct CEItemDefinitionWeaponStyle
@@ -63,6 +64,7 @@ int m_hLastWeapon[MAXPLAYERS + 1];
 public void OnPluginStart()
 {
 	HookEvent("player_death", player_death);
+	HookEvent("player_death", player_death_PRE, EventHookMode_Pre);
 }
 
 public Action player_death(Event hEvent, const char[] szName, bool bDontBroadcast)
@@ -75,6 +77,31 @@ public Action player_death(Event hEvent, const char[] szName, bool bDontBroadcas
 
 		TF2Wear_RemoveAllTiedWearables(iWeapon);
 	}
+}
+
+public Action player_death_PRE(Event hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int client = GetClientOfUserId(hEvent.GetInt("attacker"));
+	
+	int iWeapon = CEcon_GetLastUsedWeapon(client);
+	if(IsValidEntity(iWeapon))
+	{
+		if(CEconItems_IsEntityCustomEconItem(iWeapon))
+		{
+			CEItem xItem;
+			if(CEconItems_GetEntityItemStruct(iWeapon, xItem))
+			{
+				CEItemDefinitionWeapon xWeapon;
+				if(FindWeaponDefinitionByIndex(xItem.m_iItemDefinitionIndex, xWeapon))
+				{
+					hEvent.SetString("weapon_logclassname", xWeapon.m_sLogName);
+					return Plugin_Changed;
+				}
+			}
+		}
+	}
+	
+	return Plugin_Continue; 
 }
 
 //--------------------------------------------------------------------
@@ -295,6 +322,7 @@ public void ProcessEconSchema(KeyValues kv)
 
 				kv.GetString("world_model", hDef.m_sWorldModel, sizeof(hDef.m_sWorldModel));
 				kv.GetString("item_class", hDef.m_sClassName, sizeof(hDef.m_sClassName));
+				kv.GetString("item_logname", hDef.m_sLogName, sizeof(hDef.m_sLogName));
 
 				if(kv.JumpToKey("visuals/styles", false))
 				{
