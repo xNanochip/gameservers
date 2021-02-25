@@ -389,8 +389,7 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 		{
 			if (client != attacker)
 			{
-				
-				bool is_buster = IsSentryBuster(attacker);
+				// Is this an MVM bot?
 				if (IsFakeClient(client)) 
 				{
 					int leave_spawn_timespan = RoundToCeil(GetGameTime() - player_data[client].leave_spawn_time);
@@ -399,8 +398,10 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 						leave_spawn_timespan = 1;
 					}
 
+					// Blanket event.
 					CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT", 1, hEvent);
 
+					// Killing a robot with crits.
 					switch (crit_type)
 					{
 						case 0: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_CRIT_NONE", 1, hEvent);
@@ -408,6 +409,7 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 						case 2: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_CRIT_FULL", 1, hEvent);
 					}
 
+					// Assist event.
 					if (IsClientValid(assister))
 					{
 						player_data[client].hit_tracker |= 1 << (assister - 1);
@@ -416,6 +418,20 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 
 					if (IsGiantNotBuster(client))
 					{
+						// ZoN - Send events per class killed:
+						switch (TF2_GetPlayerClass(client)) 
+						{
+							case TFClass_Scout:		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SCOUT", 1, hEvent);
+							case TFClass_Soldier:	CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SOLDIER", 1, hEvent);
+							case TFClass_Pyro:		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_PYRO", 1, hEvent);
+							case TFClass_DemoMan:	CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_DEMOMAN", 1, hEvent);
+							case TFClass_Heavy:		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_HEAVY", 1, hEvent);
+							case TFClass_Engineer:	CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_ENGINEER", 1, hEvent);
+							case TFClass_Medic:		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_MEDIC", 1, hEvent);
+							case TFClass_Sniper:	CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SNIPER", 1, hEvent);
+							case TFClass_Spy:		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SPY", 1, hEvent);
+						}
+						
 						int hit_tracker = player_data[client].hit_tracker;
 						// Players who assisted or dealt damage receive kill
 						for (int i = 0; i < 32; i++)
@@ -464,6 +480,11 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 
 						
 					}
+					else // ZoN - Send an event for killing a sentry buster.
+					{
+						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_SENTRYBUSTER", 1, hEvent);
+					}
+					
 					// All players receive boss kill events
 					if (IsBoss(client))
 					{
