@@ -13,6 +13,7 @@ public Plugin myinfo =
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
+	PrintToChatAll("Spawned: %s", classname);
 	if(StrEqual(classname, "prop_dynamic"))
 	{
 		SDKHook(entity, SDKHook_SpawnPost, OnPropDynamicSpawn);
