@@ -13,14 +13,13 @@ public Plugin myinfo =
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
-	PrintToChatAll("Spawned: %s", classname);
 	if(StrEqual(classname, "prop_dynamic"))
 	{
-		SDKHook(entity, SDKHook_SpawnPost, OnPropDynamicSpawn);
+		RequestFrame(RF_OnPropDynamicSpawn, entity);
 	}
 }
 
-public Action OnPropDynamicSpawn(int entity)
+public void RF_OnPropDynamicSpawn(any entity)
 {
 	// Get owner entity.
 	int iTank = GetEntPropEnt(entity, Prop_Send, "moveparent");
