@@ -37,9 +37,6 @@ public Action RF_OnPropDynamicSpawn(Handle timer, any entity)
 		GetEntityClassname(iTank, sClassname, sizeof(sClassname));
 		if (!StrEqual(sClassname, "tank_boss"))return;
 		
-		char sModel[PLATFORM_MAX_PATH];
-		GetEntPropString(iTank, Prop_Data, "m_ModelName", sModel, sizeof(sModel));
-		
-		PrintToChatAll("Tank Model: %s", sModel);
+		PrintToChatAll("Tank Gravity: %f", GetEntityGravity(iTank));
 	}
 }
