@@ -623,16 +623,26 @@ public any Native_AttributesKeyValuesToArrayList(Handle plugin, int numParams)
 	if (kv == null)return kv;
 
 	ArrayList Attributes = new ArrayList(sizeof(CEAttribute));
-	if(kv.GotoFirstSubKey())
+	if(kv.GotoFirstSubKey(false))
 	{
 		do {
 			CEAttribute attr;
-
-			kv.GetString("name", attr.m_sName, sizeof(attr.m_sName));
-			kv.GetString("value", attr.m_sValue, sizeof(attr.m_sValue));
-
+			
+			// Test if this attribute is written in compact mode.
+			kv.GetString(NULL_STRING, attr.m_sValue, sizeof(attr.m_sValue));
+			if(StrEqual(attr.m_sValue, ""))
+			{	
+				// If it's not, then get values inside the keys.
+				kv.GetString("name", attr.m_sName, sizeof(attr.m_sName));
+				kv.GetString("value", attr.m_sValue, sizeof(attr.m_sValue));		
+			} else {
+				// Otherwise, we already have the value in the struct, so just 
+				// get the section name as the name.
+				kv.GetSectionName(attr.m_sName, sizeof(attr.m_sName));
+			}
+			
 			Attributes.PushArray(attr);
-		} while (kv.GotoNextKey());
+		} while (kv.GotoNextKey(false));
 		kv.GoBack();
 	}
 
