@@ -15,7 +15,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 {
 	if(StrEqual(classname, "prop_dynamic"))
 	{
-		CreateTimer(1.0, RF_OnPropDynamicSpawn, entity);
+		// CreateTimer(1.0, RF_OnPropDynamicSpawn, entity);
 	}
 }
 
