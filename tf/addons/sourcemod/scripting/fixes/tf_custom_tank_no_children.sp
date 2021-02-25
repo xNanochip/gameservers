@@ -15,11 +15,11 @@ public void OnEntityCreated(int entity, const char[] classname)
 {
 	if(StrEqual(classname, "prop_dynamic"))
 	{
-		RequestFrame(RF_OnPropDynamicSpawn, entity);
+		CreateTimer(1.0, RF_OnPropDynamicSpawn, entity);
 	}
 }
 
-public void RF_OnPropDynamicSpawn(any entity)
+public Action RF_OnPropDynamicSpawn(Handle timer, any entity)
 {
 	// Make sure this entity still exists.
 	if (!IsValidEntity(entity))return;
