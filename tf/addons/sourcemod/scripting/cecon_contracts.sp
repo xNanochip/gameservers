@@ -1116,6 +1116,9 @@ public void SendEventToFriends(int client, const char[] event, int add, int uniq
 
 public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, int source, const char[] event, int add, int unique)
 {
+	// Don't allow background quests to be processed using friendly fire.
+	if(xQuest.m_bBackground && client != source) return;
+	
 	if (!CanClientTriggerQuest(client, xQuest))return;
 
 	bool bShouldResetObjectiveMark = false;
