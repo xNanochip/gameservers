@@ -14,7 +14,8 @@ public Plugin myinfo =
 };
 
 ConVar 	sm_maxplayers,
-		sm_maxplayers_mirror_visiblemaxplayers;
+		sm_maxplayers_mirror_visiblemaxplayers,
+		sv_visiblemaxplayers;
 
 //-------------------------------------------------------------------
 // Purpose: Fired when plugin starts
@@ -25,11 +26,12 @@ public void OnPluginStart()
 		CreateConVar("sm_maxplayers", "24", "Amount of clients allowed on a server.", _, true, 1.0);
 	sm_maxplayers_mirror_visiblemaxplayers = 
 		CreateConVar("sm_maxplayers_mirror_visiblemaxplayers", "1", "Setting this cvar to true will make `sv_visiblemaxplayers` convar to also change when sm_maxplayers changes.");
+	sv_visiblemaxplayers = FindConVar("sv_visiblemaxplayers");
 	
 	// We could probably wrap these two hooks under one callback, but maybe
 	// we'll want to change something somewhere so, i'll keep them separate.
-	HookConVarChange(sm_maxplayers, sm_maxplayers__CHANGED);
-	HookConVarChange(FindConVar("sv_visiblemaxplayers"), sv_visiblemaxplayers__CHANGED);
+	HookConVarChange(sm_maxplayers, 		sm_maxplayers__CHANGED);
+	HookConVarChange(sv_visiblemaxplayers, 	sv_visiblemaxplayers__CHANGED);
 }
 
 //-------------------------------------------------------------------
@@ -45,6 +47,7 @@ public void sm_maxplayers__CHANGED(ConVar convar, const char[] oldval, const cha
 //-------------------------------------------------------------------
 public void sv_visiblemaxplayers__CHANGED(ConVar convar, const char[] oldval, const char[] newval)
 {
+	LogMessage("sv_visiblemaxplayers changed to %s (Old: %s)", newval, oldval);
 	UpdateVisibleMaxPlayers();
 }
 
@@ -100,12 +103,17 @@ public int GetRealClientCount()
 
 public void UpdateVisibleMaxPlayers()
 {
-	// This will should not work in MvM.
-	if (GameRules_GetProp("m_bPlayingMannVsMachine") == 1)return;
-	
 	// Only mirror the value if we allow it to.
 	if (!sm_maxplayers_mirror_visiblemaxplayers.BoolValue)return;
 	
-	
-	FindConVar("sv_visiblemaxplayers").IntValue = sm_maxplayers.IntValue;
+	// This will should not work in MvM.
+	if (GameRules_GetProp("m_bPlayingMannVsMachine") == 1)
+	{
+		// TODO: Sometimes it may not be just 6, some plugins extend the value up to 10.
+		// Need to see what defines this value in the first place.
+		sv_visiblemaxplayers.IntValue = 6;
+	} else {
+		
+		sv_visiblemaxplayers.IntValue = sm_maxplayers.IntValue;
+	}
 }
