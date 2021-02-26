@@ -49,6 +49,6 @@ public void RF_OnPropDynamicSpawn(any entity)
 		GetEntityClassname(iTank, sClassname, sizeof(sClassname));
 		if (!StrEqual(sClassname, "tank_boss"))return;
 		
-		SetEntityFlags(entity, GetEntityFlags(entity) | 0x020); // EF_NODRAW
+		SetEntityFlags(entity, 32); // EF_NODRAW
 	}
 }
