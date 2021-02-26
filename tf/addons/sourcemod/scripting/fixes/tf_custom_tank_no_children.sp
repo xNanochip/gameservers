@@ -50,5 +50,7 @@ public void RF_OnPropDynamicSpawn(any entity)
 		if (!StrEqual(sClassname, "tank_boss"))return;
 		
 		SetEntPropFloat(entity, Prop_Send, "m_flModelScale", 0.001);
+		SetEntityRenderMode(entity, RENDER_TRANSALPHA);
+		SetEntityRenderColor(entity, 255, 255, 255, 100);
 	}
 }
