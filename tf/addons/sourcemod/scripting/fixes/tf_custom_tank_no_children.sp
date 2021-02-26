@@ -46,7 +46,7 @@ public void RF_OnPropDynamicSpawn(any entity)
 		// Make sure our parent is tank_boss.
 		GetEntityClassname(iTank, sClassname, sizeof(sClassname));
 		if (!StrEqual(sClassname, "tank_boss"))return;
-
-		RemoveEntity(entity);
+		
+		SetEntProp(entity, Prop_Send, "m_flModelScale", 0.001);
 	}
 }
