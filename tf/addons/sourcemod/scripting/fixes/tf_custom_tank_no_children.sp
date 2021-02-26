@@ -23,8 +23,6 @@ public void OnEntityCreated(int entity, const char[] classname)
 {
 	// If we say not to remove anything...
 	if(!tf_mvm_tank_remove_attachables.BoolValue) return;
-	
-	PrintToChatAll(classname);
 
 	if(StrEqual(classname, "prop_dynamic"))
 	{
