@@ -51,6 +51,7 @@ public void RF_OnPropDynamicSpawn(any entity)
 		
 		SetEntPropFloat(entity, Prop_Send, "m_flModelScale", 0.001);
 		SetEntityRenderMode(entity, RENDER_TRANSALPHA);
-		SetEntityRenderColor(entity, 255, 255, 255, 100);
+		SetEntityRenderColor(entity, 255, 255, 255, 0);
+		SetEntProp(entity, Prop_Send, "m_bGlowEnabled", 0);
 	}
 }
