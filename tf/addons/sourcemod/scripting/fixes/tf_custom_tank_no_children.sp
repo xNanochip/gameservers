@@ -49,9 +49,6 @@ public void RF_OnPropDynamicSpawn(any entity)
 		GetEntityClassname(iTank, sClassname, sizeof(sClassname));
 		if (!StrEqual(sClassname, "tank_boss"))return;
 		
-		SetEntPropFloat(entity, Prop_Send, "m_flModelScale", 0);
-		SetEntityRenderMode(entity, RENDER_TRANSALPHA);
-		SetEntityRenderColor(entity, 255, 255, 255, 0);
-		SetEntProp(entity, Prop_Send, "m_bGlowEnabled", 0);
+		SetEntityFlags(entity, GetEntityFlags(entity) | 0x020); // EF_NODRAW
 	}
 }
