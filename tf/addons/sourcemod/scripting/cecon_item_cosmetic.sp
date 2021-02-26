@@ -369,7 +369,11 @@ public void CEconItems_OnCustomEntityStyleUpdated(int client, int entity, int st
 			CEItemDefinitionCosmeticStyle xStyle;
 			if(GetCosmeticStyleDefinition(xCosmetic, style, xStyle))
 			{
-				TF2Wear_SetModel(entity, xStyle.m_sWorldModel);
+				char sModel[PLATFORM_MAX_PATH];
+				strcopy(sModel, sizeof(sModel), xStyle.m_sWorldModel);
+				ParseCosmeticModel(client, sModel, sizeof(sModel));
+				
+				TF2Wear_SetModel(entity, sModel);
 			}
 		}
 	}
