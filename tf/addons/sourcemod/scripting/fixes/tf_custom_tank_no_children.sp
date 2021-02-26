@@ -47,6 +47,6 @@ public void RF_OnPropDynamicSpawn(any entity)
 		GetEntityClassname(iTank, sClassname, sizeof(sClassname));
 		if (!StrEqual(sClassname, "tank_boss"))return;
 		
-		SetEntProp(entity, Prop_Send, "m_flModelScale", 0.001);
+		SetEntPropFloat(entity, Prop_Send, "m_flModelScale", 0.001);
 	}
 }
