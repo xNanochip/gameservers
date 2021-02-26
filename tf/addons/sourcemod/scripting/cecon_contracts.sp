@@ -1097,6 +1097,8 @@ public void RF_BackgroundQuests(any pack)
 
 public void SendEventToFriends(int client, const char[] event, int add, int unique)
 {
+	if (!IsClientReady(client))return;
+	
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if(IsClientReady(i))
