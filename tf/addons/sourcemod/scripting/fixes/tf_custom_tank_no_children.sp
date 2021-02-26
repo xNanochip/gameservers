@@ -1,6 +1,7 @@
 #pragma semicolon 1
 
 #include <sdkhooks>
+#include <sdktools>
 
 public Plugin myinfo =
 {
@@ -50,5 +51,7 @@ public void RF_OnPropDynamicSpawn(any entity)
 		if (!StrEqual(sClassname, "tank_boss"))return;
 		
 		SetEntityFlags(entity, 32); // EF_NODRAW
+		AcceptEntityInput(entity, "TurnOff");
+		AcceptEntityInput(entity, "Disable");
 	}
 }
