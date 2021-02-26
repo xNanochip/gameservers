@@ -50,8 +50,6 @@ public void RF_OnPropDynamicSpawn(any entity)
 		GetEntityClassname(iTank, sClassname, sizeof(sClassname));
 		if (!StrEqual(sClassname, "tank_boss"))return;
 		
-		SetEntityFlags(entity, 32); // EF_NODRAW
 		AcceptEntityInput(entity, "TurnOff");
-		AcceptEntityInput(entity, "Disable");
 	}
 }
