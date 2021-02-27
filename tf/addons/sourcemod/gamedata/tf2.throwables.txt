@@ -1,0 +1,14 @@
+"Games"
+{
+	"tf"
+	{
+		"Offsets"
+		{
+			"CTFProjectile_Throwable::InitThrowable"
+			{
+				"linux"		"268"
+				"windows"	"267"
+			}
+		}
+	}
+}

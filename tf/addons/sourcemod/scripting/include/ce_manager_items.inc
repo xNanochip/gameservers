@@ -24,6 +24,7 @@ native KeyValues CE_FindItemConfigByDefIndex(int index);
 * @return KeyValues config of the item.
 */
 native KeyValues CE_FindItemConfigByItemName(const char[] name);
+
 native int CE_FindItemIndexByItemName(const char[] name);
 
 /*
@@ -52,15 +53,6 @@ native bool CE_IsEntityCustomEcomItem(int entity);
 * @return True if item was equipped.
 */
 native bool CE_EquipItem(int client, int index, int def, int quality, ArrayList attributes);
-
-/*
-* Request to holster an item on player.
-
-* @param client	Client to holster item from.
-* @param index Index of the item.
-* @param def Definition index of the item.
-*/
-native bool CE_HolsterItem(int client, int index, int def, const char[] type);
 
 /*
 * Returns if this entity is custom econ entity.

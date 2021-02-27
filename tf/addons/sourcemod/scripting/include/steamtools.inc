@@ -270,7 +270,7 @@ enum HTTPStatusCode
 typeset HTTPRequestComplete
 {
 	function void (HTTPRequestHandle HTTPRequest, bool requestSuccessful, HTTPStatusCode statusCode);
-	function void (HTTPRequestHandle HTTPRequest, bool requestSuccessful, HTTPStatusCode statusCode);
+	function void (HTTPRequestHandle HTTPRequest, bool requestSuccessful, HTTPStatusCode statusCode, any data);
 };
 
 native HTTPRequestHandle:Steam_CreateHTTPRequest(HTTPMethod:HTTPRequestMethod, const String:absoluteURL[]);
