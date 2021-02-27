@@ -1056,7 +1056,7 @@ public bool HasClientCompletedObjective(int client, CEQuestObjectiveDefinition x
 
 public void CEcon_OnClientEvent(int client, const char[] event, int add, int unique)
 {
-	if (IsFakeClient(client))return;
+	if (!IsClientReady(client))return;
 	
 	IterateAndTickleClientQuests(client, client, event, add, unique);
 
