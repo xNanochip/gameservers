@@ -760,6 +760,7 @@ public void SetClientActiveQuestByIndex(int client, int quest)
 
 public bool GetClientActiveQuest(int client, CEQuestDefinition xBuffer)
 {
+	if (!IsClientReady(client))return false;
 	if (m_xActiveQuestStruct[client].m_iIndex <= 0)return false;
 
 	xBuffer = m_xActiveQuestStruct[client];
@@ -851,7 +852,7 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 	if (!IsQuestActive(xQuest))return false;
 
 	bool bFailed = false;
-	
+
 	//------------------------------------------------
 	// TF2 Player Class restriction.
 	if(xQuest.m_nRestrictedToClass != TFClass_Unknown)
@@ -862,23 +863,23 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 			bFailed = false;
 		}
 	}
-	
+
 	if (bFailed)return false;
-	
+
 	//------------------------------------------------
 	// Item Name restriction.
 	int iLastWeapon = CEcon_GetLastUsedWeapon(client);
-	
-	
+
+
 	// This quest is restricted to a specific item, check by name.
 	if(!StrEqual(xQuest.m_sRestrictedToItemName, ""))
 	{
 		bFailed = true;
-		
+
 		// We are 100% sure that if we expect an item name, and target
 		// entity is not valid, we need to return false.
 		if (!IsValidEntity(iLastWeapon))return false;
-		
+
 		// Check if this entity was created by custom economy.
 		if (CEconItems_IsEntityCustomEconItem(iLastWeapon))
 		{
@@ -901,7 +902,7 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 		} else {
 			// If this is not a custom econ item, check native TF2 item name.
 			int iDefIndex = GetEntProp(iLastWeapon, Prop_Send, "m_iItemDefinitionIndex");
-			
+
 			// Getting item schema name.
 			char sName[64];
 			if(TF2Econ_GetItemName(iDefIndex, sName, sizeof(sName)))
@@ -914,54 +915,54 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 				}
 			}
 		}
-		
+
 		// If this check didn't pass, return false.
 		if (bFailed)return false;
 	}
-	
+
 	//------------------------------------------------
 	// Checking entity classname.
-	
+
 	// This quest is restricted to a specific class name.
 	if(!StrEqual(xQuest.m_sRestrictedToClassname, ""))
 	{
 		bFailed = true;
-		
+
 		// If entity does not exist, return false.
 		if (!IsValidEntity(iLastWeapon))return false;
-		
+
 		char sClassname[64];
 		GetEntityClassname(iLastWeapon, sClassname, sizeof(sClassname));
-		
+
 		if(StrEqual(sClassname, xQuest.m_sRestrictedToClassname))
 		{
 			bFailed = false;
 		}
-	
+
 		// If this check didn't pass, return false.
 		if (bFailed)return false;
 	}
-	
+
 	return true;
 }
 
 public bool CanClientTriggerObjective(int client, CEQuestObjectiveDefinition xObjective)
 {
 	bool bFailed = false;
-	
+
 	//------------------------------------------------
 	// Item Name restriction.
 	int iLastWeapon = CEcon_GetLastUsedWeapon(client);
-	
+
 	// This quest is restricted to a specific item, check by name.
 	if(!StrEqual(xObjective.m_sRestrictedToItemName, ""))
 	{
 		bFailed = true;
-		
+
 		// We are 100% sure that if we expect an item name, and target
 		// entity is not valid, we need to return false.
 		if (!IsValidEntity(iLastWeapon))return false;
-		
+
 		// Check if this entity was created by custom economy.
 		if (CEconItems_IsEntityCustomEconItem(iLastWeapon))
 		{
@@ -984,7 +985,7 @@ public bool CanClientTriggerObjective(int client, CEQuestObjectiveDefinition xOb
 		} else {
 			// If this is not a custom econ item, check native TF2 item name.
 			int iDefIndex = GetEntProp(iLastWeapon, Prop_Send, "m_iItemDefinitionIndex");
-			
+
 			// Getting item schema name.
 			char sName[64];
 			if(TF2Econ_GetItemName(iDefIndex, sName, sizeof(sName)))
@@ -997,34 +998,34 @@ public bool CanClientTriggerObjective(int client, CEQuestObjectiveDefinition xOb
 				}
 			}
 		}
-		
+
 		// If this check didn't pass, return false.
 		if (bFailed)return false;
 	}
-	
+
 	//------------------------------------------------
 	// Checking entity classname.
-	
+
 	// This quest is restricted to a specific class name.
 	if(!StrEqual(xObjective.m_sRestrictedToClassname, ""))
 	{
 		bFailed = true;
-		
+
 		// If entity does not exist, return false.
 		if (!IsValidEntity(iLastWeapon))return false;
-		
+
 		char sClassname[64];
 		GetEntityClassname(iLastWeapon, sClassname, sizeof(sClassname));
-		
+
 		if(StrEqual(sClassname, xObjective.m_sRestrictedToClassname))
 		{
 			bFailed = false;
 		}
-	
+
 		// If this check didn't pass, return false.
 		if (bFailed)return false;
 	}
-	
+
 	return true;
 }
 
@@ -1098,7 +1099,7 @@ public void RF_BackgroundQuests(any pack)
 public void SendEventToFriends(int client, const char[] event, int add, int unique)
 {
 	if (!IsClientReady(client))return;
-	
+
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if(IsClientReady(i))
@@ -1118,7 +1119,7 @@ public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, in
 {
 	// Don't allow background quests to be processed using friendly fire.
 	if(xQuest.m_bBackground && client != source) return;
-	
+
 	if (!CanClientTriggerQuest(client, xQuest))return;
 
 	bool bShouldResetObjectiveMark = false;
