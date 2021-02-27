@@ -1046,6 +1046,8 @@ public bool HasClientCompletedObjective(int client, CEQuestObjectiveDefinition x
 
 public void CEcon_OnClientEvent(int client, const char[] event, int add, int unique)
 {
+	if (IsFakeClient(client))return;
+	
 	IterateAndTickleClientQuests(client, client, event, add, unique);
 
 	SendEventToFriends(client, event, add, unique);
