@@ -277,6 +277,14 @@ public void ParseEconomyConfig(KeyValues kv)
 										xHook.m_flSubtractIn = kv.GetFloat("subtract_in", 0.0);
 
 										kv.GetString("event", xHook.m_sEvent, sizeof(xHook.m_sEvent));
+										
+										char sEvent[64];
+										Format(sEvent, sizeof(sEvent), "%s;", xHook.m_sEvent);
+										
+										if(StrContains(xQuest.m_sAggregatedEvents, sEvent) == -1)
+										{
+											Format(xQuest.m_sAggregatedEvents, sizeof(xQuest.m_sAggregatedEvents), "%s%s", xQuest.m_sAggregatedEvents, sEvent);
+										}
 
 										m_hHooksDefinitions.PushArray(xHook);
 
@@ -293,6 +301,7 @@ public void ParseEconomyConfig(KeyValues kv)
 					}
 					kv.GoBack();
 				}
+				LogMessage("Aggregated List: %s", xQuest.m_sAggregatedEvents);
 
 				m_hQuestDefinitions.PushArray(xQuest);
 
@@ -317,6 +326,7 @@ public Action cDump(int args)
 		LogMessage("  m_iObjectivesCount = %d", xQuest.m_iObjectivesCount);
 		LogMessage("  m_sRestrictedToMap = \"%s\"", xQuest.m_sRestrictedToMap);
 		LogMessage("  m_sStrictRestrictedToMap = \"%s\"", xQuest.m_sStrictRestrictedToMap);
+		LogMessage("  m_sAggregatedEvents = \"%s\"", xQuest.m_sAggregatedEvents );
 		LogMessage("  m_nRestrictedToClass = %d", xQuest.m_nRestrictedToClass);
 		LogMessage("  m_sRestrictedToItemName = \"%s\"", xQuest.m_sRestrictedToItemName);
 		LogMessage("  m_sRestrictedToClassname = \"%s\"", xQuest.m_sRestrictedToClassname);
@@ -1058,7 +1068,10 @@ public void IterateAndTickleClientQuests(int client, int source, const char[] ev
 	CEQuestDefinition xQuest;
 	if(GetClientActiveQuest(client, xQuest))
 	{
-		TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
+		if(QuestIsListeningForEvent(xQuest, event))
+		{
+			TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
+		}
 	}
 
 	DataPack hPack = new DataPack();
@@ -1092,7 +1105,10 @@ public void RF_BackgroundQuests(any pack)
 			CEQuestDefinition xQuest;
 			if(GetQuestByIndex(iIndex, xQuest))
 			{
-				TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
+				if(QuestIsListeningForEvent(xQuest, event))
+				{
+					TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
+				}
 			}
 		}
 	}
@@ -1625,4 +1641,12 @@ public Action teamplay_round_win(Event event, const char[] name, bool dontBroadc
 	// Players usually will look up their progress after they've done playing the game.
 	// And it'll be frustrating to see their progress not being updated immediately.
 	CreateTimer(0.1, Timer_QuestUpdateInterval);
+}
+
+public bool QuestIsListeningForEvent(CEQuestDefinition xQuest, const char[] event)
+{
+	char sEvent[64];
+	Format(sEvent, sizeof(sEvent), "%s;", event);
+	
+	return StrContains(xQuest.m_sAggregatedEvents, sEvent, false) != -1;
 }
