@@ -32,6 +32,11 @@ enum struct CEQuestDefinition
 	// Active weapon restriction.
 	char m_sRestrictedToItemName[64];
 	char m_sRestrictedToClassname[64];
+	
+	// Used for optimization purposes.
+	// Allows to check if we need to run a specific event 
+	// even without going through events.
+	char m_sAggregatedEvents[512];
 }
 
 enum struct CEQuestObjectiveDefinition
@@ -59,7 +64,7 @@ enum struct CEQuestObjectiveHookDefinition
 	int m_iObjectiveIndex;
 	int m_iQuestIndex;
 
-	char m_sEvent[128];
+	char m_sEvent[64];
 
 	float m_flDelay;
 	float m_flSubtractIn;

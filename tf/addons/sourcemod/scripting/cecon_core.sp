@@ -73,6 +73,8 @@ Handle g_hOnClientEvent;
 // We store last weapon that client has interacted with.
 int m_iLastWeapon[MAXPLAYERS + 1];
 
+ConVar ce_events_show;
+
 //-------------------------------------------------------------------
 // Coordinator
 //-------------------------------------------------------------------
@@ -130,6 +132,7 @@ public void OnPluginStart()
 
 	g_hOnClientEvent = CreateGlobalForward("CEcon_OnClientEvent", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_Cell);
 	RegAdminCmd("ce_events_test", cTestEvnt, ADMFLAG_ROOT, "Tests a CEcon event.");
+	ce_events_show = CreateConVar("ce_events_show", "0");
 
 	// Hook all needed entities when plugin late loads.
 	LateHooking();
@@ -1078,6 +1081,11 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 
 	int add = GetNativeCell(3);
 	int unique_id = GetNativeCell(4);
+	
+	if(ce_events_show.BoolValue)
+	{
+		LogMessage("%N %s %d %d", client, event, add, unique_id);
+	}
 
 	Call_StartForward(g_hOnClientEvent);
 	Call_PushCell(client);
