@@ -301,7 +301,6 @@ public void ParseEconomyConfig(KeyValues kv)
 					}
 					kv.GoBack();
 				}
-				LogMessage("Aggregated List: %s", xQuest.m_sAggregatedEvents);
 
 				m_hQuestDefinitions.PushArray(xQuest);
 
