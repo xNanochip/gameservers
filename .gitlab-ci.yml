@@ -38,8 +38,6 @@ stages:
                         echo "stashing"
                         git stash;
 
-                        rm -f tf/addons/sourcemod/plugins/*.smx
-
                         echo "cleaning cfg folder"
                         git clean -d -f -x tf/cfg/
 

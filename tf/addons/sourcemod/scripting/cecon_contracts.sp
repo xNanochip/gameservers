@@ -760,6 +760,7 @@ public void SetClientActiveQuestByIndex(int client, int quest)
 
 public bool GetClientActiveQuest(int client, CEQuestDefinition xBuffer)
 {
+	if (!IsClientReady(client))return false;
 	if (m_xActiveQuestStruct[client].m_iIndex <= 0)return false;
 
 	xBuffer = m_xActiveQuestStruct[client];
