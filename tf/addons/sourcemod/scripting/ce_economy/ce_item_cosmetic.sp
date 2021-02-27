@@ -38,12 +38,12 @@ public Action post_inventory_application(Event hEvent, const char[] szName, bool
 {
 	int client = GetClientOfUserId(hEvent.GetInt("userid"));
 	int iTFWearables[MAX_COSMETICS];
-	
+
 	for (int i = 0; i < MAX_COSMETICS; i++)
 	{
 		m_iMyWearables[client][i] = -1;
 	}
-	
+
 	int iCount = 0;
 	int iEdict = -1;
 	while((iEdict = FindEntityByClassname(iEdict, "tf_wearable*")) != -1)
@@ -54,7 +54,7 @@ public Action post_inventory_application(Event hEvent, const char[] szName, bool
 
 		if (GetEntPropEnt(iEdict, Prop_Send, "m_hOwnerEntity") != client)continue;
 		int idx = GetEntProp(iEdict, Prop_Send, "m_iItemDefinitionIndex");
-		
+
 		// Check if index is valid.
 		if(idx < 0xFFFF)
 		{
@@ -64,19 +64,19 @@ public Action post_inventory_application(Event hEvent, const char[] szName, bool
 		}
 		if (iCount == MAX_COSMETICS)break;
 	}
-	
+
 	bool bChanged = false;
 	int iSizeA, iSizeB;
-	
+
 	// We need to identify whether the TF cosmetic list has changed.
-	
+
 	// First we see if cosmetics' amount has changed from previous one.
 	for (int i = 0; i < MAX_COSMETICS; i++)if (iTFWearables[i] > 0)iSizeA++;
 	for (int i = 0; i < MAX_COSMETICS; i++)if (m_iTFWearables[client][i] > 0)iSizeB++;
 	// If it did, clearly something has changed.
 	if (iSizeA != iSizeB)bChanged = true;
-	
-	
+
+
 	// Otherwise, check if every single new cosmetic is in the old cosmetic list.
 	if(!bChanged)
 	{
@@ -96,7 +96,7 @@ public Action post_inventory_application(Event hEvent, const char[] szName, bool
 		}
 		if (!bFound)bChanged = true;
 	}
-	
+
 	// Do the same thing vice versa.
 	if(!bChanged)
 	{
@@ -116,7 +116,7 @@ public Action post_inventory_application(Event hEvent, const char[] szName, bool
 		}
 		if (!bFound)bChanged = true;
 	}
-	
+
 	if(bChanged)
 	{
 		for (int i = 0; i < MAX_COSMETICS; i++)
@@ -128,8 +128,8 @@ public Action post_inventory_application(Event hEvent, const char[] szName, bool
 
 public int CE_OnItemEquip(int client, int item_index, int index, int quality, ArrayList hAttributes, char[] type)
 {
-	if (!StrEqual(type, "cosmetic"))return -1;
-	
+	if (!StrEqual(type, "cosmetic")) return -1;
+
 	KeyValues hConf = CE_FindItemConfigByDefIndex(index);
 	if (!UTIL_IsValidHandle(hConf)) return -1;
 
@@ -150,7 +150,7 @@ public int CE_OnItemEquip(int client, int item_index, int index, int quality, Ar
 	delete hConf;
 
 	ParseCosmeticModel(client, sModel, sizeof(sModel));
-	
+
 	int iWearIndex = -1;
 	for (int i = 0; i < MAX_COSMETICS; i++)
 	{
@@ -158,8 +158,8 @@ public int CE_OnItemEquip(int client, int item_index, int index, int quality, Ar
 		if (!IsValidEntity(iWearable))continue;
 		if (CE_IsEntityCustomEcomItem(iWearable))continue;
 		if (!HasEntProp(iWearable, Prop_Send, "m_iItemDefinitionIndex"))continue;
-		
-		// First we check if we have any TF cosmetics 
+
+		// First we check if we have any TF cosmetics
 		// that have same equip regions. And remove them if needed.
 		int iDefIndex = GetEntProp(iWearable, Prop_Send, "m_iItemDefinitionIndex");
 		int iCompareBits = TF2Econ_GetItemEquipRegionGroupBits(iDefIndex);
@@ -167,32 +167,32 @@ public int CE_OnItemEquip(int client, int item_index, int index, int quality, Ar
 		{
 			// We found a merging TF cosmetic.
 			TF2_RemoveWearable(client, iWearable);
-			AcceptEntityInput(iWearable, "Kill");
-			
+			RemoveEntity(iWearable);
+
 			if(iWearIndex == -1)
 			{
 				iWearIndex = i;
 			}
 		}
 	}
-	
+
 	if(iWearIndex == -1)
 	{
 		for (int i = 0; i < MAX_COSMETICS; i++)
 		{
 			int iWearable = m_iMyWearables[client][i];
 			if (IsValidEntity(iWearable))continue;
-			
+
 			// We've found an empty slot. Let's use it.
 			iWearIndex = i;
 			break;
 		}
 	}
-	
+
 	if(iWearIndex == -1)
 	{
 		bool bFound;
-		
+
 		for (int i = 0; i < MAX_COSMETICS; i++)
 		{
 			int iDefIndex = m_iTFWearables[client][i];
@@ -202,18 +202,18 @@ public int CE_OnItemEquip(int client, int item_index, int index, int quality, Ar
 				if (!IsValidEntity(iWearable))continue;
 				if (CE_IsEntityCustomEcomItem(iWearable))continue;
 				if (!HasEntProp(iWearable, Prop_Send, "m_iItemDefinitionIndex"))continue;
-				
+
 				if(iDefIndex == GetEntProp(iWearable, Prop_Send, "m_iItemDefinitionIndex"))
 				{
 					int iSlotCandidate = TF2Econ_GetItemSlot(iDefIndex, TF2_GetPlayerClass(client));
 					int iSlotReplacement = TF2Econ_GetItemSlot(iItemIndex, TF2_GetPlayerClass(client));
 					if (iSlotCandidate != iSlotReplacement)continue;
-					
+
 					TF2_RemoveWearable(client, iWearable);
 					AcceptEntityInput(iWearable, "Kill");
-					
+
 					iWearIndex = j;
-					
+
 					bFound = true;
 					break;
 				}
@@ -221,13 +221,13 @@ public int CE_OnItemEquip(int client, int item_index, int index, int quality, Ar
 			if (bFound)break;
 		}
 	}
-	
+
 	if(iWearIndex > -1)
 	{
 		int iWear = CEModels_CreateWearable(client, sModel, false, quality);
 		SetEntProp(iWear, Prop_Send, "m_iItemDefinitionIndex", iItemIndex);
 		m_iMyWearables[client][iWearIndex] = iWear;
-		
+
 		return iWear;
 	}
 	return -1;
