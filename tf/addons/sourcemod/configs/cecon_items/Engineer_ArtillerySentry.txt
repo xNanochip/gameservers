@@ -1,0 +1,6 @@
+Item
+{
+	name 			"Artillery Sentry"
+	type 			"weapon"
+	item_class 		"tf_weapon_pda_engineer_build"
+}
