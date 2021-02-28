@@ -233,7 +233,6 @@ public void OnEntityDestroyed(int entity)
 
 public void CEcon_OnClientEvent(int client, const char[] name, int add, int unique_id)
 {
-	if (client != 2)return;	
 	int iActiveWeapon = CEcon_GetLastUsedWeapon(client);
 	if(IsValidEntity(iActiveWeapon))
 	{
