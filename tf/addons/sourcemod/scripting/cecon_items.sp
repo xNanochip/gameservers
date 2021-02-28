@@ -270,19 +270,21 @@ public Action cItemDebug(int client, int args)
 			CEItemDefinition xDef;
 			if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, xDef))
 			{
-				PrintToConsole(client, "[%d] \"%s\" (%s)", i, xDef.m_sName, xDef.m_sType);
-				PrintToConsole(client, "m_iIndex = %d", xItem.m_iIndex);
-				PrintToConsole(client, "m_iItemDefinitionIndex = %d", xItem.m_iItemDefinitionIndex);
-				PrintToConsole(client, "m_nQuality = %d", xItem.m_nQuality);
-				PrintToConsole(client, "m_Attributes =");
+				PrintToConsole(client, "[%d] \"%s\" (%s) =", i, xDef.m_sName, xDef.m_sType);
 				PrintToConsole(client, "[");
+				PrintToConsole(client, "	m_iIndex = %d", xItem.m_iIndex);
+				PrintToConsole(client, "	m_iItemDefinitionIndex = %d", xItem.m_iItemDefinitionIndex);
+				PrintToConsole(client, "	m_nQuality = %d", xItem.m_nQuality);
+				PrintToConsole(client, "	m_Attributes =");
+				PrintToConsole(client, "	[");
 				for (int j = 0; j < xItem.m_Attributes.Length; j++)
 				{
 					CEAttribute xAttr;
 					xItem.m_Attributes.GetArray(j, xAttr);
 					
-					PrintToConsole(client, "	\"%s\" = \"%s\"", xAttr.m_sName, xAttr.m_sValue);
+					PrintToConsole(client, "		\"%s\" = \"%s\"", xAttr.m_sName, xAttr.m_sValue);
 				}
+				PrintToConsole(client, "	]");
 				PrintToConsole(client, "]");
 				PrintToConsole(client, "");
 			}
