@@ -271,7 +271,6 @@ public Action cItemDebug(int client, int args)
 			if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, xDef))
 			{
 				PrintToConsole(client, "[%d] \"%s\" (%s)", i, xDef.m_sName, xDef.m_sType);
-				PrintToConsole(client, "=============================");
 				PrintToConsole(client, "m_iIndex = %d", xItem.m_iIndex);
 				PrintToConsole(client, "m_iItemDefinitionIndex = %d", xItem.m_iItemDefinitionIndex);
 				PrintToConsole(client, "m_nQuality = %d", xItem.m_nQuality);
@@ -289,6 +288,7 @@ public Action cItemDebug(int client, int args)
 			}
 		}
 	}
+	return Plugin_Handled;
 }
 
 //---------------------------------------------------------------------
