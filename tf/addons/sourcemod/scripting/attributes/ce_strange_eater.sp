@@ -20,6 +20,8 @@ int m_iStrangeLevel[MAX_ENTITIES + 1]; // Stores strange level of the entity.
 CEStrangePartDefinition m_xParts[MAX_ENTITIES + 1][MAX_STRANGE_PARTS + 1]; // Array of Strange parts of every entity.
 ArrayList m_hPartsDefinitions; // Strange Part Definitions
 
+ConVar ce_strange_log_events;
+
 public Plugin myinfo =
 {
 	name = "Creators.TF Economy - Stranges Handler",
@@ -33,6 +35,7 @@ Handle g_hOnEconItemNewLevel;
 
 public void OnPluginStart()
 {
+	ce_strange_log_events = CreateConVar("ce_strange_log_events", "0", "Debug logs all events listened by strange items");
 	// RegServerCmd("ce_stranges_announce_levelup", cItemLevelUp);
 }
 
@@ -230,7 +233,6 @@ public void OnEntityDestroyed(int entity)
 
 public void CEcon_OnClientEvent(int client, const char[] name, int add, int unique_id)
 {
-	if (client != 2)return;	
 	int iActiveWeapon = CEcon_GetLastUsedWeapon(client);
 	if(IsValidEntity(iActiveWeapon))
 	{
@@ -280,6 +282,19 @@ public void TickleEntityStrangeParts(int entity, const char[] event, int add)
 		
 		if (iPart == 0)continue;
 		if (!StrEqual(m_xParts[entity][i].m_sEvent, event))continue;
+		
+		if(ce_strange_log_events.BoolValue)
+		{
+			char sClassname[32];
+			GetEntityClassname(entity, sClassname, sizeof(sClassname));
+			
+			CEItem xItem;
+			if(CEconItems_GetEntityItemStruct(entity, xItem))
+			{
+				LogMessage("strange_triggered (event \"%s\") (add %d) (entity \"%s\") (client \"%N\")", event, add, sClassname, xItem.m_iClient);
+			}
+			
+		}
 		
 		char sAttr[96];
 		GetStrangeAttributeByPartIndex(i, sAttr, sizeof(sAttr));
