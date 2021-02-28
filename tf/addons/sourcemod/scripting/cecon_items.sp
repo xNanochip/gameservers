@@ -234,6 +234,7 @@ public void OnPluginStart()
 	m_PartialReapplicationTypes.PushString("weapon");
 
 	RegServerCmd("ce_loadout_reset", cResetLoadout);
+	RegAdminCmd("ce_item_debug", cItemDebug, ADMFLAG_ROOT);
 	
 	CreateTimer(BACKEND_ATTRIBUTE_UPDATE_INTERVAL, Timer_AttributeUpdateInterval, _, TIMER_REPEAT);
 	
@@ -256,6 +257,38 @@ public Action cResetLoadout(int args)
 
 	}
 	return Plugin_Handled;
+}
+
+public Action cItemDebug(int client, int args)
+{
+	int iCount = CEconItems_GetClientWearedItemsCount(client);
+	for (int i = 0; i < iCount; i++)
+	{
+		CEItem xItem;
+		if(CEconItems_GetClientWearedItemByIndex(client, i, xItem))
+		{
+			CEItemDefinition xDef;
+			if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, xDef))
+			{
+				PrintToConsole(client, "[%d] \"%s\" (%s)", i, xDef.m_sName, xDef.m_sType);
+				PrintToConsole(client, "=============================");
+				PrintToConsole(client, "m_iIndex = %d", xItem.m_iIndex);
+				PrintToConsole(client, "m_iItemDefinitionIndex = %d", xItem.m_iItemDefinitionIndex);
+				PrintToConsole(client, "m_nQuality = %d", xItem.m_nQuality);
+				PrintToConsole(client, "m_Attributes =");
+				PrintToConsole(client, "[");
+				for (int j = 0; j < xItem.m_Attributes.Length; j++)
+				{
+					CEAttribute xAttr;
+					xItem.m_Attributes.GetArray(j, xAttr);
+					
+					PrintToConsole(client, "	\"%s\" = \"%s\"", xAttr.m_sName, xAttr.m_sValue);
+				}
+				PrintToConsole(client, "]");
+				PrintToConsole(client, "");
+			}
+		}
+	}
 }
 
 //---------------------------------------------------------------------
