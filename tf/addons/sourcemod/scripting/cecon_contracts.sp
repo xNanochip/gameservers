@@ -277,6 +277,14 @@ public void ParseEconomyConfig(KeyValues kv)
 										xHook.m_flSubtractIn = kv.GetFloat("subtract_in", 0.0);
 
 										kv.GetString("event", xHook.m_sEvent, sizeof(xHook.m_sEvent));
+										
+										char sEvent[64];
+										Format(sEvent, sizeof(sEvent), "%s;", xHook.m_sEvent);
+										
+										if(StrContains(xQuest.m_sAggregatedEvents, sEvent) == -1)
+										{
+											Format(xQuest.m_sAggregatedEvents, sizeof(xQuest.m_sAggregatedEvents), "%s%s", xQuest.m_sAggregatedEvents, sEvent);
+										}
 
 										m_hHooksDefinitions.PushArray(xHook);
 
@@ -317,6 +325,7 @@ public Action cDump(int args)
 		LogMessage("  m_iObjectivesCount = %d", xQuest.m_iObjectivesCount);
 		LogMessage("  m_sRestrictedToMap = \"%s\"", xQuest.m_sRestrictedToMap);
 		LogMessage("  m_sStrictRestrictedToMap = \"%s\"", xQuest.m_sStrictRestrictedToMap);
+		LogMessage("  m_sAggregatedEvents = \"%s\"", xQuest.m_sAggregatedEvents );
 		LogMessage("  m_nRestrictedToClass = %d", xQuest.m_nRestrictedToClass);
 		LogMessage("  m_sRestrictedToItemName = \"%s\"", xQuest.m_sRestrictedToItemName);
 		LogMessage("  m_sRestrictedToClassname = \"%s\"", xQuest.m_sRestrictedToClassname);
@@ -760,6 +769,7 @@ public void SetClientActiveQuestByIndex(int client, int quest)
 
 public bool GetClientActiveQuest(int client, CEQuestDefinition xBuffer)
 {
+	if (!IsClientReady(client))return false;
 	if (m_xActiveQuestStruct[client].m_iIndex <= 0)return false;
 
 	xBuffer = m_xActiveQuestStruct[client];
@@ -851,7 +861,7 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 	if (!IsQuestActive(xQuest))return false;
 
 	bool bFailed = false;
-	
+
 	//------------------------------------------------
 	// TF2 Player Class restriction.
 	if(xQuest.m_nRestrictedToClass != TFClass_Unknown)
@@ -862,23 +872,23 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 			bFailed = false;
 		}
 	}
-	
+
 	if (bFailed)return false;
-	
+
 	//------------------------------------------------
 	// Item Name restriction.
 	int iLastWeapon = CEcon_GetLastUsedWeapon(client);
-	
-	
+
+
 	// This quest is restricted to a specific item, check by name.
 	if(!StrEqual(xQuest.m_sRestrictedToItemName, ""))
 	{
 		bFailed = true;
-		
+
 		// We are 100% sure that if we expect an item name, and target
 		// entity is not valid, we need to return false.
 		if (!IsValidEntity(iLastWeapon))return false;
-		
+
 		// Check if this entity was created by custom economy.
 		if (CEconItems_IsEntityCustomEconItem(iLastWeapon))
 		{
@@ -901,7 +911,7 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 		} else {
 			// If this is not a custom econ item, check native TF2 item name.
 			int iDefIndex = GetEntProp(iLastWeapon, Prop_Send, "m_iItemDefinitionIndex");
-			
+
 			// Getting item schema name.
 			char sName[64];
 			if(TF2Econ_GetItemName(iDefIndex, sName, sizeof(sName)))
@@ -914,54 +924,54 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 				}
 			}
 		}
-		
+
 		// If this check didn't pass, return false.
 		if (bFailed)return false;
 	}
-	
+
 	//------------------------------------------------
 	// Checking entity classname.
-	
+
 	// This quest is restricted to a specific class name.
 	if(!StrEqual(xQuest.m_sRestrictedToClassname, ""))
 	{
 		bFailed = true;
-		
+
 		// If entity does not exist, return false.
 		if (!IsValidEntity(iLastWeapon))return false;
-		
+
 		char sClassname[64];
 		GetEntityClassname(iLastWeapon, sClassname, sizeof(sClassname));
-		
+
 		if(StrEqual(sClassname, xQuest.m_sRestrictedToClassname))
 		{
 			bFailed = false;
 		}
-	
+
 		// If this check didn't pass, return false.
 		if (bFailed)return false;
 	}
-	
+
 	return true;
 }
 
 public bool CanClientTriggerObjective(int client, CEQuestObjectiveDefinition xObjective)
 {
 	bool bFailed = false;
-	
+
 	//------------------------------------------------
 	// Item Name restriction.
 	int iLastWeapon = CEcon_GetLastUsedWeapon(client);
-	
+
 	// This quest is restricted to a specific item, check by name.
 	if(!StrEqual(xObjective.m_sRestrictedToItemName, ""))
 	{
 		bFailed = true;
-		
+
 		// We are 100% sure that if we expect an item name, and target
 		// entity is not valid, we need to return false.
 		if (!IsValidEntity(iLastWeapon))return false;
-		
+
 		// Check if this entity was created by custom economy.
 		if (CEconItems_IsEntityCustomEconItem(iLastWeapon))
 		{
@@ -984,7 +994,7 @@ public bool CanClientTriggerObjective(int client, CEQuestObjectiveDefinition xOb
 		} else {
 			// If this is not a custom econ item, check native TF2 item name.
 			int iDefIndex = GetEntProp(iLastWeapon, Prop_Send, "m_iItemDefinitionIndex");
-			
+
 			// Getting item schema name.
 			char sName[64];
 			if(TF2Econ_GetItemName(iDefIndex, sName, sizeof(sName)))
@@ -997,34 +1007,34 @@ public bool CanClientTriggerObjective(int client, CEQuestObjectiveDefinition xOb
 				}
 			}
 		}
-		
+
 		// If this check didn't pass, return false.
 		if (bFailed)return false;
 	}
-	
+
 	//------------------------------------------------
 	// Checking entity classname.
-	
+
 	// This quest is restricted to a specific class name.
 	if(!StrEqual(xObjective.m_sRestrictedToClassname, ""))
 	{
 		bFailed = true;
-		
+
 		// If entity does not exist, return false.
 		if (!IsValidEntity(iLastWeapon))return false;
-		
+
 		char sClassname[64];
 		GetEntityClassname(iLastWeapon, sClassname, sizeof(sClassname));
-		
+
 		if(StrEqual(sClassname, xObjective.m_sRestrictedToClassname))
 		{
 			bFailed = false;
 		}
-	
+
 		// If this check didn't pass, return false.
 		if (bFailed)return false;
 	}
-	
+
 	return true;
 }
 
@@ -1045,6 +1055,8 @@ public bool HasClientCompletedObjective(int client, CEQuestObjectiveDefinition x
 
 public void CEcon_OnClientEvent(int client, const char[] event, int add, int unique)
 {
+	if (!IsClientReady(client))return;
+	
 	IterateAndTickleClientQuests(client, client, event, add, unique);
 
 	SendEventToFriends(client, event, add, unique);
@@ -1055,7 +1067,10 @@ public void IterateAndTickleClientQuests(int client, int source, const char[] ev
 	CEQuestDefinition xQuest;
 	if(GetClientActiveQuest(client, xQuest))
 	{
-		TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
+		if(QuestIsListeningForEvent(xQuest, event))
+		{
+			TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
+		}
 	}
 
 	DataPack hPack = new DataPack();
@@ -1089,7 +1104,10 @@ public void RF_BackgroundQuests(any pack)
 			CEQuestDefinition xQuest;
 			if(GetQuestByIndex(iIndex, xQuest))
 			{
-				TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
+				if(QuestIsListeningForEvent(xQuest, event))
+				{
+					TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
+				}
 			}
 		}
 	}
@@ -1097,6 +1115,8 @@ public void RF_BackgroundQuests(any pack)
 
 public void SendEventToFriends(int client, const char[] event, int add, int unique)
 {
+	if (!IsClientReady(client))return;
+
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if(IsClientReady(i))
@@ -1114,6 +1134,9 @@ public void SendEventToFriends(int client, const char[] event, int add, int uniq
 
 public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, int source, const char[] event, int add, int unique)
 {
+	// Don't allow background quests to be processed using friendly fire.
+	if(xQuest.m_bBackground && client != source) return;
+
 	if (!CanClientTriggerQuest(client, xQuest))return;
 
 	bool bShouldResetObjectiveMark = false;
@@ -1617,4 +1640,12 @@ public Action teamplay_round_win(Event event, const char[] name, bool dontBroadc
 	// Players usually will look up their progress after they've done playing the game.
 	// And it'll be frustrating to see their progress not being updated immediately.
 	CreateTimer(0.1, Timer_QuestUpdateInterval);
+}
+
+public bool QuestIsListeningForEvent(CEQuestDefinition xQuest, const char[] event)
+{
+	char sEvent[64];
+	Format(sEvent, sizeof(sEvent), "%s;", event);
+	
+	return StrContains(xQuest.m_sAggregatedEvents, sEvent, false) != -1;
 }

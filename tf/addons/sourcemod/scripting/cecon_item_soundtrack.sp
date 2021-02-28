@@ -542,6 +542,7 @@ public int GetEventIndexByKitAndID(int kit, char[] id)
 
 public bool GetClientKit(int client, Soundtrack_t hKit)
 {
+	if (!IsClientReady(client))return false;
 	if (m_iMusicKit[client] < 0)return false;
 
 	if (!GetKitByIndex(m_iMusicKit[client], hKit))return false;

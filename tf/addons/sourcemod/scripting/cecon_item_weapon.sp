@@ -673,6 +673,7 @@ public void TF2_OnConditionAdded(int client, TFCond cond)
 				GetEntityClassname(iActiveWeapon, sClassName, sizeof(sClassName));
 
 				if (StrEqual("tf_weapon_rocketlauncher", sClassName))bShouldHideWeapon = true;
+				if (StrEqual("tf_weapon_shotgun_primary", sClassName))bShouldHideWeapon = true;
 			}
 		}
 
