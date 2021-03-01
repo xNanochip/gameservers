@@ -4,13 +4,11 @@
 #include <cecon_http>
 #include <ccc>
 
-bool g_bCCC = false;
-
 public Plugin myinfo =
 {
-	name = "Custom Chat Colors Patreon Module",
+	name = "Creators.TF Patreon Perks",
 	author = "Creators.TF Team",
-	description = "Adds chat tags to players who are a Creators.TF patron.",
+	description = "Applies perks to Creators.TF Patreons.",
 	version = "1.0",
 	url = "https://creators.tf"
 };
@@ -23,57 +21,35 @@ public void OnPluginStart()
 	
 	ce_patreon_debug = CreateConVar("ce_patreon_debug", "0");
 
-	ApplyTags();
+	LoadAllClientsPledges();
 }
 
 public Action Cmd_ReloadCCC(int client, const char[] command, int argc)
 {
-	ApplyTags();
+	LoadAllClientsPledges();
 }
 
-public void OnLibraryAdded(const char[] name)
+public void LoadAllClientsPledges()
 {
-	if (StrEqual(name, "ccc"))
+	for (int i = 1; i <= MaxClients; i++)
 	{
-		g_bCCC = true;
+		if (!IsClientReady(i))continue;
+		
+		LoadClientPledge(i);
 	}
-	if(g_bCCC)
-	{
-		ApplyTags();
-	}
-}
-
-public void OnLibraryRemoved(const char[] name)
-{
-	if (StrEqual(name, "ccc")) g_bCCC = false;
 }
 
 public void OnClientPostAdminCheck(int client)
 {
-	if ((!IsClientInGame(client) || IsFakeClient(client)) || GetUserAdmin(client) != INVALID_ADMIN_ID) return;
-	ApplyTags(client);
+	if (!IsClientReady(client))return;
+	
+	LoadClientPledge(client);
 }
 
-void ApplyTags(int client = 0)
+public void LoadClientPledge(int client)
 {
-	if (client == 0)
-	{
-		for (int i = 1; i <= MaxClients; i++)
-		{
-			if (IsClientInGame(i) && !IsFakeClient(i) && GetUserAdmin(i) == INVALID_ADMIN_ID)
-			{
-				ApplyTagsClient(i);
-			}
-		}
-	}
-	else
-	{
-		ApplyTagsClient(client);
-	}
-}
-
-public void ApplyTagsClient(int client)
-{
+	LogMessage("LoadClientPledge(%d)", client);
+	
 	char sSteamID[PLATFORM_MAX_PATH];
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
 
@@ -85,9 +61,9 @@ public void ApplyTagsClient(int client)
 
 public void httpPlayerDonation_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code, any client)
 {
+	LogMessage("httpPlayerDonation_Callback %d %d %d", code, success, client);
 	// We are not processing bots.
 	if (!IsClientReady(client))return;
-	LogMessage("httpPlayerDonation_Callback %d %d %N", code, success, client);
 
 	//-------------------------------//
 	// Making HTTP checks.
