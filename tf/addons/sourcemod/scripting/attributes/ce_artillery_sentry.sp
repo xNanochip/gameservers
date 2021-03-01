@@ -19,29 +19,28 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	HookEvent("player_builtobject", BuildObjectEvent);
 	HookEvent("player_dropobject", BuildObjectEvent);
 }
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
 	// Hook the entity creation of this new sentry gun.
-	//if (StrEqual(classname, "obj_sentrygun"))
-	//{
-	//	SDKHook(entity, SDKHook_Spawn, Sentry_OnSpawn);
-	//}
+	if (StrEqual(classname, "obj_sentrygun"))
+	{
+		SDKHook(entity, SDKHook_Spawn, Sentry_OnSpawn);
+	}
 }
 
+// Apply custom attributes here. These are specific to the sentry gun itself!
 public void SetSentryAttributes(int iSentryGun, int iBuilder, int iPDA)
 {
 	// Does this weapon have the "sentry gun override" attribute?
 	if (CEconItems_GetEntityAttributeInteger(iPDA, "sentry gun override") == 2)
 	{
-		// Apply custom attributes here. These are specific to the sentry gun itself!
-		
 		// Set maximum health if there's an increased value.
 		int iSentryLevel = GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel");
 		PrintToChat(iBuilder, "%d", iSentryLevel);
+
 		switch (iSentryLevel)
 		{
 			case 1: // Sentry Level 1
@@ -65,13 +64,8 @@ public void SetSentryAttributes(int iSentryGun, int iBuilder, int iPDA)
 	}
 }
 
-//public Action Sentry_OnSpawn(int iSentryGun)
-public Action BuildObjectEvent(Handle hEvent, const char[] strEventName, bool bDontBroadcast)
+public Action Sentry_OnSpawn(int iSentryGun)
 {
-	// Grab the sentry gun index from the event:
-	int iSentryGun = GetEventInt(hEvent, "index");
-	if (!IsValidEntity(iSentryGun)) { return; }
-	
 	// Grab the owner of this sentry gun so we can grab their weapon:
 	int iBuilder = GetEntPropEnt(iSentryGun, Prop_Send, "m_hBuilder");
 	
