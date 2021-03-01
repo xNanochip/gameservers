@@ -109,15 +109,8 @@ public void httpPlayerDonation_Callback(HTTPRequestHandle request, bool success,
 		Format(color, sizeof(color), "e38a2b");
 	}
 
-	if (g_bCCC)
-	{
-		CCC_SetTag(client, tag);
-		CCC_SetColor(client, CCC_TagColor, StringToInt(color, 16), false);
-	}
-	else
-	{
-		LogError("Custom-ChatColors was not detected, therefore patreon tags cannot be set.");
-	}
+	CCC_SetTag(client, tag);
+	CCC_SetColor(client, CCC_TagColor, StringToInt(color, 16), false);
 }
 
 public bool IsClientReady(int client)
