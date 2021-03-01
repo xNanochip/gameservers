@@ -1,6 +1,6 @@
 #pragma semicolon 1
 
-#include <SteamTools>
+#include <steamtools>
 #include <cecon_http>
 #include <ccc>
 
