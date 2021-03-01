@@ -19,20 +19,59 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-
+	HookEvent("player_builtobject", BuildObjectEvent);
+	HookEvent("player_dropobject", BuildObjectEvent);
 }
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
 	// Hook the entity creation of this new sentry gun.
-	if (StrEqual(classname, "obj_sentrygun"))
+	//if (StrEqual(classname, "obj_sentrygun"))
+	//{
+	//	SDKHook(entity, SDKHook_Spawn, Sentry_OnSpawn);
+	//}
+}
+
+public void SetSentryAttributes(int iSentryGun, int iBuilder, int iPDA)
+{
+	// Does this weapon have the "sentry gun override" attribute?
+	if (CEconItems_GetEntityAttributeInteger(iPDA, "sentry gun override") == 2)
 	{
-		SDKHook(entity, SDKHook_Spawn, Sentry_OnSpawn);
+		// Apply custom attributes here. These are specific to the sentry gun itself!
+		
+		// Set maximum health if there's an increased value.
+		int iSentryLevel = GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel");
+		PrintToChat(iBuilder, "%d", iSentryLevel);
+		switch (iSentryLevel)
+		{
+			case 1: // Sentry Level 1
+			{
+				if (CEconItems_GetEntityAttributeInteger(iPDA, "sentry level 1 max health value") > 1)
+					SetEntProp(iSentryGun, Prop_Send, "m_iMaxHealth", CEconItems_GetEntityAttributeInteger(iPDA, "sentry level 1 max health value"));
+			}
+			case 2: // Sentry Level 2
+			{
+				if (CEconItems_GetEntityAttributeInteger(iPDA, "sentry level 2 max health value") > 1)
+					SetEntProp(iSentryGun, Prop_Send, "m_iMaxHealth", CEconItems_GetEntityAttributeInteger(iPDA, "sentry level 2 max health value"));
+			}
+			case 3: // Sentry Level 3
+			{
+				if (CEconItems_GetEntityAttributeInteger(iPDA, "sentry level 3 max health value") > 1)
+					SetEntProp(iSentryGun, Prop_Send, "m_iMaxHealth", CEconItems_GetEntityAttributeInteger(iPDA, "sentry level 3 max health value"));
+			}
+		}
+		PrintToChat(iBuilder, "%d", GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel"));
+		PrintToChat(iBuilder, "Constructed Artillery Sentry!");
 	}
 }
 
-public Action Sentry_OnSpawn(int iSentryGun)
+//public Action Sentry_OnSpawn(int iSentryGun)
+public Action BuildObjectEvent(Handle hEvent, const char[] strEventName, bool bDontBroadcast)
 {
+	// Grab the sentry gun index from the event:
+	int iSentryGun = GetEventInt(hEvent, "index");
+	if (!IsValidEntity(iSentryGun)) { return; }
+	
 	// Grab the owner of this sentry gun so we can grab their weapon:
 	int iBuilder = GetEntPropEnt(iSentryGun, Prop_Send, "m_hBuilder");
 	
@@ -41,35 +80,7 @@ public Action Sentry_OnSpawn(int iSentryGun)
 		// Grab their PDA weapon which is in slot 3:
 		int iWeapon = GetPlayerWeaponSlot(iBuilder, 3);
 		
-		// Does this weapon have the "sentry gun override" attribute?
-		if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry gun override") == 2)
-		{
-			// Apply custom attributes here. These are specific to the sentry gun itself!
-			
-			// Set maximum health if there's an increased value.
-			int iSentryLevel = GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel");
-			PrintToChat(iBuilder, "%d", iSentryLevel);
-			switch (iSentryLevel)
-			{
-				case 1: // Sentry Level 1
-				{
-					if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry level 1 max health value") > 1)
-						SetEntProp(iSentryGun, Prop_Send, "m_iMaxHealth", CEconItems_GetEntityAttributeInteger(iWeapon, "sentry level 1 max health value"));
-				}
-				case 2: // Sentry Level 2
-				{
-					if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry level 2 max health value") > 1)
-						SetEntProp(iSentryGun, Prop_Send, "m_iMaxHealth", CEconItems_GetEntityAttributeInteger(iWeapon, "sentry level 2 max health value"));
-				}
-				case 3: // Sentry Level 3
-				{
-					if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry level 3 max health value") > 1)
-						SetEntProp(iSentryGun, Prop_Send, "m_iMaxHealth", CEconItems_GetEntityAttributeInteger(iWeapon, "sentry level 3 max health value"));
-				}
-			}
-			PrintToChat(iBuilder, "%d", GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel"));
-			PrintToChat(iBuilder, "Constructed Artillery Sentry!");
-		}
+		SetSentryAttributes(iSentryGun, iBuilder, iWeapon);
 	}
 }
 
