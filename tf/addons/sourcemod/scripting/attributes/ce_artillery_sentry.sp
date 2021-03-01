@@ -27,11 +27,11 @@ public void OnEntityCreated(int entity, const char[] classname)
 	// Hook the entity creation of this new sentry gun.
 	if (StrEqual(classname, "obj_sentrygun"))
 	{
-		SDKHook(entity, SDKHook_Spawn, Sentry_OnSpawn);
+		RequestFrame(Sentry_OnSpawn, entity);
 	}
 }
 
-public Action Sentry_OnSpawn(int iSentryGun)
+public void Sentry_OnSpawn(any iSentryGun)
 {
 	// Grab the owner of this sentry gun so we can grab their weapon:
 	int iBuilder = GetEntPropEnt(iSentryGun, Prop_Send, "m_hBuilder");
