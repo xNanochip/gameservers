@@ -17,7 +17,7 @@ public Plugin myinfo =
     name             = "Slur Killer",
     author           = "steph&nie",
     description      = ".",
-    version          = "1.1.2",
+    version          = "1.1.3",
     url              = "https://sappho.io/"
 };
 
@@ -33,10 +33,10 @@ public void OnPluginStart()
 {
     // set up regex
     // regex modified from: https://github.com/Blank-Cheque/Slurs
-    nword  = new Regex("n[!\\|\\\\ila4o10][gq]{2}+([e3]r)?s?",              PCRE_CASELESS | PCRE_MULTILINE);
-    fslur  = new Regex("f+[a@4]+(g+|q{2,}|qg+|gq+)",                        PCRE_CASELESS | PCRE_MULTILINE);
-    tslur  = new Regex("(tran{2})|t+r+[a4@]+n+([il1][e3]+|y+|[e3]r+)s?",    PCRE_CASELESS | PCRE_MULTILINE);
-    cslur  = new Regex("\\bc[o0]{2}ns?\\b",                                 PCRE_CASELESS | PCRE_MULTILINE);
+    nword  = new Regex("n([i!\\|1l][gq]{2}|[a@4o0][gq]{2}er)",                      PCRE_CASELESS | PCRE_MULTILINE);
+    fslur  = new Regex("f+[a@4]+(g+|q{2,}|qg+|gq+)",                                PCRE_CASELESS | PCRE_MULTILINE);
+    tslur  = new Regex("(tr([ao0]+){2}n)|t+r+[a4o0@]+n+([il1][e3]+|y+|[e3]r+)s?",   PCRE_CASELESS | PCRE_MULTILINE);
+    cslur  = new Regex("\\bc[o0]{2}ns?\\b",                                         PCRE_CASELESS | PCRE_MULTILINE);
 }
 
 public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArgs)
