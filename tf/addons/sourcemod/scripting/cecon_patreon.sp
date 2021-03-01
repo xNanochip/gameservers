@@ -51,7 +51,7 @@ public void OnLibraryAdded(const char[] name)
 public void OnLibraryRemoved(const char[] name)
 {
 	if (StrEqual(name, "ccc")) g_bCCC = false;
-	if (StrEqual(name, "ce_coordinator")) g_bCreators = false;
+	if (StrEqual(name, "cecon_http")) g_bCreators = false;
 }
 
 public void OnClientPostAdminCheck(int client)
