@@ -40,7 +40,7 @@ public void OnLibraryAdded(const char[] name)
 	}
 	if (StrEqual(name, "cecon_http"))
 	{
-		g_bCCC = true;
+		g_bCreators = true;
 	}
 	if(g_bCCC && g_bCreators)
 	{
