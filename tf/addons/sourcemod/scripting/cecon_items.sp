@@ -323,7 +323,7 @@ public Action cItemDebug(int client, int args)
 			{
 				// ZoNiCaL - For a nicer debugging experience (mainly for me) and to see information that I only really want,
 				// you can now only show certain information (e.g weapons only, cosmetics, etc...)
-				if (!StrEqual(argument, xDef.m_sType, false) && args > 0) { continue; }
+				//if (!StrEqual(argument, xDef.m_sType, false) && args > 0) { continue; }
 				
 				// Print out the information:
 				PrintToConsole(client, "[%d] \"%s\" (%s) =", i, xDef.m_sName, xDef.m_sType);

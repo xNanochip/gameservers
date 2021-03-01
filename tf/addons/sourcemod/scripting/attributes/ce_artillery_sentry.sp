@@ -32,6 +32,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 		char temp_debug_name_shhh[MAX_NAME_LENGTH];
 		
 		GetClientName(iBuilder, temp_debug_name_shhh, sizeof(temp_debug_name_shhh));
+		PrintToChatAll("%s", temp_debug_name_shhh);
 		
 		if (IsClientValid(iBuilder))
 		{
