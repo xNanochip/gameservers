@@ -16,9 +16,13 @@ public Plugin myinfo =
 	url = "https://creators.tf"
 };
 
+ConVar ce_patreon_debug;
+
 public void OnPluginStart()
 {
 	AddCommandListener(Cmd_ReloadCCC, "sm_reloadccc");
+	
+	ce_patreon_debug = CreateConVar("ce_patreon_debug", "0");
 
 	ApplyTags();
 }
@@ -110,6 +114,11 @@ public void httpPlayerDonation_Callback(HTTPRequestHandle request, bool success,
 	
 	int centsAmount = kv.GetNum("amount");
 	delete kv;
+	
+	if(ce_patreon_debug.BoolValue)
+	{
+		PrintToServer("Amount of cents for %N: %d", client, centsAmount);
+	}
 		
 	char tag[32], color[32];
 

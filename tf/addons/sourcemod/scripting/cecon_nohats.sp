@@ -1,7 +1,7 @@
 #include <sourcemod>
 #include <sdkhooks>
 #include <sdktools>
-#include <ce_manager_items>
+#include <cecon_items>
 #include <morecolors>
 #include <clientprefs>
 
@@ -23,12 +23,13 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-    RegConsoleCmd("sm_noctfhats",       ToggleCTFHat, "Locally toggles CreatorsTF custom cosmetic visibility");
-    RegConsoleCmd("sm_togglectfhats",   ToggleCTFHat, "Locally toggles CreatorsTF custom cosmetic visibility");
-    RegConsoleCmd("sm_togglehats",      ToggleCTFHat, "Locally toggles CreatorsTF custom cosmetic visibility");
-    RegConsoleCmd("sm_ctfhats",         ToggleCTFHat, "Locally toggles CreatorsTF custom cosmetic visibility");
+    RegConsoleCmd("sm_cosmetics",       ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
+    RegConsoleCmd("sm_noctfhats",       ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
+    RegConsoleCmd("sm_togglectfhats",   ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
+    RegConsoleCmd("sm_togglehats",      ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
+    RegConsoleCmd("sm_ctfhats",         ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
 
-    ctfHatsCookie = RegClientCookie("ctfHatsTransmitCookie_", "Cookie for determining if CTF hats are transmitted to player or not", CookieAccess_Protected);
+    ctfHatsCookie = RegClientCookie("ctfHatsTransmitCookie_", "Cookie for determining if Creators.TF hats are visible to player or not.", CookieAccess_Public);
 }
 
 public void OnClientCookiesCached(int client)
@@ -61,11 +62,11 @@ public Action ToggleCTFHat(int client, int args)
 
     if (bHatsOff[client])
     {
-        MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] Toggled Creators.TF custom cosmetics {red}OFF{default}! Be warned, this may cause invisible heads or feet for some cosmetics!", client);
+        PrintToChat(client, "\x01* Toggled Creators.TF custom cosmetics \x07FF000OFF\x01! Be warned, this may cause invisible heads or feet for some cosmetics!");
     }
     else
     {
-        MC_PrintToChatEx(client, client, "[{creators}Creators.TF{default}] Toggled Creators.TF custom cosmetics {green}ON{default}!", client);
+        PrintToChat(client, "\x01* Toggled Creators.TF custom cosmetics \x03ON\x01!");
     }
 
     if (AreClientCookiesCached(client))
@@ -102,7 +103,7 @@ public Action timerHookDelay(Handle Timer, int entity)
         GetEntityNetClass(entity, sClass, sizeof(sClass));
         if (StrContains(sClass, "CTFWearable") != -1)
         {
-            if (CE_IsEntityCustomEcomItem(entity))
+            if (CEconItems_IsEntityCustomEconItem(entity))
             {
                 SDKHook(entity, SDKHook_SetTransmit, SetTransmitHat);
             }
