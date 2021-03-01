@@ -3,6 +3,7 @@
 #include <sdkhooks>
 #include <cecon>
 #include <cecon_items>
+#include <tf2_stocks>
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -39,10 +40,10 @@ public Action Sentry_OnSpawn(int entity)
 	GetClientName(iBuilder, temp_debug_name_shhh, sizeof(temp_debug_name_shhh));
 	PrintToChatAll("%s", temp_debug_name_shhh);
 	
-	if (IsClientValid(iBuilder))
+	if (IsClientValid(iBuilder) && TF2_GetPlayerClass(iBuilder) == TFClass_Engineer)
 	{
-		// Grab their last used weapon, this should be a PDA!
-		int iWeapon = CEcon_GetLastUsedWeapon(iBuilder);
+		// Grab their PDA weapon which is in slot 3:
+		int iWeapon = GetPlayerWeaponSlot(entity, 3);
 		
 		// Does this weapon have the "sentry gun override" attribute?
 		if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry gun override") == 2)
