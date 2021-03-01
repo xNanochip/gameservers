@@ -29,6 +29,10 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		// Grab the owner of this sentry gun so we can grab their weapon:
 		int iBuilder = GetEntPropEnt(entity, Prop_Send, "m_hBuilder");
+		char temp_debug_name_shhh[MAX_NAME_LENGTH];
+		
+		GetClientName(iBuilder, temp_debug_name_shhh, sizeof(temp_debug_name_shhh));
+		
 		if (IsClientValid(iBuilder))
 		{
 			// Grab their last used weapon, this should be a PDA!
