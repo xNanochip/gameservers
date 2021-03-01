@@ -83,7 +83,7 @@ public void ApplyTagsClient(int client)
 	char sSteamID[PLATFORM_MAX_PATH];
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
 
-	HTTPRequestHandle httpRequest = CEconHTTP_CreateBaseHTTPRequest("/api/IEconomySDK/GUserDonations", HTTPMethod_GET);
+	HTTPRequestHandle httpRequest = CEconHTTP_CreateBaseHTTPRequest("/api/IEconomySDK/UserDonations", HTTPMethod_GET);
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "steamid", sSteamID);
 
 	Steam_SendHTTPRequest(httpRequest, httpPlayerDonation_Callback, client);
