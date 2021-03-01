@@ -47,19 +47,19 @@ public Action Sentry_OnSpawn(int entity)
 			// Apply custom attributes here. These are specific to the sentry gun itself!
 			
 			// Set maximum health if there's an increased value (should be a percentage!)
-			if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry max health increased"))
-				SetEntProp(entity, Prop_Data, "m_iMaxHealth", 216 * CEconItems_GetEntityAttributeInteger(iWeapon, "sentry max health increased"));
+			if (CEconItems_GetEntityAttributeFloat(iWeapon, "sentry max health increased") > 0.1)
+				SetEntProp(entity, Prop_Data, "m_iMaxHealth", 216 * RoundToNearest(CEconItems_GetEntityAttributeFloat(iWeapon, "sentry max health increased")));
 			
 			// Set maximum health if there's an decreased value (should be a percentage!)
-			if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry max health decreased"))
-				SetEntProp(entity, Prop_Data, "m_iMaxHealth", 216 / CEconItems_GetEntityAttributeInteger(iWeapon, "sentry max health decreased"));
+			if (CEconItems_GetEntityAttributeFloat(iWeapon, "sentry max health decreased") > 0.1)
+				SetEntProp(entity, Prop_Data, "m_iMaxHealth", 216 / RoundToNearest(CEconItems_GetEntityAttributeFloat(iWeapon, "sentry max health decreased")));
 			
 			// Set the amount of metal needed for an upgrade (should be an interger!)
-			if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry upgrade amount"))
+			if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry upgrade amount") > 1)
 				SetEntProp(entity, Prop_Data, "m_iUpgradeMetalRequired", CEconItems_GetEntityAttributeInteger(iWeapon, "sentry upgrade amount"));
 			
 			// Set the maximum upgrade level (should be an interger, generally don't exceed 3!)
-			if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry max upgrade level"))
+			if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry max upgrade level") > 1)
 				SetEntProp(entity, Prop_Data, "m_iHighestUpgradeLevel", CEconItems_GetEntityAttributeInteger(iWeapon, "sentry max upgrade level"));
 
 			PrintToChat(iBuilder, "Constructed Artillery Sentry!");

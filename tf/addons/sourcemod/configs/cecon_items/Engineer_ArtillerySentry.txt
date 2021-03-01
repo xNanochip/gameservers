@@ -9,5 +9,8 @@ Item
 	attributes
 	{
 		"sentry gun override"					2
+		"sentry max health increased"			1.5
+		"sentry upgrade amount"					300
+		"sentry max upgrade level"				4
 	}
 }
