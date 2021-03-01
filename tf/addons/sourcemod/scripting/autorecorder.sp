@@ -57,8 +57,6 @@ ConVar ce_server_index;
 bool g_bIsRecording = false;
 bool g_bIsManual = false;
 
-bool ce_core = false;
-
 public void OnPluginStart()
 {
 	CreateConVar("sm_autorecord_version", PLUGIN_VERSION, "Auto Recorder plugin version", FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY|FCVAR_DONTRECORD);
@@ -97,16 +95,6 @@ public void OnPluginStart()
 
 	StopRecord();
 	CheckStatus();
-}
-
-public void OnLibraryAdded(const char[] name)
-{
-	if (strcmp(name, "ce_coordinator") == 0) ce_core = true;
-}
-
-public void OnLibraryRemoved(const char[] name)
-{
-	if (strcmp(name, "ce_coordinator") == 0) ce_core = false;
 }
 
 public void OnConVarChanged(ConVar convar, const char[] oldValue, const char [] newValue)
@@ -245,8 +233,7 @@ void StartRecord()
 
 		// replace slashes in map path name with dashes, to prevent fail on workshop maps
 		ReplaceString(sMap, sizeof(sMap), "/", "-", false);
-		int id = 0;
-		if (ce_core) id = ce_server_index.IntValue;
+		int id = ce_server_index.IntValue;
 		ServerCommand("tv_record \"%s/%d-%s-%s\"", sPath, id, sTime, sMap);
 		g_bIsRecording = true;
 
