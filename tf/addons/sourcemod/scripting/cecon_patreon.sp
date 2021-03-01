@@ -38,7 +38,7 @@ public void OnLibraryAdded(const char[] name)
 	{
 		g_bCCC = true;
 	}
-	if (StrEqual(name, "ce_coordinator"))
+	if (StrEqual(name, "cecon_http"))
 	{
 		g_bCCC = true;
 	}
