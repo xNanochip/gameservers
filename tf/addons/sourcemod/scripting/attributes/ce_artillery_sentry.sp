@@ -27,11 +27,11 @@ public void OnEntityCreated(int entity, const char[] classname)
 	// Hook the entity creation of this new sentry gun.
 	if (StrEqual(classname, "obj_sentrygun"))
 	{
-		RequestFrame(Sentry_OnSpawn, entity);
+		SDKHook(entity, SDKHook_Spawn, Sentry_OnSpawn);
 	}
 }
 
-public void Sentry_OnSpawn(any iSentryGun)
+public Action Sentry_OnSpawn(int iSentryGun)
 {
 	// Grab the owner of this sentry gun so we can grab their weapon:
 	int iBuilder = GetEntPropEnt(iSentryGun, Prop_Send, "m_hBuilder");
@@ -48,6 +48,7 @@ public void Sentry_OnSpawn(any iSentryGun)
 			
 			// Set maximum health if there's an increased value.
 			int iSentryLevel = GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel");
+			PrintToChat(iBuilder, "%d", iSentryLevel);
 			switch (iSentryLevel)
 			{
 				case 1: // Sentry Level 1
@@ -66,7 +67,7 @@ public void Sentry_OnSpawn(any iSentryGun)
 						SetEntProp(iSentryGun, Prop_Send, "m_iMaxHealth", CEconItems_GetEntityAttributeInteger(iWeapon, "sentry level 3 max health value"));
 				}
 			}
-			
+			PrintToChat(iBuilder, "%d", GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel"));
 			PrintToChat(iBuilder, "Constructed Artillery Sentry!");
 		}
 	}
