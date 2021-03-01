@@ -5,7 +5,6 @@
 #include <ccc>
 
 bool g_bCCC = false;
-bool g_bCreators = false;
 
 public Plugin myinfo =
 {
@@ -38,11 +37,7 @@ public void OnLibraryAdded(const char[] name)
 	{
 		g_bCCC = true;
 	}
-	if (StrEqual(name, "cecon_http"))
-	{
-		g_bCreators = true;
-	}
-	if(g_bCCC && g_bCreators)
+	if(g_bCCC)
 	{
 		ApplyTags();
 	}
@@ -51,7 +46,6 @@ public void OnLibraryAdded(const char[] name)
 public void OnLibraryRemoved(const char[] name)
 {
 	if (StrEqual(name, "ccc")) g_bCCC = false;
-	if (StrEqual(name, "cecon_http")) g_bCreators = false;
 }
 
 public void OnClientPostAdminCheck(int client)
