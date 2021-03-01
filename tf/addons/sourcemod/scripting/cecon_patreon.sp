@@ -93,6 +93,7 @@ public void httpPlayerDonation_Callback(HTTPRequestHandle request, bool success,
 {
 	// We are not processing bots.
 	if (!IsClientReady(client))return;
+	LogMessage("httpPlayerDonation_Callback %d %d %N", code, success, client);
 
 	//-------------------------------//
 	// Making HTTP checks.
