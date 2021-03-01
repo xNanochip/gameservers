@@ -234,6 +234,7 @@ public void OnPluginStart()
 	m_PartialReapplicationTypes.PushString("weapon");
 
 	RegServerCmd("ce_loadout_reset", cResetLoadout);
+	RegAdminCmd("ce_item_debug", cItemDebug, ADMFLAG_ROOT);
 	
 	CreateTimer(BACKEND_ATTRIBUTE_UPDATE_INTERVAL, Timer_AttributeUpdateInterval, _, TIMER_REPEAT);
 	
@@ -256,6 +257,100 @@ public Action cResetLoadout(int args)
 
 	}
 	return Plugin_Handled;
+}
+
+public Action cItemDebug(int client, int args)
+{
+	char argument[64];
+	
+	if (args > 0)
+	{
+		GetCmdArg(1, argument, sizeof(argument));
+		
+		// Special edge cases here first:
+		if (StrEqual(argument, "active_weapon", false))
+		{
+			int iWeapon = CEcon_GetLastUsedWeapon(client);
+			
+			CEItem xItem;
+			CEconItems_GetEntityItemStruct(iWeapon, xItem);
+			
+			CEItemDefinition xDef;
+			
+			// Grab the Item Definition of the item (sounds weird, I know).
+			if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, xDef))
+			{
+				// Print out the information:
+				PrintToConsole(client, "ACTIVE CLIENTS WEAPON");
+				PrintToConsole(client, "\"%s\" (%s) =", xDef.m_sName, xDef.m_sType);
+				PrintToConsole(client, "[");
+				PrintToConsole(client, "	m_iIndex = %d", xItem.m_iIndex);
+				PrintToConsole(client, "	m_iItemDefinitionIndex = %d", xItem.m_iItemDefinitionIndex);
+				PrintToConsole(client, "	m_nQuality = %d", xItem.m_nQuality);
+				PrintToConsole(client, "	m_Attributes =");
+				PrintToConsole(client, "	[");
+				
+				// Print out all of the attributes.
+				for (int j = 0; j < xItem.m_Attributes.Length; j++)
+				{
+					CEAttribute xAttr;
+					xItem.m_Attributes.GetArray(j, xAttr);
+					
+					PrintToConsole(client, "		\"%s\" = \"%s\"", xAttr.m_sName, xAttr.m_sValue);
+				}
+				PrintToConsole(client, "	]");
+				PrintToConsole(client, "]");
+				PrintToConsole(client, "");
+				
+				return Plugin_Handled;
+			}
+		}
+	}
+	
+	
+	// Go through each of the items on the user:
+	int iCount = CEconItems_GetClientWearedItemsCount(client);
+	for (int i = 0; i < iCount; i++)
+	{
+		// Grab the item.
+		CEItem xItem;
+		if(CEconItems_GetClientWearedItemByIndex(client, i, xItem))
+		{
+			CEItemDefinition xDef;
+			
+			// Grab the Item Definition of the item (sounds weird, I know).
+			if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, xDef))
+			{
+				// ZoNiCaL - For a nicer debugging experience (mainly for me) and to see information that I only really want,
+				// you can now only show certain information (e.g weapons only, cosmetics, etc...)
+				//if (!StrEqual(argument, xDef.m_sType, false) && args > 0) { continue; }
+				
+				// Print out the information:
+				PrintToConsole(client, "[%d] \"%s\" (%s) =", i, xDef.m_sName, xDef.m_sType);
+				PrintToConsole(client, "[");
+				PrintToConsole(client, "	m_iIndex = %d", xItem.m_iIndex);
+				PrintToConsole(client, "	m_iItemDefinitionIndex = %d", xItem.m_iItemDefinitionIndex);
+				PrintToConsole(client, "	m_nQuality = %d", xItem.m_nQuality);
+				PrintToConsole(client, "	m_Attributes =");
+				PrintToConsole(client, "	[");
+				
+				// Print out all of the attributes.
+				for (int j = 0; j < xItem.m_Attributes.Length; j++)
+				{
+					CEAttribute xAttr;
+					xItem.m_Attributes.GetArray(j, xAttr);
+					
+					PrintToConsole(client, "		\"%s\" = \"%s\"", xAttr.m_sName, xAttr.m_sValue);
+				}
+				PrintToConsole(client, "	]");
+				PrintToConsole(client, "]");
+				PrintToConsole(client, "");
+			}
+		}
+	}
+		
+	return Plugin_Handled;
+	
 }
 
 //---------------------------------------------------------------------

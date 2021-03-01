@@ -29,9 +29,6 @@
 */
 
 #include <sourcemod>
-#undef REQUIRE_PLUGIN
-#tryinclude <ce_coordinator>
-#define REQUIRE_PLUGIN
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -55,6 +52,7 @@ ConVar g_hTimeStart = null;
 ConVar g_hTimeStop = null;
 ConVar g_hFinishMap = null;
 ConVar g_hDemoPath = null;
+ConVar ce_server_index;
 
 bool g_bIsRecording = false;
 bool g_bIsManual = false;
@@ -72,6 +70,8 @@ public void OnPluginStart()
 	g_hTimeStop = CreateConVar("sm_autorecord_timestop", "-1", "Hour in the day to stop recording (0-23, -1 disables)");
 	g_hFinishMap = CreateConVar("sm_autorecord_finishmap", "1", "If 1, continue recording until the map ends", _, true, 0.0, true, 1.0);
 	g_hDemoPath = CreateConVar("sm_autorecord_path", ".", "Path to store recorded demos");
+	
+	ce_server_index = CreateConVar("ce_server_index", "-1", "Backwards compatibility for demo autorecorder.");
 
 	AutoExecConfig(true, "autorecorder");
 
@@ -246,7 +246,7 @@ void StartRecord()
 		// replace slashes in map path name with dashes, to prevent fail on workshop maps
 		ReplaceString(sMap, sizeof(sMap), "/", "-", false);
 		int id = 0;
-		if (ce_core) id = CESC_GetServerID();
+		if (ce_core) id = ce_server_index.IntValue;
 		ServerCommand("tv_record \"%s/%d-%s-%s\"", sPath, id, sTime, sMap);
 		g_bIsRecording = true;
 
