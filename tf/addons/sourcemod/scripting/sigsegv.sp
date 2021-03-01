@@ -1,10 +1,14 @@
 #include <tf2_stocks>
 
-public Extension __ext_tf2items = 
+public Extension __ext_sigsegv = 
 {
 	name = "SigSegv MvM",
 	file = "sigsegv.ext.2.tf2",
-	autoload = 0,
+	#if defined AUTOLOAD_EXTENSIONS
+		autoload = 1,
+	#else
+		autoload = 0,
+	#endif
 	#if defined REQUIRE_EXTENSIONS
 		required = 1,
 	#else
