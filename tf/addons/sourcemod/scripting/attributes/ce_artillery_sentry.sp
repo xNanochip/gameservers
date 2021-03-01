@@ -31,10 +31,10 @@ public void OnEntityCreated(int entity, const char[] classname)
 	}
 }
 
-public Action Sentry_OnSpawn(int entity)
+public Action Sentry_OnSpawn(int iSentryGun)
 {
 	// Grab the owner of this sentry gun so we can grab their weapon:
-	int iBuilder = GetEntPropEnt(entity, Prop_Send, "m_hBuilder");
+	int iBuilder = GetEntPropEnt(iSentryGun, Prop_Send, "m_hBuilder");
 	
 	if (IsClientValid(iBuilder) && TF2_GetPlayerClass(iBuilder) == TFClass_Engineer)
 	{
@@ -46,22 +46,27 @@ public Action Sentry_OnSpawn(int entity)
 		{
 			// Apply custom attributes here. These are specific to the sentry gun itself!
 			
-			// Set maximum health if there's an increased value (should be a percentage!)
-			/if (CEconItems_GetEntityAttributeFloat(iWeapon, "sentry max health increased") > 0.1)
-				SetEntProp(entity, Prop_Data, "m_iMaxHealth", 216 * RoundToNearest(CEconItems_GetEntityAttributeFloat(iWeapon, "sentry max health increased")));
+			// Set maximum health if there's an increased value.
+			int iSentryLevel = GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel");
+			switch (iSentryLevel)
+			{
+				case 1: // Sentry Level 1
+				{
+					if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry level 1 max health value") > 1)
+						SetEntProp(iSentryGun, Prop_Send, "m_iMaxHealth", CEconItems_GetEntityAttributeInteger(iWeapon, "sentry level 1 max health value"));
+				}
+				case 2: // Sentry Level 2
+				{
+					if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry level 2 max health value") > 1)
+						SetEntProp(iSentryGun, Prop_Send, "m_iMaxHealth", CEconItems_GetEntityAttributeInteger(iWeapon, "sentry level 2 max health value"));
+				}
+				case 3: // Sentry Level 3
+				{
+					if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry level 3 max health value") > 1)
+						SetEntProp(iSentryGun, Prop_Send, "m_iMaxHealth", CEconItems_GetEntityAttributeInteger(iWeapon, "sentry level 3 max health value"));
+				}
+			}
 			
-			// Set maximum health if there's an decreased value (should be a percentage!)
-			if (CEconItems_GetEntityAttributeFloat(iWeapon, "sentry max health decreased") > 0.1)
-				SetEntProp(entity, Prop_Data, "m_iMaxHealth", 216 / RoundToNearest(CEconItems_GetEntityAttributeFloat(iWeapon, "sentry max health decreased")));
-			
-			// Set the amount of metal needed for an upgrade (should be an interger!)
-			if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry upgrade amount") > 1)
-				SetEntProp(entity, Prop_Data, "m_iUpgradeMetalRequired", CEconItems_GetEntityAttributeInteger(iWeapon, "sentry upgrade amount"));
-			
-			// Set the maximum upgrade level (should be an interger, generally don't exceed 3!)
-			if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry max upgrade level") > 1)
-				SetEntProp(entity, Prop_Data, "m_iHighestUpgradeLevel", CEconItems_GetEntityAttributeInteger(iWeapon, "sentry max upgrade level"));
-
 			PrintToChat(iBuilder, "Constructed Artillery Sentry!");
 		}
 	}
