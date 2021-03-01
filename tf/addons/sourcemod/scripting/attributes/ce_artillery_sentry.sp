@@ -43,7 +43,7 @@ public Action Sentry_OnSpawn(int entity)
 	if (IsClientValid(iBuilder) && TF2_GetPlayerClass(iBuilder) == TFClass_Engineer)
 	{
 		// Grab their PDA weapon which is in slot 3:
-		int iWeapon = GetPlayerWeaponSlot(entity, 3);
+		int iWeapon = GetPlayerWeaponSlot(iBuilder, 3);
 		
 		// Does this weapon have the "sentry gun override" attribute?
 		if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry gun override") == 2)
