@@ -19,7 +19,6 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	HookEvent("player_dropobject", BuildObjectEvent);
 }
 
 public void OnEntityCreated(int entity, const char[] classname)
@@ -32,8 +31,14 @@ public void OnEntityCreated(int entity, const char[] classname)
 }
 
 // Apply custom attributes here. These are specific to the sentry gun itself!
-public void SetSentryAttributes(int iSentryGun, int iBuilder, int iPDA)
+public void SetSentryAttributes(any data)
 {
+	DataPack pack = data;
+	pack.Reset();
+	int iSentryGun = pack.ReadCell();
+	int iBuilder = pack.ReadCell();
+	int iPDA = pack.ReadCell();
+	
 	// Does this weapon have the "sentry gun override" attribute?
 	if (CEconItems_GetEntityAttributeInteger(iPDA, "sentry gun override") == 2)
 	{
@@ -74,7 +79,11 @@ public Action Sentry_OnSpawn(int iSentryGun)
 		// Grab their PDA weapon which is in slot 3:
 		int iWeapon = GetPlayerWeaponSlot(iBuilder, 3);
 		
-		SetSentryAttributes(iSentryGun, iBuilder, iWeapon);
+		DataPack pack = new DataPack();
+		pack.WriteCell(iSentryGun);
+		pack.WriteCell(iBuilder);
+		pack.WriteCell(iWeapon);
+		RequestFrame(SetSentryAttributes, pack);
 	}
 }
 
