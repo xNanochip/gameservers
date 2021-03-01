@@ -37,9 +37,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 			// Does this weapon have the "sentry gun override" attribute?
 			if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry gun override") == 2)
 			{
-				/*
-					Do some shit here lul				
-				*/
+				PrintToChat(iBuilder, "Artillery Sentry!");
 			}
 		}
 	}
