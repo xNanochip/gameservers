@@ -14,7 +14,7 @@ public Extension __ext_tf2items =
 
 public void OnPluginStart()
 {
-	if(TF2MvM_IsPlayingMvM())
+	if(!TF2MvM_IsPlayingMvM())
 	{
 		// Unload this plugin without throwing errors.
 		ServerCommand("sm plugins unload sigsegv");
