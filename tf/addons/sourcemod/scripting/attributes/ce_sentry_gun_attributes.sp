@@ -9,7 +9,7 @@
 #pragma newdecls required
 
 #define BLUEPRINT_MODEL "models/buildables/sentry1_blueprint.mdl"
-#define TF_BUILDING_SENTRY 1
+#define TF_BUILDING_SENTRY 2
 
 public Plugin myinfo = 
 {
