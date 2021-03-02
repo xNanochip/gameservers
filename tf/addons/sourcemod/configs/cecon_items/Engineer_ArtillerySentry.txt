@@ -8,7 +8,7 @@ Item
 
 	attributes
 	{
-		"sentry gun override"					2
+		"sentry gun stats override"				1
 		"sentry level 3 max health value"		384
 	}
 }
