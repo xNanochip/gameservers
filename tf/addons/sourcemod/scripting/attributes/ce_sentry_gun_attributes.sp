@@ -34,7 +34,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 public Action Sentry_OnSpawn(int iSentryGun)
 {
 	// Grab the owner of this sentry gun so we can grab their weapon:
-	int iBuilder;
+	int iBuilder = GetEntPropEnt(iSentryGun, Prop_Send, "m_hBuilder");
 	PrintToChatAll("Sentry_OnSpawn");
 	
 	if (IsClientValid(iBuilder) && TF2_GetPlayerClass(iBuilder) == TFClass_Engineer)
