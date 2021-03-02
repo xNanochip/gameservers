@@ -164,3 +164,7 @@ deploy-fastdl:
 
     tags:
     - fastdl
+    only:
+    - master
+    - staging
+    - mvm
