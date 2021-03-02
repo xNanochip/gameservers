@@ -33,9 +33,15 @@ public void OnEntityCreated(int entity, const char[] classname)
 
 public Action Sentry_OnSpawn(int iSentryGun)
 {
+	bool iBeingCarried = GetEntProp(iSentryGun, Prop_Send, "m_bCarried")
+	
+	if (iBeingCarried)
+	{
+		return;
+	}
+	
 	// Grab the owner of this sentry gun so we can grab their weapon:
 	int iBuilder = GetEntPropEnt(iSentryGun, Prop_Send, "m_hBuilder");
-	PrintToChatAll("Sentry_OnSpawn");
 	
 	if (IsClientValid(iBuilder) && TF2_GetPlayerClass(iBuilder) == TFClass_Engineer)
 	{
@@ -46,18 +52,18 @@ public Action Sentry_OnSpawn(int iSentryGun)
 		char modelName[PLATFORM_MAX_PATH];
 		CEconItems_GetEntityAttributeString(iWeapon, "override sentry model", modelName, sizeof(modelName));
 		
-		PrintToChatAll("%s", modelName);
-		
 		// Grab the current level of the sentry:
 		int iUpgradeLevel = GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel");
+		
+		// Quick workaround to stop "level 0" sentry guns from producing error models:
+		if (iUpgradeLevel == 0) { iUpgradeLevel = 1; }
+		
 		char sUpgradeLevel[4];
-		PrintToChatAll("%s", sUpgradeLevel);
 		IntToString(iUpgradeLevel, sUpgradeLevel, sizeof(sUpgradeLevel));
 		
 		if (!StrEqual(modelName, ""))
 		{	
 			ReplaceString(modelName, sizeof(modelName), "%d", sUpgradeLevel);
-			PrintToChatAll("%s", modelName);
 			SetEntProp(iSentryGun, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(modelName), 4, 0);
 		}
 	}
