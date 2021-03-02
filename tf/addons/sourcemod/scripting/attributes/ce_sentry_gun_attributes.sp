@@ -66,6 +66,7 @@ public void SetSentryOverrideModel(int iSentryGun)
 		
 		// Grab the current level of the sentry:
 		int iUpgradeLevel = GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel");
+		PrintToChatAll("SetSentryOverrideModel %d", iUpgradeLevel);
 
 		// Quick workaround to stop "level 0" sentry guns from producing error models:
 		if (iUpgradeLevel < 1) { iUpgradeLevel = 1; }
