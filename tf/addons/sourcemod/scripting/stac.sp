@@ -15,8 +15,11 @@
 #undef REQUIRE_PLUGIN
 #include <updater>
 #include <sourcebanspp>
+#undef REQUIRE_EXTENSIONS
+#include <steamtools>
+#include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.1.5"
+#define PLUGIN_VERSION  "4.1.6"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -82,6 +85,8 @@ float timeSinceDidHurt      [TFMAXPLAYERS+1];
 // NATIVE BOOLS
 bool SOURCEBANS;
 bool GBANS;
+bool STEAMTOOLS;
+bool STEAMWORKS;
 
 // CVARS
 ConVar stac_enabled;
@@ -150,7 +155,7 @@ public void OnPluginStart()
 
     if (MaxClients > TFMAXPLAYERS)
     {
-        SetFailState("[StAC] This plugin (and TF2 in general) does not support more than 33 players. Aborting!");
+        SetFailState("[StAC] This plugin (and TF2 in general) does not support more than 33 players (32 + 1 for STV). Aborting!");
     }
 
     // updater
@@ -178,7 +183,7 @@ public void OnPluginStart()
     HookEvent("player_spawn", ePlayerSpawned);
 
     // check natives capibility
-    CreateTimer(2.0, checkNatives);
+    CreateTimer(2.0, checkNativesEtc);
     // check EVERYONE's cvars on plugin reload
     CreateTimer(3.0, checkEveryone);
 
@@ -191,18 +196,15 @@ public void OnPluginStart()
     // load translations
     LoadTranslations("stac.phrases.txt");
 
-    // check sv cheats on startup
-    if (GetConVarBool(FindConVar("sv_cheats")))
-    {
-        SetFailState("[StAC] sv_cheats set to 1! Aborting!");
-    }
-
     // reset all client based vars on plugin reload
     for (int Cl = 1; Cl <= MaxClients; Cl++)
     {
         if (IsValidClient(Cl))
         {
-            ClearClBasedVars(GetClientUserId(Cl));
+            int userid = GetClientUserId(Cl);
+            ClearClBasedVars(userid);
+            // wait 5 seconds to let natives get checked
+            CreateTimer(10.0, CheckAuthOn, userid);
         }
         if (IsValidClientOrBot(Cl))
         {
@@ -214,7 +216,6 @@ public void OnPluginStart()
 
     StacLog("[StAC] Plugin vers. ---- %s ---- loaded", PLUGIN_VERSION);
 }
-
 
 void initCvars()
 {
@@ -672,46 +673,53 @@ void RunOptimizeCvars()
     SetConVarFloat(FindConVar("tf_teleporter_fov_time"), 0.0);
 }
 
-public Action checkNatives(Handle timer)
+public Action checkNativesEtc(Handle timer)
 {
+    // check sv cheats
+    if (GetConVarBool(FindConVar("sv_cheats")))
+    {
+        SetFailState("[StAC] sv_cheats set to 1! Aborting!");
+    }
+    // check natives!
+    if (GetFeatureStatus(FeatureType_Native, "Steam_IsConnected") == FeatureStatus_Available)
+    {
+        STEAMTOOLS = true;
+    }
+    if (GetFeatureStatus(FeatureType_Native, "SteamWorks_IsConnected") == FeatureStatus_Available)
+    {
+        STEAMWORKS = true;
+    }
     if (GetFeatureStatus(FeatureType_Native, "SBPP_BanPlayer") == FeatureStatus_Available)
     {
         SOURCEBANS = true;
-        if (DEBUG)
-        {
-            StacLog("[StAC] Sourcebans detected! Using Sourcebans as default ban handler.");
-        }
     }
-    else if (CommandExists("gb_ban"))
+    if (CommandExists("gb_ban"))
     {
         GBANS = true;
-        if (DEBUG)
-        {
-            StacLog("[StAC] Gbans detected! Using gbans as default ban handler.");
-        }
     }
-    else
-    {
-        if (DEBUG)
-        {
-            StacLog("[StAC] No external ban method available! Using TF2's default ban handler.");
-        }
 
+    if (DEBUG)
+    {
+        LogMessage
+        (
+            "\nSTEAMTOOLS = %i\nSTEAMWORKS = %i\nSOURCEBANS = %i\nGBANS = %i",
+            STEAMTOOLS,
+            STEAMWORKS,
+            SOURCEBANS,
+            GBANS
+        );
     }
 }
-
 
 public Action checkEveryone(Handle timer)
 {
     QueryEverythingAllClients();
 }
 
-
 public Action ForceCheckAll(int client, int args)
 {
     QueryEverythingAllClients();
 }
-
 
 public Action ShowDetections(int callingCl, int args)
 {
@@ -724,16 +732,16 @@ public Action ShowDetections(int callingCl, int args)
     {
         if (IsValidClient(Cl))
         {
-            if  (
-                       turnTimes[Cl]           >= 1
-                    || aimsnapDetects[Cl]      >= 1
-                    || pSilentDetects[Cl]      >= 1
-                    || fakeAngDetects[Cl]      >= 1
-                    || bhopConsecDetects[Cl]   >= 1
-                    || cmdnumSpikeDetects[Cl]  >= 1
-                )
+            if
+            (
+                   turnTimes[Cl]           >= 1
+                || aimsnapDetects[Cl]      >= 1
+                || pSilentDetects[Cl]      >= 1
+                || fakeAngDetects[Cl]      >= 1
+                || bhopConsecDetects[Cl]   >= 1
+                || cmdnumSpikeDetects[Cl]  >= 1
+            )
             {
-
                 PrintToConsole(callingCl, "Detections for %L", Cl);
                 if (turnTimes[Cl] >= 1)
                 {
@@ -899,20 +907,7 @@ public void TF2_OnConditionAdded(int Cl, TFCond condition)
         {
             playerTaunting[Cl] = true;
         }
-        else if
-        (
-               condition == TFCond_HalloweenKart
-            || condition == TFCond_HalloweenKartDash
-            || condition == TFCond_HalloweenThriller
-            || condition == TFCond_HalloweenBombHead
-            || condition == TFCond_HalloweenGiant
-            || condition == TFCond_HalloweenTiny
-            || condition == TFCond_HalloweenInHell
-            || condition == TFCond_HalloweenGhostMode
-            || condition == TFCond_HalloweenKartNoTurn
-            || condition == TFCond_HalloweenKartCage
-            || condition == TFCond_SwimmingCurse
-        )
+        else if (IsHalloweenCond(condition))
         {
             playerInBadCond[Cl]++;
         }
@@ -928,20 +923,7 @@ public void TF2_OnConditionRemoved(int Cl, TFCond condition)
             timeSinceTaunt[Cl] = GetEngineTime();
             playerTaunting[Cl] = false;
         }
-        else if
-        (
-               condition == TFCond_HalloweenKart
-            || condition == TFCond_HalloweenKartDash
-            || condition == TFCond_HalloweenThriller
-            || condition == TFCond_HalloweenBombHead
-            || condition == TFCond_HalloweenGiant
-            || condition == TFCond_HalloweenTiny
-            || condition == TFCond_HalloweenInHell
-            || condition == TFCond_HalloweenGhostMode
-            || condition == TFCond_HalloweenKartNoTurn
-            || condition == TFCond_HalloweenKartCage
-            || condition == TFCond_SwimmingCurse
-        )
+        else if (IsHalloweenCond(condition))
         {
             if (playerInBadCond[Cl] > 0)
             {
@@ -1068,13 +1050,14 @@ void ClearClBasedVars(int userid)
 
 public void OnClientPutInServer(int Cl)
 {
+    int userid = GetClientUserId(Cl);
+
     if (IsValidClientOrBot(Cl))
     {
         SDKHook(Cl, SDKHook_OnTakeDamage, hOnTakeDamage);
     }
     if (IsValidClient(Cl))
     {
-        int userid = GetClientUserId(Cl);
         // clear per client values
         ClearClBasedVars(userid);
         // clear timer
@@ -1084,7 +1067,29 @@ public void OnClientPutInServer(int Cl)
         {
             StacLog("[StAC] %N joined. Checking cvars", Cl);
         }
-        QueryTimer[Cl] = CreateTimer(0.01, Timer_CheckClientConVars, userid);
+        QueryTimer[Cl] = CreateTimer(0.1, Timer_CheckClientConVars, userid);
+        // wait 10 seconds just in case
+        CreateTimer(10.0, CheckAuthOn, userid);
+    }
+}
+
+Action CheckAuthOn(Handle timer, int userid)
+{
+    int Cl = GetClientOfUserId(userid);
+    // don't bother checking if already authed and DEFINITELY don't check if steam is down or there's no way to do so thru an ext
+    if (!IsClientAuthorized(Cl) && isSteamAlive())
+    {
+        PrintToImportant("Client %N isn't authorized and Steam is online. Checking in 15 seconds and kicking them if both are still true!", Cl);
+        CreateTimer(15.0, Timer_checkAuth, userid);
+    }
+}
+
+Action Timer_checkAuth(Handle timer, int userid)
+{
+    int Cl = GetClientOfUserId(userid);
+    if (isSteamAlive() && !IsClientAuthorized(Cl))
+    {
+        KickClient(Cl, "Not authorized with Steam Network, please reconnect");
     }
 }
 
@@ -1138,6 +1143,12 @@ public Action OnPlayerRunCmd
     int mouse[2]
 )
 {
+    // sanity check, don't let banned clients do anything!
+    if (userBanQueued[Cl])
+    {
+        return Plugin_Handled;
+    }
+
     // make sure client is real & not a bot - don't bother checking if so
     if (!IsValidClient(Cl))
     {
@@ -1684,6 +1695,9 @@ public Action OnPlayerRunCmd
         Now lets be fair here - this also detects silent aim a lot too, but it's more for checking plain snaps.
     */
     // only check if we actually did dmg with a hitscan weapon in the last 3(ish) ticks
+    // in the future i want this to look ahead 3 ticks and behind 3 ticks - aka, if there was a snap within +/- 3 ticks, record it
+    // currently it only looks behind
+    // this could probably be done with requestframe 3 times and then just checking (timeSinceDidHurt[Cl] <= (tickinterv * 6)
     if
     (
         engineTime[0][Cl] - timeSinceDidHurt[Cl] <= (tickinterv * 3)
@@ -2064,27 +2078,54 @@ public void BanUser(int userid, char[] reason)
             }
             else
             {
-                StacLog("[StAC] No STV demo is being recorded! No STV info will be printed to ban reason!");
+                StacLog("[StAC] No STV demo is being recorded! No STV info will be printed to the ban reason!");
                 // clear demoname
                 demoname[0] = '\0';
             }
         }
         else
         {
-            StacLog("[StAC] Null string returned for demoname. No STV info will be printed to ban reason!");
+            StacLog("[StAC] Null string returned for demoname. No STV info will be printed to the ban reason!");
             // don't need to clear, it's already null
         }
     }
 
-    // sb
-    if (SOURCEBANS)
+    // ext ban handlers
+    if (SOURCEBANS || GBANS)
     {
-        SBPP_BanPlayer(0, Cl, 0, reason);
-    }
-    // gbans
-    else if (GBANS)
-    {
-        ServerCommand("gb_ban %i, 0, %s", userid, reason);
+        if (SOURCEBANS)
+        {
+            SBPP_BanPlayer(0, Cl, 0, reason);
+        }
+        if (GBANS)
+        {
+            ServerCommand("gb_ban %i, 0, %s", userid, reason);
+        }
+        // now lets check if that player was connected to steam
+        if
+        (
+            (
+                // are steamworks and or steamtools installed?
+                (
+                    STEAMTOOLS || STEAMWORKS
+                )
+                &&
+                // is steam offline?
+                (
+                    !isSteamAlive()
+                )
+            )
+            ||
+            (
+                // OR is the client definitely not authorized?
+                !IsClientAuthorized(Cl)
+            )
+        )
+        {
+            PrintToImportant("{hotpink}[StAC]{white} Client %N is UNAUTHORIZED or STEAM IS DOWN!!! Banning with default TF2 handler just in case...", Cl);
+            StacLog("Client %N is UNAUTHORIZED or STEAM IS DOWN!!! Banning with default TF2 handler just in case...", Cl);
+            BanClient(Cl, 0, BANFLAG_AUTO, reason, reason, _, _);
+        }
     }
     // default
     else
@@ -2617,6 +2658,46 @@ bool isWeaponHitscan(char weaponname[256])
     ||  StrEqual(weaponname, "tf_weapon_charged_smg")
     // spy
     ||  StrEqual(weaponname, "tf_weapon_revolver")
+    )
+    {
+        return true;
+    }
+    return false;
+}
+
+bool isSteamAlive()
+{
+    // favor steamtools
+    if (STEAMTOOLS)
+    {
+        return Steam_IsConnected();
+    }
+    else if (STEAMWORKS)
+    {
+        return SteamWorks_IsConnected();
+    }
+    else
+    {
+        StacLog("This server does not have Steamtools or SteamWorks installed. Unable to check Steam network connection status, assuming FALSE!");
+        return false;
+    }
+}
+
+IsHalloweenCond(TFCond condition)
+{
+    if
+    (
+           condition == TFCond_HalloweenKart
+        || condition == TFCond_HalloweenKartDash
+        || condition == TFCond_HalloweenThriller
+        || condition == TFCond_HalloweenBombHead
+        || condition == TFCond_HalloweenGiant
+        || condition == TFCond_HalloweenTiny
+        || condition == TFCond_HalloweenInHell
+        || condition == TFCond_HalloweenGhostMode
+        || condition == TFCond_HalloweenKartNoTurn
+        || condition == TFCond_HalloweenKartCage
+        || condition == TFCond_SwimmingCurse
     )
     {
         return true;
