@@ -35,6 +35,7 @@ public Action Sentry_OnSpawn(int iSentryGun)
 {
 	// Grab the owner of this sentry gun so we can grab their weapon:
 	int iBuilder;
+	PrintToChatAll("Sentry_OnSpawn");
 	
 	if (IsClientValid(iBuilder) && TF2_GetPlayerClass(iBuilder) == TFClass_Engineer)
 	{
@@ -44,10 +45,10 @@ public Action Sentry_OnSpawn(int iSentryGun)
 		// Grab the model override attribute.
 		char modelName[PLATFORM_MAX_PATH];
 		
-		
 		if (CEconItems_GetEntityAttributeString(iWeapon, "override sentry model", modelName, sizeof(modelName)))
 		{	
 			Format(modelName, sizeof(modelName), modelName, GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel"));
+			PrintToChatAll(modelName);
 			SetEntProp(iSentryGun, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(modelName), 4, 0);
 		}
 	}
