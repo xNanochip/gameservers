@@ -29,6 +29,7 @@ public void OnPluginStart()
 public Action OnBuiltCarry(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int iObject = GetEventInt(hEvent, "object");
+	PrintToChatAll(iObject);
 	int iSentryGun = GetEventInt(hEvent, "index");
 
 	if (iObject == TF_BUILDING_SENTRY)
@@ -48,12 +49,6 @@ public void OnEntityCreated(int entity, const char[] classname)
 
 public Action Sentry_OnSpawn(int iSentryGun)
 {
-	int iBeingCarried = GetEntProp(iSentryGun, Prop_Send, "m_bCarryDeploy");
-	
-	if (iBeingCarried > 0)
-	{
-		return;
-	}
 	
 	// Grab the owner of this sentry gun so we can grab their weapon:
 	int iBuilder = GetEntPropEnt(iSentryGun, Prop_Send, "m_hBuilder");
