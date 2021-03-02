@@ -34,7 +34,7 @@ public Action OnBuildObject(Handle hEvent, const char[] szName, bool bDontBroadc
 
 	if (iObject == 2)
 	{
-		SetSentryOverrideModel(iSentryGun);
+		RequestFrame(SetSentryOverrideModel, iSentryGun);
 	}
 }
 
@@ -69,7 +69,7 @@ public void SetSentryOverrideModel(int iSentryGun)
 		PrintToChatAll("SetSentryOverrideModel %d", iUpgradeLevel);
 
 		// Quick workaround to stop "level 0" sentry guns from producing error models:
-		if (iUpgradeLevel < 1) { iUpgradeLevel = 1; }
+		//if (iUpgradeLevel < 1) { iUpgradeLevel = 1; }
 		
 		char sUpgradeLevel[4];
 		IntToString(iUpgradeLevel, sUpgradeLevel, sizeof(sUpgradeLevel));
@@ -89,7 +89,7 @@ public Action OnDropCarry(Handle hEvent, const char[] szName, bool bDontBroadcas
 
 	if (iObject == 1)
 	{
-		SetSentryOverrideModel(iSentryGun);
+		RequestFrame(SetSentryOverrideModel, iSentryGun);
 	}
 	
 	
