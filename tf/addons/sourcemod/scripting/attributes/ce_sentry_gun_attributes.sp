@@ -35,6 +35,7 @@ public Action OnUpgradeObject(Handle hEvent, const char[] szName, bool bDontBroa
 
 	if (iObject == 2)
 	{
+		// Change the model on the next frame:
 		RequestFrame(SetSentryOverrideModel, iSentryGun);
 	}
 }
@@ -47,6 +48,7 @@ public Action OnBuildObject(Handle hEvent, const char[] szName, bool bDontBroadc
 
 	if (iObject == 2)
 	{
+		// Change the model on the next frame:
 		RequestFrame(SetSentryOverrideModel, iSentryGun);
 	}
 }
@@ -59,7 +61,24 @@ public Action OnBuiltCarry(Handle hEvent, const char[] szName, bool bDontBroadca
 
 	if (iObject == 2)
 	{
-		SetEntProp(iSentryGun, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(BLUEPRINT_MODEL), 4, 0);
+		// This overall checks to see if we're using a custom sentry gun model, and if we should override the model when
+		// we pick up the sentry gun, as it automatically doesn't do it for us.
+		
+		// Grab the owner of this sentry gun so we can grab their weapon:
+		int iBuilder = GetEntPropEnt(iSentryGun, Prop_Send, "m_hBuilder");
+		
+		// Grab their PDA weapon which is in slot 3:
+		int iWeapon = GetPlayerWeaponSlot(iBuilder, 3);
+		
+		// Grab the model override attribute.
+		char modelName[PLATFORM_MAX_PATH];
+		CEconItems_GetEntityAttributeString(iWeapon, "override sentry model", modelName, sizeof(modelName));
+	
+		// Is a custom model being used?
+		if (!StrEqual(modelName, ""))
+		{
+			SetEntProp(iSentryGun, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(BLUEPRINT_MODEL), 4, 0);
+		}
 	}
 }
 
@@ -87,6 +106,7 @@ public void SetSentryOverrideModel(int iSentryGun)
 		char sUpgradeLevel[4];
 		IntToString(iUpgradeLevel, sUpgradeLevel, sizeof(sUpgradeLevel));
 		
+		// Is a custom model being used?
 		if (!StrEqual(modelName, ""))
 		{	
 			ReplaceString(modelName, sizeof(modelName), "%d", sUpgradeLevel);
@@ -102,6 +122,7 @@ public Action OnDropCarry(Handle hEvent, const char[] szName, bool bDontBroadcas
 
 	if (iObject == 1)
 	{
+		// Change the model on the next frame:
 		RequestFrame(SetSentryOverrideModel, iSentryGun);
 	}
 	
