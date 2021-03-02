@@ -8,10 +8,8 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define ARTILERRY_SENTRY_GUN_MODEL_1 "models/buildables/artillery_sentry1.mdl"
-#define ARTILERRY_SENTRY_GUN_MODEL_2 "models/buildables/artillery_sentry2.mdl"
-#define ARTILERRY_SENTRY_GUN_MODEL_3 "models/buildables/artillery_sentry3.mdl"
-
+#define BLUEPRINT_MODEL "models/buildables/sentry1_blueprint.mdl"
+#define TF_BUILDING_SENTRY 1
 
 public Plugin myinfo = 
 {
@@ -21,6 +19,23 @@ public Plugin myinfo =
 	version = "1.0",
 	url = "https://creators.tf"
 };
+
+public void OnPluginStart()
+{
+	HookEvent("player_carryobject", OnBuiltCarry);
+	
+}
+
+public Action OnBuiltCarry(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int iObject = GetEventInt(hEvent, "object");
+	int iSentryGun = GetEventInt(hEvent, "index");
+
+	if (iObject == TF_BUILDING_SENTRY)
+	{
+		SetEntProp(iSentryGun, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(BLUEPRINT_MODEL), 4, 0);
+	}
+}
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
