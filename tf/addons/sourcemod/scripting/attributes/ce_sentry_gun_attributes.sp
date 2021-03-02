@@ -21,17 +21,16 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	HookEvent("player_builtobject", OverrideSentryModelOnEvent);
-	HookEvent("player_dropobject", OverrideSentryModelOnEvent);
-	HookEvent("player_upgradedobject", OverrideSentryModelOnEvent);
+	HookEvent("player_builtobject", OnBuildObject);
 	HookEvent("player_carryobject", OnBuiltCarry);
+	HookEvent("player_dropobject", OnDropCarry);
+	HookEvent("player_upgradedobject", OnUpgradeObject);
 }
 
-// This function is called by multiple events, which then changes the sentry model on the next frame.
-public Action OverrideSentryModelOnEvent(Handle hEvent, const char[] szName, bool bDontBroadcast)
+public Action OnUpgradeObject(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int iObject = GetEventInt(hEvent, "object");
-	PrintToChatAll("%d %d", szName, iObject);
+	PrintToChatAll("OnUpgradeObject %d", iObject);
 	int iSentryGun = GetEventInt(hEvent, "index");
 
 	if (iObject == 2)
@@ -40,7 +39,18 @@ public Action OverrideSentryModelOnEvent(Handle hEvent, const char[] szName, boo
 	}
 }
 
-// This function is called by player_carryobject, and it sets the model for the sentry gun to be the blueprint.
+public Action OnBuildObject(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int iObject = GetEventInt(hEvent, "object");
+	PrintToChatAll("OnBuildObject %d", iObject);
+	int iSentryGun = GetEventInt(hEvent, "index");
+
+	if (iObject == 2)
+	{
+		RequestFrame(SetSentryOverrideModel, iSentryGun);
+	}
+}
+
 public Action OnBuiltCarry(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int iObject = GetEventInt(hEvent, "object");
@@ -83,6 +93,19 @@ public void SetSentryOverrideModel(int iSentryGun)
 			SetEntProp(iSentryGun, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(modelName), 4, 0);
 		}
 	}
+}
+
+public Action OnDropCarry(Handle hEvent, const char[] szName, bool bDontBroadcast)
+{
+	int iObject = GetEventInt(hEvent, "object");
+	int iSentryGun = GetEventInt(hEvent, "index");
+
+	if (iObject == 1)
+	{
+		RequestFrame(SetSentryOverrideModel, iSentryGun);
+	}
+	
+	
 }
 
 public bool IsClientValid(int client)
