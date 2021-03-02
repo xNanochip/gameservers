@@ -8,6 +8,6 @@ Item
 
 	attributes
 	{
-		"override sentry model"				1
+		"override sentry model"				"models/buildables/artillery_sentry%d.mdl"
 	}
 }
