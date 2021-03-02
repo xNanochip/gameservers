@@ -24,6 +24,8 @@ enum struct CE_SentryGun
 	int m_iCurrentHealth;
 	int m_iUpgradeLevel;
 	int m_iCurrentUpgradeLevel;
+	int m_iBulletDamageBonus;
+	int m_iRocketDamageBonus;
 }
 
 CE_SentryGun hPlayerSentryGuns[MAX_ENTITY_LIMIT+1];
@@ -107,10 +109,69 @@ public Action Sentry_OnSpawn(int iSentryGun)
 			{
 				hPlayerSentryGuns[iSentryGun].m_bIsActive = true;
 				hPlayerSentryGuns[iSentryGun].m_iBuilderPDA = iWeapon;
+				hPlayerSentryGuns[iSentryGun].m_iCurrentUpgradeLevel = GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel");
 			}
 			// On the next frame, setup the sentry attributes:
 			RequestFrame(SetSentryAttributes, iSentryGun);
 		}
+	}
+}
+
+
+public void OnObjectUpgraded(Event hEvent, const char[] name, bool dontBroadcast)
+{
+	// Get the sentry gun:
+	int iSentryGun = GetEventInt(hEvent, "index");
+	char classname[64];
+	
+	GetEdictClassname(iSentryGun, classname, sizeof(classname));
+	
+	if (StrEqual(classname, "obj_sentrygun"))
+	{
+		hPlayerSentryGuns[iSentryGun].m_iCurrentUpgradeLevel++;
+	}
+}
+
+public void OnObjectDestroyed(Event hEvent, const char[] name, bool dontBroadcast)
+{
+	// Get the sentry gun:
+	int iSentryGun = GetEventInt(hEvent, "index");
+	char classname[64];
+	
+	GetEdictClassname(iSentryGun, classname, sizeof(classname));
+	
+	if (StrEqual(classname, "obj_sentrygun"))
+	{
+		// Reset our settings:
+		hPlayerSentryGuns[iSentryGun].m_bIsActive = false;
+		
+		// Player related:
+		hPlayerSentryGuns[iSentryGun].m_iBuilder = -1;
+		hPlayerSentryGuns[iSentryGun].m_iBuilderPDA = -1;
+		
+		// Attributes of the sentry gun:
+		hPlayerSentryGuns[iSentryGun].m_iCustomMaxHealth = -1;
+		hPlayerSentryGuns[iSentryGun].m_iCurrentHealth = -1;
+		hPlayerSentryGuns[iSentryGun].m_iUpgradeLevel = -1;
+		hPlayerSentryGuns[iSentryGun].m_iCurrentUpgradeLevel = -1;
+		hPlayerSentryGuns[iSentryGun].m_iBulletDamageBonus = -1;
+		hPlayerSentryGuns[iSentryGun].m_iRocketDamageBonus = -1;
+			
+	}
+}
+
+public void OnDropObject(Event hEvent, const char[] name, bool dontBroadcast)
+{
+	// Get the sentry gun:
+	int iSentryGun = GetEventInt(hEvent, "index");
+	char classname[64];
+	
+	GetEdictClassname(iSentryGun, classname, sizeof(classname));
+	
+	if (StrEqual(classname, "obj_sentrygun"))
+	{
+		// On the next frame, setup the sentry attributes:
+		RequestFrame(SetSentryAttributes, iSentryGun);
 	}
 }
 
