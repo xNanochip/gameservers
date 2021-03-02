@@ -29,7 +29,7 @@ public void OnPluginStart()
 public Action OnBuiltCarry(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int iObject = GetEventInt(hEvent, "object");
-	PrintToChatAll("%d", iObject);
+	PrintToChatAll("OnBuiltCarry %d", iObject);
 	int iSentryGun = GetEventInt(hEvent, "index");
 
 	if (iObject == TF_BUILDING_SENTRY)
@@ -59,7 +59,7 @@ public Action OnDropCarry(Handle hEvent, const char[] szName, bool bDontBroadcas
 			
 			// Grab the current level of the sentry:
 			int iUpgradeLevel = GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel");
-			PrintToChatAll("%d", iUpgradeLevel);
+			PrintToChatAll("OnDropCarry %d", iUpgradeLevel);
 	
 			// Quick workaround to stop "level 0" sentry guns from producing error models:
 			if (iUpgradeLevel < 1) { iUpgradeLevel = 1; }
