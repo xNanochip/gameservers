@@ -29,7 +29,7 @@ public void OnPluginStart()
 public Action OnBuiltCarry(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int iObject = GetEventInt(hEvent, "object");
-	PrintToChatAll(iObject);
+	PrintToChatAll("%d", iObject);
 	int iSentryGun = GetEventInt(hEvent, "index");
 
 	if (iObject == TF_BUILDING_SENTRY)
@@ -52,6 +52,11 @@ public Action Sentry_OnSpawn(int iSentryGun)
 	
 	// Grab the owner of this sentry gun so we can grab their weapon:
 	int iBuilder = GetEntPropEnt(iSentryGun, Prop_Send, "m_hBuilder");
+	
+	if (GetEntProp(iBuilder, Prop_Send, "m_bCarryingObject") > 0)
+	{
+		return;
+	}
 	
 	if (IsClientValid(iBuilder) && TF2_GetPlayerClass(iBuilder) == TFClass_Engineer)
 	{
