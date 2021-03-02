@@ -46,7 +46,7 @@ public Action Sentry_OnSpawn(int iSentryGun)
 		char modelName[PLATFORM_MAX_PATH];
 		CEconItems_GetEntityAttributeString(iWeapon, "override sentry model", modelName, sizeof(modelName));
 		
-		PrintToChatAll(modelName);
+		PrintToChatAll("%s", modelName);
 		
 		// Grab the current level of the sentry:
 		int iUpgradeLevel = GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel");
@@ -56,7 +56,7 @@ public Action Sentry_OnSpawn(int iSentryGun)
 		if (!StrEqual(modelName, ""))
 		{	
 			ReplaceString(modelName, sizeof(modelName), "%d", sUpgradeLevel);
-			PrintToChatAll(modelName);
+			PrintToChatAll("%s", modelName);
 			SetEntProp(iSentryGun, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(modelName), 4, 0);
 		}
 	}
