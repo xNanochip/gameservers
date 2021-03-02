@@ -99,7 +99,7 @@ public Action Sentry_OnSpawn(int iSentryGun)
 		int iWeapon = GetPlayerWeaponSlot(iBuilder, 3);
 		
 		// Does this weapon have the "sentry gun override" attribute?
-		if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry gun stats override") > 1)
+		if (CEconItems_GetEntityAttributeInteger(iWeapon, "sentry gun stats override") > 0)
 		{	
 			// This is a sentry gun with custom attributes.
 			// We're going to make sure it's fully setup first before we do anything with it:
