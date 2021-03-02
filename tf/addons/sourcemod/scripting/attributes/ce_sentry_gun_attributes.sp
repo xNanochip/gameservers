@@ -41,18 +41,14 @@ public Action Sentry_OnSpawn(int iSentryGun)
 		// Grab their PDA weapon which is in slot 3:
 		int iWeapon = GetPlayerWeaponSlot(iBuilder, 3);
 		
-		switch (CEconItems_GetEntityAttributeInteger(iWeapon, "override sentry model"))
+		// Grab the model override attribute.
+		char modelName[PLATFORM_MAX_PATH];
+		
+		
+		if (CEconItems_GetEntityAttributeString(iWeapon, "override sentry model", modelName, sizeof(modelName)))
 		{	
-			// Artillery Sentry Gun
-			case 1:
-			{
-				switch (GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel"))
-				{
-					case 1: SetEntProp(iSentryGun, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(ARTILERRY_SENTRY_GUN_MODEL_1), 4, 0);
-					case 2: SetEntProp(iSentryGun, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(ARTILERRY_SENTRY_GUN_MODEL_2), 4, 0);
-					case 3: SetEntProp(iSentryGun, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(ARTILERRY_SENTRY_GUN_MODEL_3), 4, 0);
-				}
-			}
+			Format(modelName, sizeof(modelName), modelName, GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel"));
+			SetEntProp(iSentryGun, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(modelName), 4, 0);
 		}
 	}
 }
