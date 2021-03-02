@@ -50,7 +50,8 @@ public Action Sentry_OnSpawn(int iSentryGun)
 		
 		// Grab the current level of the sentry:
 		int iUpgradeLevel = GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel");
-		char sUpgradeLevel[1]; 
+		char sUpgradeLevel[4];
+		PrintToChatAll("%s", sUpgradeLevel);
 		IntToString(iUpgradeLevel, sUpgradeLevel, sizeof(sUpgradeLevel));
 		
 		if (!StrEqual(modelName, ""))
