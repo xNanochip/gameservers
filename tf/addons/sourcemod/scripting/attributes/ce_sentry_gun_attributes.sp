@@ -33,9 +33,9 @@ public void OnEntityCreated(int entity, const char[] classname)
 
 public Action Sentry_OnSpawn(int iSentryGun)
 {
-	bool iBeingCarried = GetEntProp(iSentryGun, Prop_Send, "m_bCarried")
+	int iBeingCarried = GetEntProp(iSentryGun, Prop_Send, "m_bCarryDeploy");
 	
-	if (iBeingCarried)
+	if (iBeingCarried > 0)
 	{
 		return;
 	}
@@ -54,9 +54,10 @@ public Action Sentry_OnSpawn(int iSentryGun)
 		
 		// Grab the current level of the sentry:
 		int iUpgradeLevel = GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel");
-		
+		PrintToChatAll("%d", iUpgradeLevel);
+
 		// Quick workaround to stop "level 0" sentry guns from producing error models:
-		if (iUpgradeLevel == 0) { iUpgradeLevel = 1; }
+		if (iUpgradeLevel < 1) { iUpgradeLevel = 1; }
 		
 		char sUpgradeLevel[4];
 		IntToString(iUpgradeLevel, sUpgradeLevel, sizeof(sUpgradeLevel));
