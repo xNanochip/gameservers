@@ -1,0 +1,6 @@
+"VertexLitGeneric"
+{
+	"$basetexture" "models\creatorstf\mvmblimpboss\tank_eye_gray"
+
+	"$selfillum" 1
+}
