@@ -47,7 +47,7 @@ public Action OnBuildObject(Handle hEvent, const char[] szName, bool bDontBroadc
 	if (iObject == 2)
 	{
 		// Hook our Think function here:
-		SDKHook(iSentryGun, SDKHook_Think, OnSentryGunThink);
+		SDKHook(iSentryGun, SDKHook_ThinkPost, OnSentryGunThink);
 		bIsSentryActive[iSentryGun] = true;
 		iCurrentSentryLevel[iSentryGun] = 1;
 		//iOldSentryLevel[entity] = -1;
@@ -72,6 +72,7 @@ public void OnSentryGunThink(int iSentryGun)
 	// Is this local level different from the one we have stored?
 	if (iLocalUpgradeLevel > iCurrentSentryLevel[iSentryGun])
 	{
+		PrintToChatAll("Sentry new level %d", iCurrentSentryLevel[iSentryGun]);
 		iCurrentSentryLevel[iSentryGun] = iLocalUpgradeLevel;
 	}
 	
