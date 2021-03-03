@@ -4,6 +4,7 @@
 #pragma newdecls required
 
 #include <sdktools>
+#include <cecon>
 #include <cecon_items>
 #include <cecon_http>
 #include <tf2_stocks>
@@ -23,6 +24,7 @@ public Plugin myinfo =
 };
 
 ConVar ce_mvm_check_itemname_cvar;
+ConVar ce_mvm_show_game_time;
 
 int m_iCurrentWave;
 int m_iLastPlayerCount;
@@ -40,12 +42,22 @@ char m_sLastTourLootHash[128];
 
 bool m_bIsMOTDOpen[MAXPLAYERS + 1];
 
+
+enum struct CEItemBaseIndex 
+{
+	int m_iItemDefinitionIndex;
+	int m_iBaseItemIndex;
+}
+ArrayList m_hItemIndexes;
+
+
 public void OnPluginStart()
 {
 	RegServerCmd("ce_mvm_equip_itemname", cMvMEquipItemName, "");
 	RegServerCmd("ce_mvm_get_itemdef_id", cMvMGetItemDefID, "");
 	RegServerCmd("ce_mvm_set_attribute", cMvMSetEntityAttribute, "");
 	ce_mvm_check_itemname_cvar = CreateConVar("ce_mvm_check_itemname_cvar", "-1", "", FCVAR_PROTECTED);
+	ce_mvm_show_game_time = CreateConVar("ce_mvm_show_game_time", "0", "Enables game time summary to be shown in chat");
 
 	HookEvent("mvm_begin_wave", mvm_begin_wave);
 	HookEvent("mvm_wave_complete", mvm_wave_complete);
@@ -58,8 +70,69 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_loot", cLoot, "Opens the latest Tour Loot page");
 }
 
+public void CEcon_OnSchemaUpdated(KeyValues hSchema)
+{
+	ParseEconomySchema(hSchema);
+}
+
+public void OnAllPluginsLoaded()
+{
+	ParseEconomySchema(CEcon_GetEconomySchema());
+}
+
+public void ParseEconomySchema(KeyValues hSchema)
+{
+	delete m_hItemIndexes;
+	if (hSchema == null)return;
+	m_hItemIndexes = new ArrayList(sizeof(CEItemBaseIndex));
+
+	if(hSchema.JumpToKey("Items"))
+	{
+		if(hSchema.GotoFirstSubKey())
+		{
+			do {
+				int iBaseIndex = hSchema.GetNum("item_index", -1);
+				if(iBaseIndex > -1)
+				{
+					char sName[11];
+					hSchema.GetSectionName(sName, sizeof(sName));
+					
+					CEItemBaseIndex xRecord;
+					
+					xRecord.m_iItemDefinitionIndex = StringToInt(sName);
+					xRecord.m_iBaseItemIndex = iBaseIndex;
+					
+					m_hItemIndexes.PushArray(xRecord);
+				}
+
+			} while (hSchema.GotoNextKey());
+		}
+	}
+
+    // Make sure we do that every time
+	hSchema.Rewind();
+	
+}
+
+public int GetDefinitionBaseIndex(int defid)
+{
+	if (m_hItemIndexes == null)return -1;
+	
+	for (int i = 0; i < m_hItemIndexes.Length; i++)
+	{
+		CEItemBaseIndex xRecord;
+		m_hItemIndexes.GetArray(i, xRecord);
+		if (xRecord.m_iItemDefinitionIndex != defid)continue;
+		return xRecord.m_iBaseItemIndex;
+	}
+	
+	return -1;
+}
+
 public void PrintGameStats()
 {
+	if (!ce_mvm_show_game_time.BoolValue)return;
+	
 	char sTimer[32];
 	int iMissionTime = GetTotalMissionTime();
 	TimeToStopwatchTimer(iMissionTime, sTimer, sizeof(sTimer));
@@ -298,7 +371,7 @@ public Action cMvMGetItemDefID(int args)
 		CEItemDefinition xDef;
 		if(CEconItems_GetItemDefinitionByName(sArg1, xDef))
 		{
-			ce_mvm_check_itemname_cvar.SetInt(xDef.m_iIndex);
+			ce_mvm_check_itemname_cvar.SetInt(GetDefinitionBaseIndex(xDef.m_iIndex));
 			return Plugin_Handled;
 		}
 	}
