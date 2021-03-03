@@ -61,7 +61,7 @@ public void OnSentryGunThink(int iSentryGun)
 {
 	// If this sentry gun is NOT active for some reason, we're not going to
 	// bother with doing anything for now:
-	if (!bIsSentryActive)
+	if (!bIsSentryActive[iSentryGun])
 	{
 		return;
 	}
