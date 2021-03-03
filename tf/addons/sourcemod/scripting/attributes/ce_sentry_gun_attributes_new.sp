@@ -11,8 +11,6 @@
 #define BLUEPRINT_MODEL "models/buildables/sentry1_blueprint.mdl"
 
 int iCurrentSentryLevel[2049];
-//int iOldSentryLevel[2049];
-bool bIsSentryActive[2049];
 
 public Plugin myinfo = 
 {
@@ -48,7 +46,6 @@ public Action OnBuildObject(Handle hEvent, const char[] szName, bool bDontBroadc
 	{
 		// Hook our Think function here:
 		SDKHook(iSentryGun, SDKHook_ThinkPost, OnSentryGunThink);
-		bIsSentryActive[iSentryGun] = true;
 		iCurrentSentryLevel[iSentryGun] = 1;
 		//iOldSentryLevel[entity] = -1;
 	}
@@ -59,13 +56,6 @@ public Action OnBuildObject(Handle hEvent, const char[] szName, bool bDontBroadc
 // and if it's changed from our last known value, we'll update it accordingly.
 public void OnSentryGunThink(int iSentryGun)
 {
-	// If this sentry gun is NOT active for some reason, we're not going to
-	// bother with doing anything for now:
-	if (!bIsSentryActive[iSentryGun])
-	{
-		return;
-	}
-	
 	// Grab the sentry guns current upgrade level here:
 	int iLocalUpgradeLevel = GetEntProp(iSentryGun, Prop_Send, "m_iUpgradeLevel");
 	
