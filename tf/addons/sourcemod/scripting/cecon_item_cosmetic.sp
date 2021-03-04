@@ -63,6 +63,21 @@ enum struct CEItemDefinitionCosmeticStyle
 ArrayList m_hDefinitions;
 ArrayList m_hStyles;
 
+public void OnPluginStart()
+{
+	RegServerCmd("ce_cosmetic_dump", cDump);
+}
+
+public Action cDump(int args)
+{
+	int iDefs = 0;
+	int iStyles = 0;
+	if (m_hDefinitions != null)iDefs = m_hDefinitions.Length;
+	if (m_hStyles != null)iStyles = m_hStyles.Length;
+	
+	LogMessage("Loaded %d cosmetics with %d styles", iDefs, iStyles);
+}
+
 //--------------------------------------------------------------------
 // Purpose: Precaches all the items of a specific type on plugin
 // startup.
@@ -126,7 +141,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 			{
 				// We found a merging base TF2 cosmetic. Remove it.
 				TF2Wear_RemoveWearable(client, iEdict);
-				AcceptEntityInput(iEdict, "Kill");
+				RemoveEdict(iEdict);
 			}
 		}
 		
@@ -147,6 +162,9 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 				
 				TF2Wear_RemoveWearable(client, iEdict);
 				AcceptEntityInput(iEdict, "Kill");
+				
+				bShouldRemove = !CanGetAnotherCosmetic(client);
+				break;
 			}
 		}
 		
