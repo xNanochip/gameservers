@@ -35,6 +35,11 @@ public void CreatePlasmaBallEntity(any iRocket)
 	// Grab the entity that owns this rocket. It should be a sentry gun:
 	int iSentryGun = GetEntPropEnt(iRocket, Prop_Send, "m_hOwnerEntity");
 	
+	char classname[64];
+	GetEdictClassname(iSentryGun, classname, sizeof(classname));
+	PrintToChatAll("%d", classname);
+
+	
 	// Grab the builder:
 	int iBuilder = GetEntPropEnt(iRocket, Prop_Send, "m_hBuilder");
 	
