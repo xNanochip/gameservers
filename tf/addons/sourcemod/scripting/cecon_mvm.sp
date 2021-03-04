@@ -568,6 +568,8 @@ public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool succ
 	// Getting response size.
 }
 
+#define TF_TEAM_SPECTATOR 1
+
 public void RequestTourLoot()
 {
 	char sPopFile[256];
@@ -579,6 +581,7 @@ public void RequestTourLoot()
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
+		if (!GetClientTeam(i) == TF_TEAM_SPECTATOR)continue;
 		
 		char sSteamID[64];
 		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
