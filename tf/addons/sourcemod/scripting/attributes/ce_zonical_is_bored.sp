@@ -37,7 +37,7 @@ public void CreatePlasmaBallEntity(any iRocket)
 	
 	char classname[64];
 	GetEdictClassname(iSentryGun, classname, sizeof(classname));
-	PrintToChatAll("%d", classname);
+	PrintToChatAll("%s", classname);
 
 	
 	// Grab the builder:
