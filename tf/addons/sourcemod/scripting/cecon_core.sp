@@ -1049,6 +1049,8 @@ public any Native_SendEventToClientUnique(Handle plugin, int numParams)
 	CEcon_SendEventToClient(client, event, add, unique_id);
 }
 
+#define TF_TEAM_SPECTATOR 1
+
 //-------------------------------------------------------------------
 // Native: CEcon_SendEventToAll
 //-------------------------------------------------------------------
@@ -1063,6 +1065,7 @@ public any Native_SendEventToAll(Handle plugin, int numParams)
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientValid(i))continue;
+		if (!GetClientTeam(i) == TF_TEAM_SPECTATOR)continue;
 
 		CEcon_SendEventToClient(i, event, add, unique_id);
 	}
