@@ -38,6 +38,12 @@
 				"linux"				"@_ZN11CBaseServer9GetClientEi"
 				"mac"				"@_ZN11CBaseServer9GetClientEi"
 			}
+			"CTFPlayerShared::Burn"
+			{
+				"library"			"server"
+				"linux"				"@_ZN15CTFPlayerShared4BurnEP9CTFPlayerP13CTFWeaponBasef"
+				"mac"				"@_ZN15CTFPlayerShared4BurnEP9CTFPlayerP13CTFWeaponBasef"
+			}
 			
         }
 		"Offsets"
