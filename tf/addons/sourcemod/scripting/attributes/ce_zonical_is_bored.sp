@@ -39,7 +39,7 @@ public void CreatePlasmaBallEntity(any iRocket)
 	int iBuilder = GetEntPropEnt(iRocket, Prop_Send, "m_hBuilder");
 	
 	// Grab their PDA weapon which is in slot 3:
-	int iBuilderWeapon = GetPlayerWeaponSlot(iSentryBuilder, 3);
+	int iBuilderWeapon = GetPlayerWeaponSlot(iBuilder, 3);
 	
 	// Are we using this plasma technology(TM)?
 	if (CEconItems_GetEntityAttributeInteger(iBuilderWeapon, "plasma sentry gun") != 0)
@@ -71,6 +71,10 @@ public void CreatePlasmaBallEntity(any iRocket)
 		// Set the attributes of this plasma ball.
 		SetEntPropFloat(iPlasmaBall, Prop_Send, "m_flModelScale", 0.25);
 		SetEntPropEnt(iPlasmaBall, Prop_Send, "m_hOwnerEntity", iSentryGun);
+		
+		// Punish the sentry gun by taking away more rockets:
+		int iNewRocketCount = GetEntProp(iSentryGun, Prop_Send, "m_iAmmoRockets") - 3;
+		SetEntProp(iSentryGun, Prop_Send, "m_iAmmoRockets", iNewRocketCount < 0 ? 0 : iNewRocketCount);
 		
 		
 		// Finally, teleport it and set it loose:
