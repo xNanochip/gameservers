@@ -52,6 +52,10 @@ public void CreatePlasmaBallEntity(any iRocket)
 	// Grab the entity that owns this rocket. It should be a sentry gun:
 	int iOwnerEntity = GetEntPropEnt(iRocket, Prop_Send, "m_hOwnerEntity");
 	
+	char classname[64];
+	GetEdictClassname(iOwnerEntity, classname, sizeof(classname));
+	PrintToChatAll("%d", classname);
+	
 	// We don't need this rocket anymore, kill it.
 	AcceptEntityInput(iRocket, "Kill");
 	
@@ -62,6 +66,7 @@ public void CreatePlasmaBallEntity(any iRocket)
 	// Set the attributes of this plasma ball.
 	SetEntPropFloat(iPlasmaBall, Prop_Send, "m_flModelScale", 0.25);
 	SetEntPropEnt(iPlasmaBall, Prop_Send, "m_hOwnerEntity", iOwnerEntity);
+	
 	
 	// Finally, teleport it and set it loose:
 	TeleportEntity(iPlasmaBall, position, angle, velocity);
