@@ -32,42 +32,49 @@ public void OnEntityCreated(int entity, const char[] classname)
 
 public void CreatePlasmaBallEntity(any iRocket)
 {
-	// Grab this rockets position:
-	float position[3];
-	GetEntPropVector(iRocket, Prop_Send, "m_vecOrigin", position);
-	
-	// Grab this rockets angles:
-	float angle[3];
-	GetEntPropVector(iRocket, Prop_Send, "m_angRotation", angle);
-	
-	// Grab this rockets velocity:
-	float velocity[3];
-	GetEntPropVector(iRocket, Prop_Data, "m_vecVelocity", velocity);
-	
-	// Double the speed of this ball:
-	velocity[0] *= 2;
-	velocity[1] *= 2;
-	velocity[2] *= 2;
-	
 	// Grab the entity that owns this rocket. It should be a sentry gun:
-	int iOwnerEntity = GetEntPropEnt(iRocket, Prop_Send, "m_hOwnerEntity");
+	int iSentryGun = GetEntPropEnt(iRocket, Prop_Send, "m_hOwnerEntity");
 	
-	char classname[64];
-	GetEdictClassname(iOwnerEntity, classname, sizeof(classname));
-	PrintToChatAll("%s", classname);
+	// Grab the builder:
+	int iBuilder = GetEntPropEnt(iRocket, Prop_Send, "m_hBuilder");
 	
-	// We don't need this rocket anymore, kill it.
-	AcceptEntityInput(iRocket, "Kill");
+	// Grab their PDA weapon which is in slot 3:
+	int iBuilderWeapon = GetPlayerWeaponSlot(iSentryBuilder, 3);
 	
-	// Spawn a new plasma ball entity:
-	int iPlasmaBall = CreateEntityByName("tf_projectile_mechanicalarmorb");
-	DispatchSpawn(iPlasmaBall);
+	// Are we using this plasma technology(TM)?
+	if (CEconItems_GetEntityAttributeInteger(iBuilderWeapon, "plasma sentry gun") != 0)
+	{
+		// Grab this rockets position:
+		float position[3];
+		GetEntPropVector(iRocket, Prop_Send, "m_vecOrigin", position);
+		
+		// Grab this rockets angles:
+		float angle[3];
+		GetEntPropVector(iRocket, Prop_Send, "m_angRotation", angle);
+		
+		// Grab this rockets velocity:
+		float velocity[3];
+		GetEntPropVector(iRocket, Prop_Data, "m_vecVelocity", velocity);
+		
+		// Double the speed of this ball:
+		velocity[0] *= 2;
+		velocity[1] *= 2;
+		velocity[2] *= 2;
+		
+		// We don't need this rocket anymore, kill it.
+		AcceptEntityInput(iRocket, "Kill");
+		
+		// Spawn a new plasma ball entity:
+		int iPlasmaBall = CreateEntityByName("tf_projectile_mechanicalarmorb");
+		DispatchSpawn(iPlasmaBall);
+		
+		// Set the attributes of this plasma ball.
+		SetEntPropFloat(iPlasmaBall, Prop_Send, "m_flModelScale", 0.25);
+		SetEntPropEnt(iPlasmaBall, Prop_Send, "m_hOwnerEntity", iSentryGun);
+		
+		
+		// Finally, teleport it and set it loose:
+		TeleportEntity(iPlasmaBall, position, angle, velocity);
+	}
 	
-	// Set the attributes of this plasma ball.
-	SetEntPropFloat(iPlasmaBall, Prop_Send, "m_flModelScale", 0.25);
-	SetEntPropEnt(iPlasmaBall, Prop_Send, "m_hOwnerEntity", iOwnerEntity);
-	
-	
-	// Finally, teleport it and set it loose:
-	TeleportEntity(iPlasmaBall, position, angle, velocity);
 }
