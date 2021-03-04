@@ -73,8 +73,8 @@ public void CreatePlasmaBallEntity(any iRocket)
 		SetEntPropEnt(iPlasmaBall, Prop_Send, "m_hOwnerEntity", iSentryGun);
 		
 		// Punish the sentry gun by taking away more rockets:
-		int iNewRocketCount = GetEntProp(iSentryGun, Prop_Send, "m_iAmmoRockets") - 3;
-		SetEntProp(iSentryGun, Prop_Send, "m_iAmmoRockets", iNewRocketCount < 0 ? 0 : iNewRocketCount);
+		int iNewRocketCount = GetEntProp(iSentryGun, Prop_Send, "m_iAmmoRockets") - 5;
+		SetEntProp(iSentryGun, Prop_Send, "m_iAmmoRockets", iNewRocketCount);
 		
 		
 		// Finally, teleport it and set it loose:
