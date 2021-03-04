@@ -1,0 +1,13 @@
+Item
+{
+	name 			"Plasma Sentry Gun"
+	type 			"weapon"
+	item_class 		"tf_weapon_pda_engineer_build"
+	item_logname	"plasma_sentry_pda"
+	preserve_attributes 1
+
+	attributes
+	{
+		"plasma sentry gun"				1
+	}
+}
