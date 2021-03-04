@@ -54,7 +54,7 @@ public void CreatePlasmaBallEntity(any iRocket)
 	
 	char classname[64];
 	GetEdictClassname(iOwnerEntity, classname, sizeof(classname));
-	PrintToChatAll("%d", classname);
+	PrintToChatAll("%s", classname);
 	
 	// We don't need this rocket anymore, kill it.
 	AcceptEntityInput(iRocket, "Kill");
