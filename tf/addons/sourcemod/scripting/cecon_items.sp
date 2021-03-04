@@ -1,7 +1,7 @@
-//============= Copyright Amper Software 2021, All rights reserved. ============//
+//============= Copyright Amper Software, All rights reserved. ============//
 //
-// Purpose: Loadout, attributes, items module for Creators.TF
-// Custom Economy.
+// Purpose: Main plugin that stores custom items information, and coordinates
+// the subplugin to handle them.
 //
 //=========================================================================//
 
@@ -183,6 +183,9 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
     
     // Styles
     CreateNative("CEconItems_SetCustomEntityStyle", Native_SetCustomEntityStyle);
+    
+    // Library
+    RegPluginLibrary("cecon_items");
     
     return APLRes_Success;
 }

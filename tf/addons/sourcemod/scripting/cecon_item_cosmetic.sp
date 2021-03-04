@@ -32,6 +32,8 @@
 // to equip a custom cosmetic, we just remove one base TF2 cosmetic to free up space.
 #define MAX_COSMETICS 4
 
+bool m_bWasMessagesShown[MAXPLAYERS + 1];
+
 public Plugin myinfo = 
 {
 	name = "Creators.TF (Cosmetics)", 

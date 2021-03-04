@@ -183,6 +183,9 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("CEcon_SendEventToClientFromGameEvent", Native_SendEventToClientFromGameEvent);
 	CreateNative("CEcon_SendEventToAll", Native_SendEventToAll);
 	CreateNative("CEcon_GetLastUsedWeapon", Native_LastUsedWeapon);
+    
+    // Library
+    RegPluginLibrary("cecon_core");
 
 	return APLRes_Success;
 }

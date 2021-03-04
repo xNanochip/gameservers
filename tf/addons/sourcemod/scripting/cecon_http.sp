@@ -1,6 +1,7 @@
 //============= Copyright Amper Software, All rights reserved. ============//
 //
-// Purpose: HTTP extension for Creators.TF economy.
+// Purpose: SteamTools HTTP wrapper, that eases the process of making
+// requests to the backend.
 //
 //=========================================================================//
 
@@ -25,6 +26,9 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 {
 	CreateNative("CEconHTTP_CreateAbsoluteBackendURL", Native_CreateAbsoluteBackendURL);
 	CreateNative("CEconHTTP_CreateBaseHTTPRequest", Native_CreateBaseHTTPRequest);
+    
+    // Library
+    RegPluginLibrary("cecon_http");
 
 	return APLRes_Success;
 }

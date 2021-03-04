@@ -1,3 +1,10 @@
+//============= Copyright Amper Software, All rights reserved. ============//
+//
+// Purpose: Main plugin that stores custom items information, and coordinates
+// the subplugin to handle them.
+//
+//=========================================================================//
+
 enum struct CEItem
 {
 	int m_iIndex;
@@ -159,3 +166,14 @@ forward void CEconItems_OnItemIsEquipped(int client, int entity, CEItem item, co
 forward void CEconItems_OnClientLoadoutUpdated(int client);
 // Called when style index of the entity has been updated.
 forward void CEconItems_OnCustomEntityStyleUpdated(int client, int entity, int style);
+
+public SharedPlugin __pl_cecon_items = 
+{
+    name = "cecon_items",
+    file = "cecon_items.smx",
+#if defined REQUIRE_PLUGIN
+    required = 1,
+#else
+    required = 0,
+#endif
+};
