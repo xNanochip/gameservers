@@ -38,7 +38,7 @@ public void CreatePlasmaBallEntity(any iRocket)
 	
 	// Grab this rockets angles:
 	float angle[3];
-	GetEntPropVector(iRocket, Prop_Send, "m_vecAngles", angle);
+	GetEntPropVector(iRocket, Prop_Send, "m_angRotation", angle);
 	
 	// Grab this rockets velocity:
 	float velocity[3];
