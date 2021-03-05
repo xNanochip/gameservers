@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.1.7b"
+#define PLUGIN_VERSION  "4.1.8b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -186,9 +186,9 @@ public void OnPluginStart()
     HookEvent("player_spawn", ePlayerSpawned);
 
     // check natives capibility
-    CreateTimer(2.0, checkNativesEtc);
+    CreateTimer(0.1 checkNativesEtc);
     // check EVERYONE's cvars on plugin reload
-    CreateTimer(3.0, checkEveryone);
+    CreateTimer(0.5, checkEveryone);
 
     // hook sv_cheats so we can instantly unload if cheats get turned on
     HookConVarChange(FindConVar("sv_cheats"), GenericCvarChanged);
@@ -204,8 +204,8 @@ public void OnPluginStart()
         {
             int userid = GetClientUserId(Cl);
             ClearClBasedVars(userid);
-            // wait 5 seconds to let natives get checked
-            CreateTimer(5.0, CheckAuthOn, userid);
+            // wait a second to let natives get checked
+            CreateTimer(1.0, CheckAuthOn, userid);
         }
         if (IsValidClientOrBot(Cl))
         {
@@ -1096,6 +1096,7 @@ Action Timer_checkAuth(Handle timer, int userid)
     int Cl = GetClientOfUserId(userid);
     if (isSteamAlive() && !IsClientAuthorized(Cl))
     {
+        StacLog("[StAC] Kicking %N for not being authorized with Steam.", Cl);
         KickClient(Cl, "[StAC] Not authorized with Steam Network, please reconnect");
     }
 }
@@ -2096,15 +2097,13 @@ public OnClientSettingsChanged(Cl)
 public void BanUser(int userid, char[] reason, char[] pubreason)
 {
     int Cl = GetClientOfUserId(userid);
+
     if (userBanQueued[Cl])
     {
         return;
     }
     // make sure we dont detect on already banned players
     userBanQueued[Cl] = true;
-
-    //char clientName[48];
-    //GetClientName(Cl, clientName, sizeof(clientName));
 
     if (demonameInBanReason)
     {
@@ -2119,13 +2118,15 @@ public void BanUser(int userid, char[] reason, char[] pubreason)
                 ReplaceString(demoname, sizeof(demoname), "Recording to ", "");
                 TrimString(demoname);
                 StripQuotes(demoname);
-                LogMessage("rawdemoname : %s", demoname);
-                //
+
                 Format(demoname, sizeof(demoname), ". Demo file: %s", demoname);
                 StrCat(reason, 256, demoname);
                 StacLog("Reason: %s", reason);
             }
-            StacLog("[StAC] No STV demo is being recorded, no demo name will be printed to the ban reason!");
+            else
+            {
+                StacLog("[StAC] No STV demo is being recorded, no demo name will be printed to the ban reason!");
+            }
         }
         else
         {
