@@ -66,14 +66,31 @@ Handle 	g_CEcon_OnSchemaUpdated,	// Forward, that notifies the sub plugins, if t
 //-------------------------------------------------------------------
 // When we generate a random event index, this value is used as the
 // maximum value.
-#define MAX_EVENT_UNIQUE_INDEX_INT 10000
+#define EVENT_UNIQUE_INDEX_MAX_INT 10000
+// Don't process more than X events per a frame.
+#define EVENT_MAX_EVENTS_PER_FRAME 10
 
 // Fired when a new client even is fired.
 Handle g_hOnClientEvent;
+
 // We store last weapon that client has interacted with.
 int m_iLastWeapon[MAXPLAYERS + 1];
+bool m_bIsEventQueueProcessed = false;
 
-ConVar ce_events_show;
+ArrayList m_hEventsQueue;
+
+ConVar ce_events_debug;
+
+enum struct CEQueuedEvent
+{
+	int m_iUserID;
+	char m_sEvent[128];
+	int m_iAdd;
+	int m_iUniqueID;
+}
+
+
+
 
 //-------------------------------------------------------------------
 // Coordinator
@@ -132,12 +149,14 @@ public void OnPluginStart()
 
 	g_hOnClientEvent = CreateGlobalForward("CEcon_OnClientEvent", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_Cell);
 	RegAdminCmd("ce_events_test", cTestEvnt, ADMFLAG_ROOT, "Tests a CEcon event.");
-	ce_events_show = CreateConVar("ce_events_show", "0");
+	ce_events_debug = CreateConVar("ce_events_debug", "0");
 
 	// Hook all needed entities when plugin late loads.
 	LateHooking();
 	
 	HookEvent("player_spawn", player_spawn);
+	
+	m_hEventsQueue = new ArrayList(sizeof(CEQueuedEvent));
 }
 
 //-------------------------------------------------------------------
@@ -1044,12 +1063,15 @@ public any Native_SendEventToClientUnique(Handle plugin, int numParams)
 	GetNativeString(2, event, sizeof(event));
 
 	int add = GetNativeCell(3);
-	int unique_id = GetRandomInt(0, MAX_EVENT_UNIQUE_INDEX_INT);
+	int unique_id = GetRandomInt(0, EVENT_UNIQUE_INDEX_MAX_INT);
 
 	CEcon_SendEventToClient(client, event, add, unique_id);
 }
 
+#define TF_TEAM_UNASSIGNED 0
 #define TF_TEAM_SPECTATOR 1
+#define TF_TEAM_RED 2
+#define TF_TEAM_BLUE 3
 
 //-------------------------------------------------------------------
 // Native: CEcon_SendEventToAll
@@ -1065,7 +1087,7 @@ public any Native_SendEventToAll(Handle plugin, int numParams)
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientValid(i))continue;
-		if (!GetClientTeam(i) == TF_TEAM_SPECTATOR)continue;
+		if (GetClientTeam(i) < TF_TEAM_RED)continue;
 
 		CEcon_SendEventToClient(i, event, add, unique_id);
 	}
@@ -1084,17 +1106,94 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 	int add = GetNativeCell(3);
 	int unique_id = GetNativeCell(4);
 	
-	if(ce_events_show.BoolValue)
-	{
-		LogMessage("%N %s %d %d", client, event, add, unique_id);
-	}
+	// We only start new queue, if we are sure nothing is currently being proccessed.
+	bool bShouldStartQueue = m_hEventsQueue.Length == 0;
+	
+	// Create a new struct and push it to the queue.
+	CEQueuedEvent xEvent;
+	xEvent.m_iUserID = GetClientUserId(client);
+	strcopy(xEvent.m_sEvent, sizeof(xEvent.m_sEvent), event);
+	xEvent.m_iAdd = add;
+	xEvent.m_iUniqueID = unique_id;
+	
+	m_hEventsQueue.PushArray(xEvent);
 
-	Call_StartForward(g_hOnClientEvent);
-	Call_PushCell(client);
-	Call_PushString(event);
-	Call_PushCell(add);
-	Call_PushCell(unique_id);
-	Call_Finish();
+	// Start the queue next frame.
+	if(bShouldStartQueue)
+	{
+		RequestFrame(RF_StartEventsProcessQueue);
+	}
+}
+
+public void StartEventsProcessQueue()
+{
+	// We already have a working queue processor.
+	if (m_bIsEventQueueProcessed)return;
+	
+	// If we don't, make this as the one.
+	m_bIsEventQueueProcessed = true;
+	
+	if(ce_events_debug.BoolValue) LogMessage("Queue started...");
+	ProcessNextEventsChunk();
+}
+
+public void ProcessNextEventsChunk()
+{
+	if(ce_events_debug.BoolValue) LogMessage("%d events left.", m_hEventsQueue.Length);
+	// We only process this amount of events per a frame.
+	for (int i = 0; i < EVENT_MAX_EVENTS_PER_FRAME; i++)
+	{
+		// We exceeded the queue, there's nothing there anymore.
+		if (m_hEventsQueue.Length < 1)break;
+		
+		// Get first element in the queue.
+		CEQueuedEvent xEvent;
+		m_hEventsQueue.GetArray(0, xEvent);
+		
+		// And remove it.
+		m_hEventsQueue.Erase(0);
+		
+		int client = GetClientOfUserId(xEvent.m_iUserID);
+		
+		// This client doesn't exist anymore, skip this event.
+		if (!IsClientValid(client))continue;
+		
+		// Log the event execution.
+		if(ce_events_debug.BoolValue)
+		{
+			LogMessage("%s (client \"%N\") (add %d) (unique_id %d)", xEvent.m_sEvent, client, xEvent.m_iAdd, xEvent.m_iUniqueID);
+		}
+			
+		// Send it to plugins.
+		Call_StartForward(g_hOnClientEvent);
+		Call_PushCell(client);
+		Call_PushString(xEvent.m_sEvent);
+		Call_PushCell(xEvent.m_iAdd);
+		Call_PushCell(xEvent.m_iUniqueID);
+		Call_Finish();
+	}
+	
+	// If there are any more events to process, wait till another frame.
+	if(m_hEventsQueue.Length > 0)
+	{
+		if(ce_events_debug.BoolValue) LogMessage("Waiting until next frame...");
+		RequestFrame(RF_ProcessNextEventChunk);
+	} else {
+		
+		// We're done.
+		m_bIsEventQueueProcessed = false;
+		if(ce_events_debug.BoolValue) LogMessage("Queue ended.");
+	}
+}
+
+public void RF_ProcessNextEventChunk(any data)
+{
+	ProcessNextEventsChunk();
+}
+
+public void RF_StartEventsProcessQueue(any data)
+{
+	StartEventsProcessQueue();
 }
 
 //-------------------------------------------------------------------
