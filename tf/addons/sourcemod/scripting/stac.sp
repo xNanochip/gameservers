@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.1.6"
+#define PLUGIN_VERSION  "4.1.7b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -139,11 +139,11 @@ bool demonameInBanReason    = true;
 // log to file?
 bool logtofile              = true;
 
-// demoname for currently recording demo if extant
-char demoname[128];
-
 // Log file
 File StacLogFile;
+
+// REGEX
+Regex demonameRegex;
 
 public void OnPluginStart()
 {
@@ -177,6 +177,9 @@ public void OnPluginStart()
     // reset random server seed
     ActuallySetRandomSeed();
 
+    // setup regex - "Recording to ".*""
+    demonameRegex = new Regex("Recording to \".*\"");
+
     // grab round start events for calculating tps
     HookEvent("teamplay_round_start", eRoundStart);
     // grab player spawns
@@ -187,8 +190,6 @@ public void OnPluginStart()
     // check EVERYONE's cvars on plugin reload
     CreateTimer(3.0, checkEveryone);
 
-    // hook currently recording demo name if extant
-    AddCommandListener(tvRecordListener, "tv_record");
     // hook sv_cheats so we can instantly unload if cheats get turned on
     HookConVarChange(FindConVar("sv_cheats"), GenericCvarChanged);
     // Create ConVars for adjusting settings
@@ -204,7 +205,7 @@ public void OnPluginStart()
             int userid = GetClientUserId(Cl);
             ClearClBasedVars(userid);
             // wait 5 seconds to let natives get checked
-            CreateTimer(10.0, CheckAuthOn, userid);
+            CreateTimer(5.0, CheckAuthOn, userid);
         }
         if (IsValidClientOrBot(Cl))
         {
@@ -797,6 +798,7 @@ void NukeTimers()
 {
     for (int Cl = 1; Cl <= MaxClients; Cl++)
     {
+        // delete QueryTimer[Cl];
         if (QueryTimer[Cl] != null)
         {
             if (DEBUG)
@@ -807,6 +809,7 @@ void NukeTimers()
             QueryTimer[Cl] = null;
         }
     }
+    // delete TriggerTimedStuffTimer;
     if (TriggerTimedStuffTimer != null)
     {
         if (DEBUG)
@@ -1068,19 +1071,23 @@ public void OnClientPutInServer(int Cl)
             StacLog("[StAC] %N joined. Checking cvars", Cl);
         }
         QueryTimer[Cl] = CreateTimer(0.1, Timer_CheckClientConVars, userid);
-        // wait 10 seconds just in case
-        CreateTimer(10.0, CheckAuthOn, userid);
+        // wait 5 seconds just in case
+        CreateTimer(5.0, CheckAuthOn, userid);
     }
 }
 
 Action CheckAuthOn(Handle timer, int userid)
 {
     int Cl = GetClientOfUserId(userid);
-    // don't bother checking if already authed and DEFINITELY don't check if steam is down or there's no way to do so thru an ext
-    if (!IsClientAuthorized(Cl) && isSteamAlive())
+
+    if (IsValidClient(Cl))
     {
-        PrintToImportant("Client %N isn't authorized and Steam is online. Checking in 15 seconds and kicking them if both are still true!", Cl);
-        CreateTimer(15.0, Timer_checkAuth, userid);
+        // don't bother checking if already authed and DEFINITELY don't check if steam is down or there's no way to do so thru an ext
+        if (!IsClientAuthorized(Cl) && isSteamAlive())
+        {
+            PrintToImportant("Client %N isn't authorized and Steam is online. Checking in 5 seconds and kicking them if both are still true!", Cl);
+            CreateTimer(5.0, Timer_checkAuth, userid);
+        }
     }
 }
 
@@ -1089,7 +1096,7 @@ Action Timer_checkAuth(Handle timer, int userid)
     int Cl = GetClientOfUserId(userid);
     if (isSteamAlive() && !IsClientAuthorized(Cl))
     {
-        KickClient(Cl, "Not authorized with Steam Network, please reconnect");
+        KickClient(Cl, "[StAC] Not authorized with Steam Network, please reconnect");
     }
 }
 
@@ -1098,6 +1105,7 @@ public void OnClientDisconnect(int Cl)
     int userid = GetClientUserId(Cl);
     // clear per client values
     ClearClBasedVars(userid);
+    // delete QueryTimer[Cl];
     if (QueryTimer[Cl] != null)
     {
         CloseHandle(QueryTimer[Cl]);
@@ -1323,9 +1331,8 @@ public Action OnPlayerRunCmd
                 {
                     char reason[128];
                     Format(reason, sizeof(reason), "%t", "bhopBanMsg", bhopDetects[Cl]);
-                    BanUser(userid, reason);
-                    MC_PrintToChatAll("%t", "bhopBanAllChat", Cl, bhopDetects[Cl]);
-                    StacLog("%t", "bhopBanAllChat", Cl, bhopDetects[Cl]);
+                    char pubreason[128];
+                    Format(pubreason, sizeof(pubreason), "%t", "bhopBanAllChat", Cl, bhopDetects[Cl]);
                     return Plugin_Handled;
                 }
             }
@@ -1434,9 +1441,9 @@ public Action OnPlayerRunCmd
         {
             char reason[128];
             Format(reason, sizeof(reason), "%t", "fakeangBanMsg", fakeAngDetects[Cl]);
-            BanUser(userid, reason);
-            MC_PrintToChatAll("%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
-            StacLog("%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
+            char pubreason[128];
+            Format(pubreason, sizeof(pubreason), "%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
+            BanUser(userid, reason, pubreason);
             return Plugin_Handled;
         }
     }
@@ -1536,9 +1543,9 @@ public Action OnPlayerRunCmd
         {
             char reason[128];
             Format(reason, sizeof(reason), "%t", "cmdnumSpikesBanMsg", cmdnumSpikeDetects[Cl]);
-            BanUser(userid, reason);
-            MC_PrintToChatAll("%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
-            StacLog("%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
+            char pubreason[128];
+            Format(pubreason, sizeof(pubreason), "%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
+            BanUser(userid, reason, pubreason);
             return Plugin_Handled;
         }
     }
@@ -1681,9 +1688,9 @@ public Action OnPlayerRunCmd
                 {
                     char reason[128];
                     Format(reason, sizeof(reason), "%t", "pSilentBanMsg", pSilentDetects[Cl]);
-                    BanUser(userid, reason);
-                    MC_PrintToChatAll("%t", "pSilentBanAllChat", Cl, pSilentDetects[Cl]);
-                    StacLog("%t", "pSilentBanAllChat", Cl, pSilentDetects[Cl]);
+                    char pubreason[128];
+                    Format(pubreason, sizeof(pubreason), "%t", "pSilentBanAllChat", Cl, pSilentDetects[Cl]);
+                    BanUser(userid, reason, pubreason);
                     return Plugin_Handled;
                 }
             }
@@ -1780,9 +1787,9 @@ public Action OnPlayerRunCmd
                 {
                     char reason[128];
                     Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
-                    BanUser(userid, reason);
-                    MC_PrintToChatAll("%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
-                    StacLog("%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
+                    char pubreason[128];
+                    Format(pubreason, sizeof(pubreason), "%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
+                    BanUser(userid, reason, pubreason);
                     return Plugin_Handled;
                 }
             }
@@ -1849,11 +1856,18 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
         return;
     }
     int userid = GetClientUserId(Cl);
+
+    if (DEBUG)
+    {
+        StacLog("[StAC] Checked cvar %s value %s on %N", cvarName, cvarValue, Cl);
+    }
+
     // log something about cvar errors
     if (result != ConVarQuery_Okay)
     {
         PrintToImportant("{hotpink}[StAC]{white} Could not query cvar %s on Player %N", Cl);
         StacLog("[StAC] Could not query cvar %s on player %N", cvarName, Cl);
+        return;
     }
 
     if (StrEqual(cvarName, "sensitivity"))
@@ -1873,9 +1887,22 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
             {
                 char reason[128];
                 Format(reason, sizeof(reason), "%t", "nolerpBanMsg");
-                BanUser(userid, reason);
-                MC_PrintToChatAll("%t", "nolerpBanAllChat", Cl);
-                StacLog("%t", "nolerpBanAllChat", Cl);
+                char pubreason[128];
+                Format(pubreason, sizeof(pubreason), "%t", "nolerpBanAllChat", Cl);
+                // we have to do extra bullshit here so we don't crash when banning clients out of this callback
+                // make a pack
+                DataPack pack = CreateDataPack();
+
+                // prepare pack
+                WritePackCell(pack, userid);
+                WritePackString(pack, reason);
+                WritePackString(pack, pubreason);
+
+                ResetPack(pack, false);
+
+                // make data timer
+                CreateTimer(0.1, Timer_BanUser, pack, TIMER_DATA_HNDL_CLOSE);
+                return;
             }
             else
             {
@@ -1901,9 +1928,22 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
             {
                 char reason[128];
                 Format(reason, sizeof(reason), "%t", "fovBanMsg");
-                BanUser(userid, reason);
-                MC_PrintToChatAll("%t", "fovBanAllChat", Cl);
-                StacLog("%t", "fovBanAllChat", Cl);
+                char pubreason[128];
+                Format(pubreason, sizeof(pubreason), "%t", "fovBanAllChat", Cl);
+                // we have to do extra bullshit here so we don't crash when banning clients out of this callback
+                // make a pack
+                DataPack pack = CreateDataPack();
+
+                // prepare pack
+                WritePackCell(pack, userid);
+                WritePackString(pack, reason);
+                WritePackString(pack, pubreason);
+
+                ResetPack(pack, false);
+
+                // make data timer
+                CreateTimer(0.1, Timer_BanUser, pack, TIMER_DATA_HNDL_CLOSE);
+                return;
             }
             else
             {
@@ -1912,9 +1952,24 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
             }
         }
     }
-    if (DEBUG)
+}
+
+// we wait a bit to prevent crashing the server when banning a player from a queryclientconvar callback
+public Action Timer_BanUser(Handle timer, DataPack pack)
+{
+    int userid          = ReadPackCell(pack);
+    char reason[128];
+    ReadPackString(pack, reason, sizeof(reason));
+    char pubreason[128];
+    ReadPackString(pack, pubreason, sizeof(pubreason));
+
+    // get client index out of userid
+    int Cl              = GetClientOfUserId(userid);
+
+    // check validity of client index
+    if (IsValidClient(Cl))
     {
-        StacLog("[StAC] Checked cvar %s value %s on %N", cvarName, cvarValue, Cl);
+        BanUser(userid, reason, pubreason);
     }
 }
 
@@ -1938,9 +1993,9 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
             int userid = GetClientUserId(Cl);
             char reason[128];
             Format(reason, sizeof(reason), "%t", "newlineBanMsg");
-            BanUser(userid, reason);
-            MC_PrintToChatAll("%t", "newlineBanAllChat", Cl);
-            StacLog("%t", "newlineBanAllChat", Cl);
+            char pubreason[128];
+            Format(pubreason, sizeof(pubreason), "%t", "newlineBanAllChat", Cl);
+            BanUser(userid, reason, pubreason);
         }
         else
         {
@@ -2038,55 +2093,43 @@ public OnClientSettingsChanged(Cl)
     }
 }
 
-Action tvRecordListener(int client, const char[] command, int argc)
-{
-    if (client == 0)
-    {
-        if (SOURCEBANS || GBANS)
-        {
-            // null out old info
-            demoname[0] = '\0';
-            // get the recording name
-            GetCmdArg(1, demoname, sizeof(demoname));
-            // strip dem extension if it exists because i don't want double extensions. we'll add it later
-            ReplaceString(demoname, sizeof(demoname), ".dem", "", false);
-        }
-    }
-}
-
-public void BanUser(int userid, char[] reason)
+public void BanUser(int userid, char[] reason, char[] pubreason)
 {
     int Cl = GetClientOfUserId(userid);
     if (userBanQueued[Cl])
     {
         return;
     }
+    // make sure we dont detect on already banned players
+    userBanQueued[Cl] = true;
+
+    //char clientName[48];
+    //GetClientName(Cl, clientName, sizeof(clientName));
+
     if (demonameInBanReason)
     {
-        // make sure demoname is initialized!
-        if (demoname[0] != '\0')
+        char tvStatus[512];
+        char demoname[128];
+        ServerCommandEx(tvStatus, sizeof(tvStatus), "tv_status");
+        // if we found a match, there's a demo recording
+        if (MatchRegex(demonameRegex, tvStatus))
         {
-            char tvStatus[512];
-            ServerCommandEx(tvStatus, sizeof(tvStatus), "tv_status");
-
-            // is there a demo recording?
-            if (StrContains(tvStatus, "Recording to", false) != -1)
+            if (GetRegexSubString(demonameRegex, 0, demoname, sizeof(demoname)))
             {
-                Format(demoname, sizeof(demoname), ". Demo file: %s.dem", demoname);
+                ReplaceString(demoname, sizeof(demoname), "Recording to ", "");
+                TrimString(demoname);
+                StripQuotes(demoname);
+                LogMessage("rawdemoname : %s", demoname);
+                //
+                Format(demoname, sizeof(demoname), ". Demo file: %s", demoname);
                 StrCat(reason, 256, demoname);
                 StacLog("Reason: %s", reason);
             }
-            else
-            {
-                StacLog("[StAC] No STV demo is being recorded! No STV info will be printed to the ban reason!");
-                // clear demoname
-                demoname[0] = '\0';
-            }
+            StacLog("[StAC] No STV demo is being recorded, no demo name will be printed to the ban reason!");
         }
         else
         {
-            StacLog("[StAC] Null string returned for demoname. No STV info will be printed to the ban reason!");
-            // don't need to clear, it's already null
+            StacLog("[StAC] No STV demo is being recorded, no demo name will be printed to the ban reason!");
         }
     }
 
@@ -2124,7 +2167,7 @@ public void BanUser(int userid, char[] reason)
         {
             PrintToImportant("{hotpink}[StAC]{white} Client %N is UNAUTHORIZED or STEAM IS DOWN!!! Banning with default TF2 handler just in case...", Cl);
             StacLog("Client %N is UNAUTHORIZED or STEAM IS DOWN!!! Banning with default TF2 handler just in case...", Cl);
-            BanClient(Cl, 0, BANFLAG_AUTO, reason, reason, _, _);
+            BanClient(Cl, 0, BANFLAG_IP, reason, reason, _, _);
         }
     }
     // default
@@ -2132,8 +2175,8 @@ public void BanUser(int userid, char[] reason)
     {
         BanClient(Cl, 0, BANFLAG_AUTO, reason, reason, _, _);
     }
-    // make sure we dont detect on already banned players
-    userBanQueued[Cl] = true;
+    MC_PrintToChatAll("%s", pubreason);
+    StacLog("%s", pubreason);
 }
 
 // no longer just for netprops!
@@ -2229,9 +2272,9 @@ void NetPropEtcCheck(int userid)
                         {
                             char reason[128];
                             Format(reason, sizeof(reason), "%t", "badItemSchemaBanMsg");
-                            BanUser(userid, reason);
-                            MC_PrintToChatAll("%t", "badItemSchemaBanAllChat", Cl);
-                            StacLog("%t", "badItemSchemaBanAllChat", Cl);
+                            char pubreason[128];
+                            Format(pubreason, sizeof(pubreason), "%t", "badItemSchemaBanAllChat", Cl);
+                            BanUser(userid, reason, pubreason);
                         }
                         else
                         {
@@ -2395,6 +2438,7 @@ OpenStacLog()
 // Close log file for StAC
 CloseStacLog()
 {
+    // delete StacLogFile;
     if (StacLogFile != null)
     {
         if (DEBUG)
