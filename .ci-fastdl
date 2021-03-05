@@ -10,4 +10,4 @@ sound/**/*.mp3
 sound/**/*.wav
 materials/**/*.vmt
 materials/**/*.vtf
-scripts/items/mvm_*.txt
+scripts/items/*.txt
