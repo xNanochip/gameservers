@@ -87,7 +87,7 @@ public void CreatePlasmaBallEntity(any iRocket)
 			
 			for (int y = 0; y < 3, y++;)
 			{
-				localVelocity[y] += GetRandomInt(-30, 30);
+				//localVelocity[y] += GetRandomInt(-30, 30);
 			}
 			
 			// Finally, teleport it and set it loose:
