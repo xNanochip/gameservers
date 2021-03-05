@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.1.8b"
+#define PLUGIN_VERSION  "4.1.9b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -2166,9 +2166,18 @@ public void BanUser(int userid, char[] reason, char[] pubreason)
             )
         )
         {
-            PrintToImportant("{hotpink}[StAC]{white} Client %N is UNAUTHORIZED or STEAM IS DOWN!!! Banning with default TF2 handler just in case...", Cl);
-            StacLog("Client %N is UNAUTHORIZED or STEAM IS DOWN!!! Banning with default TF2 handler just in case...", Cl);
-            BanClient(Cl, 0, BANFLAG_IP, reason, reason, _, _);
+            PrintToImportant("{hotpink}[StAC]{white} Client %N is UNAUTHORIZED or STEAM IS DOWN!!! Banning by IP instead...", Cl);
+            StacLog("Client %N is UNAUTHORIZED or STEAM IS DOWN!!! Banning by IP instead...", Cl);
+            if (SOURCEBANS)
+            {
+                char ip[48];
+                GetClientIP(Cl, ip, sizeof(ip));
+                ServerCommand("sm_banip %s 0 %s", ip, reason);
+            }
+            else
+            {
+                BanClient(Cl, 0, BANFLAG_IP, reason, reason, _, _);
+            }
         }
     }
     // default
