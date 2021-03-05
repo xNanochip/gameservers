@@ -186,7 +186,7 @@ public void OnPluginStart()
     HookEvent("player_spawn", ePlayerSpawned);
 
     // check natives capibility
-    CreateTimer(0.1 checkNativesEtc);
+    CreateTimer(0.1, checkNativesEtc);
     // check EVERYONE's cvars on plugin reload
     CreateTimer(0.5, checkEveryone);
 
