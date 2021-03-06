@@ -4019,6 +4019,17 @@
 					type "sym"
 					sym  "_ZN15CTFPlayerShared16OnAddBalloonHeadEv"
 				}
+				"CTFPointWeaponMimic::~CTFPointWeaponMimic [D0]"
+				{
+					type "sym"
+					sym  "_ZN19CTFPointWeaponMimicD0Ev"
+				}
+				"CTFPointWeaponMimic::~CTFPointWeaponMimic [D2]"
+				{
+					type "sym"
+					sym  "_ZN19CTFPointWeaponMimicD2Ev"
+				}
+				
 			}
 			
 			"addrs_group"
