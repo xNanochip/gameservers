@@ -122,6 +122,8 @@ public void LoadRememberedPopFile()
 	{
 		LogMessage("Setting mission: %s", m_sAutoloadPopfile);
 		ServerCommand("tf_mvm_popfile %s", m_sAutoloadPopfile);
+		
+		strcopy(m_sAutoloadPopfile, sizeof(m_sAutoloadPopfile), "");
 	}
 }
 
