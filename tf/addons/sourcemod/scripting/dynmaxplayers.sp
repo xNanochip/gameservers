@@ -108,17 +108,12 @@ public int GetRealClientCount()
 
 public void UpdateVisibleMaxPlayers()
 {
+	if (IsActive())return;
+	
 	// Only mirror the value if we allow it to.
 	if (!sm_maxplayers_mirror_visiblemaxplayers.BoolValue)return;
 	
-	if (IsActive())
-	{
-		// Reset it back to -1.
-		sv_visiblemaxplayers.IntValue = -1;
-	} else {
-		
-		sv_visiblemaxplayers.IntValue = sm_maxplayers.IntValue;
-	}
+	sv_visiblemaxplayers.IntValue = sm_maxplayers.IntValue;
 }
 
 public bool IsActive()
