@@ -68,7 +68,7 @@ Handle 	g_CEcon_OnSchemaUpdated,	// Forward, that notifies the sub plugins, if t
 // maximum value.
 #define EVENT_UNIQUE_INDEX_MAX_INT 10000
 // Don't process more than X events per a frame.
-#define EVENT_MAX_EVENTS_PER_FRAME 10
+#define EVENT_MAX_EVENTS_PER_FRAME 3
 
 // Fired when a new client even is fired.
 Handle g_hOnClientEvent;
