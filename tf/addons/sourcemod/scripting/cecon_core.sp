@@ -1099,6 +1099,7 @@ public any Native_SendEventToAll(Handle plugin, int numParams)
 public any Native_SendEventToClient(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
+	if (!IsClientValid(client))return;
 
 	char event[128];
 	GetNativeString(2, event, sizeof(event));
