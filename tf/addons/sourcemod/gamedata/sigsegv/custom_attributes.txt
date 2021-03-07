@@ -1365,11 +1365,22 @@
         "effect_type"	"positive"
     }
     //Projectile acceleration start time
-    "4452"
+    "4453"
     {
         "name"	"mult dmg vs tanks"
         "attribute_class"	"mult_dmg_vs_tanks"
         "description_string"	"melee cleave attack"
+        "description_format"	"value_is_percentage"
+        "hidden"	"0"
+        "effect_type"	"positive"
+    }
+    //Projectile acceleration start time
+    "4454"
+    {
+        "name" "custom hit sound"
+        "attribute_class"	"custom_hit_sound"
+		"attribute_type"	"string"
+        "description_string"	"#Attrib_CallingCardOnKill"
         "description_format"	"value_is_percentage"
         "hidden"	"0"
         "effect_type"	"positive"

@@ -80,5 +80,4 @@ public void CreatePlasmaBallEntity(any iRocket)
 		// Finally, teleport it and set it loose:
 		TeleportEntity(iPlasmaBall, position, angle, velocity);
 	}
-	
 }
