@@ -108,7 +108,7 @@ public int GetRealClientCount()
 
 public void UpdateVisibleMaxPlayers()
 {
-	if (IsActive())return;
+	if (!IsActive())return;
 	
 	// Only mirror the value if we allow it to.
 	if (!sm_maxplayers_mirror_visiblemaxplayers.BoolValue)return;
