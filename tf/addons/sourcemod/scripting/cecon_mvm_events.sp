@@ -9,6 +9,7 @@
 #include <tf2_stocks>
 #include <cecon>
 
+
 public Plugin myinfo =
 {
 	name = "Creators.TF Economy - TF2 Events",
@@ -19,8 +20,6 @@ public Plugin myinfo =
 }
 
 bool uses_custom_upgrades = false;
-
-ConVar buster_range_cvar;
 
 #define TF_MAXPLAYERS 34 // 33 max players + 1 for offset
 
@@ -41,7 +40,6 @@ enum struct PlayerData
 	int touched_cp_area;
 	int tank_damage_wave;
 	int tank_damage_last_second;
-
 
 	// Bit mask of every client index who damaged the player
 	int hit_tracker;
@@ -71,6 +69,7 @@ enum struct PlayerData
 		this.ignited_by = 0;
 		this.pick_bomb_time = 0.0;
 		this.leave_spawn_time = 0.0;
+
 	}
 }
 
@@ -84,7 +83,6 @@ Handle attrib_float_handle;
 int bonus_currency_counter = 0;
 public void OnPluginStart()
 {
-	buster_range_cvar = FindConVar("tf_bot_suicide_bomb_range");
 
 	HookEvent("upgrades_file_changed", upgrades_file_changed);
 
@@ -133,8 +131,6 @@ public void OnPluginStart()
 	HookEvent("teamplay_flag_event", teamplay_flag_event);
 
 	HookEvent("player_used_powerup_bottle", player_used_powerup_bottle);
-	
-	HookUserMessage(GetUserMessageId("AchievementEvent"), OnAchievementEvent);
 
 	Handle data_mvm = LoadGameConfigFile("tf2.cecon_mvm_events");
 	StartPrepSDKCall(SDKCall_Raw);
@@ -256,22 +252,6 @@ public void WidowmakerShootUpdate(int client)
 	}
 }
 
-public Action OnAchievementEvent(UserMsg msg_id, BfRead msg, const int[] players, int playersNum, bool reliable, bool init)
-{
-	int type = BfReadShort(msg);
-	int amount = BfReadShort(msg);
-
-	if (type == 1836) // ACHIEVEMENT_TF_ENGINEER_REPAIR_TEAM_GRIND
-	{
-		if (amount > 0)
-		{
-			CEcon_SendEventToClientUnique(players[0], "TF_MVM_REPAIR", 1);
-		}
-	}
-
-	return Plugin_Continue;
-}
-
 public Action player_changeclass(Event hEvent, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(hEvent.GetInt("userid"));
@@ -389,7 +369,7 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 		{
 			if (client != attacker)
 			{
-				// Is this an MVM bot?
+				
 				if (IsFakeClient(client)) 
 				{
 					int leave_spawn_timespan = RoundToCeil(GetGameTime() - player_data[client].leave_spawn_time);
@@ -398,10 +378,8 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 						leave_spawn_timespan = 1;
 					}
 
-					// Blanket event.
 					CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT", 1, hEvent);
 
-					// Killing a robot with crits.
 					switch (crit_type)
 					{
 						case 0: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_CRIT_NONE", 1, hEvent);
@@ -409,7 +387,6 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 						case 2: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_CRIT_FULL", 1, hEvent);
 					}
 
-					// Assist event.
 					if (IsClientValid(assister))
 					{
 						player_data[client].hit_tracker |= 1 << (assister - 1);
@@ -418,20 +395,6 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 
 					if (IsGiantNotBuster(client))
 					{
-						// ZoN - Send events per class killed:
-						switch (TF2_GetPlayerClass(client)) 
-						{
-							case TFClass_Scout:		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SCOUT", 1, hEvent);
-							case TFClass_Soldier:	CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SOLDIER", 1, hEvent);
-							case TFClass_Pyro:		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_PYRO", 1, hEvent);
-							case TFClass_DemoMan:	CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_DEMOMAN", 1, hEvent);
-							case TFClass_Heavy:		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_HEAVY", 1, hEvent);
-							case TFClass_Engineer:	CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_ENGINEER", 1, hEvent);
-							case TFClass_Medic:		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_MEDIC", 1, hEvent);
-							case TFClass_Sniper:	CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SNIPER", 1, hEvent);
-							case TFClass_Spy:		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SPY", 1, hEvent);
-						}
-						
 						int hit_tracker = player_data[client].hit_tracker;
 						// Players who assisted or dealt damage receive kill
 						for (int i = 0; i < 32; i++)
@@ -477,14 +440,24 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 						}
 
 						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_GIANT_FINAL", 1, hEvent);
+					}
 
-						
-					}
-					else // ZoN - Send an event for killing a sentry buster.
+					if (!IsSentryBuster(client))
 					{
-						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_SENTRYBUSTER", 1, hEvent);
+						switch (TF2_GetPlayerClass(client))
+						{
+							case TFClass_Scout: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_SCOUT", 1, hEvent);
+							case TFClass_Soldier: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_SOLDIER", 1, hEvent);
+							case TFClass_Pyro: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_PYRO", 1, hEvent);
+							case TFClass_DemoMan: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_DEMOMAN", 1, hEvent);
+							case TFClass_Heavy: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_HEAVY", 1, hEvent);
+							case TFClass_Engineer: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_ENGINEER", 1, hEvent);
+							case TFClass_Medic: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_MEDIC", 1, hEvent);
+							case TFClass_Sniper: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_SNIPER", 1, hEvent);
+							case TFClass_Spy: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_SPY", 1, hEvent);
+						}
 					}
-					
+
 					// All players receive boss kill events
 					if (IsBoss(client))
 					{
@@ -534,6 +507,17 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 					if (IsTauntKill(customkill))
 					{
 						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_TAUNT", 1, hEvent);
+					}
+
+					if(StrContains(weapon_name, "obj_") != -1)
+					{
+						CEcon_SendEventToClientUnique(attacker, "TF_MVM_KILL_ROBOT_SENTRY", 1);
+					}
+
+					if (customkill == 30) // Sentry wrangler damage
+					{
+						CEcon_SendEventToClientUnique(attacker, "TF_MVM_KILL_ROBOT_SENTRY", 1);
+						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SENTRY_WRANGLER", 1, hEvent);
 					}
 
 					// Razorback detection
@@ -856,6 +840,7 @@ int player_hurt_client_last;
 int player_hurt_attacker_last;
 int player_hurt_tick_last;
 int player_hurt_madmilk_last;
+int inflictor_last;
 public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
@@ -865,6 +850,7 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 	bool crit = GetEventBool(hEvent, "crit");
 	bool minicrit = GetEventBool(hEvent, "minicrit");
 	int bonuseffect = GetEventInt(hEvent, "bonuseffect");
+	int weaponid = GetEventInt(hEvent, "weaponid");
 
 	player_hurt_client_last = client;
 	player_hurt_attacker_last = attacker;
@@ -883,9 +869,19 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 
 		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT", damage, hEvent);
 
-		if (custom == 30) // Sentry damage
+		if (custom == 30) // Sentry wrangler damage
 		{
-			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_SENTRY", damage, hEvent);
+			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_SENTRY_WRANGLER", damage, hEvent);
+		}
+
+		if (inflictor_last > 0 && inflictor_last != attacker && IsValidEntity(inflictor_last))
+		{
+			char classname[32];
+			GetEntityClassname(inflictor_last, classname, sizeof(classname));
+			if (strcmp(classname, "obj_sentrygun") == 0 || strcmp(classname, "tf_projectile_sentryrocket") == 0)
+			{
+				CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_SENTRY", damage, hEvent);
+			}
 		}
 
 		if (custom == 45) // Boot / Jetpack Stomp
@@ -1019,55 +1015,55 @@ public Action damage_resisted(Handle hEvent, const char[] szName, bool bDontBroa
 }
 
 int damagecustom_last;
-
 public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3], int damagecustom)
 {
 	damagecustom_last = damagecustom;
+	inflictor_last = inflictor;
 }
 
 public void OnPlayerDamagePost(int victim, int attacker, int inflictor, float damage, int damagetype)
 {
-	if (IsClientValid(attacker) && attacker != victim && GetClientTeam(attacker) != GetClientTeam(victim) && TF2_IsPlayerInCondition(victim, TFCond_Ubercharged) && damagecustom_last != 2) // backstab
+	if (IsClientValid(attacker) && attacker != victim && GetClientTeam(attacker) != GetClientTeam(victim) )
 	{
-		
-		
-		// Multiply crit damage
-		if ((damagetype & DMG_CRIT) == DMG_CRIT)
+		if (TF2_IsPlayerInCondition(victim, TFCond_Ubercharged) && damagecustom_last != 2) // backstab
 		{
-			damage *= 3.0;
-		}
-
-		// Find ubercharged medic
-
-		int healer = GetConditionProvider(victim, TFCond_Ubercharged);
-
-		if (IsClientValid(healer))
-		{
-			bool valid = healer != victim;
-
-			// Count damage absorbed by medic if he is healing someone
-			if (!valid)
+			// Multiply crit damage
+			if ((damagetype & DMG_CRIT) == DMG_CRIT)
 			{
-				int medigun = GetPlayerWeaponSlot(healer, 1);
-				if (medigun != -1)
-				{
-					char classname[32];
-					GetEntityClassname(medigun, classname, sizeof(classname));
-					if (strcmp(classname, "tf_weapon_medigun") == 0)
-					{
-						int target = GetEntPropEnt(medigun, Prop_Send, "m_hHealingTarget");
-						valid = target > 0;
-					}
-				}
+				damage *= 3.0;
 			}
 
-			if (valid)
+			// Find ubercharged medic
+
+			int healer = GetConditionProvider(victim, TFCond_Ubercharged);
+
+			if (IsClientValid(healer))
 			{
-				CEcon_SendEventToClientUnique(healer, "TF_MVM_BLOCK_DAMAGE_UBER", RoundFloat(damage));
+				bool valid = healer != victim;
+
+				// Count damage absorbed by medic if he is healing someone
+				if (!valid)
+				{
+					int medigun = GetPlayerWeaponSlot(healer, 1);
+					if (medigun != -1)
+					{
+						char classname[32];
+						GetEntityClassname(medigun, classname, sizeof(classname));
+						if (strcmp(classname, "tf_weapon_medigun") == 0)
+						{
+							int target = GetEntPropEnt(medigun, Prop_Send, "m_hHealingTarget");
+							valid = target > 0;
+						}
+					}
+				}
+
+				if (valid)
+				{
+					CEcon_SendEventToClientUnique(healer, "TF_MVM_BLOCK_DAMAGE_UBER", RoundFloat(damage));
+				}
 			}
 		}
 	}
-
 	
 }
 
@@ -1458,9 +1454,11 @@ public Action player_used_powerup_bottle(Handle hEvent, const char[] szName, boo
 
 public Action building_healed(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	int healer = GetEventInt(hEvent, "player");
+	int healer = GetEventInt(hEvent, "healer");
 	int amount = GetEventInt(hEvent, "amount");
-	CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_REPAIR", 1, hEvent);
+	int building = GetEventInt(hEvent, "building");
+
+	CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_REPAIR", amount, hEvent);
 }
 
 public void TF2_OnConditionAdded(int client, TFCond cond)
