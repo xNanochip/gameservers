@@ -446,15 +446,15 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 					{
 						switch (TF2_GetPlayerClass(client))
 						{
-							case TFClass_Scout: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_SCOUT", 1, hEvent);
-							case TFClass_Soldier: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_SOLDIER", 1, hEvent);
-							case TFClass_Pyro: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_PYRO", 1, hEvent);
-							case TFClass_DemoMan: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_DEMOMAN", 1, hEvent);
-							case TFClass_Heavy: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_HEAVY", 1, hEvent);
-							case TFClass_Engineer: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_ENGINEER", 1, hEvent);
-							case TFClass_Medic: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_MEDIC", 1, hEvent);
-							case TFClass_Sniper: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_SNIPER", 1, hEvent);
-							case TFClass_Spy: CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_KILL_ROBOT_SPY", 1, hEvent);
+							case TFClass_Scout: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SCOUT", 1, hEvent);
+							case TFClass_Soldier: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SOLDIER", 1, hEvent);
+							case TFClass_Pyro: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_PYRO", 1, hEvent);
+							case TFClass_DemoMan: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_DEMOMAN", 1, hEvent);
+							case TFClass_Heavy: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_HEAVY", 1, hEvent);
+							case TFClass_Engineer: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_ENGINEER", 1, hEvent);
+							case TFClass_Medic: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_MEDIC", 1, hEvent);
+							case TFClass_Sniper: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SNIPER", 1, hEvent);
+							case TFClass_Spy: CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SPY", 1, hEvent);
 						}
 					}
 
