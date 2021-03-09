@@ -17,15 +17,8 @@ ConVar ce_patreon_debug;
 
 public void OnPluginStart()
 {
-	AddCommandListener(Cmd_ReloadCCC, "sm_reloadccc");
-	
 	ce_patreon_debug = CreateConVar("ce_patreon_debug", "0");
 
-	LoadAllClientsPledges();
-}
-
-public Action Cmd_ReloadCCC(int client, const char[] command, int argc)
-{
 	LoadAllClientsPledges();
 }
 
@@ -114,8 +107,6 @@ public void httpPlayerDonation_Callback(HTTPRequestHandle request, bool success,
 	{
         SetClientAdminFlag(client, Admin_Custom4);
         RunAdminCacheChecks(client);
-        
-        CreateTimer(0.1, Timer_ReloadCCC);
 	}
 }
 
