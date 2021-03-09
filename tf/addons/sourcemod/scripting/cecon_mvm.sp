@@ -726,7 +726,7 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 	{
 		if (buttons & (IN_ATTACK | IN_JUMP | IN_DUCK | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_ATTACK2))
 		{
-			CloseMOTD(client);
+			// CloseMOTD(client);
 		}
 	}
 }
