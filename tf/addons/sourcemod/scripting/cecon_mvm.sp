@@ -691,6 +691,9 @@ public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult r
 			hConf.SetString("msg", url);
 			hConf.SetNum("customsvr", 1);
 			ShowVGUIPanel(client, "info", hConf);
+			
+			PrintToChatAll("wut");
+			
 			delete hConf;
 			m_bIsMOTDOpen[client] = true;
 		}
