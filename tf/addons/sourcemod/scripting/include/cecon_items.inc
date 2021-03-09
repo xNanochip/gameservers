@@ -155,12 +155,17 @@ forward int CEconItems_OnEquipItem(int client, CEItem item, const char[] type);
 // Called after this item has been equipped.
 forward void CEconItems_OnItemIsEquipped(int client, int entity, CEItem item, const char[] type);
 
+// Called when subplugins need to initialize the code for item types.
+forward int CEconItems_OnUnequipItem(int client, CEItem item, const char[] type);
+// Called after this item has been unequipped.
+forward void CEconItems_OnItemIsUnequipped(int client, CEItem item, const char[] type);
+
 // Called when user's loadout was updated.
 forward void CEconItems_OnClientLoadoutUpdated(int client);
 // Called when style index of the entity has been updated.
 forward void CEconItems_OnCustomEntityStyleUpdated(int client, int entity, int style);
 
-public SharedPlugin __pl_cecon_items = 
+public SharedPlugin __pl_cecon_items =
 {
     name = "cecon_items",
     file = "cecon_items.smx",

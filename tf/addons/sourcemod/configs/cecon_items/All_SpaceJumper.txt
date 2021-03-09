@@ -1,0 +1,13 @@
+Item
+{
+	name 			"Space Jumper"
+	type 			"cosmetic"
+	item_logname	"space_jumper"
+	world_model		"models/weapons/c_models/c_rocketpack_2/c_rocketpack.mdl"
+	preserve_attributes 1
+	
+	attributes
+	{
+		"space jump thruster" 1
+	}
+}

@@ -28,6 +28,7 @@ public Plugin myinfo =
 bool m_bIsSpaceJump[2049];
 float m_flSpaceJumpMeter[MAXPLAYERS + 1];
 bool m_bIsUsingSpaceJump[MAXPLAYERS + 1];
+bool m_bSpaceJumpEquipped[MAXPLAYERS + 1];
 
 ConVar tf_space_jump_use_rate;
 ConVar tf_space_jump_recharge_rate;
@@ -62,10 +63,23 @@ public Action Timer_Think(Handle timer, any data)
 	}
 }
 
+public void CEconItems_OnItemIsUnequipped(int client, CEItem xItem, const char[] type)
+{
+	if(CEconItems_GetAttributeBoolFromArray(xItem.m_Attributes, "space jump thruster"))
+	{
+		PrintToChatAll("Space jumper is unequipped");
+		m_bSpaceJumpEquipped[client] = false;
+		EmitGameSoundToAll(SPACE_JUMP_THRUST_SOUND_LOOP_END, client);
+	}
+}
+
 public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem xItem, const char[] type)
 {
 	if(CEconItems_GetEntityAttributeBool(entity, "space jump thruster"))
 	{
+		PrintToChatAll("Space jumper is equipped");
+		m_bSpaceJumpEquipped[client] = true;
+		
 		SpaceJump_Init(entity, client);
 		EmitGameSoundToAll(SPACE_JUMP_THRUST_SOUND_LOOP_END, client);
 	}
@@ -152,9 +166,7 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 {
 	static bool bIsJumpPressed[MAXPLAYERS + 1];
 
-	int iJump = GetSpaceJumpWearable(client);
-
-	if(iJump > -1)
+	if(m_bSpaceJumpEquipped[client])
 	{
 		bool bIsJumping = buttons & IN_JUMP == IN_JUMP;
 		bool bIsOnGround = GetEntityFlags(client) & FL_ONGROUND == FL_ONGROUND;
@@ -184,7 +196,7 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 					EmitGameSoundToAll(SPACE_JUMP_THRUST_SOUND_START, client);
 					EmitGameSoundToAll(SPACE_JUMP_THRUST_SOUND_LOOP, client);
 
-					CreateThrustParticle(iJump);
+					// CreateThrustParticle(iJump);
 				}
 				m_bIsUsingSpaceJump[client] = true;
 			}
@@ -201,7 +213,7 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 					EmitGameSoundToAll(SPACE_JUMP_THRUST_SOUND_END, client);
 					m_bIsUsingSpaceJump[client] = false;
 
-					StopThrustparticle(iJump);
+					// StopThrustparticle(iJump);
 				}
 			} else {
 				if(m_bIsUsingSpaceJump[client] && !bHasCharge)
@@ -210,7 +222,7 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 					EmitGameSoundToAll(SPACE_JUMP_THRUST_SOUND_FAILED, client);
 					m_bIsUsingSpaceJump[client] = false;
 
-					StopThrustparticle(iJump);
+					// StopThrustparticle(iJump);
 				}
 			}
 

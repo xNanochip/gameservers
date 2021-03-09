@@ -494,6 +494,7 @@ public int GetKitIndexByDefID(int defid)
 	for (int i = 0; i < m_hKitDefs.Length; i++)
 	{
 		Soundtrack_t xKit;
+		m_hKitDefs.GetArray(i, xKit);
 		if (xKit.m_iDefIndex == defid)return i;
 	}
 	return -1;

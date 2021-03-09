@@ -122,7 +122,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	g_CEcon_OnItemIsEquipped 		= new GlobalForward("CEconItems_OnItemIsEquipped", ET_Ignore, Param_Cell, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnClientLoadoutUpdated 	= new GlobalForward("CEconItems_OnClientLoadoutUpdated", ET_Ignore, Param_Cell);
 	
-	g_CEcon_OnUnequipItem 			= new GlobalForward("CEconItems_OnUnequipItem", ET_Single, Param_Cell, Param_Cell, Param_Array, Param_String);
+	g_CEcon_OnUnequipItem 			= new GlobalForward("CEconItems_OnUnequipItem", ET_Single, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnItemIsUnequipped		= new GlobalForward("CEconItems_OnItemIsUnequipped", ET_Single, Param_Cell, Param_Array, Param_String);
 	
 	g_CEcon_OnCustomEntityStyleUpdated	= new GlobalForward("CEconItems_OnCustomEntityStyleUpdated", ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
@@ -1334,6 +1334,24 @@ public any Native_RemoveItemFromClient(Handle plugin, int numParams)
 	
 	if(bRemoved)
 	{
+		CEItemDefinition xDef;
+		if(CEconItems_GetItemDefinitionByIndex(xNeedle.m_iItemDefinitionIndex, xDef))
+		{
+			// Call subplugins that we've unequipped this item.
+			Call_StartForward(g_CEcon_OnUnequipItem);
+			Call_PushCell(client);
+			Call_PushArray(xNeedle, sizeof(CEItem));
+			Call_PushString(xDef.m_sType);
+			Call_Finish();
+			
+			// Call subplugins that we've unequipped this item.
+			Call_StartForward(g_CEcon_OnItemIsUnequipped);
+			Call_PushCell(client);
+			Call_PushArray(xNeedle, sizeof(CEItem));
+			Call_PushString(xDef.m_sType);
+			Call_Finish();
+		}
+		
 		// If removed, let's check if this item isn't in the player loadout. 
 		// It it is not, remove it, as it was not created by the econ.
 		// This is to prevent memory leaks.
@@ -1342,6 +1360,7 @@ public any Native_RemoveItemFromClient(Handle plugin, int numParams)
 		{
 			CEconItems_DestroyItem(xNeedle);
 		}
+		
 	}
 }
 

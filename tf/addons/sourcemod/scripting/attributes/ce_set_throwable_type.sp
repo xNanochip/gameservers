@@ -15,7 +15,7 @@
 // 3 - Bread Monster
 #define HAS_BREAD_MONSTER
 // 4 - Boomerang
-// #define HAS_BOOMERANG
+#define HAS_BOOMERANG
 //-------------------------------
 
 public Plugin myinfo =
@@ -294,6 +294,120 @@ public void CreateWeaponThrowableProjectile(int weapon)
 	}
 }
 
+public void GetThrowableTrailParticle(int weapon, char[] buffer, int size)
+{
+	if (weapon < 0)return;
+	if (m_nThrowableType[weapon] <= 0)return;
+	
+	int iTeamNum = GetEntProp(weapon, Prop_Send, "m_iTeamNum");
+	
+	char sOverride[PLATFORM_MAX_PATH];
+	switch(iTeamNum)
+	{
+		case 2: // TF_TEAM_RED
+		{
+			CEconItems_GetEntityAttributeString(weapon, "override throwable particle red", sOverride, sizeof(sOverride));
+			if(!StrEqual(sOverride, ""))
+			{
+				strcopy(buffer, size, sOverride);
+				return;
+			}
+			
+			strcopy(buffer, size, "peejar_trail_red");
+		}
+		
+		case 3: // TF_TEAM_BLUE
+		{
+			CEconItems_GetEntityAttributeString(weapon, "override throwable particle blue", sOverride, sizeof(sOverride));
+			if(!StrEqual(sOverride, ""))
+			{
+				strcopy(buffer, size, sOverride);
+				return;
+			}
+			
+			strcopy(buffer, size, "peejar_trail_blu");
+		}
+	}
+}
+
+public void GetThrowableModel(int weapon, char[] buffer, int size)
+{
+	if (weapon < 0)return;
+	if (m_nThrowableType[weapon] <= 0)return;
+	
+	char sOverride[PLATFORM_MAX_PATH];
+	CEconItems_GetEntityAttributeString(weapon, "override throwable model", sOverride, sizeof(sOverride));
+	
+	if(!StrEqual(sOverride, ""))
+	{
+		strcopy(buffer, size, sOverride);
+		return;
+	}
+	
+	switch(m_nThrowableType[weapon])
+	{
+		#if defined HAS_BRICK
+		case THROWABLE_TYPE_BRICK:
+		{
+			strcopy(buffer, size, TF_THROWABLE_BRICK_MODEL);
+		}
+		#endif
+
+		#if defined HAS_BOOMERANG
+		case THROWABLE_TYPE_BOOMERANG:
+		{
+			strcopy(buffer, size, TF_THROWABLE_BOOMERANG_MODEL);
+		}
+		#endif
+	}
+}
+
+public float GetThrowableForce(int weapon)
+{
+	if (weapon < 0)return 0.0;
+	if (m_nThrowableType[weapon] <= 0)return 0.0;
+	
+	float flOverride = CEconItems_GetEntityAttributeFloat(weapon, "override throwable force");
+	
+	if(flOverride > 0.0)
+	{
+		return flOverride;
+	}
+	
+	switch(m_nThrowableType[weapon])
+	{
+		#if defined HAS_BRICK
+		case THROWABLE_TYPE_BRICK:
+		{
+			return tf_throwable_brick_force.FloatValue;
+		}
+		#endif
+
+		#if defined HAS_SMOKE_GRENADE
+		case THROWABLE_TYPE_SMOKE_GRENADE:
+		{
+			return tf_throwable_smoke_grenade_force.FloatValue;
+		}
+		#endif
+
+		#if defined HAS_BREAD_MONSTER
+		case THROWABLE_TYPE_BREAD:
+		{
+			return tf_throwable_bread_force.FloatValue;
+		}
+		#endif
+
+		#if defined HAS_BOOMERANG
+		case THROWABLE_TYPE_BOOMERANG:
+		{
+			return tf_throwable_boomerang_force.FloatValue;
+		}
+		#endif
+	}
+	
+	return 0.0;
+}
+
 //---------------------------------------------------------------------------------------
 // BRICK FUNCTIONS
 //---------------------------------------------------------------------------------------
@@ -301,7 +415,6 @@ public void CreateWeaponThrowableProjectile(int weapon)
 #if defined HAS_BRICK
 public void CreateWeaponThrowableProjectile_Brick(int weapon)
 {
-	int iTeamNum = GetEntProp(weapon, Prop_Send, "m_iTeamNum");
 	int iClient = GetEntPropEnt(weapon, Prop_Send, "m_hOwnerEntity");
 
 	if (iClient < 0)return;
@@ -310,23 +423,30 @@ public void CreateWeaponThrowableProjectile_Brick(int weapon)
 	GetClientEyeAngles(iClient, vecAng);
 	GetClientEyePosition(iClient, vecPos);
 
-	float flSpeed = tf_throwable_brick_force.FloatValue;
-
+	float flSpeed = GetThrowableForce(weapon);
 	int iProjectile = CreateThrowableBrick(iClient, weapon, flSpeed, 30.0);
 	if(iProjectile > -1)
 	{
-		SetEntityModel(iProjectile, TF_THROWABLE_BRICK_MODEL);
-		switch(iTeamNum)
+		//------ SETTING MODEL ------//
+		char sModel[PLATFORM_MAX_PATH];
+		GetThrowableModel(weapon, sModel, sizeof(sModel));
+		
+		if(!StrEqual(sModel, ""))
 		{
-			case 2:
-			{
-				TF_StartAttachedParticle("peejar_trail_red", iProjectile, 5.0);
-			}
-			case 3:
-			{
-				TF_StartAttachedParticle("peejar_trail_blu", iProjectile, 5.0);
-			}
+			SetEntityModel(iProjectile, sModel);
 		}
+		//--------------------------//
+		
+		
+		//------ SETTING TRAIL -----//
+		char sTrail[PLATFORM_MAX_PATH];
+		GetThrowableTrailParticle(weapon, sTrail, sizeof(sTrail));
+		
+		if(!StrEqual(sTrail, ""))
+		{
+			TF_StartAttachedParticle(sTrail, iProjectile, 5.0);
+		}
+		//--------------------------//
 
 		EmitGameSoundToAll("Passtime.Throw", iClient);
 	}
@@ -350,8 +470,7 @@ public void CreateWeaponThrowableProjectile_BreadMonster(int weapon)
 	GetClientEyeAngles(iClient, vecAng);
 	GetClientEyePosition(iClient, vecPos);
 
-	float flSpeed = tf_throwable_bread_force.FloatValue;
-
+	float flSpeed = GetThrowableForce(weapon);
 	int iProjectile = CreateEntityByName(TF_THROWABLE_BREAD_ENTITY);
 	if(iProjectile > -1)
 	{
@@ -379,12 +498,27 @@ public void CreateWeaponThrowableProjectile_BreadMonster(int weapon)
 
 		ActivateEntity(iProjectile);
 		TeleportEntity(iProjectile, vecPos, vecAng, vecVel);
-
-		switch(iTeamNum)
+		
+		//------ SETTING MODEL ------//
+		char sModel[PLATFORM_MAX_PATH];
+		GetThrowableModel(weapon, sModel, sizeof(sModel));
+		
+		if(!StrEqual(sModel, ""))
 		{
-			case 2: TF_StartAttachedParticle("peejar_trail_red", iProjectile, 5.0);
-			case 3: TF_StartAttachedParticle("peejar_trail_blu", iProjectile, 5.0);
+			SetEntityModel(iProjectile, sModel);
 		}
+		//--------------------------//
+		
+		
+		//------ SETTING TRAIL -----//
+		char sTrail[PLATFORM_MAX_PATH];
+		GetThrowableTrailParticle(weapon, sTrail, sizeof(sTrail));
+		
+		if(!StrEqual(sTrail, ""))
+		{
+			TF_StartAttachedParticle(sTrail, iProjectile, 5.0);
+		}
+		//--------------------------//
 
 		SetDelayedProjectileLauncher(iProjectile, weapon);
 
@@ -409,8 +543,7 @@ public void CreateWeaponThrowableProjectile_SmokeGrenade(int weapon)
 	GetClientEyeAngles(iClient, vecAng);
 	GetClientEyePosition(iClient, vecPos);
 
-	float flSpeed = tf_throwable_smoke_grenade_force.FloatValue;
-
+	float flSpeed = GetThrowableForce(weapon);
 	int iProjectile = CreateEntityByName(TF_THROWABLE_SMOKE_GRENADE_ENTITY);
 	if(iProjectile > -1)
 	{
@@ -438,10 +571,19 @@ public void CreateWeaponThrowableProjectile_SmokeGrenade(int weapon)
 
 		ActivateEntity(iProjectile);
 		TeleportEntity(iProjectile, vecPos, vecAng, vecVel);
+		
+		//------ SETTING MODEL ------//
+		char sModel[PLATFORM_MAX_PATH];
+		GetThrowableModel(weapon, sModel, sizeof(sModel));
+		
+		if(!StrEqual(sModel, ""))
+		{
+			SetEntityModel(iProjectile, sModel);
+		}
+		//--------------------------//
 
 
 		m_iSmokeEffectCycles[iProjectile] = SmokeGrenade_GetMaxCycleCount();
-
 		CreateTimer(tf_throwable_smoke_grenade_delay.FloatValue, Timer_SmokeGrenade_StartSmokeCycle, iProjectile);
 
 		SetDelayedProjectileLauncher(iProjectile, weapon);
@@ -510,6 +652,8 @@ enum struct CEProjectileBoomerang
 	int m_iTarget;
 	int m_iLastHit;
 	
+	float m_flForce;
+	
 	float m_flInitTime;
 	float m_flExpireTime;
 	float m_flReturnTime;
@@ -522,14 +666,13 @@ CEProjectileBoomerang m_Boomerang[2049];
 public void CreateWeaponThrowableProjectile_Boomerang(int weapon)
 {
 	// Getting all the values beforehand.
-	int iTeamNum = GetEntProp(weapon, Prop_Send, "m_iTeamNum");
 	int iClient = GetEntPropEnt(weapon, Prop_Send, "m_hOwnerEntity");
 	
 	// We can't create a projectile if owner in unspecified.
 	if (iClient < 0)return;
 	
 	// Getting force of the boomerang.
-	float flSpeed = tf_throwable_boomerang_force.FloatValue;
+	float flSpeed = GetThrowableForce(weapon);
 	float flReturnDelay = tf_throwable_boomerang_return_delay.FloatValue;
 
 	// Creating projectile.
@@ -543,26 +686,39 @@ public void CreateWeaponThrowableProjectile_Boomerang(int weapon)
 		m_Boomerang[iProjectile].m_iTarget = iClient;
 		m_Boomerang[iProjectile].m_iLastHit = -1;
 		
+		m_Boomerang[iProjectile].m_flForce = flSpeed;
 		m_Boomerang[iProjectile].m_flInitTime = GetEngineTime();
 		m_Boomerang[iProjectile].m_flReturnTime = GetEngineTime() + flReturnDelay;
 		m_Boomerang[iProjectile].m_flExpireTime = GetEngineTime() + (flReturnDelay * 3.0);
 		
 		m_Boomerang[iProjectile].m_flLastEaseInValue = 0.0;
 		
-		// Setting model.
-		SetEntityModel(iProjectile, TF_THROWABLE_BOOMERANG_MODEL);
+		//------ SETTING MODEL ------//
+		char sModel[PLATFORM_MAX_PATH];
+		GetThrowableModel(weapon, sModel, sizeof(sModel));
+		
+		if(!StrEqual(sModel, ""))
+		{
+			SetEntityModel(iProjectile, sModel);
+		}
+		//--------------------------//
 		
 		SetEntityGravity(iProjectile, 0.0);
 		SetEntityMoveType(iProjectile, MOVETYPE_FLY);
 		
 		SetEntProp(iProjectile, Prop_Send, "m_usSolidFlags", 8);
 		SetEntProp(iProjectile, Prop_Send, "m_CollisionGroup", 1);
-
-		switch(iTeamNum)
+		
+		
+		//------ SETTING TRAIL -----//
+		char sTrail[PLATFORM_MAX_PATH];
+		GetThrowableTrailParticle(weapon, sTrail, sizeof(sTrail));
+		
+		if(!StrEqual(sTrail, ""))
 		{
-			case 2:TF_StartAttachedParticle("peejar_trail_red", iProjectile, 5.0);
-			case 3:TF_StartAttachedParticle("peejar_trail_blu", iProjectile, 5.0);
+			TF_StartAttachedParticle(sTrail, iProjectile, m_Boomerang[iProjectile].m_flExpireTime);
 		}
+		//--------------------------//
 		
 		SDKHook(iProjectile, SDKHook_Touch, OnBoomerangTouch);
 		EmitGameSoundToAll("Passtime.Throw", iClient);
@@ -679,7 +835,7 @@ public Action Timer_Boomerang_Think(Handle timer, any iProjectile)
 			SubtractVectors(vecPosTarget, vecPos, vecVel);
 			NormalizeVector(vecVel, vecVel);
 			
-			ScaleVector(vecVel, tf_throwable_boomerang_force.FloatValue);
+			ScaleVector(vecVel, m_Boomerang[iProjectile].m_flForce);
 			SetEntPropVector(iProjectile, Prop_Send, "m_vInitialVelocity", vecVel);
 			bVelocityChanged = true;
 		}
