@@ -4,9 +4,11 @@
 #pragma newdecls required
 
 #include <sdktools>
+#include <cecon>
 #include <cecon_items>
 #include <cecon_http>
 #include <tf2_stocks>
+#include <tf2motd>
 
 #define Q_UNIQUE 6
 #define TF_TEAM_DEFENDERS 2
@@ -23,6 +25,7 @@ public Plugin myinfo =
 };
 
 ConVar ce_mvm_check_itemname_cvar;
+ConVar ce_mvm_show_game_time;
 
 int m_iCurrentWave;
 int m_iLastPlayerCount;
@@ -38,7 +41,14 @@ bool m_bJustFinishedTheMission;
 
 char m_sLastTourLootHash[128];
 
-bool m_bIsMOTDOpen[MAXPLAYERS + 1];
+
+enum struct CEItemBaseIndex 
+{
+	int m_iItemDefinitionIndex;
+	int m_iBaseItemIndex;
+}
+ArrayList m_hItemIndexes;
+
 
 public void OnPluginStart()
 {
@@ -46,6 +56,7 @@ public void OnPluginStart()
 	RegServerCmd("ce_mvm_get_itemdef_id", cMvMGetItemDefID, "");
 	RegServerCmd("ce_mvm_set_attribute", cMvMSetEntityAttribute, "");
 	ce_mvm_check_itemname_cvar = CreateConVar("ce_mvm_check_itemname_cvar", "-1", "", FCVAR_PROTECTED);
+	ce_mvm_show_game_time = CreateConVar("ce_mvm_show_game_time", "0", "Enables game time summary to be shown in chat");
 
 	HookEvent("mvm_begin_wave", mvm_begin_wave);
 	HookEvent("mvm_wave_complete", mvm_wave_complete);
@@ -56,10 +67,73 @@ public void OnPluginStart()
 	HookEvent("teamplay_round_start", teamplay_round_start);
 	
 	RegConsoleCmd("sm_loot", cLoot, "Opens the latest Tour Loot page");
+	
+	RegAdminCmd("ce_mvm_force_loot", cForceLoot, ADMFLAG_ROOT);
+}
+
+public void CEcon_OnSchemaUpdated(KeyValues hSchema)
+{
+	ParseEconomySchema(hSchema);
+}
+
+public void OnAllPluginsLoaded()
+{
+	ParseEconomySchema(CEcon_GetEconomySchema());
+}
+
+public void ParseEconomySchema(KeyValues hSchema)
+{
+	delete m_hItemIndexes;
+	if (hSchema == null)return;
+	m_hItemIndexes = new ArrayList(sizeof(CEItemBaseIndex));
+
+	if(hSchema.JumpToKey("Items"))
+	{
+		if(hSchema.GotoFirstSubKey())
+		{
+			do {
+				int iBaseIndex = hSchema.GetNum("item_index", -1);
+				if(iBaseIndex > -1)
+				{
+					char sName[11];
+					hSchema.GetSectionName(sName, sizeof(sName));
+					
+					CEItemBaseIndex xRecord;
+					
+					xRecord.m_iItemDefinitionIndex = StringToInt(sName);
+					xRecord.m_iBaseItemIndex = iBaseIndex;
+					
+					m_hItemIndexes.PushArray(xRecord);
+				}
+
+			} while (hSchema.GotoNextKey());
+		}
+	}
+
+    // Make sure we do that every time
+	hSchema.Rewind();
+	
+}
+
+public int GetDefinitionBaseIndex(int defid)
+{
+	if (m_hItemIndexes == null)return -1;
+	
+	for (int i = 0; i < m_hItemIndexes.Length; i++)
+	{
+		CEItemBaseIndex xRecord;
+		m_hItemIndexes.GetArray(i, xRecord);
+		if (xRecord.m_iItemDefinitionIndex != defid)continue;
+		return xRecord.m_iBaseItemIndex;
+	}
+	
+	return -1;
 }
 
 public void PrintGameStats()
 {
+	if (!ce_mvm_show_game_time.BoolValue)return;
+	
 	char sTimer[32];
 	int iMissionTime = GetTotalMissionTime();
 	TimeToStopwatchTimer(iMissionTime, sTimer, sizeof(sTimer));
@@ -261,6 +335,16 @@ public bool TF2MvM_IsPlayingMvM()
 }
 
 /**
+*	Purpose: 	ce_mvm_force_loot command.
+*/
+public Action cForceLoot(int client, int args)
+{
+	RequestTourLoot();
+
+	return Plugin_Handled;
+}
+
+/**
 *	Purpose: 	ce_mvm_equip_itemname command.
 */
 public Action cMvMEquipItemName(int args)
@@ -298,7 +382,7 @@ public Action cMvMGetItemDefID(int args)
 		CEItemDefinition xDef;
 		if(CEconItems_GetItemDefinitionByName(sArg1, xDef))
 		{
-			ce_mvm_check_itemname_cvar.SetInt(xDef.m_iIndex);
+			ce_mvm_check_itemname_cvar.SetInt(GetDefinitionBaseIndex(xDef.m_iIndex));
 			return Plugin_Handled;
 		}
 	}
@@ -580,67 +664,18 @@ public Action Timer_OpenTourLootPageToAll(Handle timer, any data)
 
 public void OpenLastTourLootPage(int client)
 {
-	QueryClientConVar(client, "cl_disablehtmlmotd", QueryConVar_Motd);
-}
-
-public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue, DataPack dPack)
-{
-	if (result == ConVarQuery_Okay)
-	{
-		if (StringToInt(cvarValue) != 0)
-		{
-			PrintToChat(client, "\x01* Please set \x03cl_disablehtmlmotd 0 \x01in your console and type \x03!loot \x01in chat to see the loot.");
-			return;
-		}
-		else
-		{
-			if (StrEqual(m_sLastTourLootHash, ""))return;
-			
-			char url[PLATFORM_MAX_PATH];
-			Format(url, sizeof(url), "/tourloot?hash=%s", m_sLastTourLootHash);
-			
-			CEconHTTP_CreateAbsoluteBackendURL(url, url, sizeof(url));
-			
-			KeyValues hConf = new KeyValues("data");
-			hConf.SetNum("type", 2);
-			hConf.SetString("msg", url);
-			hConf.SetNum("customsvr", 1);
-			ShowVGUIPanel(client, "info", hConf);
-			delete hConf;
-			m_bIsMOTDOpen[client] = true;
-		}
-	}
+	if (StrEqual(m_sLastTourLootHash, ""))return;
+	
+	char url[PLATFORM_MAX_PATH];
+	Format(url, sizeof(url), "/tourloot?hash=%s", m_sLastTourLootHash);
+	
+	CEconHTTP_CreateAbsoluteBackendURL(url, url, sizeof(url));
+	
+	TF2Motd_OpenURL(client, url, "\x01* Please set \x03cl_disablehtmlmotd 0 \x01in your console and type \x03!loot \x01in chat to see the loot.");
 }
 
 public Action cLoot(int client, int args)
 {
-	GetCmdArg(1, m_sLastTourLootHash, sizeof(m_sLastTourLootHash));
-	
 	OpenLastTourLootPage(client);
 	return Plugin_Handled;
-}
-
-public void CloseMOTD(int client)
-{
-	m_bIsMOTDOpen[client] = false;
-
-	KeyValues hConf = new KeyValues("data");
-	hConf.SetNum("type", 2);
-	hConf.SetString("msg", "about:blank");
-	hConf.SetNum("customsvr", 1);
-
-	ShowVGUIPanel(client, "info", hConf, false);
-	delete hConf;
-}
-
-public Action OnPlayerRunCmd(int client, int &buttons)
-{
-	// Since TF2 no longer allows us to check when a MOTD is closed, we'll have to detect player's movements (indicating that motd is no longer open).
-	if (m_bIsMOTDOpen[client])
-	{
-		if (buttons & (IN_ATTACK | IN_JUMP | IN_DUCK | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_ATTACK2))
-		{
-			CloseMOTD(client);
-		}
-	}
 }

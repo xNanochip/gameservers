@@ -1,10 +1,8 @@
 //============= Copyright Amper Software, All rights reserved. ============//
 //
-// Purpose: Core economy plugin, that handles schema creation and
-// communication with backend.
+// Purpose: Include file for plugins that use Creators.TF Custom Economy features.
 //
 //=========================================================================//
-
 
 //======================================//
 // Schema
@@ -45,7 +43,7 @@ native bool CEcon_GetBaseBackendURL(const char[] buffer, int size);
 // Called when client receives a new event.
 forward void CEcon_OnClientEvent(int client, const char[] name, int add, int unique_id);
 
-public SharedPlugin __pl_cecon = 
+public SharedPlugin __pl_cecon_core = 
 {
     name = "cecon_core",
     file = "cecon_core.smx",

@@ -32,8 +32,6 @@
 // to equip a custom cosmetic, we just remove one base TF2 cosmetic to free up space.
 #define MAX_COSMETICS 4
 
-bool m_bWasMessagesShown[MAXPLAYERS + 1];
-
 public Plugin myinfo = 
 {
 	name = "Creators.TF (Cosmetics)", 
@@ -64,21 +62,6 @@ enum struct CEItemDefinitionCosmeticStyle
 
 ArrayList m_hDefinitions;
 ArrayList m_hStyles;
-
-public void OnPluginStart()
-{
-	RegServerCmd("ce_cosmetic_dump", cDump);
-}
-
-public Action cDump(int args)
-{
-	int iDefs = 0;
-	int iStyles = 0;
-	if (m_hDefinitions != null)iDefs = m_hDefinitions.Length;
-	if (m_hStyles != null)iStyles = m_hStyles.Length;
-	
-	LogMessage("Loaded %d cosmetics with %d styles", iDefs, iStyles);
-}
 
 //--------------------------------------------------------------------
 // Purpose: Precaches all the items of a specific type on plugin
@@ -143,7 +126,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 			{
 				// We found a merging base TF2 cosmetic. Remove it.
 				TF2Wear_RemoveWearable(client, iEdict);
-				RemoveEdict(iEdict);
+				AcceptEntityInput(iEdict, "Kill");
 			}
 		}
 		
@@ -164,9 +147,6 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 				
 				TF2Wear_RemoveWearable(client, iEdict);
 				AcceptEntityInput(iEdict, "Kill");
-				
-				bShouldRemove = !CanGetAnotherCosmetic(client);
-				break;
 			}
 		}
 		

@@ -90,27 +90,52 @@ public void httpPlayerDonation_Callback(HTTPRequestHandle request, bool success,
 	{
 		PrintToServer("Amount of cents for %N: %d", client, centsAmount);
 	}
-		
-	char tag[32], color[32];
-
+	
 	if (centsAmount >= 200 && centsAmount < 500)
 	{
-		Format(tag, sizeof(tag), "Patreon Tier I | ");
-		Format(color, sizeof(color), "f0cca5");
+		SetClientAdminFlag(client, Admin_Custom1);
+		CCC_SetTag(client, "Patreon Tier I | ");
+		CCC_SetColor(client, CCC_TagColor, StringToInt("f0cca5", 16), false);
 	}
 	else if (centsAmount >= 500 && centsAmount < 1000)
 	{
-		Format(tag, sizeof(tag), "Patreon Tier II | ");
-		Format(color, sizeof(color), "e8af72");
+		SetClientAdminFlag(client, Admin_Custom1);
+		CCC_SetTag(client, "Patreon Tier II | ");
+		CCC_SetColor(client, CCC_TagColor, StringToInt("e8af72", 16), false);
 	}
 	else if (centsAmount >= 1000)
 	{
-		Format(tag, sizeof(tag), "Patreon Tier III | ");
-		Format(color, sizeof(color), "e38a2b");
+		SetClientAdminFlag(client, Admin_Custom1);
+		CCC_SetTag(client, "Patreon Tier III | ");
+		CCC_SetColor(client, CCC_TagColor, StringToInt("e38a2b", 16), false);
 	}
 
-	CCC_SetTag(client, tag);
-	CCC_SetColor(client, CCC_TagColor, StringToInt(color, 16), false);
+	if(centsAmount >= 200)
+	{
+        SetClientAdminFlag(client, Admin_Custom4);
+        RunAdminCacheChecks(client);
+        
+        CreateTimer(0.1, Timer_ReloadCCC);
+	}
+}
+
+public Action Timer_ReloadCCC(Handle hTimer)
+{
+	ServerCommand("sm_reloadccc");
+}
+
+
+public void SetClientAdminFlag(int client, AdminFlag flag)
+{
+	AdminId adm = GetUserAdmin(client);
+
+	if (adm == INVALID_ADMIN_ID)
+	{
+		adm = CreateAdmin();
+		SetUserAdmin(client, adm, true);
+	}
+
+	adm.SetFlag(flag, true);
 }
 
 public bool IsClientReady(int client)

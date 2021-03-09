@@ -84,3 +84,14 @@ native void TF2Wear_SetEntPropFloatOfWeapon(int weapon, PropType type, const cha
 #define TFEquip_HeavyHipPouch	(1<<30)
 #define TFEquip_SpyCoat			(1<<30)
 #define TFEquip_MedicHip		(1<<30)
+
+public SharedPlugin __pl_tf2wearables = 
+{
+    name = "tf2wearables",
+    file = "tf2wearables.smx",
+#if defined REQUIRE_PLUGIN
+    required = 1,
+#else
+    required = 0,
+#endif
+};

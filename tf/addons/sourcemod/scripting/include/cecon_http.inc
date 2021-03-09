@@ -10,6 +10,7 @@
 native void 				CEconHTTP_CreateAbsoluteBackendURL(const char[] url, char[] buffer, int size);
 native HTTPRequestHandle 	CEconHTTP_CreateBaseHTTPRequest(const char[] url, HTTPMethod method);
 
+
 public SharedPlugin __pl_cecon_http = 
 {
     name = "cecon_http",

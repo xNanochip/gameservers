@@ -17,6 +17,7 @@ int m_iTiedWeapon[2049];
 
 public APLRes AskPluginLoad2(Handle plugin, bool late, char[] error, int err_max)
 {
+	RegPluginLibrary("tf2wearables");
 	CreateNative("TF2Wear_CreateWearable", Native_CreateWearable);
 	CreateNative("TF2Wear_EquipWearable", Native_EquipWearable);
 	CreateNative("TF2Wear_RemoveWearable", Native_RemoveWearable);
@@ -30,7 +31,6 @@ public APLRes AskPluginLoad2(Handle plugin, bool late, char[] error, int err_max
 	CreateNative("TF2Wear_RemoveAllTiedWearables", Native_RemoveAllTiedWearables);
 
 	CreateNative("TF2Wear_SetEntPropFloatOfWeapon", Native_SetEntPropFloatOfWeapon);
-	RegPluginLibrary("tf2wearables");
 
 	return APLRes_Success;
 }

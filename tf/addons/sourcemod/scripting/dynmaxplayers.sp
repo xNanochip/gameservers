@@ -47,6 +47,8 @@ public void sm_maxplayers__CHANGED(ConVar convar, const char[] oldval, const cha
 //-------------------------------------------------------------------
 public void sv_visiblemaxplayers__CHANGED(ConVar convar, const char[] oldval, const char[] newval)
 {
+	if (!IsActive())return;
+	
 	LogMessage("sv_visiblemaxplayers changed to %s (Old: %s)", newval, oldval);
 	UpdateVisibleMaxPlayers();
 }
@@ -57,6 +59,9 @@ public void sv_visiblemaxplayers__CHANGED(ConVar convar, const char[] oldval, co
 //-------------------------------------------------------------------
 public bool OnClientConnect(int client, char[] msg, int length)
 {
+	// Dont do this if this is inactive.
+	if (!IsActive())return true;
+	
 	if(CanLastConnectedClientConnect())
 	{
 		return true;
@@ -103,17 +108,18 @@ public int GetRealClientCount()
 
 public void UpdateVisibleMaxPlayers()
 {
+	if (!IsActive())return;
+	
 	// Only mirror the value if we allow it to.
 	if (!sm_maxplayers_mirror_visiblemaxplayers.BoolValue)return;
 	
-	// This will should not work in MvM.
-	if (GameRules_GetProp("m_bPlayingMannVsMachine") == 1)
-	{
-		// TODO: Sometimes it may not be just 6, some plugins extend the value up to 10.
-		// Need to see what defines this value in the first place.
-		sv_visiblemaxplayers.IntValue = 6;
-	} else {
-		
-		sv_visiblemaxplayers.IntValue = sm_maxplayers.IntValue;
-	}
+	sv_visiblemaxplayers.IntValue = sm_maxplayers.IntValue;
+}
+
+public bool IsActive()
+{
+	// Don't work in MvM.
+	if (GameRules_GetProp("m_bPlayingMannVsMachine") == 1)return false;
+	
+	return true;
 }

@@ -1,7 +1,7 @@
-//============= Copyright Amper Software, All rights reserved. ============//
+//============= Copyright Amper Software 2021, All rights reserved. ============//
 //
-// Purpose: Main plugin that stores custom items information, and coordinates
-// the subplugin to handle them.
+// Purpose: Loadout, attributes, items module for Creators.TF
+// Custom Economy.
 //
 //=========================================================================//
 
@@ -115,12 +115,14 @@ ConVar ce_items_use_backend_loadout;
 // Native and Forward creation.
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
+	RegPluginLibrary("cecon_items");
+	
 	g_CEcon_ShouldItemBeBlocked 	= new GlobalForward("CEconItems_ShouldItemBeBlocked", ET_Event, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnEquipItem 			= new GlobalForward("CEconItems_OnEquipItem", ET_Event, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnItemIsEquipped 		= new GlobalForward("CEconItems_OnItemIsEquipped", ET_Ignore, Param_Cell, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnClientLoadoutUpdated 	= new GlobalForward("CEconItems_OnClientLoadoutUpdated", ET_Ignore, Param_Cell);
 	
-	g_CEcon_OnUnequipItem 			= new GlobalForward("CEconItems_OnUnequipItem", ET_Single, Param_Cell, Param_Cell, Param_Array, Param_String);
+	g_CEcon_OnUnequipItem 			= new GlobalForward("CEconItems_OnUnequipItem", ET_Single, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnItemIsUnequipped		= new GlobalForward("CEconItems_OnItemIsUnequipped", ET_Single, Param_Cell, Param_Array, Param_String);
 	
 	g_CEcon_OnCustomEntityStyleUpdated	= new GlobalForward("CEconItems_OnCustomEntityStyleUpdated", ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
@@ -183,9 +185,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
     
     // Styles
     CreateNative("CEconItems_SetCustomEntityStyle", Native_SetCustomEntityStyle);
-    
-    // Library
-    RegPluginLibrary("cecon_items");
     
     return APLRes_Success;
 }
@@ -1335,6 +1334,24 @@ public any Native_RemoveItemFromClient(Handle plugin, int numParams)
 	
 	if(bRemoved)
 	{
+		CEItemDefinition xDef;
+		if(CEconItems_GetItemDefinitionByIndex(xNeedle.m_iItemDefinitionIndex, xDef))
+		{
+			// Call subplugins that we've unequipped this item.
+			Call_StartForward(g_CEcon_OnUnequipItem);
+			Call_PushCell(client);
+			Call_PushArray(xNeedle, sizeof(CEItem));
+			Call_PushString(xDef.m_sType);
+			Call_Finish();
+			
+			// Call subplugins that we've unequipped this item.
+			Call_StartForward(g_CEcon_OnItemIsUnequipped);
+			Call_PushCell(client);
+			Call_PushArray(xNeedle, sizeof(CEItem));
+			Call_PushString(xDef.m_sType);
+			Call_Finish();
+		}
+		
 		// If removed, let's check if this item isn't in the player loadout. 
 		// It it is not, remove it, as it was not created by the econ.
 		// This is to prevent memory leaks.
@@ -1343,6 +1360,7 @@ public any Native_RemoveItemFromClient(Handle plugin, int numParams)
 		{
 			CEconItems_DestroyItem(xNeedle);
 		}
+		
 	}
 }
 

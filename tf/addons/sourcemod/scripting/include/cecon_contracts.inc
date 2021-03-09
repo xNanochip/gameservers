@@ -18,6 +18,7 @@ enum struct CEQuestDefinition
 	char m_sPostfix[5];
 
 	bool m_bBackground;
+	bool m_bDisableEventSharing;
 
 	int m_iObjectivesCount;
 	int m_Objectives[MAX_OBJECTIVES];

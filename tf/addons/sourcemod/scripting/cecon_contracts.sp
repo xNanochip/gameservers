@@ -51,6 +51,8 @@ CEQuestDefinition m_xActiveQuestStruct[MAXPLAYERS + 1];
 int m_iLastUniqueEvent[MAXPLAYERS + 1];
 bool m_bIsObjectiveMarked[MAXPLAYERS + 1][MAX_OBJECTIVES + 1];
 
+ConVar ce_quest_friend_sharing_enabled;
+
 public void OnPluginStart()
 {
 	RegServerCmd("ce_quest_dump", cDump, "");
@@ -66,6 +68,8 @@ public void OnPluginStart()
 	CreateTimer(BACKEND_QUEST_UPDATE_INTERVAL, Timer_QuestUpdateInterval, _, TIMER_REPEAT);
 
 	HookEvent("teamplay_round_win", teamplay_round_win);
+	
+	ce_quest_friend_sharing_enabled = CreateConVar("ce_quest_friend_sharing_enabled", "1", "Enabled \"Friendly Fire\" feature, that allows to share progress with friends.");
 }
 
 public Action cQuestPanel(int client, int args)
@@ -200,6 +204,7 @@ public void ParseEconomyConfig(KeyValues kv)
 				xQuest.m_iIndex = StringToInt(sSectionName);
 
 				xQuest.m_bBackground = kv.GetNum("background", 0) == 1;
+				xQuest.m_bDisableEventSharing = kv.GetNum("send_friends", 1) == 1;
 
 				if(xQuest.m_bBackground)
 				{
@@ -538,8 +543,6 @@ public void RequestClientSteamFriends_Callback(HTTPRequestHandle request, bool s
 
 public void RequestClientContractProgress(int client)
 {
-	// PrintToChatAll("RequestClientContractProgress()");
-
 	if (!IsClientReady(client))return;
 	if (m_bWaitingForProgress[client])return;
 
@@ -1066,11 +1069,8 @@ public void IterateAndTickleClientQuests(int client, int source, const char[] ev
 {
 	CEQuestDefinition xQuest;
 	if(GetClientActiveQuest(client, xQuest))
-	{
-		if(QuestIsListeningForEvent(xQuest, event))
-		{
-			TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
-		}
+	{		
+		TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
 	}
 
 	DataPack hPack = new DataPack();
@@ -1104,10 +1104,7 @@ public void RF_BackgroundQuests(any pack)
 			CEQuestDefinition xQuest;
 			if(GetQuestByIndex(iIndex, xQuest))
 			{
-				if(QuestIsListeningForEvent(xQuest, event))
-				{
-					TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
-				}
+				TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
 			}
 		}
 	}
@@ -1115,6 +1112,8 @@ public void RF_BackgroundQuests(any pack)
 
 public void SendEventToFriends(int client, const char[] event, int add, int unique)
 {
+	// If we disabled friend sharing, dont exec this function.
+	if (!ce_quest_friend_sharing_enabled.BoolValue)return;
 	if (!IsClientReady(client))return;
 
 	for (int i = 1; i <= MaxClients; i++)
@@ -1134,6 +1133,13 @@ public void SendEventToFriends(int client, const char[] event, int add, int uniq
 
 public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, int source, const char[] event, int add, int unique)
 {
+	// Optimization concern: first check the aggregated list of events,
+	// before we start calculating everything else.
+	if (!QuestIsListeningForEvent(xQuest, event))return;
+	
+	// Some quests have friendly fire disabled. If so, only only accept events from ourselves. 
+	if(xQuest.m_bDisableEventSharing && client != source) return;
+	
 	// Don't allow background quests to be processed using friendly fire.
 	if(xQuest.m_bBackground && client != source) return;
 
