@@ -15,7 +15,7 @@
 // 3 - Bread Monster
 #define HAS_BREAD_MONSTER
 // 4 - Boomerang
-#define HAS_BOOMERANG
+// #define HAS_BOOMERANG
 //-------------------------------
 
 public Plugin myinfo =
@@ -473,7 +473,7 @@ public Action Timer_SmokeGrenade_CycleSmoke(Handle timer, any grenade)
 		if(m_iSmokeEffectCycles[grenade] == iMaxCycleCount)
 		{
 			SmokeGrenade_ExplodeEffects(grenade);
-			SetEntityMoveType(grenade, MOVETYPE_CUSTOM);
+			SetEntityMoveType(grenade, MOVETYPE_PUSH);
 			SetEntityRenderMode(grenade, RENDER_NONE);
 		}
 
