@@ -42,3 +42,14 @@ native bool CEcon_GetBaseBackendURL(const char[] buffer, int size);
 
 // Called when client receives a new event.
 forward void CEcon_OnClientEvent(int client, const char[] name, int add, int unique_id);
+
+public SharedPlugin __pl_cecon_core = 
+{
+    name = "cecon_core",
+    file = "cecon.smx",
+#if defined REQUIRE_PLUGIN
+    required = 1,
+#else
+    required = 0,
+#endif
+};
