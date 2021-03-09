@@ -692,7 +692,7 @@ public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult r
 			hConf.SetNum("customsvr", 1);
 			ShowVGUIPanel(client, "info", hConf);
 			
-			PrintToChatAll("wut");
+			PrintToChatAll("%N %s", client, m_sLastTourLootHash);
 			
 			delete hConf;
 			m_bIsMOTDOpen[client] = true;
