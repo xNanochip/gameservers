@@ -68,6 +68,8 @@ public void OnPluginStart()
 	HookEvent("teamplay_round_start", teamplay_round_start);
 	
 	RegConsoleCmd("sm_loot", cLoot, "Opens the latest Tour Loot page");
+	
+	RegAdminCmd("ce_mvm_force_loot", cForceLoot, ADMFLAG_ROOT);
 }
 
 public void CEcon_OnSchemaUpdated(KeyValues hSchema)
@@ -334,6 +336,16 @@ public bool TF2MvM_IsPlayingMvM()
 }
 
 /**
+*	Purpose: 	ce_mvm_force_loot command.
+*/
+public Action cForceLoot(int client, int args)
+{
+	RequestTourLoot();
+
+	return Plugin_Handled;
+}
+
+/**
 *	Purpose: 	ce_mvm_equip_itemname command.
 */
 public Action cMvMEquipItemName(int args)
@@ -459,7 +471,7 @@ public int GetRealClientCount()
 
     for (int i = 1; i <= MaxClients; i++)
     {
-        if (IsClientInGame(i) && !IsFakeClient(i) && !GetClientTeam(i) == TF_TEAM_SPECTATOR))
+        if (IsClientInGame(i) && !IsFakeClient(i))
         {
             count++;
         }
@@ -522,7 +534,7 @@ public void SendWaveCompletionTime(int wave, int seconds)
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
-		if (!GetClientTeam(i) == TF_TEAM_SPECTATOR)continue;
+		if (GetClientTeam(i) != TF_TEAM_DEFENDERS)continue;
 		
 		char sSteamID[64];
 		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
@@ -569,8 +581,6 @@ public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool succ
 	// Getting response size.
 }
 
-#define TF_TEAM_SPECTATOR 1
-
 public void RequestTourLoot()
 {
 	char sPopFile[256];
@@ -582,7 +592,7 @@ public void RequestTourLoot()
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
-		if (!GetClientTeam(i) == TF_TEAM_SPECTATOR)continue;
+		if (GetClientTeam(i) != TF_TEAM_DEFENDERS)continue;
 		
 		char sSteamID[64];
 		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
@@ -650,7 +660,7 @@ public Action Timer_OpenTourLootPageToAll(Handle timer, any data)
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
-		if (!GetClientTeam(i) == TF_TEAM_SPECTATOR)continue;
+		if (GetClientTeam(i) != TF_TEAM_DEFENDERS)continue;
 		
 		OpenLastTourLootPage(i);
 	}
@@ -692,8 +702,6 @@ public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult r
 
 public Action cLoot(int client, int args)
 {
-	GetCmdArg(1, m_sLastTourLootHash, sizeof(m_sLastTourLootHash));
-	
 	OpenLastTourLootPage(client);
 	return Plugin_Handled;
 }
