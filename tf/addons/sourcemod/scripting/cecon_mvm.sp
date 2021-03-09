@@ -534,7 +534,6 @@ public void SendWaveCompletionTime(int wave, int seconds)
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
-		if (GetClientTeam(i) != TF_TEAM_DEFENDERS)continue;
 		
 		char sSteamID[64];
 		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
@@ -592,7 +591,6 @@ public void RequestTourLoot()
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
-		if (GetClientTeam(i) != TF_TEAM_DEFENDERS)continue;
 		
 		char sSteamID[64];
 		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
@@ -660,7 +658,6 @@ public Action Timer_OpenTourLootPageToAll(Handle timer, any data)
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
-		if (GetClientTeam(i) != TF_TEAM_DEFENDERS)continue;
 		
 		OpenLastTourLootPage(i);
 	}
