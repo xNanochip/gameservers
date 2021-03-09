@@ -7,6 +7,8 @@
 
 bool m_bIsMOTDOpen[MAXPLAYERS + 1];
 
+#define DISABLEDHTTP_MESSAGE "\x01* To use this command, you'll need to set \x03cl_disablehtmlmotd 0 \x01in your console."
+
 public Plugin myinfo =
 {
 	name = "[TF2] MotD Module",
@@ -54,7 +56,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public Action cOpenWebsite(int client, int args)
 {
-	OpenURL(client, "https://creators.tf");
+ 	TF2Motd_OpenURL(client, "https://creators.tf", DISABLEDHTTP_MESSAGE);
 	return Plugin_Handled;
 }
 
@@ -82,7 +84,7 @@ public Action cOpenLoadout(int client, int args)
 		case TFClass_Spy:Format(url, sizeof(url), "%sspy", url);
 	}
 
-	OpenURL(client, url);
+ 	TF2Motd_OpenURL(client, url, DISABLEDHTTP_MESSAGE);
 	return Plugin_Handled;
 }
 
@@ -91,7 +93,7 @@ public Action cOpenLoadout(int client, int args)
 */
 public Action cOpenServers(int client, int args)
 {
-	OpenURL(client, "https://creators.tf/servers");
+ 	TF2Motd_OpenURL(client, "https://creators.tf/servers", DISABLEDHTTP_MESSAGE);
 	return Plugin_Handled;
 }
 
@@ -100,7 +102,7 @@ public Action cOpenServers(int client, int args)
 */
 public Action cOpenContracker(int client, int args)
 {
-	OpenURL(client, "https://creators.tf/contracker");
+ 	TF2Motd_OpenURL(client, "https://creators.tf/contracker", DISABLEDHTTP_MESSAGE);
 	return Plugin_Handled;
 }
 
@@ -109,7 +111,7 @@ public Action cOpenContracker(int client, int args)
 */
 public Action cOpenCampaign(int client, int args)
 {
-	OpenURL(client, "https://creators.tf/campaign");
+ 	TF2Motd_OpenURL(client, "https://creators.tf/campaign", DISABLEDHTTP_MESSAGE);
 	return Plugin_Handled;
 }
 
@@ -123,7 +125,7 @@ public Action cOpenInventory(int client, int args)
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
 	Format(url, sizeof(url), "https://creators.tf/profiles/%s/inventory", sSteamID);
 
-	OpenURL(client, url);
+ 	TF2Motd_OpenURL(client, url, DISABLEDHTTP_MESSAGE);
 	return Plugin_Handled;
 }
 
@@ -137,7 +139,7 @@ public Action cOpenProfile(int client, int args)
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
 	Format(url, sizeof(url), "http://creators.tf/profiles/%s", sSteamID);
 
-	OpenURL(client, url);
+ 	TF2Motd_OpenURL(client, url, DISABLEDHTTP_MESSAGE);
 	return Plugin_Handled;
 }
 
