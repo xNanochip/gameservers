@@ -1,6 +1,6 @@
 "VertexLitGeneric"
 {
-	"$basetexture" "models\creatorstf\mvmblimpboss\tank_eye_blue"
+	"$basetexture" "models\bots\boss_bot\tank_eye_blue.vtf"
 
 	"$selfillum" 1
 }

@@ -1,6 +1,6 @@
 Item
 {
-	name 			"Brick 2"
+	name 			"Brick"
 	type 			"weapon"
 	item_class 		"tf_weapon_throwable"
 	item_logname	"brick"
@@ -9,15 +9,6 @@ Item
 	
 	attributes
 	{
-		Attribute
-		{
-			name 	"set throwable type"
-			value 	1
-		}
-		Attribute
-		{
-			name 	"allowed in medieval mode"
-			value 	1
-		}
+		"set throwable type" 1
 	}
 }
