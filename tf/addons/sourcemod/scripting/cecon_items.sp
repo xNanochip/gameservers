@@ -115,6 +115,8 @@ ConVar ce_items_use_backend_loadout;
 // Native and Forward creation.
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
+	RegPluginLibrary("cecon_items");
+	
 	g_CEcon_ShouldItemBeBlocked 	= new GlobalForward("CEconItems_ShouldItemBeBlocked", ET_Event, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnEquipItem 			= new GlobalForward("CEconItems_OnEquipItem", ET_Event, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnItemIsEquipped 		= new GlobalForward("CEconItems_OnItemIsEquipped", ET_Ignore, Param_Cell, Param_Cell, Param_Array, Param_String);
