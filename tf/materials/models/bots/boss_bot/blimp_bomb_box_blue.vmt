@@ -1,6 +1,6 @@
 "VertexlitGeneric"
 {
-	"$baseTexture" "models\creatorstf\mvmblimpboss\blimp_bomb_box_blue.vtf"
+	"$baseTexture" "models\bots\boss_bot\blimp_bomb_box_blue.vtf"
 
 	"$phong" "1"
 	"$phongexponent" "25"
