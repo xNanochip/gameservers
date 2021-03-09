@@ -3,17 +3,17 @@
 
 #include <tf2>
 #include <tf2_stocks>
-#include <morecolors>
+#include <tf2motd>
 
 bool m_bIsMOTDOpen[MAXPLAYERS + 1];
 
 public Plugin myinfo =
 {
-	name = "Creators.TF MotD Module",
-	author = "Creators.TF Team",
-	description = "Creators.TF MotD",
-	version = "1.03",
-	url = "https://creators.tf"
+	name = "[TF2] MotD Module",
+	author = "Moonly Days",
+	description = "Handles custom MOTDs and automatically closes them.",
+	version = "1.00",
+	url = "https://moonlydays.com"
 }
 
 public void OnPluginStart()
@@ -41,7 +41,15 @@ public void OnPluginStart()
 
 	RegConsoleCmd("sm_profile", cOpenProfile, "Opens your Creators.TF Profile");
 	RegConsoleCmd("sm_p", cOpenProfile, "Opens your Creators.TF Profile");
+}
 
+// Native and Forward creation.
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	RegPluginLibrary("tf2motd");
+	
+	CreateNative("TF2Motd_OpenURL", Native_OpenURL);
+	return APLRes_Success;
 }
 
 public Action cOpenWebsite(int client, int args)
@@ -142,32 +150,6 @@ public Action OpenURL(int client, const char[] url)
 	return Plugin_Handled;
 }
 
-public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue, DataPack dPack)
-{
-	if (result == ConVarQuery_Okay)
-	{
-		if (StringToInt(cvarValue) != 0)
-		{
-			PrintToChat(client, "\x01* To use this command, you'll need to set \x03cl_disablehtmlmotd 0 \x01in your console.");
-			return;
-		}
-		else
-		{
-			ResetPack(dPack);
-			char url[PLATFORM_MAX_PATH];
-			ReadPackString(dPack, url, sizeof(url));
-			KeyValues hConf = new KeyValues("data");
-			hConf.SetNum("type", 2);
-			hConf.SetString("msg", url);
-			hConf.SetNum("customsvr", 1);
-			ShowVGUIPanel(client, "info", hConf);
-			delete hConf;
-			m_bIsMOTDOpen[client] = true;
-		}
-	}
-	delete dPack;
-}
-
 public void OnClientDisconnect(int client)
 {
 	m_bIsMOTDOpen[client] = false;
@@ -194,6 +176,59 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 		if (buttons & (IN_ATTACK | IN_JUMP | IN_DUCK | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_ATTACK2))
 		{
 			CloseMOTD(client);
+		}
+	}
+}
+
+public any Native_OpenURL(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	char sURL[PLATFORM_MAX_PATH];
+	GetNativeString(2, sURL, sizeof(sURL));
+	
+	char sMessage[PLATFORM_MAX_PATH];
+	GetNativeString(3, sMessage, sizeof(sMessage));
+	
+	DataPack dPack = new DataPack();
+	WritePackString(dPack, sURL);
+	WritePackString(dPack, sMessage);
+	
+	QueryClientConVar(client, "cl_disablehtmlmotd", QueryConVar_Motd, dPack);
+}
+	
+public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue, DataPack dPack)
+{
+	ResetPack(dPack);
+	
+	char sURL[PLATFORM_MAX_PATH];
+	ReadPackString(dPack, sURL, sizeof(sURL));
+	
+	char sMessage[PLATFORM_MAX_PATH];
+	ReadPackString(dPack, sMessage, sizeof(sMessage));
+	
+	delete dPack;
+	
+	
+	if (result == ConVarQuery_Okay)
+	{
+		if (StringToInt(cvarValue) != 0)
+		{
+			if(!StrEqual(sMessage, ""))
+			{
+				PrintToChat(client, sMessage);
+			}
+			return;
+		}
+		else
+		{
+			KeyValues hConf = new KeyValues("data");
+			hConf.SetNum("type", 2);
+			hConf.SetString("msg", sURL);
+			hConf.SetNum("customsvr", 1);
+			ShowVGUIPanel(client, "info", hConf);
+			delete hConf;
+			
+			m_bIsMOTDOpen[client] = true;
 		}
 	}
 }
