@@ -12,6 +12,8 @@ tf/addons/sourcemod/configs/items.cfg
 tf/addons/*/scripting/**/*.smx
 tf/addons/*/plugins/*.smx
 
+!*.res
+
 tf/addons/*/logs
 !tf/addons/*/logs/chat/.gitkeep
 !tf/addons/*/logs/stac/.gitkeep
