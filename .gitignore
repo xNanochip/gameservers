@@ -177,7 +177,9 @@ tf/maps/pl_wutville_event.bsp
 !tf/sound
 
 !tf/scripts
-tf/scripts/*
+tf/scripts/items/*
+tf/scripts/protodefs/*
+!tf/scripts/items/mvm_*.txt
 !tf/scripts/population
 
 !tf/cfg
