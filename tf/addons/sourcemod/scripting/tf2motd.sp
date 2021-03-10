@@ -230,7 +230,12 @@ public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult r
 			ShowVGUIPanel(client, "info", hConf);
 			delete hConf;
 			
-			m_bIsMOTDOpen[client] = true;
+			CreateTimer(0.5, Timer_MarkAsMotdOpen, client);
 		}
 	}
+}
+
+public Action Timer_MarkAsMotdOpen(Handle timer, any client)
+{	
+	m_bIsMOTDOpen[client] = true;
 }
