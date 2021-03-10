@@ -1,3 +1,10 @@
+//============= Copyright Amper Software, All rights reserved. ============//
+//
+// Purpose: Main plugin that stores custom items information, and coordinates
+// the subplugin to handle them.
+//
+//=========================================================================//
+
 enum struct CEItem
 {
 	int m_iIndex;

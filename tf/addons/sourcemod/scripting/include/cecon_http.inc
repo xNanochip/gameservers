@@ -1,6 +1,9 @@
-//======================================//
-// Coordinator
-//======================================//
+//============= Copyright Amper Software, All rights reserved. ============//
+//
+// Purpose: SteamTools HTTP wrapper, that eases the process of making
+// requests to the backend.
+//
+//=========================================================================//
 
 
 // Creates a full absolute url to the backend.

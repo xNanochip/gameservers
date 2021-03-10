@@ -46,7 +46,7 @@ forward void CEcon_OnClientEvent(int client, const char[] name, int add, int uni
 public SharedPlugin __pl_cecon_core = 
 {
     name = "cecon_core",
-    file = "cecon.smx",
+    file = "cecon_core.smx",
 #if defined REQUIRE_PLUGIN
     required = 1,
 #else

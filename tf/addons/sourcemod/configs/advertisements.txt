@@ -19,7 +19,7 @@
 {
     "1"
     {
-        "chat"                  "{green}Think someone's breaking the rules? Use {lightgreen}/call{white}!"
+        "chat"                  "{green}Think someone's breaking the rules? Use {lightgreen}/call"
     }
     "2"
     {
@@ -31,7 +31,7 @@
     }
     "4"
     {
-        "chat"                  "{green}Seeing {red}red ERRORs{green}? Type {lightgreen}/ctfhats{green} in chat to disable custom cosmetics, or download our asset pack at {lightgreen}creators.tf/assetpack{green}!"
+        "chat"                  "{green}Seeing {red}red ERRORS{green}? Type {lightgreen}/ctfhats{green} in chat to disable custom cosmetics, or download our asset pack at {lightgreen}creators.tf/assetpack{green}!"
     }
     "5"
     {
@@ -39,7 +39,7 @@
     }
     "6"
     {
-        "chat"                  "{gold}Tired of fighting? Join the {yellow}Creators.TF Silly Servers{gold}! More information on our Discord: {lightgreen}creators.tf/discord"
+        "chat"                  "{gold}Tired of fighting? Join the {yellow}Creators.TF Silly Servers{gold}! More information on our Discord: {yellow}creators.tf/discord"
     }
     "7"
     {
@@ -55,6 +55,6 @@
     }
     "10"
     {
-        "chat"                  "{green}Wanna play on another server? Type {lightgreen}!servers {green}, or visit {lightgreen}https://creators.tf/servers {green}to see a list of all Creators.TF servers."
+        "chat"                  "{green}Wanna play on another server? Type {lightgreen}!servers{green}, or visit {lightgreen}https://creators.tf/servers {green}to see the list of all Creators.TF servers."
     }
 }

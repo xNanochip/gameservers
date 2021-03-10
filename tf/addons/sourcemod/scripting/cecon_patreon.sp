@@ -17,15 +17,8 @@ ConVar ce_patreon_debug;
 
 public void OnPluginStart()
 {
-	AddCommandListener(Cmd_ReloadCCC, "sm_reloadccc");
-	
 	ce_patreon_debug = CreateConVar("ce_patreon_debug", "0");
 
-	LoadAllClientsPledges();
-}
-
-public Action Cmd_ReloadCCC(int client, const char[] command, int argc)
-{
 	LoadAllClientsPledges();
 }
 
@@ -34,7 +27,7 @@ public void LoadAllClientsPledges()
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
-		
+
 		LoadClientPledge(i);
 	}
 }
@@ -42,14 +35,14 @@ public void LoadAllClientsPledges()
 public void OnClientPostAdminCheck(int client)
 {
 	if (!IsClientReady(client))return;
-	
+
 	LoadClientPledge(client);
 }
 
 public void LoadClientPledge(int client)
 {
 	LogMessage("LoadClientPledge(%d)", client);
-	
+
 	char sSteamID[PLATFORM_MAX_PATH];
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
 
@@ -79,18 +72,18 @@ public void httpPlayerDonation_Callback(HTTPRequestHandle request, bool success,
 	// Getting actual response content body.
 	Steam_GetHTTPResponseBodyData(request, content, size);
 	Steam_ReleaseHTTPRequest(request);
-	
+
 	KeyValues kv = new KeyValues("Response");
 	kv.ImportFromString(content);
-	
+
 	int centsAmount = kv.GetNum("amount");
 	delete kv;
-	
+
 	if(ce_patreon_debug.BoolValue)
 	{
 		PrintToServer("Amount of cents for %N: %d", client, centsAmount);
 	}
-	
+
 	if (centsAmount >= 200 && centsAmount < 500)
 	{
 		SetClientAdminFlag(client, Admin_Custom1);
@@ -114,7 +107,7 @@ public void httpPlayerDonation_Callback(HTTPRequestHandle request, bool success,
 	{
         SetClientAdminFlag(client, Admin_Custom4);
         RunAdminCacheChecks(client);
-        
+
         CreateTimer(0.1, Timer_ReloadCCC);
 	}
 }

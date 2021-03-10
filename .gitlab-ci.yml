@@ -42,11 +42,11 @@ stages:
                         git clean -d -f -x tf/cfg/
 
                         # UNCOMMENT THESE LINES TO FORCE CLEANUP OF EXTRA BULLSHIT THAT MIGHT BE ON SERVERS
-                        # echo "git clean"
-                        # git clean -d -f -x tf/addons/sourcemod/plugins/
-                        # git clean -d -f -x tf/addons/sourcemod/plugins/external
-                        # git clean -d -f -x tf/addons/sourcemod/data/
-                        # git clean -d -f -x tf/addons/sourcemod/gamedata/
+                        #echo "git clean"
+                        #git clean -d -f -x tf/addons/sourcemod/plugins/
+                        #git clean -d -f -x tf/addons/sourcemod/plugins/external
+                        #git clean -d -f -x tf/addons/sourcemod/data/
+                        #git clean -d -f -x tf/addons/sourcemod/gamedata/
                         # THIS WILL DELETE ALL SOURCEMOD LOGS, INCLUDING STAC AND CHAT LOGS
                         # git clean -d -f -x tf/addons/sourcemod/logs/
 
@@ -166,3 +166,7 @@ deploy-fastdl:
 
     tags:
     - fastdl
+    only:
+    - master
+    - staging
+    - mvm
