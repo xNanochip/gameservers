@@ -1096,8 +1096,8 @@ Action Timer_checkAuth(Handle timer, int userid)
     int Cl = GetClientOfUserId(userid);
     if (isSteamAlive() && !IsClientAuthorized(Cl))
     {
-        StacLog("[StAC] Kicking %N for not being authorized with Steam.", Cl);
-        KickClient(Cl, "[StAC] Not authorized with Steam Network, please reconnect");
+        // StacLog("[StAC] Kicking %N for not being authorized with Steam.", Cl);
+        // KickClient(Cl, "[StAC] Not authorized with Steam Network, please reconnect");
     }
 }
 
