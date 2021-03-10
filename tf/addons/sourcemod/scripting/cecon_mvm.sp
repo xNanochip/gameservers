@@ -26,6 +26,7 @@ public Plugin myinfo =
 
 ConVar ce_mvm_check_itemname_cvar;
 ConVar ce_mvm_show_game_time;
+ConVar ce_mvm_restart_on_changelevel_from_mvm;
 
 int m_iCurrentWave;
 int m_iLastPlayerCount;
@@ -69,6 +70,34 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_loot", cLoot, "Opens the latest Tour Loot page");
 	
 	RegAdminCmd("ce_mvm_force_loot", cForceLoot, ADMFLAG_ROOT);
+	
+	// SigSegv extension workaround.
+	AddCommandListener(cChangelevel, "changelevel");
+	ce_mvm_restart_on_changelevel_from_mvm = CreateConVar("ce_mvm_restart_on_changelevel_from_mvm", "0");
+}
+
+public Action cChangelevel(int client, const char[] command, int args)
+{
+	// Don't do anything if we're not playing MvM.
+	if (!TF2MvM_IsPlayingMvM())return Plugin_Continue;
+	
+	// We can opt out of this feature.
+	if (!ce_mvm_restart_on_changelevel_from_mvm.BoolValue)return Plugin_Continue;
+	
+	char sNeedle[PLATFORM_MAX_PATH];
+	GetCmdArg(1, sNeedle, sizeof(sNeedle));
+	
+	if(FindMap(sNeedle, sNeedle, sizeof(sNeedle)) != FindMap_NotFound)
+	{	
+		if(StrContains(sNeedle, "mvm_") != 0)
+		{
+			// Stop the server.
+			ServerCommand("quit");
+			return Plugin_Handled;
+		}
+	}
+	
+	return Plugin_Handled;
 }
 
 public void CEcon_OnSchemaUpdated(KeyValues hSchema)
@@ -325,8 +354,14 @@ public void OnMapStart()
 {
 	if(TF2MvM_IsPlayingMvM())
 	{
+		LoadSigsegvExtension();
 		RequestFrame(RF_RecalculatePlayerCount);
 	}
+}
+
+public void LoadSigsegvExtension()
+{
+	ServerCommand("sm exts load sigsegv.ext.2.tf2");
 }
 
 public bool TF2MvM_IsPlayingMvM()
