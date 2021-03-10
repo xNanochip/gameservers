@@ -20,9 +20,6 @@
 			"map"		"mvm_autumnull_rc2"
 			"popfile" 	"mvm_autumnull_rc2_adv_dynamic_disaster"
 		}
-			"map" 		"mvm_autumnull_rc2"
-			"popfile" 	"mvm_autumnull_rc2_adv_dynamic_disaster"
-		}
 		"4"
 		{
 			"map" 		"mvm_autumnull_rc2"
