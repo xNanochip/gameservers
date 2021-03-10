@@ -1,3 +1,9 @@
+//---------------------------------------------------------------//
+// Creators.TF Mann vs. Machine Mapcycle
+//---------------------------------------------------------------//
+// This file defines what maps are allowed to be switched to in
+// Mann vs. Machine.
+//---------------------------------------------------------------//
 mvm_akure_rc1
 mvm_autumnull_rc2
 mvm_boogge_rc3c
