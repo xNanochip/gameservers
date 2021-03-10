@@ -3,7 +3,7 @@
 	"categories" "1"
 	"1"
 	{
-		"count" "29"
+		"count" "30"
 
 		"1"
 		{
@@ -149,6 +149,11 @@
 		{
 			"map" 		"mvm_yiresa_rc5a"
 			"popfile" 	"mvm_yiresa_rc5a_adv_mesa_malware"
+		}
+		"30"
+		{
+			"map" 		"mvm_hoovydam_b8"
+			"popfile" 	"mvm_hoovydam_b8_adv_blast_perfect"
 		}
 	}
 }
