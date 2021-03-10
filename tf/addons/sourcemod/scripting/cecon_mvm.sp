@@ -97,7 +97,7 @@ public Action cChangelevel(int client, const char[] command, int args)
 		}
 	}
 	
-	return Plugin_Handled;
+	return Plugin_Continue;
 }
 
 public void CEcon_OnSchemaUpdated(KeyValues hSchema)
