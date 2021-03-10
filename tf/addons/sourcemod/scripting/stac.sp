@@ -142,7 +142,7 @@ bool demonameInBanReason    = true;
 bool logtofile              = true;
 
 // bool that gets set by steamtools/steamworks forwards - used to kick clients that dont auth
-bool isSteamAlive           = false;
+int isSteamAlive            = -1;
 
 // Log file
 File StacLogFile;
@@ -1088,7 +1088,7 @@ Action CheckAuthOn(Handle timer, int userid)
     if (IsValidClient(Cl))
     {
         // don't bother checking if already authed and DEFINITELY don't check if steam is down or there's no way to do so thru an ext
-        if (!IsClientAuthorized(Cl) && isSteamAlive)
+        if (!IsClientAuthorized(Cl) && (isSteamAlive == 1))
         {
             PrintToImportant("Client %N isn't authorized and Steam is online. Checking in 5 seconds and kicking them if both are still true!", Cl);
             CreateTimer(5.0, Timer_checkAuth, userid);
@@ -1099,7 +1099,7 @@ Action CheckAuthOn(Handle timer, int userid)
 Action Timer_checkAuth(Handle timer, int userid)
 {
     int Cl = GetClientOfUserId(userid);
-    if (!IsClientAuthorized(Cl) && isSteamAlive)
+    if (!IsClientAuthorized(Cl) && (isSteamAlive == 1))
     {
         StacLog("[StAC] Kicking %N for not being authorized with Steam.", Cl);
         KickClient(Cl, "[StAC] Not authorized with Steam Network, please reconnect");
@@ -2154,19 +2154,11 @@ public void BanUser(int userid, char[] reason, char[] pubreason)
         if
         (
             (
-                // are steamworks and or steamtools installed?
-                (
-                    STEAMTOOLS || STEAMWORKS
-                )
-                &&
-                // is steam offline?
-                (
-                    !isSteamAlive
-                )
+                isSteamAlive == 1
             )
             ||
             (
-                // OR is the client definitely not authorized?
+                // or is the client definitely not authorized?
                 !IsClientAuthorized(Cl)
             )
         )
@@ -2727,13 +2719,13 @@ bool isWeaponHitscan(char weaponname[256])
 
 public void Steam_SteamServersConnected()
 {
-    isSteamAlive = true;
+    isSteamAlive = 1;
     StacLog("[Steamtools] Steam connected.");
 }
 public void Steam_SteamServersDisconnected()
 {
+    isSteamAlive = 0;
     StacLog("[Steamtools] Steam disconnected.");
-    isSteamAlive = false;
 }
 
 public void SteamWorks_SteamServersConnected()
@@ -2741,7 +2733,7 @@ public void SteamWorks_SteamServersConnected()
     StacLog("[SteamWorks] Steam connected.");
     if (!STEAMTOOLS)
     {
-        isSteamAlive = true;
+        isSteamAlive = 1;
     }
 }
 
@@ -2750,7 +2742,7 @@ public void SteamWorks_SteamServersDisconnected()
     StacLog("[SteamWorks] Steam disconnected.");
     if (!STEAMTOOLS)
     {
-        isSteamAlive = true;
+        isSteamAlive = 0;
     }
 }
 
