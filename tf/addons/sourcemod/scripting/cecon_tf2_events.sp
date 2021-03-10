@@ -185,7 +185,7 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 				}
 
 				// Uber
-				if (IsUbercharged(attacker))
+				if (TF2_IsUbercharged(attacker))
 				{
 					CEcon_SendEventToClientFromGameEvent(attacker, "TF_KILL_WHILE_UBERCHARGED", 1, hEvent);
 				}
@@ -265,7 +265,7 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 				}
 
 				// Uber
-				if (IsUbercharged(assister))
+				if (TF2_IsUbercharged(assister))
 				{
 					CEcon_SendEventToClientFromGameEvent(assister, "TF_ASSIST_WHILE_UBERCHARGED", 1, hEvent);
 				}
@@ -579,7 +579,7 @@ public Action object_destroyed(Handle hEvent, const char[] szName, bool bDontBro
 
 	if(IsClientValid(assister))
 	{
-		if(IsUbercharged(assister))
+		if(TF2_IsUbercharged(assister))
 		{
 			switch(objecttype)
 			{
@@ -784,7 +784,7 @@ public Action payload_pushed(Handle hEvent, const char[] szName, bool bDontBroad
 	return Plugin_Continue;
 }
 
-public bool IsUbercharged(int client)
+public bool TF2_IsUbercharged(int client)
 {
 	return 	TF2_IsPlayerInCondition(client, TFCond_Ubercharged) ||
 			TF2_IsPlayerInCondition(client, TFCond_Kritzkrieged) ||

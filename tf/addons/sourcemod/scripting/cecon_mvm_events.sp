@@ -254,8 +254,8 @@ public void WidowmakerShootUpdate(int client)
 
 public Action player_changeclass(Event hEvent, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(hEvent.GetInt("userid"));
-	int class = hEvent.GetInt("class");
+	// int client = GetClientOfUserId(hEvent.GetInt("userid"));
+	// int class = hEvent.GetInt("class");
 
 	return Plugin_Continue;
 }
@@ -350,10 +350,10 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 	int attacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"));
 	int assister = GetClientOfUserId(GetEventInt(hEvent, "assister"));
 
-	int weapon_def = GetEventInt(hEvent, "weapon_def_index");
-	int death_flags = GetEventInt(hEvent, "death_flags");
+	// int weapon_def = GetEventInt(hEvent, "weapon_def_index");
+	// int death_flags = GetEventInt(hEvent, "death_flags");
 	int customkill = GetEventInt(hEvent, "customkill");
-	int kill_streak_victim = GetEventInt(hEvent, "kill_streak_victim");
+	// int kill_streak_victim = GetEventInt(hEvent, "kill_streak_victim");
 	int crit_type = GetEventInt(hEvent, "crit_type");
 	
 	char weapon_name[64];
@@ -712,7 +712,7 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 
 public void OnWaveEnd(Handle hEvent)
 {
-	int resource = GetPlayerResourceEntity();
+	// int resource = GetPlayerResourceEntity();
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		player_data[i].tank_damage_wave = 0;
@@ -836,7 +836,7 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 int resist_client_last;
 int resist_tick_last;
 
-int player_hurt_client_last;
+// int player_hurt_client_last;
 int player_hurt_attacker_last;
 int player_hurt_tick_last;
 int player_hurt_madmilk_last;
@@ -850,9 +850,9 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 	bool crit = GetEventBool(hEvent, "crit");
 	bool minicrit = GetEventBool(hEvent, "minicrit");
 	int bonuseffect = GetEventInt(hEvent, "bonuseffect");
-	int weaponid = GetEventInt(hEvent, "weaponid");
+	// int weaponid = GetEventInt(hEvent, "weaponid");
 
-	player_hurt_client_last = client;
+	// player_hurt_client_last = client;
 	player_hurt_attacker_last = attacker;
 	player_hurt_tick_last = GetGameTickCount();
 
@@ -1188,7 +1188,7 @@ public Action revive_player_complete(Handle hEvent, const char[] szName, bool bD
 
 public Action medigun_shield_blocked_damage(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
+	// int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
 	int damage = GetEventInt(hEvent, "damage");
 
 	CEcon_SendEventToClientFromGameEvent(damage, "TF_MVM_BLOCK_DAMAGE_SHIELD", 1, hEvent);
@@ -1281,10 +1281,9 @@ public Action mvm_sentrybuster_detonate(Handle hEvent, const char[] szName, bool
 
 public Action player_carryobject(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-
 	int builder = GetClientOfUserId(GetEventInt(hEvent, "userid"));
 	int type = GetEventInt(hEvent, "object");
-	int entity = GetEventInt(hEvent, "index");
+	// int entity = GetEventInt(hEvent, "index");
 	if (type == 2) //OBJ_SENTRYGUN
 	{
 		player_data[builder].buster_save_sentry_ranged = GetAttributeValue(GetEntPropEnt(builder, Prop_Data, "m_hActiveWeapon"), "building_teleporting_pickup", 0.0) != 0.0;
@@ -1456,7 +1455,7 @@ public Action building_healed(Handle hEvent, const char[] szName, bool bDontBroa
 {
 	int healer = GetEventInt(hEvent, "healer");
 	int amount = GetEventInt(hEvent, "amount");
-	int building = GetEventInt(hEvent, "building");
+	// int building = GetEventInt(hEvent, "building");
 
 	CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_REPAIR", amount, hEvent);
 }
