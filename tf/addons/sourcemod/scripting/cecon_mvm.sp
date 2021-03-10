@@ -91,6 +91,7 @@ public Action cChangelevel(int client, const char[] command, int args)
 	{	
 		if(StrContains(sNeedle, "mvm_") != 0)
 		{
+			LogMessage("We're switching back to pub maps, restart the server...");
 			// Stop the server.
 			ServerCommand("quit");
 			return Plugin_Handled;
