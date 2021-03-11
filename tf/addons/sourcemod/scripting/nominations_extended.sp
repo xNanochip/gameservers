@@ -249,7 +249,7 @@ public Action:Command_Nominate(client, args)
 		GetArrayString(g_MapList, i, sNeedle, sizeof(sNeedle));
 		if(StrContains(sNeedle, displayName) != -1)
 		{
-			strcopy(mapname, sizeof(mapname), displayName);
+			strcopy(mapname, sizeof(mapname), sNeedle);
 			bFound = true;
 		}
 	}
