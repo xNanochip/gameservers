@@ -255,7 +255,7 @@ public Action:Command_Nominate(client, args)
 	}
 	if(!bFound)
 	{
-		CReplyToCommand(client, "%t", "Map was not found", mapname);
+		CReplyToCommand(client, "%t", "Map was not found", displayName);
 		return Plugin_Handled;
 	}
 	//----------------------------------------------------------//
