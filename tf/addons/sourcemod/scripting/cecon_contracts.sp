@@ -68,7 +68,7 @@ public void OnPluginStart()
 	CreateTimer(BACKEND_QUEST_UPDATE_INTERVAL, Timer_QuestUpdateInterval, _, TIMER_REPEAT);
 
 	HookEvent("teamplay_round_win", teamplay_round_win);
-	
+
 	ce_quest_friend_sharing_enabled = CreateConVar("ce_quest_friend_sharing_enabled", "1", "Enabled \"Friendly Fire\" feature, that allows to share progress with friends.");
 }
 
@@ -232,7 +232,6 @@ public void ParseEconomyConfig(KeyValues kv)
 					if(kv.GotoFirstSubKey())
 					{
 						do {
-
 							int iObjectiveLocalIndex = xQuest.m_iObjectivesCount;
 							int iObjectiveWorldIndex = m_hObjectiveDefinitions.Length;
 							xQuest.m_Objectives[iObjectiveLocalIndex] = iObjectiveWorldIndex;
@@ -282,10 +281,10 @@ public void ParseEconomyConfig(KeyValues kv)
 										xHook.m_flSubtractIn = kv.GetFloat("subtract_in", 0.0);
 
 										kv.GetString("event", xHook.m_sEvent, sizeof(xHook.m_sEvent));
-										
+
 										char sEvent[64];
 										Format(sEvent, sizeof(sEvent), "%s;", xHook.m_sEvent);
-										
+
 										if(StrContains(xQuest.m_sAggregatedEvents, sEvent) == -1)
 										{
 											Format(xQuest.m_sAggregatedEvents, sizeof(xQuest.m_sAggregatedEvents), "%s%s", xQuest.m_sAggregatedEvents, sEvent);
@@ -903,6 +902,7 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 				CEItemDefinition xDef;
 				if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, xDef))
 				{
+	
 					// Comparing expected name with what definition has.
 					if (StrEqual(xDef.m_sName, xQuest.m_sRestrictedToItemName))
 					{
@@ -1045,6 +1045,7 @@ public bool HasClientCompletedObjective(int client, CEQuestObjectiveDefinition x
 {
 	if (xObjective.m_iLimit <= 0)return false;
 
+
 	CEQuestDefinition xQuest;
 	if(GetQuestByObjective(xObjective, xQuest))
 	{
@@ -1059,7 +1060,7 @@ public bool HasClientCompletedObjective(int client, CEQuestObjectiveDefinition x
 public void CEcon_OnClientEvent(int client, const char[] event, int add, int unique)
 {
 	if (!IsClientReady(client))return;
-	
+
 	IterateAndTickleClientQuests(client, client, event, add, unique);
 
 	SendEventToFriends(client, event, add, unique);
@@ -1069,7 +1070,7 @@ public void IterateAndTickleClientQuests(int client, int source, const char[] ev
 {
 	CEQuestDefinition xQuest;
 	if(GetClientActiveQuest(client, xQuest))
-	{		
+	{
 		TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
 	}
 
@@ -1136,10 +1137,10 @@ public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, in
 	// Optimization concern: first check the aggregated list of events,
 	// before we start calculating everything else.
 	if (!QuestIsListeningForEvent(xQuest, event))return;
-	
-	// Some quests have friendly fire disabled. If so, only only accept events from ourselves. 
+
+	// Some quests have friendly fire disabled. If so, only only accept events from ourselves.
 	if(xQuest.m_bDisableEventSharing && client != source) return;
-	
+
 	// Don't allow background quests to be processed using friendly fire.
 	if(xQuest.m_bBackground && client != source) return;
 
@@ -1160,12 +1161,14 @@ public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, in
 	}
 
 	m_iLastUniqueEvent[client] = unique;
-
-	// m_flSubtractIn
-
+	
 	for (int i = 0; i < xQuest.m_iObjectivesCount; i++)
 	{
-		if (m_bIsObjectiveMarked[client][i])continue;
+		// Only works with background
+		if(!xQuest.m_bBackground)
+		{
+			if (m_bIsObjectiveMarked[client][i])continue;
+		}
 
 		CEQuestObjectiveDefinition xObjective;
 		if(GetQuestObjectiveByIndex(xQuest, i, xObjective))
@@ -1183,13 +1186,10 @@ public void TickleClientQuestObjectives(int client, CEQuestDefinition xQuest, in
 					if (StrEqual(xHook.m_sEvent, ""))continue;
 					if (!StrEqual(xHook.m_sEvent, event))continue;
 
-					if(client == source)
-					{
-						// Send progress to friends.
-					}
-
 					m_bIsObjectiveMarked[client][i] = true;
+					
 					if (HasClientCompletedObjective(client, xObjective))continue;
+					
 
 					DataPack pack = new DataPack();
 					pack.WriteCell(client);
@@ -1652,6 +1652,6 @@ public bool QuestIsListeningForEvent(CEQuestDefinition xQuest, const char[] even
 {
 	char sEvent[64];
 	Format(sEvent, sizeof(sEvent), "%s;", event);
-	
+
 	return StrContains(xQuest.m_sAggregatedEvents, sEvent, false) != -1;
 }
