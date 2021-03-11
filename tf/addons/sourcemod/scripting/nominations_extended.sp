@@ -230,11 +230,35 @@ public Action:Command_Nominate(client, args)
 
 	new status;
 
+	// This breaks with event maps.
+	/*
 	if (FindMap(displayName, mapname, sizeof(mapname)) == FindMap_NotFound)
 	{
 		CReplyToCommand(client, "%t", "Map was not found", mapname);
 		return Plugin_Handled;
 	}
+	*/
+	
+	//----------------------------------------------------------//
+	// This is a fix to the problem above,
+	//----------------------------------------------------------//
+	bool bFound = false;
+	char sNeedle[PLATFORM_MAX_PATH];
+	for (int i = 0; i < GetArraySize(g_MapList); i++)
+	{
+		GetArrayString(g_MapList, i, sNeedle, sizeof(sNeedle));
+		if(StrContains(sNeedle, displayName) != -1)
+		{
+			strcopy(mapname, sizeof(mapname), displayName);
+			bFound = true;
+		}
+	}
+	if(!bFound)
+	{
+		CReplyToCommand(client, "%t", "Map was not found", mapname);
+		return Plugin_Handled;
+	}
+	//----------------------------------------------------------//
 
 	if (!GetTrieValue(g_mapTrie, mapname, status))
 	{
