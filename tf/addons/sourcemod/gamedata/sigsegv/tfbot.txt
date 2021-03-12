@@ -375,7 +375,11 @@
 					type "sym"
 					sym  "_ZNK6CTFBot27IsExplosiveProjectileWeaponEP13CTFWeaponBase"
 				}
-
+				"CTFBot::UpdateOnRemove"
+				{
+					type "sym"
+					sym  "_ZN6CTFBot14UpdateOnRemoveEv"
+				}
 				
 			}
 		}
