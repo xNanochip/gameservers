@@ -20,12 +20,6 @@ public void OnPluginStart()
 
 public Action cGive(int client, int args)
 {
-	if(client == 0)
-	{
-		ReplyToCommand(client, "[SM] Doesn't work in the console.");
-		return Plugin_Handled;
-	}
-
 	if(args < 2)
 	{
 		ReplyToCommand(client, "[SM] Invalid syntax: ce_giveitem <item name> <@target>");
