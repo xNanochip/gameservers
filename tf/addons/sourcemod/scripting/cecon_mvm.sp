@@ -349,12 +349,12 @@ public void OnMvMGameStart()
 public void OnMvMGameEnd()
 {
 	// Everyone left the game.
+	LoadSigsegvExtension();
 	ResetStats();
 }
 
 public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
 {
-	LogMessage("OnLevelInit");
 	LoadSigsegvExtension();
 }
 
