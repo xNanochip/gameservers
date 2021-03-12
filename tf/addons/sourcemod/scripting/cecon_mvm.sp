@@ -1,4 +1,4 @@
-#include <steamtools> 
+#include <steamtools>
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -43,7 +43,7 @@ bool m_bJustFinishedTheMission;
 char m_sLastTourLootHash[128];
 
 
-enum struct CEItemBaseIndex 
+enum struct CEItemBaseIndex
 {
 	int m_iItemDefinitionIndex;
 	int m_iBaseItemIndex;
@@ -63,14 +63,14 @@ public void OnPluginStart()
 	HookEvent("mvm_wave_complete", mvm_wave_complete);
 	HookEvent("mvm_wave_failed", mvm_wave_failed);
 	HookEvent("mvm_mission_complete", mvm_mission_complete);
-	
+
 	HookEvent("teamplay_round_win", teamplay_round_win);
 	HookEvent("teamplay_round_start", teamplay_round_start);
-	
+
 	RegConsoleCmd("sm_loot", cLoot, "Opens the latest Tour Loot page");
-	
+
 	RegAdminCmd("ce_mvm_force_loot", cForceLoot, ADMFLAG_ROOT);
-	
+
 	// SigSegv extension workaround.
 	AddCommandListener(cChangelevel, "changelevel");
 	ce_mvm_restart_on_changelevel_from_mvm = CreateConVar("ce_mvm_restart_on_changelevel_from_mvm", "0");
@@ -80,15 +80,15 @@ public Action cChangelevel(int client, const char[] command, int args)
 {
 	// Don't do anything if we're not playing MvM.
 	if (!TF2MvM_IsPlayingMvM())return Plugin_Continue;
-	
+
 	// We can opt out of this feature.
 	if (!ce_mvm_restart_on_changelevel_from_mvm.BoolValue)return Plugin_Continue;
-	
+
 	char sNeedle[PLATFORM_MAX_PATH];
 	GetCmdArg(1, sNeedle, sizeof(sNeedle));
-	
+
 	if(FindMap(sNeedle, sNeedle, sizeof(sNeedle)) != FindMap_NotFound)
-	{	
+	{
 		if(StrContains(sNeedle, "mvm_") != 0)
 		{
 			LogMessage("We're switching back to pub maps, restart the server...");
@@ -97,7 +97,7 @@ public Action cChangelevel(int client, const char[] command, int args)
 			return Plugin_Handled;
 		}
 	}
-	
+
 	return Plugin_Continue;
 }
 
@@ -127,12 +127,12 @@ public void ParseEconomySchema(KeyValues hSchema)
 				{
 					char sName[11];
 					hSchema.GetSectionName(sName, sizeof(sName));
-					
+
 					CEItemBaseIndex xRecord;
-					
+
 					xRecord.m_iItemDefinitionIndex = StringToInt(sName);
 					xRecord.m_iBaseItemIndex = iBaseIndex;
-					
+
 					m_hItemIndexes.PushArray(xRecord);
 				}
 
@@ -142,13 +142,13 @@ public void ParseEconomySchema(KeyValues hSchema)
 
     // Make sure we do that every time
 	hSchema.Rewind();
-	
+
 }
 
 public int GetDefinitionBaseIndex(int defid)
 {
 	if (m_hItemIndexes == null)return -1;
-	
+
 	for (int i = 0; i < m_hItemIndexes.Length; i++)
 	{
 		CEItemBaseIndex xRecord;
@@ -156,14 +156,14 @@ public int GetDefinitionBaseIndex(int defid)
 		if (xRecord.m_iItemDefinitionIndex != defid)continue;
 		return xRecord.m_iBaseItemIndex;
 	}
-	
+
 	return -1;
 }
 
 public void PrintGameStats()
 {
 	if (!ce_mvm_show_game_time.BoolValue)return;
-	
+
 	char sTimer[32];
 	int iMissionTime = GetTotalMissionTime();
 	TimeToStopwatchTimer(iMissionTime, sTimer, sizeof(sTimer));
@@ -290,9 +290,9 @@ public void ResetStats()
 	m_iWaveTime = 0;
 	m_iTotalTime = 0;
 	ClearWaveStartTime();
-	
+
 	m_bJustFinishedTheMission = false;
-	
+
 	strcopy(m_sLastTourLootHash, sizeof(m_sLastTourLootHash), "");
 }
 
@@ -320,9 +320,9 @@ public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBr
 {
 	// int iAdvanced = GetEventInt(hEvent, "advanced");
 	// PrintToChatAll("mvm_wave_complete (advanced %d)", iAdvanced);
-	
+
 	OnDefendersWon();
-	
+
 	int iWave = m_iCurrentWave;
 	int iTime = GetTotalWaveTime();
 	SendWaveCompletionTime(iWave, iTime);
@@ -351,11 +351,15 @@ public void OnMvMGameEnd()
 	ResetStats();
 }
 
+public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
+{
+	LoadSigsegvExtension();
+}
+
 public void OnMapStart()
 {
 	if(TF2MvM_IsPlayingMvM())
 	{
-		LoadSigsegvExtension();
 		RequestFrame(RF_RecalculatePlayerCount);
 	}
 }
@@ -435,10 +439,10 @@ public Action cMvMSetEntityAttribute(int args)
 	char sName[128], sEntity[11], sValue[11];
 	GetCmdArg(1, sEntity, sizeof(sEntity));
 	int iEntity = StringToInt(sEntity);
-	
+
 	GetCmdArg(2, sName, sizeof(sName));
 	GetCmdArg(3, sValue, sizeof(sValue));
-	
+
 	if (!IsValidEntity(iEntity))return Plugin_Handled;
 
 	CEconItems_SetEntityAttributeString(iEntity, sName, sValue);
@@ -544,17 +548,17 @@ public void TimeToStopwatchTimer(int time, char[] buffer, int size)
 public void GetPopFileName(char[] buffer, int length)
 {
 	char filename[256];
-	
+
 	int ObjectiveEntity = FindEntityByClassname(-1, "tf_objective_resource");
 	GetEntPropString(ObjectiveEntity, Prop_Send, "m_iszMvMPopfileName", filename, sizeof(filename));
-	
+
 	char explode[6][256];
 	int count = ExplodeString(filename, "/", explode, sizeof(explode), sizeof(explode[]));
-	
+
 	char name[256];
 	strcopy(name, sizeof(name), explode[count - 1]);
 	ReplaceString(name, sizeof(name), ".pop", "");
-	
+
 	strcopy(buffer, length, name);
 }
 
@@ -562,36 +566,36 @@ public void SendWaveCompletionTime(int wave, int seconds)
 {
 	char sPopFile[256];
 	GetPopFileName(sPopFile, sizeof(sPopFile));
-	
+
 	HTTPRequestHandle hRequest = CEconHTTP_CreateBaseHTTPRequest("/api/IEconomySDK/UserMvMWaveProgress", HTTPMethod_POST);
-	
+
 	int iCount = 0;
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
-		
+
 		char sSteamID[64];
 		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-		
+
 		char sKey[32];
 		Format(sKey, sizeof(sKey), "steamids[%d]", iCount);
 		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sSteamID);
-		
+
 		iCount++;
 	}
-	
+
 	// Setting wave number.
 	char sValue[64];
 	IntToString(wave, sValue, sizeof(sValue));
 	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "wave", sValue);
-	
+
 	// Setting time number.
 	IntToString(seconds, sValue, sizeof(sValue));
 	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "time", sValue);
-	
+
 	// Setting mission name.
 	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "mission", sPopFile);
-	
+
 	Steam_SendHTTPRequest(hRequest, SendWaveCompletionTime_Callback);
 }
 
@@ -600,12 +604,12 @@ public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool succ
 	// Getting response size.
 	int size = Steam_GetHTTPResponseBodySize(request);
 	char[] content = new char[size + 1];
-	
+
 	Steam_GetHTTPResponseBodyData(request, content, size);
-	
+
 	Steam_ReleaseHTTPRequest(request);
 	PrintToServer(content);
-	
+
 	if(m_bJustFinishedTheMission)
 	{
 		RequestTourLoot();
@@ -619,21 +623,21 @@ public void RequestTourLoot()
 {
 	char sPopFile[256];
 	GetPopFileName(sPopFile, sizeof(sPopFile));
-	
+
 	HTTPRequestHandle hRequest = CEconHTTP_CreateBaseHTTPRequest("/api/IEconomySDK/UserMvMTourLoot", HTTPMethod_POST);
-	
+
 	int iCount = 0;
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
-		
+
 		char sSteamID[64];
 		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-		
+
 		char sKey[32];
 		Format(sKey, sizeof(sKey), "steamids[%d]", iCount);
 		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sSteamID);
-		
+
 		Format(sKey, sizeof(sKey), "classes[%d]", iCount);
 		char sClass[32];
 		switch(TF2_GetPlayerClass(i))
@@ -649,10 +653,10 @@ public void RequestTourLoot()
 			case TFClass_Spy:strcopy(sClass, sizeof(sClass), "spy");
 		}
 		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sClass);
-		
+
 		iCount++;
 	}
-	
+
 	// Setting mission name.
 	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "mission", sPopFile);
 	Steam_SendHTTPRequest(hRequest, RequestTourLoot_Callback);
@@ -661,7 +665,7 @@ public void RequestTourLoot()
 public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
 {
 	PrintToChatAll("RequestTourLoot_Callback %d", code);
-	
+
 	// If request was not succesful, return.
 	if (!success)return;
 	if (code != HTTPStatusCode_OK)return;
@@ -669,10 +673,10 @@ public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HT
 	// Getting response size.
 	int size = Steam_GetHTTPResponseBodySize(request);
 	char[] content = new char[size + 1];
-	
+
 	Steam_GetHTTPResponseBodyData(request, content, size);
 	Steam_ReleaseHTTPRequest(request);
-	
+
 	PrintToServer(content);
 
 	KeyValues Response = new KeyValues("Response");
@@ -684,7 +688,7 @@ public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HT
 	if (!Response.ImportFromString(content))return;
 	Response.GetString("hash", m_sLastTourLootHash, sizeof(m_sLastTourLootHash));
 	delete Response;
-	
+
 	CreateTimer(2.0, Timer_OpenTourLootPageToAll);
 }
 
@@ -693,7 +697,7 @@ public Action Timer_OpenTourLootPageToAll(Handle timer, any data)
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
-		
+
 		OpenLastTourLootPage(i);
 	}
 }
@@ -701,12 +705,12 @@ public Action Timer_OpenTourLootPageToAll(Handle timer, any data)
 public void OpenLastTourLootPage(int client)
 {
 	if (StrEqual(m_sLastTourLootHash, ""))return;
-	
+
 	char url[PLATFORM_MAX_PATH];
 	Format(url, sizeof(url), "/tourloot?hash=%s", m_sLastTourLootHash);
-	
+
 	CEconHTTP_CreateAbsoluteBackendURL(url, url, sizeof(url));
-	
+
 	TF2Motd_OpenURL(client, url, "\x01* Please set \x03cl_disablehtmlmotd 0 \x01in your console and type \x03!loot \x01in chat to see the loot.");
 }
 
