@@ -353,6 +353,7 @@ public void OnMvMGameEnd()
 
 public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
 {
+	LogMessage("OnLevelInit");
 	LoadSigsegvExtension();
 }
 
