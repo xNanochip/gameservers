@@ -386,7 +386,13 @@ public Action cForceLoot(int client, int args)
 */
 public Action cForceCompleteWave(int client, int args)
 {
-	SendWaveCompletionTime(m_iCurrentWave, 1);
+	char sArg[11];
+	GetCmdArg(1, sArg, sizeof(sArg));
+	
+	int iWave = StringToInt(sArg);
+	SendWaveCompletionTime(iWave, 1);
+	
+	PrintToChatAll("%d %d", iWave, 1);
 
 	return Plugin_Handled;
 }
