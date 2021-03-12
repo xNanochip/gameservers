@@ -456,6 +456,12 @@
 					type "sym"
 					sym  "_ZN23CTFBotEscortSquadLeaderD2Ev"
 				}
+				"CTFBotDeliverFlag::OnEnd"
+				{
+					type "sym"
+					sym  "_ZN17CTFBotDeliverFlag5OnEndEP6CTFBotP6ActionIS0_E"
+				}
+				
 			}
 		}
 	}
