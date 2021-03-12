@@ -4,6 +4,7 @@
 #pragma newdecls required
 
 #include <sdktools>
+#include <sdkhooks>
 #include <cecon>
 #include <cecon_items>
 #include <cecon_http>
