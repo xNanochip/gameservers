@@ -102,7 +102,7 @@
 		}
 		"20"
 		{
-			"map" 		"mvm_seabed_b6_adv"
+			"map" 		"mvm_seabed_b6"
 			"popfile" 	"mvm_seabed_b6_adv_ocean_commotion"
 		}
 		"21"
