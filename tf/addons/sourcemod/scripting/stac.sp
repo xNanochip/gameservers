@@ -23,6 +23,8 @@
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
+#pragma newdecls required
+
 public Plugin myinfo =
 {
     name             =  "Steph's AntiCheat (StAC)",
@@ -138,6 +140,9 @@ float maxRandCheckVal       = 300.0;
 bool demonameInBanReason    = true;
 // log to file?
 bool logtofile              = true;
+
+// bool that gets set by steamtools/steamworks forwards - used to kick clients that dont auth
+int isSteamAlive            = -1;
 
 // Log file
 File StacLogFile;
@@ -1083,7 +1088,7 @@ Action CheckAuthOn(Handle timer, int userid)
     if (IsValidClient(Cl))
     {
         // don't bother checking if already authed and DEFINITELY don't check if steam is down or there's no way to do so thru an ext
-        if (!IsClientAuthorized(Cl) && isSteamAlive())
+        if (!IsClientAuthorized(Cl) && (isSteamAlive == 1))
         {
             PrintToImportant("Client %N isn't authorized and Steam is online. Checking in 5 seconds and kicking them if both are still true!", Cl);
             CreateTimer(5.0, Timer_checkAuth, userid);
@@ -1094,7 +1099,7 @@ Action CheckAuthOn(Handle timer, int userid)
 Action Timer_checkAuth(Handle timer, int userid)
 {
     int Cl = GetClientOfUserId(userid);
-    if (isSteamAlive() && !IsClientAuthorized(Cl))
+    if (!IsClientAuthorized(Cl) && (isSteamAlive == 1))
     {
         StacLog("[StAC] Kicking %N for not being authorized with Steam.", Cl);
         KickClient(Cl, "[StAC] Not authorized with Steam Network, please reconnect");
@@ -2047,7 +2052,7 @@ public Action OnClientCommand(int Cl, int args)
     return Plugin_Continue;
 }
 
-public OnClientSettingsChanged(Cl)
+public void OnClientSettingsChanged(int Cl)
 {
     // check for "too many client settings changes" cuz nullcore and lmaobox both spam this
     // although that might be a bug with them interacting with mastercomfig ?
@@ -2149,19 +2154,11 @@ public void BanUser(int userid, char[] reason, char[] pubreason)
         if
         (
             (
-                // are steamworks and or steamtools installed?
-                (
-                    STEAMTOOLS || STEAMWORKS
-                )
-                &&
-                // is steam offline?
-                (
-                    !isSteamAlive()
-                )
+                isSteamAlive == 1
             )
             ||
             (
-                // OR is the client definitely not authorized?
+                // or is the client definitely not authorized?
                 !IsClientAuthorized(Cl)
             )
         )
@@ -2414,7 +2411,7 @@ void QueryEverythingAllClients()
 ////////////
 
 // Open log file for StAC
-OpenStacLog()
+void OpenStacLog()
 {
     // current date for log file (gets updated on map change to not spread out maps across files on date changes)
     char curDate[32];
@@ -2446,7 +2443,7 @@ OpenStacLog()
 }
 
 // Close log file for StAC
-CloseStacLog()
+void CloseStacLog()
 {
     // delete StacLogFile;
     if (StacLogFile != null)
@@ -2580,7 +2577,7 @@ void PrintToImportant(const char[] format, any ...)
 }
 
 // print to all server/sourcemod admin's consoles
-PrintToConsoleAllAdmins(const char[] format, any ...)
+void PrintToConsoleAllAdmins(const char[] format, any ...)
 {
     char buffer[254];
 
@@ -2674,7 +2671,7 @@ int TF2_GetNumWearables(int client)
     return GetEntData(client, offset);
 }
 
-any abs(x)
+any abs(any x)
 {
    return x > 0 ? x : -x;
 }
@@ -2719,25 +2716,37 @@ bool isWeaponHitscan(char weaponname[256])
     return false;
 }
 
-bool isSteamAlive()
+
+public void Steam_SteamServersConnected()
 {
-    // favor steamtools
-    if (STEAMTOOLS)
+    isSteamAlive = 1;
+    StacLog("[Steamtools] Steam connected.");
+}
+public void Steam_SteamServersDisconnected()
+{
+    isSteamAlive = 0;
+    StacLog("[Steamtools] Steam disconnected.");
+}
+
+public void SteamWorks_SteamServersConnected()
+{
+    StacLog("[SteamWorks] Steam connected.");
+    if (!STEAMTOOLS)
     {
-        return Steam_IsConnected();
-    }
-    else if (STEAMWORKS)
-    {
-        return SteamWorks_IsConnected();
-    }
-    else
-    {
-        StacLog("This server does not have Steamtools or SteamWorks installed. Unable to check Steam network connection status, assuming FALSE!");
-        return false;
+        isSteamAlive = 1;
     }
 }
 
-IsHalloweenCond(TFCond condition)
+public void SteamWorks_SteamServersDisconnected()
+{
+    StacLog("[SteamWorks] Steam disconnected.");
+    if (!STEAMTOOLS)
+    {
+        isSteamAlive = 0;
+    }
+}
+
+bool IsHalloweenCond(TFCond condition)
 {
     if
     (
