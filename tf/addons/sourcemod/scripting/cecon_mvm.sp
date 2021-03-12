@@ -349,7 +349,6 @@ public void OnMvMGameStart()
 public void OnMvMGameEnd()
 {
 	// Everyone left the game.
-	LoadSigsegvExtension();
 	ResetStats();
 }
 
@@ -362,6 +361,7 @@ public void OnMapStart()
 {
 	if(TF2MvM_IsPlayingMvM())
 	{
+		LoadSigsegvExtension();
 		RequestFrame(RF_RecalculatePlayerCount);
 	}
 }
