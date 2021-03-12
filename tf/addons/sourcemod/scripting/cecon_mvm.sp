@@ -70,6 +70,7 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_loot", cLoot, "Opens the latest Tour Loot page");
 	
 	RegAdminCmd("ce_mvm_force_loot", cForceLoot, ADMFLAG_ROOT);
+	RegAdminCmd("ce_mvm_force_complete_wave", cForceCompleteWave, ADMFLAG_ROOT);
 	
 	// SigSegv extension workaround.
 	AddCommandListener(cChangelevel, "changelevel");
@@ -376,6 +377,16 @@ public bool TF2MvM_IsPlayingMvM()
 public Action cForceLoot(int client, int args)
 {
 	RequestTourLoot();
+
+	return Plugin_Handled;
+}
+
+/**
+*	Purpose: 	ce_mvm_force_loot command.
+*/
+public Action cForceCompleteWave(int client, int args)
+{
+	SendWaveCompletionTime(m_iCurrentWave, 1);
 
 	return Plugin_Handled;
 }
