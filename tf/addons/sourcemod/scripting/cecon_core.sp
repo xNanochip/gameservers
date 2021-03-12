@@ -220,7 +220,7 @@ public Action player_spawn(Handle hEvent, const char[] szName, bool bDontBroadca
 //-------------------------------------------------------------------
 // Purpose: Fired when SteamTools is late loaded.
 //-------------------------------------------------------------------
-public int Steam_FullyLoaded()
+public void Steam_FullyLoaded()
 {
 	Steam_OnReady();
 }
