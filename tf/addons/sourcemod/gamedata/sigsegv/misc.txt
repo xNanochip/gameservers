@@ -4029,6 +4029,11 @@
 					type "sym"
 					sym  "_ZN19CTFPointWeaponMimicD2Ev"
 				}
+				"TE_MetalSparks"
+				{
+					type "sym"
+					sym  "_Z14TE_MetalSparksR16IRecipientFilterfPK6VectorS3_"
+				}
 				
 			}
 			
