@@ -1,28 +1,15 @@
-mvm_akure_rc1
-mvm_goldpit_rc1
-mvm_seabed_b6
-mvm_winterbridge_rc6
-mvm_autumnull_rc2
-mvm_dusk_rc7
-mvm_hanami_rc1
-mvm_oxidize_rc18
-mvm_sharp_rc6a
-mvm_wizardry
-mvm_estate_rc1
-mvm_hideout_b3
-mvm_production_rc6
-mvm_silentsky_rc4
-mvm_yiresa_rc5a
-mvm_boogge_rc3c
-mvm_hoovydam_b8
-mvm_radar_b10
-mvm_swirl_rc1
-mvm_cliffside_b6
-mvm_kelly_rc1b
-mvm_tensai_rc3
-mvm_giza_b7
-mvm_rustvalley_rc3a
-mvm_transmission_rc7a
+//---------------------------------------------------------------//
+// Creators.TF Matchmaking Mapcycle
+//---------------------------------------------------------------//
+// This file defines what maps matchmaking can rotate to populate
+// empty servers.
+//---------------------------------------------------------------//
+//
+//
+//---------------------------
+// PUB MAPS
+//---------------------------
+background01
 cp_fulgur_rc2a
 cp_glassworks_rc6a
 cp_gorge
@@ -63,4 +50,28 @@ pl_thundermountain
 pl_upward
 pl_vigil_rc7
 plr_bananabay
-
+//---------------------------
+// MVM MAPS
+//---------------------------
+mvm_akure_rc1
+mvm_autumnull_rc2
+mvm_boogge_rc3c
+mvm_cliffside_b6
+mvm_dusk_rc7
+mvm_estate_rc1
+mvm_giza_b7
+mvm_goldpit_rc1
+mvm_hanami_rc1
+mvm_hideout_b3
+mvm_kelly_rc1b
+mvm_hoovydam_b8
+mvm_production_rc6
+mvm_rustvalley_rc3a
+mvm_seabed_b6
+mvm_sharp_rc6a
+mvm_silentsky_rc4
+mvm_swirl_rc1
+mvm_tensai_rc3
+mvm_transmission_rc7a
+mvm_winterbridge_rc6
+mvm_yiresa_rc5a

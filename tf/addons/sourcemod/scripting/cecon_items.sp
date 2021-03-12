@@ -98,6 +98,9 @@ CEItem m_hEconItem[MAX_ENTITY_LIMIT + 1];
 // ArrayLists
 ArrayList m_ItemDefinitons = null;
 
+// Dictionaries (Optimization concerns)
+StringMap m_IndexedDictionary;
+
 // Loadouts
 ArrayList m_PartialReapplicationTypes = null;
 
@@ -373,6 +376,7 @@ public void PrecacheItemsFromSchema(KeyValues hSchema)
 
     // Initiate the array.
 	m_ItemDefinitons = new ArrayList(sizeof(CEItemDefinition));
+	m_IndexedDictionary = new StringMap();
 	
 	if (hSchema == null)return;
 
@@ -402,6 +406,11 @@ public void PrecacheItemsFromSchema(KeyValues hSchema)
 					hDef.m_Attributes = CEconItems_AttributesKeyValuesToArrayList(hSchema);
 					hSchema.GoBack();
 				}
+				
+				int iNumericIndex = m_ItemDefinitons.Length;
+				
+				m_IndexedDictionary.SetValue(sSectionName, iNumericIndex, true);
+				m_IndexedDictionary.SetValue(hDef.m_sName, iNumericIndex, true);
 
                 // Push this struct to the cache storage.
 				m_ItemDefinitons.PushArray(hDef);
@@ -493,20 +502,25 @@ public any Native_GetItemDefinitionByIndex(Handle plugin, int numParams)
 {
 	int index = GetNativeCell(1);
 	
+	if (m_IndexedDictionary == null)return false;
 	if (m_ItemDefinitons == null)return false;
-
-	for (int i = 0; i < m_ItemDefinitons.Length; i++)
+	
+	char sIndex[11];
+	IntToString(index, sIndex, sizeof(sIndex));
+	
+	int iIndex;
+	if(m_IndexedDictionary.GetValue(sIndex, iIndex))
 	{
-		CEItemDefinition buffer;
-		m_ItemDefinitons.GetArray(i, buffer);
-
-		if(buffer.m_iIndex == index)
+		if(iIndex <= m_ItemDefinitons.Length)
 		{
+			CEItemDefinition buffer;
+			m_ItemDefinitons.GetArray(iIndex, buffer);
+	
 			SetNativeArray(2, buffer, sizeof(CEItemDefinition));
 			return true;
 		}
-	}
 
+	}
 	return false;
 }
 
@@ -519,20 +533,22 @@ public any Native_GetItemDefinitionByName(Handle plugin, int numParams)
 	GetNativeString(1, sName, sizeof(sName));
 	if (StrEqual(sName, ""))return false;
 	
+	if (m_IndexedDictionary == null)return false;
 	if (m_ItemDefinitons == null)return false;
-
-	for (int i = 0; i < m_ItemDefinitons.Length; i++)
+	
+	int iIndex;
+	if(m_IndexedDictionary.GetValue(sName, iIndex))
 	{
-		CEItemDefinition buffer;
-		m_ItemDefinitons.GetArray(i, buffer);
-
-		if(StrEqual(buffer.m_sName, sName))
+		if(iIndex <= m_ItemDefinitons.Length)
 		{
+			CEItemDefinition buffer;
+			m_ItemDefinitons.GetArray(iIndex, buffer);
+	
 			SetNativeArray(2, buffer, sizeof(CEItemDefinition));
 			return true;
 		}
-	}
 
+	}
 	return false;
 }
 
@@ -556,6 +572,8 @@ public void FlushItemDefinitionCache()
 
     // Clean the array itself.
 	delete m_ItemDefinitons;
+	
+	delete m_IndexedDictionary;
 }
 
 //---------------------------------------------------------------------

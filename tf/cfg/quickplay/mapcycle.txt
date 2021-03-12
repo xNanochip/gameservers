@@ -1,3 +1,8 @@
+//---------------------------------------------------------------//
+// Creators.TF Generic Mapcycle
+//---------------------------------------------------------------//
+// This file defines what maps are allowed in pubs.
+//---------------------------------------------------------------//
 cp_fulgur_rc2a
 cp_glassworks_rc6a
 cp_gorge
@@ -38,4 +43,3 @@ pl_thundermountain
 pl_upward
 pl_vigil_rc7
 plr_bananabay
-

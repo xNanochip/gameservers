@@ -6,6 +6,7 @@
 #include <tf2motd>
 
 bool m_bIsMOTDOpen[MAXPLAYERS + 1];
+bool m_bWaitForNoInput[MAXPLAYERS + 1];
 
 #define DISABLEDHTTP_MESSAGE "\x01* To use this command, you'll need to set \x03cl_disablehtmlmotd 0 \x01in your console."
 
@@ -172,12 +173,24 @@ public void CloseMOTD(int client)
 
 public Action OnPlayerRunCmd(int client, int &buttons)
 {
-	// Since TF2 no longer allows us to check when a MOTD is closed, we'll have to detect player's movements (indicating that motd is no longer open).
-	if (m_bIsMOTDOpen[client])
+	// We're waiting for client to unpress input keys.
+	if(m_bWaitForNoInput[client])
 	{
-		if (buttons & (IN_ATTACK | IN_JUMP | IN_DUCK | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_ATTACK2))
+		if(!(buttons & (IN_ATTACK | IN_JUMP | IN_DUCK | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_ATTACK2)))
 		{
-			CloseMOTD(client);
+			m_bWaitForNoInput[client] = false;
+		}
+		
+	} else {
+		// They unpressed all the keys.
+		
+		// Since TF2 no longer allows us to check when a MOTD is closed, we'll have to detect player's movements (indicating that motd is no longer open).
+		if (m_bIsMOTDOpen[client])
+		{
+			if (buttons & (IN_ATTACK | IN_JUMP | IN_DUCK | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_ATTACK2))
+			{
+				CloseMOTD(client);
+			}
 		}
 	}
 }
@@ -230,6 +243,7 @@ public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult r
 			ShowVGUIPanel(client, "info", hConf);
 			delete hConf;
 			
+			m_bWaitForNoInput[client] = true;
 			m_bIsMOTDOpen[client] = true;
 		}
 	}

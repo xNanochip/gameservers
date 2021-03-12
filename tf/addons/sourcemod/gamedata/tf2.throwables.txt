@@ -9,6 +9,16 @@
 				"linux"		"268"
 				"windows"	"267"
 			}
+			"CTFProjectile_Arrow::InitArrow"
+			{
+				"linux"		"240"
+				"windows"	"239"
+			}
+			"CBaseCombatCharacter::GiveAmmo"
+			{
+				"linux"		"256"
+				"windows"	"255"
+			}
 		}
 	}
 }

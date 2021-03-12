@@ -743,6 +743,11 @@
 					type "sym"
 					sym  "_ZN11CBaseEntity13CreateNoSpawnEPKcRK6VectorRK6QAnglePS_"
 				}
+				"CBaseEntity::Create"
+				{
+					type "sym"
+					sym  "_ZN11CBaseEntity6CreateEPKcRK6VectorRK6QAnglePS_"
+				}
 				
 				"WeaponID_IsSniperRifle"
 				{
@@ -3994,6 +3999,36 @@
 					type "sym"
 					sym  "_ZN21CTFBaseBossLocomotion11FaceTowardsERK6Vector"
 				}
+				"CAttributeManager::OnAttributeValuesChanged"
+				{
+					type "sym"
+					sym  "_ZN17CAttributeManager24OnAttributeValuesChangedEv"
+				}
+				"CAttributeContainer::OnAttributeValuesChanged"
+				{
+					type "sym"
+					sym  "_ZN19CAttributeContainer24OnAttributeValuesChangedEv"
+				}
+				"CAttributeContainerPlayer::OnAttributeValuesChanged"
+				{
+					type "sym"
+					sym  "_ZN25CAttributeContainerPlayer24OnAttributeValuesChangedEv"
+				}
+				"CTFPlayerShared::OnAddBalloonHead"
+				{
+					type "sym"
+					sym  "_ZN15CTFPlayerShared16OnAddBalloonHeadEv"
+				}
+				"CTFPointWeaponMimic::~CTFPointWeaponMimic [D0]"
+				{
+					type "sym"
+					sym  "_ZN19CTFPointWeaponMimicD0Ev"
+				}
+				"CTFPointWeaponMimic::~CTFPointWeaponMimic [D2]"
+				{
+					type "sym"
+					sym  "_ZN19CTFPointWeaponMimicD2Ev"
+				}
 				
 			}
 			
@@ -4042,6 +4077,21 @@
 				
 				"CBasePlayer::SetVCollisionState" "_ZN11CBasePlayer18SetVCollisionStateERK6VectorS2_i"
 				
+				"CEyeballBossIdle::OnStart" "_ZN16CEyeballBossIdle7OnStartEP12CEyeballBossP6ActionIS0_E
+				"CEyeballBossIdle::OnStart" "_ZN16CEyeballBossIdle7OnStartEP12CEyeballBossP6ActionIS0_E"
+				"CEyeballBossIdle::Update"  "_ZN16CEyeballBossIdle6UpdateEP12CEyeballBossf"
+
+				"CEyeballBossDead::Update" "_ZN16CEyeballBossDead6UpdateEP12CEyeballBossf"
+
+				"CZombie::Spawn"      "_ZN7CZombie5SpawnEv"
+				"CZombie::SpawnAtPos" "_ZN7CZombie10SpawnAtPosERK6VectorfiP11CBaseEntityNS_14SkeletonType_tE"
+
+				"IZombieAutoList::m_IZombieAutoListAutoList" "_ZN15IZombieAutoList25m_IZombieAutoListAutoListE"
+
+				"CZombieBehavior::OnKilled" "_ZN15CZombieBehavior8OnKilledEP7CZombieRK15CTakeDamageInfo"
+
+				"CTeamplayRoundBasedRules::SetTeamRespawnWaveTime" "_ZN24CTeamplayRoundBasedRules22SetTeamRespawnWaveTimeEif"
+
 				"CAttributeList::GetAttributeByID"       "_ZNK14CAttributeList16GetAttributeByIDEi"
 				"CAttributeList::GetAttributeByName"     "_ZNK14CAttributeList18GetAttributeByNameEPKc"
 				"CAttributeList::IterateAttributes"      "_ZNK14CAttributeList17IterateAttributesEP26IEconItemAttributeIterator"
@@ -4068,6 +4118,8 @@
 				
 				"InventoryManager"   "_Z16InventoryManagerv"
 				"TFInventoryManager" "_Z18TFInventoryManagerv"
+
+				
 			}
 		}
 	}
