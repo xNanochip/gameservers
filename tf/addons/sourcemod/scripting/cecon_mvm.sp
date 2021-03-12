@@ -58,7 +58,7 @@ public void OnPluginStart()
 	RegServerCmd("ce_mvm_get_itemdef_id", cMvMGetItemDefID, "");
 	RegServerCmd("ce_mvm_set_attribute", cMvMSetEntityAttribute, "");
 	ce_mvm_check_itemname_cvar = CreateConVar("ce_mvm_check_itemname_cvar", "-1", "", FCVAR_PROTECTED);
-	ce_mvm_show_game_time = CreateConVar("ce_mvm_show_game_time", "0", "Enables game time summary to be shown in chat");
+	ce_mvm_show_game_time = CreateConVar("ce_mvm_show_game_time", "1", "Enables game time summary to be shown in chat");
 
 	HookEvent("mvm_begin_wave", mvm_begin_wave);
 	HookEvent("mvm_wave_complete", mvm_wave_complete);
