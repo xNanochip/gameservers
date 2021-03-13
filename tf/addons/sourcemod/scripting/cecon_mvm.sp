@@ -62,7 +62,7 @@ public void OnPluginStart()
 	RegServerCmd("ce_mvm_set_attribute", cMvMSetEntityAttribute, "");
 	ce_mvm_check_itemname_cvar = CreateConVar("ce_mvm_check_itemname_cvar", "-1", "", FCVAR_PROTECTED);
 	ce_mvm_show_game_time = CreateConVar("ce_mvm_show_game_time", "1", "Enables game time summary to be shown in chat");
-	ce_mvm_switch_to_pubs_timer = CreateConVar("ce_mvm_switch_to_pubs_timer", "600", "Switch to pubs after this amount of time.");
+	ce_mvm_switch_to_pubs_timer = CreateConVar("ce_mvm_switch_to_pubs_timer", "300", "Switch to pubs after this amount of time.");
 
 	HookEvent("mvm_begin_wave", mvm_begin_wave);
 	HookEvent("mvm_wave_complete", mvm_wave_complete);
