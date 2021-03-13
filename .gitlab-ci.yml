@@ -5,14 +5,7 @@ stages:
     stage: deploy
     script:
     - whoami
-
-    - >
-        cd /var/lib/pterodactyl/volumes;
-        if [ -d "/var/lib/pterodactyl/volumes" ]; then
-            cd /var/lib/pterodactyl/volumes;
-        else
-            cd /srv/daemon-data;
-        fi
+    - cd /srv/daemon-data;
     - >
         for d in ./*/ ; do
             cd "$d";
