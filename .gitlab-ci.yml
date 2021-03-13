@@ -6,7 +6,13 @@ stages:
     script:
     - whoami
 
-    - cd /srv/daemon-data
+    - >
+        cd /var/lib/pterodactyl/volumes;
+        if [ -d "/var/lib/pterodactyl/volumes" ]; then
+            cd /var/lib/pterodactyl/volumes;
+        else
+            cd /srv/daemon-data;
+        fi
     - >
         for d in ./*/ ; do
             cd "$d";
@@ -83,10 +89,15 @@ deploy-virginia:
     - virginiapub
     <<: *deploy_template
 
-# deploy-russia:
-#     tags:
-#     - russiapub
-#     <<: *deploy_template
+deploy-singapore:
+    tags:
+    - sgp1
+    <<: *deploy_template
+
+deploy-australia:
+    tags:
+    - aus1
+    <<: *deploy_template
 
 deploy-la:
     tags:
