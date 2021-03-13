@@ -28,6 +28,9 @@ public Plugin myinfo =
 ConVar ce_mvm_check_itemname_cvar;
 ConVar ce_mvm_show_game_time;
 ConVar ce_mvm_restart_on_changelevel_from_mvm;
+ConVar ce_mvm_switch_to_pubs_timer;
+
+Handle m_hBackToPubs;
 
 int m_iCurrentWave;
 int m_iLastPlayerCount;
@@ -59,6 +62,7 @@ public void OnPluginStart()
 	RegServerCmd("ce_mvm_set_attribute", cMvMSetEntityAttribute, "");
 	ce_mvm_check_itemname_cvar = CreateConVar("ce_mvm_check_itemname_cvar", "-1", "", FCVAR_PROTECTED);
 	ce_mvm_show_game_time = CreateConVar("ce_mvm_show_game_time", "1", "Enables game time summary to be shown in chat");
+	ce_mvm_switch_to_pubs_timer = CreateConVar("ce_mvm_switch_to_pubs_timer", "600", "Switch to pubs after this amount of time.");
 
 	HookEvent("mvm_begin_wave", mvm_begin_wave);
 	HookEvent("mvm_wave_complete", mvm_wave_complete);
@@ -350,6 +354,11 @@ public void OnMvMGameEnd()
 {
 	// Everyone left the game.
 	ResetStats();
+	
+	if(TF2MvM_IsPlayingMvM())
+	{
+		ScheduleServerRestart();
+	}
 }
 
 public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
@@ -363,6 +372,33 @@ public void OnMapStart()
 	{
 		LoadSigsegvExtension();
 		RequestFrame(RF_RecalculatePlayerCount);
+		
+		ScheduleServerRestart();
+	}
+}
+
+public void ScheduleServerRestart()
+{
+	if(m_hBackToPubs != INVALID_HANDLE)
+	{
+		KillTimer(m_hBackToPubs);
+		m_hBackToPubs = INVALID_HANDLE;
+	}	
+	
+	m_hBackToPubs = CreateTimer(ce_mvm_switch_to_pubs_timer.FloatValue, Timer_BackToPubs);
+}
+
+public Action Timer_BackToPubs(Handle timer, any data)
+{
+	if(TF2MvM_IsPlayingMvM())
+	{
+		if(GetRealClientCount() == 0)
+		{
+			LogMessage("Noone was on the server for %d seconds. Switching back to pubs.", ce_mvm_switch_to_pubs_timer.IntValue);
+			// Noose is on the server.
+			ServerCommand("quit");
+			
+		}
 	}
 }
 
