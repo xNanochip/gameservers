@@ -2154,7 +2154,7 @@ public void BanUser(int userid, char[] reason, char[] pubreason)
         if
         (
             (
-                isSteamAlive == 1
+                isSteamAlive == 0
             )
             ||
             (
