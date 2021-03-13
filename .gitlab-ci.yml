@@ -6,7 +6,8 @@ stages:
     script:
     - whoami
 
-    - [ -d "/var/lib/pterodactyl/volumes" ] && cd /var/lib/pterodactyl/volumes || cd /srv/daemon-data
+    - >
+        [ -d "/var/lib/pterodactyl/volumes" ] && cd /var/lib/pterodactyl/volumes || cd /srv/daemon-data
     - >
         for d in ./*/ ; do
             cd "$d";
