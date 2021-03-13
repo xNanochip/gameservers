@@ -4034,7 +4034,16 @@
 					type "sym"
 					sym  "_Z14TE_MetalSparksR16IRecipientFilterfPK6VectorS3_"
 				}
-				
+				"CTFProjectile_BallOfFire::RocketTouch"
+				{
+					type "sym"
+					sym  "_ZN24CTFProjectile_BallOfFire11RocketTouchEP11CBaseEntity"
+				}
+				"CTFProjectile_BallOfFire::RocketTouch"
+				{
+					type "sym"
+					sym  "_ZN24CTFProjectile_BallOfFire11RocketTouchEP11CBaseEntity"
+				}
 			}
 			
 			"addrs_group"
@@ -4132,6 +4141,7 @@
 				"CTFWeaponBaseGun::RemoveProjectileAmmo" "_ZN16CTFWeaponBaseGun20RemoveProjectileAmmoEP9CTFPlayer"
 				"CTFWeaponBaseGun::ShouldPlayFireAnim"   "_ZN16CTFWeaponBaseGun18ShouldPlayFireAnimEv"
 				"CTFWeaponBaseGun::UpdatePunchAngles"    "_ZN16CTFWeaponBaseGun17UpdatePunchAnglesEP9CTFPlayer"
+				
 			}
 		}
 	}
