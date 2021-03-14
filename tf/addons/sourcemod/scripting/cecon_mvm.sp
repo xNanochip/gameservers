@@ -380,7 +380,7 @@ public void OnMapStart()
 public void ScheduleServerRestart()
 {
 	if(ce_mvm_switch_to_pubs_timer.IntValue < 0) return;
-	
+
 	if(m_hBackToPubs != INVALID_HANDLE)
 	{
 		KillTimer(m_hBackToPubs);
@@ -392,6 +392,8 @@ public void ScheduleServerRestart()
 
 public Action Timer_BackToPubs(Handle timer, any data)
 {
+	m_hBackToPubs = INVALID_HANDLE;
+
 	if(TF2MvM_IsPlayingMvM())
 	{
 		if(GetRealClientCount() == 0)
@@ -399,7 +401,6 @@ public Action Timer_BackToPubs(Handle timer, any data)
 			LogMessage("Noone was on the server for %d seconds. Switching back to pubs.", ce_mvm_switch_to_pubs_timer.IntValue);
 			// Noose is on the server.
 			ServerCommand("quit");
-
 		}
 	}
 }
