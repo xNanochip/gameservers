@@ -1417,4 +1417,15 @@
         "hidden"	"0"
         "effect_type"	"positive"
     }
+    //Override projectile type extra
+    "4458"
+    {
+        "name"	"override projectile type extra"
+        "attribute_class"	"override_projectile_type_extra"
+		"attribute_type"	"string"
+        "description_string"	"melee cleave attack"
+        "description_format"	"value_is_percentage"
+        "hidden"	"0"
+        "effect_type"	"positive"
+    }
 }
