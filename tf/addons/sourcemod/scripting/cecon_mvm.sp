@@ -354,7 +354,7 @@ public void OnMvMGameEnd()
 {
 	// Everyone left the game.
 	ResetStats();
-	
+
 	if(TF2MvM_IsPlayingMvM())
 	{
 		ScheduleServerRestart();
@@ -372,7 +372,7 @@ public void OnMapStart()
 	{
 		LoadSigsegvExtension();
 		RequestFrame(RF_RecalculatePlayerCount);
-		
+
 		ScheduleServerRestart();
 	}
 }
@@ -383,13 +383,15 @@ public void ScheduleServerRestart()
 	{
 		KillTimer(m_hBackToPubs);
 		m_hBackToPubs = INVALID_HANDLE;
-	}	
-	
+	}
+
 	m_hBackToPubs = CreateTimer(ce_mvm_switch_to_pubs_timer.FloatValue, Timer_BackToPubs);
 }
 
 public Action Timer_BackToPubs(Handle timer, any data)
 {
+	m_hBackToPubs = INVALID_HANDLE;
+
 	if(TF2MvM_IsPlayingMvM())
 	{
 		if(GetRealClientCount() == 0)
@@ -397,7 +399,6 @@ public Action Timer_BackToPubs(Handle timer, any data)
 			LogMessage("Noone was on the server for %d seconds. Switching back to pubs.", ce_mvm_switch_to_pubs_timer.IntValue);
 			// Noose is on the server.
 			ServerCommand("quit");
-			
 		}
 	}
 }
