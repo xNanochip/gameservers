@@ -88,20 +88,20 @@ deploy-virginia:
     - virginiapub
     <<: *deploy_template
 
-deploy-singapore:
-    tags:
-    - sgp1
-    <<: *deploy_template
+#deploy-singapore:
+#    tags:
+#    - sgp1
+#    <<: *deploy_template
 
-deploy-australia:
-    tags:
-    - aus1
-    <<: *deploy_template
+#deploy-australia:
+#    tags:
+#    - aus1
+#    <<: *deploy_template
 
-deploy-la:
-    tags:
-    - lapub
-    <<: *deploy_template
+#deploy-la:
+#    tags:
+#    - lapub
+#    <<: *deploy_template
 
 deploy-fastdl:
     stage: deploy
