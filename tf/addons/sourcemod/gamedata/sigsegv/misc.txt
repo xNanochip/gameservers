@@ -4034,7 +4034,16 @@
 					type "sym"
 					sym  "_Z14TE_MetalSparksR16IRecipientFilterfPK6VectorS3_"
 				}
-				
+				"CTFProjectile_BallOfFire::RocketTouch"
+				{
+					type "sym"
+					sym  "_ZN24CTFProjectile_BallOfFire11RocketTouchEP11CBaseEntity"
+				}
+				"CTFProjectile_BallOfFire::RocketTouch"
+				{
+					type "sym"
+					sym  "_ZN24CTFProjectile_BallOfFire11RocketTouchEP11CBaseEntity"
+				}
 			}
 			
 			"addrs_group"
@@ -4124,6 +4133,14 @@
 				"InventoryManager"   "_Z16InventoryManagerv"
 				"TFInventoryManager" "_Z18TFInventoryManagerv"
 
+				"CTFWeaponBase::ShouldRemoveInvisibilityOnPrimaryAttack" "_ZNK13CTFWeaponBase39ShouldRemoveInvisibilityOnPrimaryAttackEv"
+				"CTFWeaponBase::UpdateOnRemove"                          "_ZN13CTFWeaponBase14UpdateOnRemoveEv"
+				
+				"CTFWeaponBaseGun::DoFireEffects"        "_ZN16CTFWeaponBaseGun13DoFireEffectsEv"
+				"CTFWeaponBaseGun::FireProjectile"       "_ZN16CTFWeaponBaseGun14FireProjectileEP9CTFPlayer"
+				"CTFWeaponBaseGun::RemoveProjectileAmmo" "_ZN16CTFWeaponBaseGun20RemoveProjectileAmmoEP9CTFPlayer"
+				"CTFWeaponBaseGun::ShouldPlayFireAnim"   "_ZN16CTFWeaponBaseGun18ShouldPlayFireAnimEv"
+				"CTFWeaponBaseGun::UpdatePunchAngles"    "_ZN16CTFWeaponBaseGun17UpdatePunchAnglesEP9CTFPlayer"
 				
 			}
 		}
