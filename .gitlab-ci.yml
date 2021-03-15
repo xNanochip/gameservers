@@ -7,7 +7,6 @@ stages:
     - whoami
 
     - >
-        cd /var/lib/pterodactyl/volumes;
         if [ -d "/var/lib/pterodactyl/volumes" ]; then
             cd /var/lib/pterodactyl/volumes;
         else
