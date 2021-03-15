@@ -88,10 +88,10 @@ deploy-virginia:
     - virginiapub
     <<: *deploy_template
 
-#deploy-singapore:
-#    tags:
-#    - sgp1
-#    <<: *deploy_template
+deploy-singapore:
+    tags:
+    - sgppub
+    <<: *deploy_template
 
 #deploy-australia:
 #    tags:
