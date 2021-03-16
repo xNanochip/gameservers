@@ -47,11 +47,11 @@ stages:
                         git clean -d -f -x tf/cfg/
 
                         # UNCOMMENT THESE LINES TO FORCE CLEANUP OF EXTRA BULLSHIT THAT MIGHT BE ON SERVERS
-                        #echo "git clean"
-                        #git clean -d -f -x tf/addons/sourcemod/plugins/
-                        #git clean -d -f -x tf/addons/sourcemod/plugins/external
-                        #git clean -d -f -x tf/addons/sourcemod/data/
-                        #git clean -d -f -x tf/addons/sourcemod/gamedata/
+                        echo "git clean"
+                        git clean -d -f -x tf/addons/sourcemod/plugins/
+                        git clean -d -f -x tf/addons/sourcemod/plugins/external
+                        git clean -d -f -x tf/addons/sourcemod/data/
+                        git clean -d -f -x tf/addons/sourcemod/gamedata/
                         # THIS WILL DELETE ALL SOURCEMOD LOGS, INCLUDING STAC AND CHAT LOGS
                         # git clean -d -f -x tf/addons/sourcemod/logs/
 
@@ -93,10 +93,10 @@ deploy-singapore:
     - sgppub
     <<: *deploy_template
 
-#deploy-australia:
-#    tags:
-#    - aus1
-#    <<: *deploy_template
+deploy-australia:
+    tags:
+    - auspub
+    <<: *deploy_template
 
 #deploy-la:
 #    tags:
