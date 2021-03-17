@@ -9,14 +9,13 @@
 #include <sdktools>
 #include <sdkhooks>
 
-#define CITADEL_MODEL "models/props_combine/combine_citadel_animated.mdl"
-#define THUMPER_MODEL "models/props_combine/combinethumper002.mdl"
+#define PROP_MODEL "models/bots/boss_bot/carrier.mdl"
 
 public Plugin myinfo =
 {
-	name = "Half-Life 2 Skybox Citadel Spawner",
+	name = "Skybox Prop Spawner",
 	author = PLUGIN_AUTHOR,
-	description = "Spawns Citadel in Map's Skyboxes",
+	description = "Spawns Props in Map's Skyboxes",
 	version = PLUGIN_VERSION,
 	url = "https://creators.tf"
 };
@@ -24,29 +23,29 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	HookEvent("teamplay_round_start", evRoundStart);
+	RegAdminCmd("sm_skyprop_test", sm_skyprop_test, ADMFLAG_GENERIC);
 }
 
-public Action ca(int client, int args)
+public Action sm_skyprop_test(int client, int args)
 {
 	char sMap[64];
 	GetCurrentMap(sMap, sizeof(sMap));
 	float flPos[3];
 	GetEntPropVector(client, Prop_Send, "m_vecOrigin", flPos);
 	PrintToConsole(client, "\"%s\"\n{\n 	\"x\" \"%f\"\n 	\"y\" \"%f\"\n 	\"z\" \"%f\"\n}", sMap, flPos[0], flPos[1], flPos[2]);
-	Citadel_Create(flPos, 0.1, 0.0);
+	Prop_Create(flPos, 0.1, 0.0);
 }
 
 public void OnMapStart()
 {
-	PrecacheModel(CITADEL_MODEL);
-	PrecacheModel(THUMPER_MODEL);
+	PrecacheModel(PROP_MODEL);
 }
 
 public Action evRoundStart(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
 	char sLoc[96];
-	BuildPath(Path_SM, sLoc, 96, "configs/halflife_citadel.cfg");
-	KeyValues kv = new KeyValues("Citadel");
+	BuildPath(Path_SM, sLoc, 96, "configs/skybox_props.cfg");
+	KeyValues kv = new KeyValues("Props");
 	kv.ImportFromFile(sLoc);
 
 	char sMap[64];
@@ -61,12 +60,12 @@ public Action evRoundStart(Event hEvent, const char[] szName, bool bDontBroadcas
 		flPos[2] = kv.GetFloat("z", 0.0);
 		float flRotate = kv.GetFloat("r", 0.0);
 
-		Citadel_Create(flPos, flScale, flRotate);
+		Prop_Create(flPos, flScale, flRotate);
 	}
 	delete kv;
 }
 
-public void Citadel_Create(float flPos[3], float flScale, float flRotate)
+public void Prop_Create(float flPos[3], float flScale, float flRotate)
 {
 	int iCitadel;
 	iCitadel = CreateEntityByName("prop_dynamic_override");
@@ -76,12 +75,10 @@ public void Citadel_Create(float flPos[3], float flScale, float flRotate)
 		float flAng[3];
 		flAng[1] = flRotate;
 		TeleportEntity(iCitadel, flPos, flAng, NULL_VECTOR);
-		SetEntityModel(iCitadel, CITADEL_MODEL);
+		SetEntityModel(iCitadel, PROP_MODEL);
 		SetEntPropFloat(iCitadel, Prop_Send, "m_flModelScale", flScale);
-		DispatchKeyValue(iCitadel, "targetname", "tf_citadel");
+		DispatchKeyValue(iCitadel, "targetname", "tf_skyprop");
 		DispatchSpawn(iCitadel);
 		ActivateEntity(iCitadel);
-		SetVariantString("open");
-		AcceptEntityInput(iCitadel, "setanimation");
 	}
 }
