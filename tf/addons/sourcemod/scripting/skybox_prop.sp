@@ -28,17 +28,6 @@ public void OnPluginStart()
 
 public Action sm_skyprop_test(int client, int args)
 {
-	int iProp = -1;
-	while ((iProp = FindEntityByClassname(iProp, "prop_dynamic")) != -1)
-	{
-		char tName[16];
-		GetEntPropString(iProp, Prop_Data, "m_iName", tName, 16);
-		if (StrEqual(tName, "tf_skyprop"))
-		{
-			RemoveEntity(iProp);
-		}
-	}
-	
 	float flRotation = 0.0;
 	float flScale = 0.1;
 	
