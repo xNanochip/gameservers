@@ -28,12 +28,35 @@ public void OnPluginStart()
 
 public Action sm_skyprop_test(int client, int args)
 {
+	int iProp = -1;
+	while ((iProp = FindEntityByClassname(iProp, "prop_dynamic")) != -1)
+	{
+		char tName[16];
+		GetEntPropString(iProp, Prop_Data, "m_iName", tName, 16);
+		if (StrEqual(tName, "tf_skyprop"))
+		{
+			RemoveEntity(iProp);
+		}
+	}
+	
+	float flRotation = 0.0;
+	float flScale = 0.1;
+	
+	char sBuff[11];
+	GetCmdArg(1, sBuff, sizeof(sBuff));
+	flRotation = StringToFloat(sBuff);
+	GetCmdArg(2, sBuff, sizeof(sBuff));
+	flScale = StringToFloat(sBuff);
+	
+	if (flScale < 0.1)flScale = 0.1;
+	
 	char sMap[64];
 	GetCurrentMap(sMap, sizeof(sMap));
+	
 	float flPos[3];
 	GetEntPropVector(client, Prop_Send, "m_vecOrigin", flPos);
-	PrintToConsole(client, "\"%s\"\n{\n 	\"x\" \"%f\"\n 	\"y\" \"%f\"\n 	\"z\" \"%f\"\n}", sMap, flPos[0], flPos[1], flPos[2]);
-	Prop_Create(flPos, 0.1, 0.0);
+	PrintToConsole(client, "\"%s\"\n{\n 	\"x\" \"%f\"\n 	\"y\" \"%f\"\n 	\"z\" \"%f\"\n	\"r\" \"%f\"\n	\"s\" \"%f\"\n}", sMap, flPos[0], flPos[1], flPos[2], flRotation, flScale);
+	Prop_Create(flPos, flRotation, flScale);
 }
 
 public void OnMapStart()
@@ -71,7 +94,6 @@ public void Prop_Create(float flPos[3], float flScale, float flRotate)
 	iCitadel = CreateEntityByName("prop_dynamic_override");
 	if(iCitadel > 0)
 	{
-		flPos[2] += 300.0;
 		float flAng[3];
 		flAng[1] = flRotate;
 		TeleportEntity(iCitadel, flPos, flAng, NULL_VECTOR);
