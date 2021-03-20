@@ -2,7 +2,7 @@
 #pragma newdecls required
 
 #define PLUGIN_DESCRIPTION "Regex triggers for names, chat, and commands."
-#define PLUGIN_VERSION "2.5.8_creators"
+#define PLUGIN_VERSION "2.5.8d_creators"
 #define MAX_EXPRESSION_LENGTH 512
 #define MATCH_SIZE 64
 
@@ -146,7 +146,8 @@ public void OnPluginStart() {
 	g_cvarNameChannel.GetString(g_sNameChannel, sizeof(g_sNameChannel));
 	g_cvarChatChannel.GetString(g_sChatChannel, sizeof(g_sChatChannel));
 	g_cvarConfigPath.GetString(g_sConfigPath, sizeof(g_sConfigPath));
-	g_cvarServerName.GetString(g_sServerName, sizeof g_sServerName);
+	//g_cvarServerName.GetString(g_sServerName, sizeof(g_sServerName);
+	GetConVarString(FindConVar("ce_server_index"), g_sServerName, sizeof(g_sServerName));
 
 	BuildPath(Path_SM, g_sConfigPath, sizeof(g_sConfigPath), g_sConfigPath);
 	Format(g_sConfigPath, sizeof(g_sConfigPath), "%sregextriggers.cfg", g_sConfigPath);
