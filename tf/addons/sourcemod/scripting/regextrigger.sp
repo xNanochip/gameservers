@@ -9,7 +9,7 @@
 // Define created to use settings specifically for my own servers.
 // allows easier release of this plugin.
 // #define CUSTOM
-// #define DEBUG
+#define DEBUG
 
 #include <sourcemod>
 #include <sdktools>
@@ -323,6 +323,8 @@ public Action eventOnChangeName(Event event, const char[] name, bool dontBroadca
 
 	char newName[MAX_NAME_LENGTH];
 	event.GetString("newname", newName, sizeof(newName));
+
+	LogMessage("[regexdebug] oldname %s newname %s", currentName, newName);
 
 	// If old name is empty (initial connect), stored old name, or current name equal to new name, don't do anything.
 	if (!g_sOldName[client][0] || StrEqual(g_sOldName[client], newName) || StrEqual(currentName, newName)) {
