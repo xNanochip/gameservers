@@ -2,7 +2,7 @@
 #pragma newdecls required
 
 #define PLUGIN_DESCRIPTION "Regex triggers for names, chat, and commands."
-#define PLUGIN_VERSION "2.5.8"
+#define PLUGIN_VERSION "2.5.8_creators"
 #define MAX_EXPRESSION_LENGTH 512
 #define MATCH_SIZE 64
 
@@ -284,7 +284,9 @@ void cvarChanged_ChatChannel(ConVar convar, const char[] oldValue, const char[] 
 }
 
 void cvarChanged_ServerName(ConVar convar, const char[] oldValue, const char[] newValue) {
-	strcopy(g_sServerName, sizeof(g_sServerName), newValue);
+	//strcopy(g_sServerName, sizeof(g_sServerName), newValue);
+	// make it the server name duh
+	GetConVarString(FindConVar("ce_server_index"), g_sServerName, sizeof(g_sServerName));
 }
 
 // =================== Hooks
