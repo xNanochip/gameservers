@@ -127,11 +127,7 @@ public void OnPluginStart() {
 	g_cvarCheckCommands = CreateConVar("sm_regex_check_commands", "1", "Filter out and check commands.", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_cvarCheckNames = CreateConVar("sm_regex_check_names", "1", "Filter out and check names.", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_cvarUnnamedPrefix = CreateConVar("sm_regex_prefix", "", "Prefix for random name when player has become unnamed", FCVAR_NONE);
-#if defined CREATORS
-	GetConVarString(FindConVar("ce_server_index"), g_sServerName, sizeof(g_sServerName));
-#else
-	g_cvarServerName.GetString(g_sServerName, sizeof(g_sServerName));
-#endif
+	g_cvarServerName = CreateConVar("sm_regex_server_name", "No name set!", "Name to display in discord when relaying", FCVAR_NONE);
 
 	// IRC
 	g_cvarIRC_Enabled = CreateConVar("sm_regex_irc_enabled", "0", "Enable IRC relay for SourceIRC. Sends messages to flagged channels", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -151,7 +147,12 @@ public void OnPluginStart() {
 	g_cvarNameChannel.GetString(g_sNameChannel, sizeof(g_sNameChannel));
 	g_cvarChatChannel.GetString(g_sChatChannel, sizeof(g_sChatChannel));
 	g_cvarConfigPath.GetString(g_sConfigPath, sizeof(g_sConfigPath));
-	g_cvarServerName.GetString(g_sServerName, sizeof g_sServerName);
+	#if defined CREATORS
+	GetConVarString(FindConVar("ce_server_index"), g_sServerName, sizeof(g_sServerName));
+	#else
+		g_cvarServerName.GetString(g_sServerName, sizeof(g_sServerName));
+	#endif
+
 
 	BuildPath(Path_SM, g_sConfigPath, sizeof(g_sConfigPath), g_sConfigPath);
 	Format(g_sConfigPath, sizeof(g_sConfigPath), "%sregextriggers.cfg", g_sConfigPath);
