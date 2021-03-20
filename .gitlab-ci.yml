@@ -48,10 +48,10 @@ stages:
 
                         # UNCOMMENT THESE LINES TO FORCE CLEANUP OF EXTRA BULLSHIT THAT MIGHT BE ON SERVERS
                         # echo "git clean"
-                        git clean -d -f -x tf/addons/sourcemod/plugins/
-                        git clean -d -f -x tf/addons/sourcemod/plugins/external
-                        git clean -d -f -x tf/addons/sourcemod/data/
-                        git clean -d -f -x tf/addons/sourcemod/gamedata/
+                        # git clean -d -f -x tf/addons/sourcemod/plugins/
+                        # git clean -d -f -x tf/addons/sourcemod/plugins/external
+                        # git clean -d -f -x tf/addons/sourcemod/data/
+                        # git clean -d -f -x tf/addons/sourcemod/gamedata/
                         # THIS WILL DELETE ALL SOURCEMOD LOGS, INCLUDING STAC AND CHAT LOGS
                         # git clean -d -f -x tf/addons/sourcemod/logs/
 
@@ -66,8 +66,8 @@ stages:
                         chmod 744 start.sh;
 
                         # don't run this often
-                        # echo "garbage collecting"
-                        # git gc --force ;
+                        echo "garbage collecting"
+                        git gc --force ;
 
                         echo "building"
                         ./build.sh $COMMIT_OLD;
