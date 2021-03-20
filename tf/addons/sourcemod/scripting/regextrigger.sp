@@ -11,7 +11,6 @@
 // #define CUSTOM
 // #define DEBUG
 
-#pragma newdecls optional
 #include <sourcemod>
 #include <sdktools>
 #include <regex>
@@ -21,7 +20,6 @@
 #include <sourceirc>
 #include <discord>
 #define REQUIRE_PLUGIN
-#pragma newdecls required
 
 enum {
 	NAME = 0,

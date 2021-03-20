@@ -15,7 +15,7 @@
     along with SourceIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define IRC_VERSION "0.3.19"
+#define IRC_VERSION "0.2"
 
 #define IRC_CMD_MAXLEN 64 // The maximum length of a command
 #define IRC_NICK_MAXLEN 64 // The maximum length of a nickname
@@ -24,7 +24,8 @@
 
 #define IRC_CMDFLAG_NOPREFIX 1<<0 // Allow command to be triggered even without a prefix. For example instead of typing "SourceIRC: command args" you could just type "command args"
 
-public SharedPlugin __pl_sourceirc = {
+public SharedPlugin:__pl_sourceirc = 
+{
 	name = "sourceirc",
 	file = "sourceirc.smx",
 #if defined REQUIRE_PLUGIN
@@ -32,10 +33,10 @@ public SharedPlugin __pl_sourceirc = {
 #else
 	required = 0,
 #endif
-}
+};
 
-#if !defined REQUIRE_PLUGIN
-public void __pl_sourceirc_SetNTVOptional() {
+public __pl_sourceirc_SetNTVOptional()
+{
 	MarkNativeAsOptional("IRC_RegCmd");
 	MarkNativeAsOptional("IRC_RegAdminCmd");
 	MarkNativeAsOptional("IRC_Send");
@@ -51,9 +52,7 @@ public void __pl_sourceirc_SetNTVOptional() {
 	MarkNativeAsOptional("IRC_GetUserFlagBits");
 	MarkNativeAsOptional("IRC_GetAdminFlag");
 	MarkNativeAsOptional("IRC_GetTeamColor");
-	MarkNativeAsOptional("IRC_MsgFlaggedChannels");
 }
-#endif
 
 /**
  * Called when an IRC command is invoked.
@@ -63,7 +62,6 @@ public void __pl_sourceirc_SetNTVOptional() {
  * @return				An Action value.  Not handling the command
  *						means that SourceIRC will report it as "Unknown Command."
  */
-
 typedef IRCCmd = function Action(const char[] nick, int args);
 
 /**
@@ -73,7 +71,6 @@ typedef IRCCmd = function Action(const char[] nick, int args);
  * @param args			Number of arguments that are in the argument string.
  * @return				Only Plugin_Stop has any effect here, as this is a post hook.
  */
-
 typedef IRCEvent = function Action(const char[] prefix, int args);
 
 /**
@@ -86,7 +83,7 @@ typedef IRCEvent = function Action(const char[] prefix, int args);
  * @noreturn
  */
 
-native void IRC_RegCmd(const char[] cmd, IRCCmd callback, const char[] description="", int flags=0);
+native IRC_RegCmd(const String:cmd[], IRCCmd:callback, const String:description[]="", flags=0);
 
 /**
  * Creates an IRC command as an administrative command.
@@ -101,7 +98,7 @@ native void IRC_RegCmd(const char[] cmd, IRCCmd callback, const char[] descripti
  * @noreturn
  */
 
-native void IRC_RegAdminCmd(const char[] cmd0, IRCCmd callback, int adminflags, const char[] description="", int flags=0);
+native IRC_RegAdminCmd(const String:cmd[], IRCCmd:callback, adminflags, const String:description[]="", flags=0);
 
 /**
  * Sends a packet to the IRC Server. \r\n is automatically appended for you.
@@ -112,7 +109,7 @@ native void IRC_RegAdminCmd(const char[] cmd0, IRCCmd callback, int adminflags, 
  * @error				String contains \r or \n.
  */
 
-native void IRC_Send(const char[] format, any ...);
+native IRC_Send(const String:format[], any:...);
 
 /**
  * Replys to a message (Using a notice)
@@ -123,7 +120,7 @@ native void IRC_Send(const char[] format, any ...);
  * @noreturn
  */
 
-native void IRC_ReplyToCommand(const char[] nick, const char[] format, any ...);
+native IRC_ReplyToCommand(const String:nick[], const String:format[], any:...);
 
 /**
  * Retrieves the entire command argument string in one lump from the current 
@@ -134,7 +131,7 @@ native void IRC_ReplyToCommand(const char[] nick, const char[] format, any ...);
  * @return				Length of string written to buffer.
  */
 
-native int IRC_GetCmdArgString(char[] buffer, int maxlength);
+native IRC_GetCmdArgString(String:buffer[], maxlength);
 
 /**
  * Retrieves a command argument given its index, from the current IRC command.
@@ -146,7 +143,7 @@ native int IRC_GetCmdArgString(char[] buffer, int maxlength);
  * @return				Length of string written to buffer.
  */
 
-native int IRC_GetCmdArg(int argnum, char[] buffer, int maxlength);
+native IRC_GetCmdArg(argnum, String:buffer[], maxlength);
 
 
 /**
@@ -159,7 +156,7 @@ native int IRC_GetCmdArg(int argnum, char[] buffer, int maxlength);
  * @return				Length of string written to buffer.
  */
 
-native int IRC_GetEventArg(int argnum, char[] buffer, int maxlength);
+native IRC_GetEventArg(argnum, String:buffer[], maxlength);
 
 /**
  * Sends a message to all channels with the given flag.
@@ -170,7 +167,7 @@ native int IRC_GetEventArg(int argnum, char[] buffer, int maxlength);
  * @noreturn
  */
 
-native void IRC_MsgFlaggedChannels(const char[] flag, const char[] format, any ...);
+native IRC_MsgFlaggedChannels(const String:flag[], const String:format[], any:...);
 
 /**
  * If your plugin calls any of the IRC_Reg* functions
@@ -180,7 +177,7 @@ native void IRC_MsgFlaggedChannels(const char[] flag, const char[] format, any .
  * @noreturn
  */
 
-native void IRC_CleanUp();
+native IRC_CleanUp();
 
 /**
  * Gets the hostmask (eg Nick!ident@address.com) for the user executing
@@ -191,7 +188,7 @@ native void IRC_CleanUp();
  * @noreturn
  */
 
-native void IRC_GetHostMask(char[] hostmask, int maxlength);
+native IRC_GetHostMask(String:hostmask[], maxlength);
 
 /**
  * Creates a hook for when an IRC event is fired.
@@ -201,7 +198,7 @@ native void IRC_GetHostMask(char[] hostmask, int maxlength);
  * @noreturn
  */
 
-native void IRC_HookEvent(const char[] event, IRCEvent callback);
+native IRC_HookEvent(const String:event[], IRCEvent:callback);
 
 /**
  * Gets the bots current nickname
@@ -211,7 +208,7 @@ native void IRC_HookEvent(const char[] event, IRCEvent callback);
  * @noreturn
  */
 
-native void IRC_GetNick(char[] mynick, int maxlength);
+native IRC_GetNick(String:mynick[], maxlength);
 
 /**
  * Checks if a channel has a flag.
@@ -221,7 +218,7 @@ native void IRC_GetNick(char[] mynick, int maxlength);
  * @return				True if channel has flag, otherwise false.
  */
 
-native int IRC_ChannelHasFlag(const char[] channel, const char[] flag);
+native IRC_ChannelHasFlag(const String:channel[], const String:flag[]);
 
 /**
  * Returns users access flags. If the client is not an admin,
@@ -231,7 +228,7 @@ native int IRC_ChannelHasFlag(const char[] channel, const char[] flag);
  * @return				Flags
  */
 
-native int IRC_GetUserFlagBits(const char[] hostmask);
+native IRC_GetUserFlagBits(const String:hostmask[]);
 
 /**
  * Returns whether or not a flag is enabled on an admin.
@@ -241,7 +238,7 @@ native int IRC_GetUserFlagBits(const char[] hostmask);
  * @return				True if enabled, false otherwise.
  */
 
-native bool IRC_GetAdminFlag(const char[] hostmask, AdminFlag flag);
+native bool:IRC_GetAdminFlag(const String:hostmask[], AdminFlag:flag);
 
 /**
  * Gets the IRC color number for a team as specified in sourceirc.cfg
@@ -250,21 +247,25 @@ native bool IRC_GetAdminFlag(const char[] hostmask, AdminFlag flag);
  * @return				Color code if available, otherwise -1.
  */
 
-native int IRC_GetTeamColor(int team);
+native IRC_GetTeamColor(team);
 
 /**
  * Gets the servers domain/external IP as set in sourceirc.cfg
  * 
  * @param domain		String to store domain in
  * @param maxlength		Maximum length of the buffer.
- * @noreturn
+ * 
  */
 
-native void IRC_GetServerDomain(char[] domain, int maxlength);
+native IRC_GetServerDomain(String:domain[], maxlength);
 
-forward void IRC_Connected();
+forward IRC_Connected();
 
-forward void IRC_RetrieveUserFlagBits(const char[] hostmask, int &flagbits);
+forward IRC_RetrieveUserFlagBits(const String:hostmask[], &flagbits);
+
+
+
+
 
 /**
  * Performs a standard IRC Like wildcard match, useful for hostmasks.
@@ -274,16 +275,14 @@ forward void IRC_RetrieveUserFlagBits(const char[] hostmask, int &flagbits);
  * @return				true if match, false otherwise.
  */
 
-stock bool IsWildCardMatch(const char[] str, const char[] wildcard) {
-	int wildpos = 0;
-	for (int a = 0; a <= strlen(str); a++) { 		
+stock bool:IsWildCardMatch(const String:str[], const String:wildcard[]) {
+	new wildpos = 0;
+	for (new a = 0; a <= strlen(str); a++) { 		
 		if (wildcard[wildpos] == '*') {
-			if (wildpos == strlen(wildcard)) {
+			if (wildpos == strlen(wildcard))
 				return true;
-			}
-			if (CharToLower(str[a]) == CharToLower(wildcard[wildpos+1])) {
+			if (CharToLower(str[a]) == CharToLower(wildcard[wildpos+1]))
 				wildpos += 2;
-			}
 		}
 		else if (wildcard[wildpos] == '?') {
 			wildpos++;
@@ -295,7 +294,9 @@ stock bool IsWildCardMatch(const char[] str, const char[] wildcard) {
 			return false;
 		}
 	}
-	return (wildpos != strlen(wildcard));
+	if (wildpos == strlen(wildcard))
+		return false;
+	return true;
 }
 
 /**
@@ -308,26 +309,25 @@ stock bool IsWildCardMatch(const char[] str, const char[] wildcard) {
  * @return					Number of strings retrieved.
  */
 
-stock int ExplodeString_Array(const char[] source, const char[] split, ArrayList adt_array, int maxlength) {
-	adt_array.Clear();
-	char[] arg = new char[maxlength];
-	int strpos = 0;
-	for (int i = 0; i <= strlen(source); i++) {
+stock ExplodeString_Array(const String:source[], const String:split[], Handle:adt_array, maxlength) {
+	ClearArray(adt_array);
+	decl String:arg[maxlength];
+	new strpos = 0;
+	for (new i = 0; i <= strlen(source); i++) {
 		if (!strncmp(source[i], split, strlen(split))) {
 			arg[strpos] = '\x00';
-			adt_array.PushString(arg);
+			PushArrayString(adt_array, arg);
 
 			strpos = 0;
 			i += strlen(split);
 		}
-		if (strpos < maxlength) {
+		if (strpos < maxlength)
 			arg[strpos] = source[i];
-		}
 		strpos++;
 	}
 	arg[strpos] = '\x00';
-	adt_array.PushString(arg);
-	return adt_array.Length;
+	PushArrayString(adt_array, arg);
+	return GetArraySize(adt_array);
 }
 
 /**
@@ -340,17 +340,18 @@ stock int ExplodeString_Array(const char[] source, const char[] split, ArrayList
  * @param immunity	Optional. Set to false to ignore target immunity.
  * @return			Index of target client, or -1 on error.
  */
-stock int IRC_FindTarget(const char[] nick, const char[] target, bool nobots = false, bool immunity = true) {
-	char target_name[MAX_TARGET_LENGTH];
-	int target_list[1]
-		, target_count
-		, flags = COMMAND_FILTER_NO_MULTI;
-	bool tn_is_ml;
-
-	if (nobots) {
+stock IRC_FindTarget(const String:nick[], const String:target[], bool:nobots = false, bool:immunity = true)
+{
+	decl String:target_name[MAX_TARGET_LENGTH];
+	decl target_list[1], target_count, bool:tn_is_ml;
+	
+	new flags = COMMAND_FILTER_NO_MULTI;
+	if (nobots)
+	{
 		flags |= COMMAND_FILTER_NO_BOTS;
 	}
-	if (!immunity) {
+	if (!immunity)
+	{
 		flags |= COMMAND_FILTER_NO_IMMUNITY;
 	}
 	
@@ -362,10 +363,12 @@ stock int IRC_FindTarget(const char[] nick, const char[] target, bool nobots = f
 			flags,
 			target_name,
 			sizeof(target_name),
-			tn_is_ml)) > 0) {
+			tn_is_ml)) > 0)
+	{
 		return target_list[0];
 	}
-	else {
+	else
+	{
 		IRC_ReplyToTargetError(nick, target_count);
 		return -1;
 	}
@@ -381,30 +384,39 @@ stock int IRC_FindTarget(const char[] nick, const char[] target, bool nobots = f
  * @param reason		COMMAND_TARGET reason.
  * @noreturn
  */
-stock void IRC_ReplyToTargetError(const char[] nick, int reason) {
-	switch (reason) {
-		case COMMAND_TARGET_NONE: {
+stock IRC_ReplyToTargetError(const String:nick[], reason) {
+	switch (reason)
+	{
+		case COMMAND_TARGET_NONE:
+		{
 			IRC_ReplyToCommand(nick, "[SM] %t", "No matching client");
 		}
-		case COMMAND_TARGET_NOT_ALIVE: {
+		case COMMAND_TARGET_NOT_ALIVE:
+		{
 			IRC_ReplyToCommand(nick, "[SM] %t", "Target must be alive");
 		}
-		case COMMAND_TARGET_NOT_DEAD: {
+		case COMMAND_TARGET_NOT_DEAD:
+		{
 			IRC_ReplyToCommand(nick, "[SM] %t", "Target must be dead");
 		}
-		case COMMAND_TARGET_NOT_IN_GAME: {
+		case COMMAND_TARGET_NOT_IN_GAME:
+		{
 			IRC_ReplyToCommand(nick, "[SM] %t", "Target is not in game");
 		}
-		case COMMAND_TARGET_IMMUNE: {
+		case COMMAND_TARGET_IMMUNE:
+		{
 			IRC_ReplyToCommand(nick, "[SM] %t", "Unable to target");
 		}
-		case COMMAND_TARGET_EMPTY_FILTER: {
+		case COMMAND_TARGET_EMPTY_FILTER:
+		{
 			IRC_ReplyToCommand(nick, "[SM] %t", "No matching clients");
 		}
-		case COMMAND_TARGET_NOT_HUMAN: {
+		case COMMAND_TARGET_NOT_HUMAN:
+		{
 			IRC_ReplyToCommand(nick, "[SM] %t", "Cannot target bot");
 		}
-		case COMMAND_TARGET_AMBIGUOUS: {
+		case COMMAND_TARGET_AMBIGUOUS:
+		{
 			IRC_ReplyToCommand(nick, "[SM] %t", "More than one client matched");
 		}
 	}
@@ -419,8 +431,8 @@ stock void IRC_ReplyToTargetError(const char[] nick, int reason) {
  * @noreturn
  */
 
-stock void IRC_GetNickFromHostMask(const char[] hostmask, char[] nick, int maxlength) {
-	for (int i = 0; i <= maxlength; i++) {
+stock IRC_GetNickFromHostMask(const String:hostmask[], String:nick[], maxlength) {
+	for (new i = 0; i <= maxlength; i++) {
 		if (hostmask[i] == '!') {
 			nick[i] = '\x00';
 			break;
@@ -437,36 +449,31 @@ stock void IRC_GetNickFromHostMask(const char[] hostmask, char[] nick, int maxle
  * @noreturn
  */
 
-stock void IRC_Strip(char[] str, int maxlength) {
-	for (int i = 0; i <= strlen(str); i++) {
+stock IRC_Strip(String:str[], maxlength) {
+	for (new i = 0; i <= strlen(str); i++) {
 		//  Underline           Reverse             Color codes off     Bold
-		if (str[i] == '\x1F' || str[i] == '\x16' || str[i] == '\x0f' || str[i] == '\x02') {
+		if (str[i] == '\x1F' || str[i] == '\x16' || str[i] == '\x0f' || str[i] == '\x02')
 			RemoveChar(str, maxlength, i);
-		}
 		// Strip color codes
 		if (str[i] == '\x03') {
 			RemoveChar(str, maxlength, i);
-			//bool ignorelast = false;
+			new ignorelast = false;
 
-			if (47 < str[i] < 58) {
+			if (str[i] > 47 && str[i] < 58) {
 				RemoveChar(str, maxlength, i);
-				if ((47 < str[i] < 58) || str[i] == ',') {
-					//if (str[i] == ',') {
-					//	ignorelast = true;
-					//}
+				if ((str[i] > 47 && str[i] < 58) || str[i] == ',') {
+					if (str[i] == ',')
+						ignorelast = true;
 					RemoveChar(str, maxlength, i);
-					//if ((47 < str[i] < 58) || str[i] == ',') {
-					//	PrintToChatAll("Removing 4 %s", str[i]);
-					//	RemoveChar(str, maxlength, i);
-					//	if (47 < str[i] < 58) {
-					//		PrintToChatAll("Removing 5 %s", str[i]);
-					//		RemoveChar(str, maxlength, i);
-					//		if (47 < str[i] < 58 && !ignorelast) {
-					//			PrintToChatAll("Removing 6 %s", str[i]);
-					//			RemoveChar(str, maxlength, i);
-					//		}
-					//	}
-					//}
+					if ((str[i] > 47 && str[i] < 58) || str[i] == ',') {
+						RemoveChar(str, maxlength, i);
+						if (str[i] > 47 && str[i] < 58) {
+							RemoveChar(str, maxlength, i);
+							if (str[i] > 47 && str[i] < 58 && !ignorelast) {
+								RemoveChar(str, maxlength, i);
+							}
+						}
+					}
 				}
 			}
 			i--;
@@ -483,8 +490,8 @@ stock void IRC_Strip(char[] str, int maxlength) {
  * @noreturn
  */
 
-stock void RemoveChar(char[] str, int maxlen, int c) {
-	for (int i = c; i < maxlen-1; i++) {
+stock RemoveChar(String:str[], maxlen, c) {
+	for (new i = c; i < maxlen-1; i++) {
 		str[i] = str[i+1];
 	}
 	str[maxlen-1] = '\0';
@@ -499,11 +506,10 @@ stock void RemoveChar(char[] str, int maxlen, int c) {
  * @noreturn
  */
 
-stock void IRC_StripGame(char[] str, int maxlen) {
-	for (int i = 0; i <= strlen(str); i++) {
+stock IRC_StripGame(String:str[], maxlen) {
+	for (new i = 0; i <= strlen(str); i++) {
 		//  Default             Team/LightGreen     Green               Olive
-		if (str[i] == '\x01' || str[i] == '\x03' || str[i] == '\x04' || str[i] == '\x05') {
+		if (str[i] == '\x01' || str[i] == '\x03' || str[i] == '\x04' || str[i] == '\x05')
 			RemoveChar(str, maxlen, i);
-		}
 	}
 }
