@@ -75,6 +75,7 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_loot", cLoot, "Opens the latest Tour Loot page");
 
 	RegAdminCmd("ce_mvm_force_loot", cForceLoot, ADMFLAG_ROOT);
+	RegAdminCmd("ce_mvm_set_wave_time", cSetWave, ADMFLAG_ROOT);
 
 	// SigSegv extension workaround.
 	AddCommandListener(cChangelevel, "changelevel");
@@ -422,6 +423,23 @@ public Action cForceLoot(int client, int args)
 {
 	RequestTourLoot();
 
+	return Plugin_Handled;
+}
+
+/**
+*	Purpose: 	ce_mvm_force_loot command.
+*/
+public Action cSetWave(int client, int args)
+{
+	char sArg[11];
+	GetCmdArg(1, sArg, sizeof(sArg));
+	int iWave = StringToInt(sArg);
+	
+	GetCmdArg(2, sArg, sizeof(sArg));
+	int iTime = StringToInt(sArg);
+	
+	SendWaveCompletionTime(iWave, iTime);
+	
 	return Plugin_Handled;
 }
 
