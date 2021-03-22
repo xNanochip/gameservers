@@ -110,7 +110,7 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 	char weapon[64];
 	GetEventString(hEvent, "weapon", weapon, sizeof(weapon));
 
-	if(IsClientValid(client))
+	if(IsClientReady(client))
 	{
 		CEcon_SendEventToClientFromGameEvent(client, "TF_DEATH", 1, hEvent);
 		if(IsClientValid(attacker))
@@ -860,5 +860,12 @@ public bool IsClientValid(int client)
 	if (client <= 0 || client > MaxClients)return false;
 	if (!IsClientInGame(client))return false;
 	if (!IsClientAuthorized(client))return false;
+	return true;
+}
+
+public bool IsClientReady(int client)
+{
+	if (!IsClientValid(client))return false;
+	if (IsFakeClient(client))return false;
 	return true;
 }
