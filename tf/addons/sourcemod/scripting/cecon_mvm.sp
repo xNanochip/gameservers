@@ -379,6 +379,8 @@ public void OnMapStart()
 
 public void ScheduleServerRestart()
 {
+	if(ce_mvm_switch_to_pubs_timer.IntValue < 0) return;
+
 	if(m_hBackToPubs != INVALID_HANDLE)
 	{
 		KillTimer(m_hBackToPubs);

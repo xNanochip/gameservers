@@ -800,7 +800,6 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 
 	//Check if one of tanks is a blimp
 	bool is_blimp = false;
-	PrintToChatAll("Tank destroyed");
 	for (int i = FindEntityByClassname(-1, "tank_boss"); i != -1; i = FindEntityByClassname(i, "tank_boss"))
 	{
 		if (GetEntProp(i, Prop_Data, "m_iHealth") > 0)
