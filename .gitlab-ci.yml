@@ -5,7 +5,13 @@ stages:
     stage: deploy
     script:
     - whoami
-    - cd /srv/daemon-data;
+
+    - >
+        if [ -d "/var/lib/pterodactyl/volumes" ]; then
+            cd /var/lib/pterodactyl/volumes;
+        else
+            cd /srv/daemon-data;
+        fi
     - >
         for d in ./*/ ; do
             cd "$d";
@@ -41,11 +47,11 @@ stages:
                         git clean -d -f -x tf/cfg/
 
                         # UNCOMMENT THESE LINES TO FORCE CLEANUP OF EXTRA BULLSHIT THAT MIGHT BE ON SERVERS
-                        #echo "git clean"
-                        #git clean -d -f -x tf/addons/sourcemod/plugins/
-                        #git clean -d -f -x tf/addons/sourcemod/plugins/external
-                        #git clean -d -f -x tf/addons/sourcemod/data/
-                        #git clean -d -f -x tf/addons/sourcemod/gamedata/
+                        # echo "git clean"
+                        # git clean -d -f -x tf/addons/sourcemod/plugins/
+                        # git clean -d -f -x tf/addons/sourcemod/plugins/external
+                        # git clean -d -f -x tf/addons/sourcemod/data/
+                        # git clean -d -f -x tf/addons/sourcemod/gamedata/
                         # THIS WILL DELETE ALL SOURCEMOD LOGS, INCLUDING STAC AND CHAT LOGS
                         # git clean -d -f -x tf/addons/sourcemod/logs/
 
@@ -60,8 +66,8 @@ stages:
                         chmod 744 start.sh;
 
                         # don't run this often
-                        # echo "garbage collecting"
-                        # git gc --force ;
+                        #echo "garbage collecting"
+                        #git gc --force ;
 
                         echo "building"
                         ./build.sh $COMMIT_OLD;
@@ -82,15 +88,15 @@ deploy-virginia:
     - virginiapub
     <<: *deploy_template
 
-# deploy-singapore:
-#     tags:
-#     - sgp1
-#     <<: *deploy_template
+deploy-singapore:
+    tags:
+    - sgppub
+    <<: *deploy_template
 
-# deploy-australia:
-#     tags:
-#     - aus1
-#     <<: *deploy_template
+deploy-australia:
+    tags:
+    - auspub
+    <<: *deploy_template
 
 # deploy-la:
 #     tags:

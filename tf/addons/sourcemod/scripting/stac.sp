@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.1.10b"
+#define PLUGIN_VERSION  "4.1.12b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -404,6 +404,7 @@ void initCvars()
     );
     HookConVarChange(stac_max_fakeang_detections, stacVarChanged);
 
+
     // cmdnum spike detections
     IntToString(maxCmdnumDetections, buffer, sizeof(buffer));
     stac_max_cmdnum_detections =
@@ -616,10 +617,13 @@ void setStacVars()
     // fakeang var
     maxFakeAngDetections    = GetConVarInt(stac_max_fakeang_detections);
 
-    // fakeang var
+    // cmdnum spikes var
+    maxCmdnumDetections     = GetConVarInt(stac_max_cmdnum_detections);
+
+    // max settings changes var
     maxSettingsChanges      = GetConVarInt(stac_max_settings_changes);
 
-    // fakeang var
+    // settings change var
     SettingsChangeWindow    = GetConVarFloat(stac_settings_changes_window);
 
     // minterp var - clamp to -1 if 0
@@ -669,10 +673,14 @@ void RunOptimizeCvars()
     SetConVarFloat(FindConVar("sv_maxunlag"), 0.2);
     // fix backtracking
     // dont error out on server start
-    if (FindConVar("jay_backtrack_enable") != INVALID_HANDLE)
+    ConVar jay_backtrack_enable     = FindConVar("jay_backtrack_enable");
+    ConVar jay_backtrack_tolerance  = FindConVar("jay_backtrack_tolerance");
+    if (jay_backtrack_enable != null && jay_backtrack_tolerance != null)
     {
-        SetConVarInt(FindConVar("jay_backtrack_enable"), 1);
-        SetConVarInt(FindConVar("jay_backtrack_tolerance"), 0);
+        // enable jaypatch
+        SetConVarInt(jay_backtrack_enable, 1);
+        // clamp jaypatch to sane values
+        SetConVarInt(jay_backtrack_tolerance, Math_Clamp(GetConVarInt(jay_backtrack_tolerance), 0, 1));
     }
     // get rid of any possible exploits by using teleporters and fov
     SetConVarInt(FindConVar("tf_teleporter_fov_start"), 90);
@@ -2110,6 +2118,9 @@ public void BanUser(int userid, char[] reason, char[] pubreason)
     // make sure we dont detect on already banned players
     userBanQueued[Cl] = true;
 
+    // check if client is authed before banning normally
+    bool isAuthed = IsClientAuthorized(Cl);
+
     if (demonameInBanReason)
     {
         char tvStatus[512];
@@ -2153,14 +2164,7 @@ public void BanUser(int userid, char[] reason, char[] pubreason)
         // now lets check if that player was connected to steam
         if
         (
-            (
-                isSteamAlive == 0
-            )
-            ||
-            (
-                // or is the client definitely not authorized?
-                !IsClientAuthorized(Cl)
-            )
+            !isAuthed
         )
         {
             PrintToImportant("{hotpink}[StAC]{white} Client %N is UNAUTHORIZED or STEAM IS DOWN!!! Banning by IP instead...", Cl);
@@ -2766,4 +2770,33 @@ bool IsHalloweenCond(TFCond condition)
         return true;
     }
     return false;
+}
+
+// stolen from smlib
+int Math_Clamp(int value, int min, int max)
+{
+    value = Math_Min(value, min);
+    value = Math_Max(value, max);
+
+    return value;
+}
+
+int Math_Min(int value, int min)
+{
+    if (value < min)
+    {
+        value = min;
+    }
+
+    return value;
+}
+
+int Math_Max(int value, int max)
+{
+    if (value > max)
+    {
+        value = max;
+    }
+
+    return value;
 }
