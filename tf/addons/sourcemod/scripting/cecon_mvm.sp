@@ -761,7 +761,7 @@ public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HT
 	Response.GetString("hash", m_sLastTourLootHash, sizeof(m_sLastTourLootHash));
 	delete Response;
 
-	CreateTimer(2.0, Timer_OpenTourLootPageToAll);
+	CreateTimer(0.2, Timer_OpenTourLootPageToAll);
 }
 
 public Action Timer_OpenTourLootPageToAll(Handle timer, any data)
