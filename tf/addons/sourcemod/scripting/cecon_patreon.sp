@@ -13,6 +13,8 @@ public Plugin myinfo =
 	url = "https://creators.tf"
 };
 
+bool g_bCCC;
+
 ConVar ce_patreon_debug;
 
 public void OnPluginStart()
@@ -20,6 +22,16 @@ public void OnPluginStart()
 	ce_patreon_debug = CreateConVar("ce_patreon_debug", "0");
 
 	LoadAllClientsPledges();
+}
+
+public void OnLibraryAdded(const char[] name)
+{
+	if (StrEqual(name, "ccc")) g_bCCC = true;
+}
+
+public void OnLibraryRemoved(const char[] name)
+{
+	if (StrEqual(name, "ccc")) g_bCCC = false;
 }
 
 public void LoadAllClientsPledges()
@@ -79,36 +91,33 @@ public void httpPlayerDonation_Callback(HTTPRequestHandle request, bool success,
 	int centsAmount = kv.GetNum("amount");
 	delete kv;
 
-	if(ce_patreon_debug.BoolValue)
+	if (ce_patreon_debug.BoolValue)
 	{
 		PrintToServer("Amount of cents for %N: %d", client, centsAmount);
 	}
-
+	
+	bool patron = false;
 	if (centsAmount >= 200 && centsAmount < 500)
 	{
 		SetClientAdminFlag(client, Admin_Custom1);
-		CCC_SetTag(client, "Patreon Tier I | ");
-		CCC_SetColor(client, CCC_TagColor, StringToInt("f0cca5", 16), false);
+		patron = true;
 	}
 	else if (centsAmount >= 500 && centsAmount < 1000)
 	{
-		SetClientAdminFlag(client, Admin_Custom1);
-		CCC_SetTag(client, "Patreon Tier II | ");
-		CCC_SetColor(client, CCC_TagColor, StringToInt("e8af72", 16), false);
+		SetClientAdminFlag(client, Admin_Custom2);
+		patron = true;
 	}
 	else if (centsAmount >= 1000)
 	{
-		SetClientAdminFlag(client, Admin_Custom1);
-		CCC_SetTag(client, "Patreon Tier III | ");
-		CCC_SetColor(client, CCC_TagColor, StringToInt("e38a2b", 16), false);
+		SetClientAdminFlag(client, Admin_Custom3);
+		patron = true;
 	}
 
-	if(centsAmount >= 200)
+	if (patron)
 	{
         SetClientAdminFlag(client, Admin_Custom4);
         RunAdminCacheChecks(client);
-
-        CreateTimer(0.1, Timer_ReloadCCC);
+        if (g_bCCC) CreateTimer(1.0, Timer_ReloadCCC, _, TIMER_FLAG_NO_MAPCHANGE);
 	}
 }
 
