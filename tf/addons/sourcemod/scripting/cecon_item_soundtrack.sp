@@ -101,6 +101,9 @@ public void OnPluginStart()
 	HookEvent("teamplay_round_start", teamplay_round_start, EventHookMode_Pre);
 	HookEvent("teamplay_round_win", teamplay_round_win);
 	HookEvent("teamplay_point_captured", teamplay_point_captured);
+	
+	HookEvent("mvm_bomb_alarm_triggered", mvm_bomb_alarm_triggered);
+	HookEvent("mvm_bomb_reset_by_player", mvm_bomb_reset_by_player);
 
 	CreateTimer(0.5, Timer_EscordProgressUpdate, _, TIMER_REPEAT);
 	RegServerCmd("ce_soundtrack_setkit", cSetKit, "");
@@ -108,6 +111,37 @@ public void OnPluginStart()
 
 	HookEntityOutput("team_round_timer", "On30SecRemain", OnEntityOutput);
 	HookEntityOutput("team_round_timer", "On1MinRemain", OnEntityOutput);
+	
+	AddNormalSoundHook(view_as<NormalSHook>(OnSoundHook));
+}
+
+//---------------------------------------------------------------------------------------
+// Purpose:	Fired when a sound if played. 
+//---------------------------------------------------------------------------------------
+public Action OnSoundHook(int[] clients, int &numClients, char[] sample, int &entity, int &channel, float &volume, int &level, int &pitch, int &flags, char[] soundEntry, int &seed)
+{
+	if(StrEqual(sample, "mvm/mvm_tank_deploy.wav"))
+	{
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if(IsClientReady(i))
+			{
+				CEcon_SendEventToClientUnique(i, "OST_MVM_TANK_DEPLOY", 1);
+			}
+		}
+	}
+	
+	if(StrEqual(sample, ")mvm/mvm_tank_explode.wav"))
+	{
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if(IsClientReady(i))
+			{
+				CEcon_SendEventToClientUnique(i, "OST_MVM_TANK_DESTROYED", 1);
+			}
+		}
+	}
+	return Plugin_Continue;
 }
 
 public void CEcon_OnSchemaUpdated(KeyValues hSchema)
@@ -436,6 +470,17 @@ public int PrecacheSampleKeyValues(KeyValues hConf)
 	m_hSampleDefs.PushArray(hSample);
 
 	return iIndex;
+}
+
+public Action mvm_bomb_reset_by_player(Event hEvent, const char[] szName, bool bDontBroadcast)
+{
+	PrintToChatAll("mvm_bomb_reset_by_player");
+}
+
+
+public Action mvm_bomb_alarm_triggered(Event hEvent, const char[] szName, bool bDontBroadcast)
+{
+	PrintToChatAll("mvm_bomb_alarm_triggered");
 }
 
 public Action teamplay_broadcast_audio(Event hEvent, const char[] szName, bool bDontBroadcast)
