@@ -71,7 +71,7 @@ public void OnPluginStart()
 	HookEvent("teamplay_round_win", teamplay_round_win);
 
 	ce_quest_friend_sharing_enabled = CreateConVar("ce_quest_friend_sharing_enabled", "1", "Enabled \"Friendly Fire\" feature, that allows to share progress with friends.");
-	ce_quest_background_enabled = CreateConVar("ce_quest_background_enabled", "1", "Enable background quests to track themselves.");
+	ce_quest_background_enabled = CreateConVar("ce_quest_background_enabled", "0", "Enable background quests to track themselves.");
 }
 
 public Action cQuestPanel(int client, int args)
@@ -1076,15 +1076,18 @@ public void IterateAndTickleClientQuests(int client, int source, const char[] ev
 		TickleClientQuestObjectives(client, xQuest, source, event, add, unique);
 	}
 
-	DataPack hPack = new DataPack();
-	hPack.WriteCell(client);
-	hPack.WriteCell(source);
-	hPack.WriteString(event);
-	hPack.WriteCell(add);
-	hPack.WriteCell(unique);
-	hPack.Reset();
-
-	RequestFrame(RF_BackgroundQuests, hPack);
+	if(ce_quest_background_enabled.BoolValue)
+	{
+		DataPack hPack = new DataPack();
+		hPack.WriteCell(client);
+		hPack.WriteCell(source);
+		hPack.WriteString(event);
+		hPack.WriteCell(add);
+		hPack.WriteCell(unique);
+		hPack.Reset();
+	
+		RequestFrame(RF_BackgroundQuests, hPack);
+	}
 }
 
 public void RF_BackgroundQuests(any pack)
