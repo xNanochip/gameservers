@@ -741,6 +741,8 @@ public void Schema_CheckForUpdates(bool bIsForced)
 		// If we set to override the schema url, use value from the cvar.
 		strcopy(sURL, sizeof(sURL), sOverrideURL);
 	}
+	
+	LogMessage(sURL);
 
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "field", "Version");

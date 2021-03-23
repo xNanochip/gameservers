@@ -52,6 +52,7 @@ int m_iLastUniqueEvent[MAXPLAYERS + 1];
 bool m_bIsObjectiveMarked[MAXPLAYERS + 1][MAX_OBJECTIVES + 1];
 
 ConVar ce_quest_friend_sharing_enabled;
+ConVar ce_quest_background_enabled;
 
 public void OnPluginStart()
 {
@@ -70,6 +71,7 @@ public void OnPluginStart()
 	HookEvent("teamplay_round_win", teamplay_round_win);
 
 	ce_quest_friend_sharing_enabled = CreateConVar("ce_quest_friend_sharing_enabled", "1", "Enabled \"Friendly Fire\" feature, that allows to share progress with friends.");
+	ce_quest_background_enabled = CreateConVar("ce_quest_background_enabled", "1", "Enable background quests to track themselves.");
 }
 
 public Action cQuestPanel(int client, int args)

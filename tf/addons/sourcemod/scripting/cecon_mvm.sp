@@ -75,6 +75,7 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_loot", cLoot, "Opens the latest Tour Loot page");
 
 	RegAdminCmd("ce_mvm_force_loot", cForceLoot, ADMFLAG_ROOT);
+	RegAdminCmd("ce_mvm_set_wave_time", cSetWave, ADMFLAG_ROOT);
 
 	// SigSegv extension workaround.
 	AddCommandListener(cChangelevel, "changelevel");
@@ -379,6 +380,8 @@ public void OnMapStart()
 
 public void ScheduleServerRestart()
 {
+	if(ce_mvm_switch_to_pubs_timer.IntValue < 0) return;
+
 	if(m_hBackToPubs != INVALID_HANDLE)
 	{
 		KillTimer(m_hBackToPubs);
@@ -419,6 +422,23 @@ public bool TF2MvM_IsPlayingMvM()
 public Action cForceLoot(int client, int args)
 {
 	RequestTourLoot();
+
+	return Plugin_Handled;
+}
+
+/**
+*	Purpose: 	ce_mvm_force_loot command.
+*/
+public Action cSetWave(int client, int args)
+{
+	char sArg[11];
+	GetCmdArg(1, sArg, sizeof(sArg));
+	int iWave = StringToInt(sArg);
+
+	GetCmdArg(2, sArg, sizeof(sArg));
+	int iTime = StringToInt(sArg);
+
+	SendWaveCompletionTime(iWave, iTime);
 
 	return Plugin_Handled;
 }
@@ -699,6 +719,7 @@ public void RequestTourLoot()
 	// Setting mission name.
 	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "mission", sPopFile);
 	Steam_SendHTTPRequest(hRequest, RequestTourLoot_Callback);
+	PrintToChatAll("RequestTourLoot");
 }
 
 public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
@@ -728,7 +749,7 @@ public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HT
 	Response.GetString("hash", m_sLastTourLootHash, sizeof(m_sLastTourLootHash));
 	delete Response;
 
-	CreateTimer(2.0, Timer_OpenTourLootPageToAll);
+	CreateTimer(0.2, Timer_OpenTourLootPageToAll);
 }
 
 public Action Timer_OpenTourLootPageToAll(Handle timer, any data)
