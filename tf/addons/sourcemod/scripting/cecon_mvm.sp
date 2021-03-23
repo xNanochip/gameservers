@@ -434,12 +434,12 @@ public Action cSetWave(int client, int args)
 	char sArg[11];
 	GetCmdArg(1, sArg, sizeof(sArg));
 	int iWave = StringToInt(sArg);
-	
+
 	GetCmdArg(2, sArg, sizeof(sArg));
 	int iTime = StringToInt(sArg);
-	
+
 	SendWaveCompletionTime(iWave, iTime);
-	
+
 	return Plugin_Handled;
 }
 
@@ -642,6 +642,10 @@ public void SendWaveCompletionTime(int wave, int seconds)
 
 		iCount++;
 	}
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[1]", "1001");
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[2]", "1002");
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[3]", "1003");
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[4]", "1005");
 
 	// Setting wave number.
 	char sValue[64];
@@ -715,10 +719,19 @@ public void RequestTourLoot()
 
 		iCount++;
 	}
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[1]", "1001");
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "classes[1]", "1001");
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[2]", "1002");
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "classes[2]", "1002");
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[3]", "1003");
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "classes[3]", "1003");
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[4]", "1005");
+	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "classes[4]", "1005");
 
 	// Setting mission name.
 	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "mission", sPopFile);
 	Steam_SendHTTPRequest(hRequest, RequestTourLoot_Callback);
+	PrintToChatAll("RequestTourLoot");
 }
 
 public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
