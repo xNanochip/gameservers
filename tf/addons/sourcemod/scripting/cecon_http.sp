@@ -21,12 +21,16 @@ public Plugin myinfo =
 	url = "https://creators.tf"
 }
 
+ConVar ce_http_debug_requests;
+
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	RegPluginLibrary("cecon_http");
 	
 	CreateNative("CEconHTTP_CreateAbsoluteBackendURL", Native_CreateAbsoluteBackendURL);
 	CreateNative("CEconHTTP_CreateBaseHTTPRequest", Native_CreateBaseHTTPRequest);
+	
+	ce_http_debug_requests = CreateConVar("ce_http_debug_requests", "0");
 
 	return APLRes_Success;
 }
@@ -59,7 +63,10 @@ public any Native_CreateAbsoluteBackendURL(Handle plugin, int numParams)
 		strcopy(sURL, sizeof(sURL), sBaseURL);
 	}
 
-	LogMessage("Generated URL: %s", sURL);
+	if(ce_http_debug_requests.BoolValue)
+	{
+		LogMessage("Generated URL: %s", sURL);
+	}
 	SetNativeString(2, sURL, size);
 }
 
