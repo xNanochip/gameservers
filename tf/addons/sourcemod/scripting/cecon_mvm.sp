@@ -475,16 +475,18 @@ public Action cMvMEquipItemName(int args)
 public Action cMvMGetItemDefID(int args)
 {
 	char sArg1[128];
-	GetCmdArg(1, sArg1, sizeof(sArg1));
-
+	GetCmdArgString(sArg1, sizeof(sArg1));
+	
 	PrintToChatAll(sArg1);
+	
+	GetCmdArg(1, sArg1, sizeof(sArg1));
+	
 
 	if (!StrEqual(sArg1, ""))
 	{
 		CEItemDefinition xDef;
 		if(CEconItems_GetItemDefinitionByName(sArg1, xDef))
 		{
-			PrintToChatAll("%d (%d)", xDef.m_iIndex, GetDefinitionBaseIndex(xDef.m_iIndex));
 			ce_mvm_check_itemname_cvar.SetInt(GetDefinitionBaseIndex(xDef.m_iIndex));
 			return Plugin_Handled;
 		}
@@ -505,8 +507,6 @@ public Action cMvMSetEntityAttribute(int args)
 
 	GetCmdArg(2, sName, sizeof(sName));
 	GetCmdArg(3, sValue, sizeof(sValue));
-
-	PrintToChatAll("%s %s %s", sName, sEntity, sValue);
 
 	if (!IsValidEntity(iEntity))return Plugin_Handled;
 
