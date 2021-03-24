@@ -44,6 +44,8 @@ enum struct Event_t
     char m_sID[32];
 
 	bool m_bForceStart;
+	bool m_bForceStop;
+	
     bool m_bFireOnce;
     bool m_bSkipPost;
 
@@ -74,6 +76,7 @@ char m_sActiveSound[MAXPLAYERS + 1][MAX_SOUND_NAME];
 bool m_bIsPlaying[MAXPLAYERS + 1];
 bool m_bShouldStop[MAXPLAYERS + 1];
 bool m_bForceNextEvent[MAXPLAYERS + 1];
+bool m_bQueuedSkipped[MAXPLAYERS + 1]; // Ignore queue even if there are more samples there.
 
 Handle m_hTimer[MAXPLAYERS + 1];
 
@@ -86,6 +89,7 @@ Sample_t m_hPostSample[MAXPLAYERS + 1];
 int m_nPayloadStage = 0;
 int m_iRoundTime = 0;
 
+
 public Plugin myinfo =
 {
 	name = "Creators.TF Economy - Music Kits Handler",
@@ -95,16 +99,16 @@ public Plugin myinfo =
 	url = "https://creators.tf"
 };
 
+#define MVM_DANGER_CHECK_INTERVAL 0.5
+
 public void OnPluginStart()
 {
 	HookEvent("teamplay_broadcast_audio", teamplay_broadcast_audio, EventHookMode_Pre);
 	HookEvent("teamplay_round_start", teamplay_round_start, EventHookMode_Pre);
 	HookEvent("teamplay_round_win", teamplay_round_win);
 	HookEvent("teamplay_point_captured", teamplay_point_captured);
+	HookEvent("mvm_wave_complete", mvm_wave_complete);
 	
-	HookEvent("mvm_bomb_alarm_triggered", mvm_bomb_alarm_triggered);
-	HookEvent("mvm_bomb_reset_by_player", mvm_bomb_reset_by_player);
-
 	CreateTimer(0.5, Timer_EscordProgressUpdate, _, TIMER_REPEAT);
 	RegServerCmd("ce_soundtrack_setkit", cSetKit, "");
 	RegServerCmd("ce_soundtrack_dump", cDump, "");
@@ -113,6 +117,137 @@ public void OnPluginStart()
 	HookEntityOutput("team_round_timer", "On1MinRemain", OnEntityOutput);
 	
 	AddNormalSoundHook(view_as<NormalSHook>(OnSoundHook));
+	
+	CreateTimer(MVM_DANGER_CHECK_INTERVAL, Timer_MvMDangerCheck, _, TIMER_REPEAT);
+}
+
+// MvM
+
+bool m_bWasInDangerBefore = false;
+
+float m_flBombCalmDownAfter;
+
+#define MVM_BOMB_CALM_DELAY 10.0
+#define MVM_BOMB_DANGER_RADIUS 1500.0
+#define MVM_BOMB_CRITICAL_RADIUS 500.0
+
+public Action Timer_MvMDangerCheck(Handle timer, any data)
+{
+	if(TF2MvM_IsPlayingMvM())	
+	{
+		bool bIsCritical = false;
+		bool bDanger = MvM_IsInDanger(bIsCritical);
+		
+		if(bDanger != m_bWasInDangerBefore)
+		{
+			if(bDanger)
+			{
+				if(bIsCritical)
+				{
+					MvM_EnableCriticalMode();
+				} else {
+					MvM_EnableDangerMode();
+				}
+			} else {
+				MvM_DisableDangerMode();
+			}
+		}
+	}
+}
+
+public bool TF2MvM_IsPlayingMvM()
+{
+	return (GameRules_GetProp("m_bPlayingMannVsMachine") != 0);
+}
+
+#define TF_FLAGINFO_STOLEN (1 << 0)
+
+public bool MvM_IsInDanger(bool &critical)
+{
+	critical = false;
+	if (!TF2MvM_IsPlayingMvM())return false;
+	
+	float flTime = GetEngineTime();
+	
+	int iHatch = FindEntityByClassname(-1, "func_capturezone");
+	if(iHatch > -1)
+	{
+		float vecPosHatch[3], vecPosHatchMins[3], vecPosHatchMaxs[3];
+		GetEntPropVector(iHatch, Prop_Send, "m_vecMins", vecPosHatchMins);
+		GetEntPropVector(iHatch, Prop_Send, "m_vecMaxs", vecPosHatchMaxs);
+		
+		for (int i = 0; i < 3; i++)vecPosHatch[i] = vecPosHatchMins[i] + (vecPosHatchMaxs[i] - vecPosHatchMins[i]) / 2;
+		
+		// Check if a tank is near the hatch.
+		int iTank = -1;
+		while((iTank = FindEntityByClassname(iTank, "tank_boss")) != -1)
+		{
+			float vecPosTank[3];
+			GetEntPropVector(iTank, Prop_Send, "m_vecOrigin", vecPosTank);
+		
+			float flDistance = GetVectorDistance(vecPosHatch, vecPosTank, false);
+			if(flDistance < MVM_BOMB_DANGER_RADIUS)
+			{
+				if(flDistance < MVM_BOMB_CRITICAL_RADIUS)
+				{
+					critical = true;
+				}
+				return true;
+			}
+		}
+
+		// Check if bomb is near the hatch.
+		int iFlag = -1;
+		while((iFlag = FindEntityByClassname(iFlag, "item_teamflag")) != -1)
+		{
+			int iStatus = GetEntProp(iFlag, Prop_Send, "m_nFlagStatus");
+			if(iStatus & TF_FLAGINFO_STOLEN)
+			{
+				int iOwner = GetEntPropEnt(iFlag, Prop_Send, "m_hOwnerEntity");
+				if(iOwner > -1)
+				{
+					float vecPosFlag[3];
+					GetClientAbsOrigin(iOwner, vecPosFlag);
+				
+					float flDistance = GetVectorDistance(vecPosHatch, vecPosFlag, false);
+					if(flDistance < MVM_BOMB_DANGER_RADIUS)
+					{
+						if(flDistance < MVM_BOMB_CRITICAL_RADIUS)
+						{
+							critical = true;
+						}	
+						m_flBombCalmDownAfter = flTime + MVM_BOMB_CALM_DELAY;
+						return true;
+					}
+				}
+			}
+		}
+	}
+	
+	if (m_flBombCalmDownAfter > flTime)return true;
+	
+	return false;
+}
+
+public void MvM_EnableDangerMode()
+{
+	PrintToChatAll("Danger Mode");
+	SendEventUniqueToAll("OST_MVM_BOMB_PROXIMITY_START", 1);
+	m_bWasInDangerBefore = true;
+}
+
+public void MvM_EnableCriticalMode()
+{
+	PrintToChatAll("Critical Mode");
+	SendEventUniqueToAll("OST_MVM_BOMB_PROXIMITY_START_SKIP_INTRO", 1);
+	m_bWasInDangerBefore = true;
+}
+
+public void MvM_DisableDangerMode()
+{
+	PrintToChatAll("Safe Mode");
+	SendEventUniqueToAll("OST_MVM_BOMB_PROXIMITY_STOP", 1);
+	m_bWasInDangerBefore = false;
 }
 
 //---------------------------------------------------------------------------------------
@@ -142,6 +277,17 @@ public Action OnSoundHook(int[] clients, int &numClients, char[] sample, int &en
 		}
 	}
 	return Plugin_Continue;
+}
+
+public void SendEventUniqueToAll(const char[] event, int add)
+{
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if(IsClientReady(i))
+		{
+			CEcon_SendEventToClientUnique(i, event, add);
+		}
+	}
 }
 
 public void CEcon_OnSchemaUpdated(KeyValues hSchema)
@@ -224,6 +370,7 @@ public Action cDump(int args)
 			LogMessage("      m_sID = \"%s\"", hEvent.m_sID);
 
 			LogMessage("      m_bForceStart = %s", hEvent.m_bForceStart ? "true" : "false");
+			LogMessage("      m_bForceStop = %s", hEvent.m_bForceStop ? "true" : "false");
 			LogMessage("      m_bFireOnce = %s", hEvent.m_bFireOnce ? "true" : "false");
 			LogMessage("      m_bSkipPost = %s", hEvent.m_bSkipPost ? "true" : "false");
 
@@ -404,6 +551,7 @@ public int PrecacheEventKeyValues(KeyValues hConf)
 
 	hEvent.m_bFireOnce = hConf.GetNum("fire_once") >= 1;
 	hEvent.m_bForceStart = hConf.GetNum("force_start") >= 1;
+	hEvent.m_bForceStop = hConf.GetNum("force_stop") >= 1;
 	hEvent.m_bSkipPost = hConf.GetNum("skip_post") >= 1;
 
 	hConf.GetString("start_hook", hEvent.m_sStartHook, sizeof(hEvent.m_sStartHook));
@@ -472,23 +620,12 @@ public int PrecacheSampleKeyValues(KeyValues hConf)
 	return iIndex;
 }
 
-public Action mvm_bomb_reset_by_player(Event hEvent, const char[] szName, bool bDontBroadcast)
-{
-	PrintToChatAll("mvm_bomb_reset_by_player");
-}
-
-
-public Action mvm_bomb_alarm_triggered(Event hEvent, const char[] szName, bool bDontBroadcast)
-{
-	PrintToChatAll("mvm_bomb_alarm_triggered");
-}
-
 public Action teamplay_broadcast_audio(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int iTeam = hEvent.GetInt("team");
 	char sOldSound[MAX_SOUND_NAME];
 	hEvent.GetString("sound", sOldSound, sizeof(sOldSound));
-	
+
 	bool bWillOverride = false;
 	if (StrContains(sOldSound, "YourTeamWon") != -1)bWillOverride = true;
 	if (StrContains(sOldSound, "YourTeamLost") != -1)bWillOverride = true;
@@ -608,7 +745,7 @@ public void CEcon_OnClientEvent(int client, const char[] event, int add, int uni
 		GetEventByIndex(iEvent, hEvent);
 
 		// Check if we need to start an event.
-		if(StrContains(hEvent.m_sStartHook, event) != -1)
+		if(StrEqual(hEvent.m_sStartHook, event))
 		{
 			// If this event is played only once, we skip this.
 			if (hEvent.m_bFireOnce && m_iCurrentEvent[client] == iEvent)continue;
@@ -625,14 +762,21 @@ public void CEcon_OnClientEvent(int client, const char[] event, int add, int uni
 			m_iNextEvent[client] = iEvent;
 			m_bForceNextEvent[client] = hEvent.m_bForceStart;
 			m_bShouldStop[client] = false;
+			break;
 		}
 
 		// Start Sample playing.
-		if(StrContains(hEvent.m_sStopHook, event) != -1)
+		if(StrEqual(hEvent.m_sStopHook, event))
 		{
 			if(m_bIsPlaying[client] && !m_bShouldStop[client])
 			{
 				m_bShouldStop[client] = true;
+				if(hEvent.m_bForceStop)
+				{
+					m_bIsPlaying[client] = false;
+					m_bQueuedSkipped[client] = true;
+					PlayNextSample(client);
+				}
 			}
 		}
 	}
@@ -775,8 +919,8 @@ public void GetNextSample(int client, Sample_t hSample)
 
 	int iPointer = m_iQueuePointer[client];
 
-	// If we have more things to play in the main queue.
-	if(m_iQueueLength[client] > iPointer)
+	// If we have more things to play in the main queue and queue is not skipped.
+	if(m_iQueueLength[client] > iPointer && !m_bQueuedSkipped[client])
 	{
 
 		// Get currently active sample.
@@ -837,8 +981,8 @@ public void GetNextSample(int client, Sample_t hSample)
 
 public void BufferLoadEvent(int client, int event)
 {
-
 	if (!IsClientValid(client))return;
+	m_bQueuedSkipped[client] = false;
 
 	Event_t hEvent;
 	if (!GetEventByIndex(event, hEvent))return;
@@ -920,6 +1064,8 @@ public void StopEventsForAll()
 
 public Action teamplay_round_win(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
+	MvM_DisableDangerMode();
+	
 	int iWinReason = GetEventInt(hEvent, "winreason");
 	if(m_nPayloadStage == 2 && iWinReason == 1)
 	{
@@ -931,6 +1077,11 @@ public Action teamplay_round_win(Event hEvent, const char[] szName, bool bDontBr
 			}
 		}
 	}
+}
+
+public Action mvm_wave_complete(Event hEvent, const char[] szName, bool bDontBroadcast)
+{
+	MvM_DisableDangerMode();
 }
 
 public Action Timer_EscordProgressUpdate(Handle timer, any data)
