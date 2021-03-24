@@ -1448,6 +1448,15 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 				WritePackString(data, map);
 				g_ChangeMapInProgress = false;
 			}
+			else if (GetConVarBool(g_Cvar_IntermissionVote) && g_bDidRevote)
+			{
+				// THIS IS WHEN IT DOES NOT DO THE REVOTE
+				//just go ahead and change the map since no revotes were needed
+				new Handle:data;
+				CreateDataTimer(4.0, Timer_ChangeMap, data);
+				WritePackString(data, map);
+				g_ChangeMapInProgress = false;
+			}
 			else SetNextMap(map);
 		}
 		else if (g_ChangeTime == MapChange_Instant)
