@@ -213,7 +213,6 @@ enum WarningType
 #define FAILURE_TIMER_LENGTH 5
 
 bool g_bDidRevote;
-bool g_bCreators;
 
 public OnPluginStart()
 {
@@ -326,6 +325,7 @@ public OnPluginStart()
 				HookEvent("teamplay_restart_round", Event_TFRestartRound);
 				HookEvent("arena_win_panel", Event_TeamPlayWinPanel);
 				HookEvent("pve_win_panel", Event_MvMWinPanel);
+				HookEvent("tf_game_over", Event_OnGameOver);
 			}
 
 			case Engine_NuclearDawn:
@@ -419,7 +419,6 @@ public OnLibraryAdded(const String:name[])
 	{
 		g_NativeVotes = true;
 	}
-	if (strcmp(name, "ce_core") == 0) g_bCreators = true;
 }
 
 public OnLibraryRemoved(const String:name[])
@@ -428,7 +427,6 @@ public OnLibraryRemoved(const String:name[])
 	{
 		g_NativeVotes = false;
 	}
-	if (strcmp(name, "ce_core") == 0) g_bCreators = false;
 }
 
 public OnMapStart()
@@ -718,7 +716,6 @@ public Event_TeamPlayWinPanel(Handle:event, const String:name[], bool:dontBroadc
 	if (g_ChangeMapAtRoundEnd)
 	{
 		g_ChangeMapAtRoundEnd = false;
-		if (g_bCreators) ServerCommand("sm_saveprogress");
 		CreateTimer(2.0, Timer_ChangeMap, INVALID_HANDLE, TIMER_FLAG_NO_MAPCHANGE);
 		g_ChangeMapInProgress = true;
 	}
@@ -781,6 +778,20 @@ void DoIntermissionVote()
 	}
 }
 
+public Event_OnGameOver(Event ev, const char[] name, bool dontBroadcast)
+{
+	if (GetConVarBool(g_Cvar_IntermissionVote) && CanVoteStart())
+	{
+		if (IsVoteInProgress()) CancelVote();
+		if (g_NativeVotes && NativeVotes_IsVoteInProgress())
+		{
+			NativeVotes_Cancel();
+			CreateTimer(1.0, Timer_Delay, _, TIMER_FLAG_NO_MAPCHANGE); // start a vote 1 second later (so that it fully cancels any votes in progress)
+		}
+		else DoIntermissionVote();
+	}
+}
+
 public Event_MvMWinPanel(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	if (GetEventInt(event, "winning_team") == 2)
@@ -834,7 +845,6 @@ public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 	if (g_ChangeMapAtRoundEnd)
 	{
 		g_ChangeMapAtRoundEnd = false;
-		if (g_bCreators) ServerCommand("sm_saveprogress");
 		CreateTimer(2.0, Timer_ChangeMap, INVALID_HANDLE, TIMER_FLAG_NO_MAPCHANGE);
 		g_ChangeMapInProgress = true;
 	}
@@ -1429,7 +1439,7 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 			{
 				NativeVotes_DisplayPass(menu, map);
 			}
-			if (GetConVarBool(g_Cvar_IntermissionVote) && !g_bDidRevote)
+			if (GetConVarBool(g_Cvar_IntermissionVote))
 			{
 				//just go ahead and change the map since no revotes were needed
 				new Handle:data;
@@ -1442,7 +1452,6 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 		else if (g_ChangeTime == MapChange_Instant)
 		{
 			new Handle:data;
-			if (g_bCreators) ServerCommand("sm_saveprogress");
 			CreateDataTimer(4.0, Timer_ChangeMap, data);
 			WritePackString(data, map);
 			g_ChangeMapInProgress = false;
