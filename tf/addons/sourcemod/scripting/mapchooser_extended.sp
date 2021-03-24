@@ -284,6 +284,7 @@ public OnPluginStart()
 	SetMapListCompatBind("official", mapListPath);
 	
 	HookEvent("tf_game_over", Event_OnGameOver);
+	HookEvent("teamplay_game_over", Event_OnGameOver);
 
 	switch (version)
 	{
