@@ -1439,8 +1439,9 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 			{
 				NativeVotes_DisplayPass(menu, map);
 			}
-			if (GetConVarBool(g_Cvar_IntermissionVote))
+			if (GetConVarBool(g_Cvar_IntermissionVote) && !g_bDidRevote)
 			{
+				// THIS IS WHEN IT DOES THE REVOTE
 				//just go ahead and change the map since no revotes were needed
 				new Handle:data;
 				CreateDataTimer(4.0, Timer_ChangeMap, data);
