@@ -725,6 +725,7 @@ public Event_TeamPlayWinPanel(Handle:event, const String:name[], bool:dontBroadc
 
 	if (GetEventInt(event, "game_over") == 1 && GetConVarBool(g_Cvar_IntermissionVote))
 	{
+		PrintToChatAll("game_over == 1");
 		// just cancel the current votes in progress since this is the most important one.
 		if (IsVoteInProgress()) CancelVote();
 		if (g_NativeVotes && NativeVotes_IsVoteInProgress())
@@ -780,8 +781,10 @@ void DoIntermissionVote()
 
 public Event_OnGameOver(Event ev, const char[] name, bool dontBroadcast)
 {
+	PrintToChatAll("OnGameOver Event");
 	if (GetConVarBool(g_Cvar_IntermissionVote) && CanVoteStart())
 	{
+		PrintToChatAll("CanVoteStart");
 		if (IsVoteInProgress()) CancelVote();
 		if (g_NativeVotes && NativeVotes_IsVoteInProgress())
 		{
