@@ -282,6 +282,8 @@ public OnPluginStart()
 
 	BuildPath(Path_SM, mapListPath, PLATFORM_MAX_PATH, "configs/mapchooser_extended/maps/%s.txt", g_GameModName);
 	SetMapListCompatBind("official", mapListPath);
+	
+	HookEvent("tf_game_over", Event_OnGameOver);
 
 	switch (version)
 	{
@@ -325,7 +327,6 @@ public OnPluginStart()
 				HookEvent("teamplay_restart_round", Event_TFRestartRound);
 				HookEvent("arena_win_panel", Event_TeamPlayWinPanel);
 				HookEvent("pve_win_panel", Event_MvMWinPanel);
-				HookEvent("tf_game_over", Event_OnGameOver);
 			}
 
 			case Engine_NuclearDawn:
