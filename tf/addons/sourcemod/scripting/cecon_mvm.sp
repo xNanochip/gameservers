@@ -60,6 +60,7 @@ public void OnPluginStart()
 	RegServerCmd("ce_mvm_equip_itemname", cMvMEquipItemName, "");
 	RegServerCmd("ce_mvm_get_itemdef_id", cMvMGetItemDefID, "");
 	RegServerCmd("ce_mvm_set_attribute", cMvMSetEntityAttribute, "");
+
 	ce_mvm_check_itemname_cvar = CreateConVar("ce_mvm_check_itemname_cvar", "-1", "", FCVAR_PROTECTED);
 	ce_mvm_show_game_time = CreateConVar("ce_mvm_show_game_time", "1", "Enables game time summary to be shown in chat");
 	ce_mvm_switch_to_pubs_timer = CreateConVar("ce_mvm_switch_to_pubs_timer", "300", "Switch to pubs after this amount of time.");
@@ -476,11 +477,14 @@ public Action cMvMGetItemDefID(int args)
 	char sArg1[128];
 	GetCmdArg(1, sArg1, sizeof(sArg1));
 
+	PrintToChatAll(sArg1);
+
 	if (!StrEqual(sArg1, ""))
 	{
 		CEItemDefinition xDef;
 		if(CEconItems_GetItemDefinitionByName(sArg1, xDef))
 		{
+			PrintToChatAll("%d (%d)", xDef.m_iIndex, GetDefinitionBaseIndex(xDef.m_iIndex));
 			ce_mvm_check_itemname_cvar.SetInt(GetDefinitionBaseIndex(xDef.m_iIndex));
 			return Plugin_Handled;
 		}
