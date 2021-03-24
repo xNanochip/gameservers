@@ -583,9 +583,9 @@ public Action object_destroyed(Handle hEvent, const char[] szName, bool bDontBro
 		{
 			switch(objecttype)
 			{
-				case TF_BUILDING_SENTRY: CEcon_SendEventToClientFromGameEvent(attacker, "TF_ASSIST_WHILE_UBERCHARGED_OBJECT_SENTRY", 1, hEvent);
-				case TF_BUILDING_DISPENSER: CEcon_SendEventToClientFromGameEvent(attacker, "TF_ASSIST_WHILE_UBERCHARGED_OBJECT_DISPENSER", 1, hEvent);
-				case TF_BUILDING_TELEPORTER: CEcon_SendEventToClientFromGameEvent(attacker, "TF_ASSIST_WHILE_UBERCHARGED_OBJECT_TELEPORTER", 1, hEvent);
+				case TF_BUILDING_SENTRY: CEcon_SendEventToClientFromGameEvent(assister, "TF_ASSIST_WHILE_UBERCHARGED_OBJECT_SENTRY", 1, hEvent);
+				case TF_BUILDING_DISPENSER: CEcon_SendEventToClientFromGameEvent(assister, "TF_ASSIST_WHILE_UBERCHARGED_OBJECT_DISPENSER", 1, hEvent);
+				case TF_BUILDING_TELEPORTER: CEcon_SendEventToClientFromGameEvent(assister, "TF_ASSIST_WHILE_UBERCHARGED_OBJECT_TELEPORTER", 1, hEvent);
 			}
 		}
 	}
