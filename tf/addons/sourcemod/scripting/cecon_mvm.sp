@@ -506,6 +506,8 @@ public Action cMvMSetEntityAttribute(int args)
 	GetCmdArg(2, sName, sizeof(sName));
 	GetCmdArg(3, sValue, sizeof(sValue));
 
+	PrintToChatAll("%s %s %s", sName, sEntity, sValue);
+
 	if (!IsValidEntity(iEntity))return Plugin_Handled;
 
 	CEconItems_SetEntityAttributeString(iEntity, sName, sValue);
