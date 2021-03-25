@@ -9,7 +9,6 @@
 //---------------------------
 // PUB MAPS
 //---------------------------
-background01
 cp_fulgur_rc2a
 cp_glassworks_rc6a
 cp_gorge
