@@ -98,10 +98,10 @@ deploy-australia:
     - auspub
     <<: *deploy_template
 
-deploy-la:
-    tags:
-    - lapub
-    <<: *deploy_template
+# deploy-la:
+#     tags:
+#     - lapub
+#     <<: *deploy_template
 
 deploy-fastdl:
     stage: deploy
@@ -126,6 +126,8 @@ deploy-fastdl:
 
     - >
         while read pattern; do
+
+            echo "Pattern: $pattern"
 
             # We go through all the files of this pattern and see if bz2 version is valid.
             for i in ./$pattern; do
