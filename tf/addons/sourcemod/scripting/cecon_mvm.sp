@@ -475,10 +475,6 @@ public Action cMvMEquipItemName(int args)
 public Action cMvMGetItemDefID(int args)
 {
 	char sArg1[128];
-	GetCmdArgString(sArg1, sizeof(sArg1));
-	
-	PrintToChatAll(sArg1);
-	
 	GetCmdArg(1, sArg1, sizeof(sArg1));
 	
 
@@ -725,12 +721,12 @@ public void RequestTourLoot()
 	// Setting mission name.
 	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "mission", sPopFile);
 	Steam_SendHTTPRequest(hRequest, RequestTourLoot_Callback);
-	PrintToChatAll("RequestTourLoot");
+	PrintToChatAll("Requesting Tour Loot. Please stand by...");
 }
 
 public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
 {
-	PrintToChatAll("RequestTourLoot_Callback %d", code);
+	// PrintToChatAll("Requesting Tour Loot. Please stand by...");
 
 	// If request was not succesful, return.
 	if (!success)return;
@@ -755,7 +751,7 @@ public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HT
 	Response.GetString("hash", m_sLastTourLootHash, sizeof(m_sLastTourLootHash));
 	delete Response;
 
-	CreateTimer(0.2, Timer_OpenTourLootPageToAll);
+	CreateTimer(0.1, Timer_OpenTourLootPageToAll);
 }
 
 public Action Timer_OpenTourLootPageToAll(Handle timer, any data)

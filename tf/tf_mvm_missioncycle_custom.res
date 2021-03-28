@@ -47,8 +47,8 @@
 		}
 		"9"
 		{
-			"map" 		"mvm_dusk_rc7"
-			"popfile" 	"mvm_dusk_rc7_adv_chasing_daybreak"
+			"map" 		"mvm_dusk_rc7b"
+			"popfile" 	"mvm_dusk_rc7b_adv_chasing_daybreak"
 		}
 		"10"
 		{
@@ -102,7 +102,7 @@
 		}
 		"20"
 		{
-			"map" 		"mvm_seabed_b6_adv"
+			"map" 		"mvm_seabed_b6"
 			"popfile" 	"mvm_seabed_b6_adv_ocean_commotion"
 		}
 		"21"
