@@ -475,10 +475,6 @@ public Action cMvMEquipItemName(int args)
 public Action cMvMGetItemDefID(int args)
 {
 	char sArg1[128];
-	GetCmdArgString(sArg1, sizeof(sArg1));
-	
-	PrintToChatAll(sArg1);
-	
 	GetCmdArg(1, sArg1, sizeof(sArg1));
 	
 
@@ -648,10 +644,6 @@ public void SendWaveCompletionTime(int wave, int seconds)
 
 		iCount++;
 	}
-	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[1]", "1001");
-	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[2]", "1002");
-	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[3]", "1003");
-	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[4]", "1005");
 
 	// Setting wave number.
 	char sValue[64];
@@ -725,24 +717,16 @@ public void RequestTourLoot()
 
 		iCount++;
 	}
-	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[1]", "1001");
-	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "classes[1]", "1001");
-	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[2]", "1002");
-	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "classes[2]", "1002");
-	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[3]", "1003");
-	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "classes[3]", "1003");
-	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "steamids[4]", "1005");
-	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "classes[4]", "1005");
 
 	// Setting mission name.
 	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "mission", sPopFile);
 	Steam_SendHTTPRequest(hRequest, RequestTourLoot_Callback);
-	PrintToChatAll("RequestTourLoot");
+	PrintToChatAll("Requesting Tour Loot. Please stand by...");
 }
 
 public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
 {
-	PrintToChatAll("RequestTourLoot_Callback %d", code);
+	// PrintToChatAll("Requesting Tour Loot. Please stand by...");
 
 	// If request was not succesful, return.
 	if (!success)return;
@@ -767,7 +751,7 @@ public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HT
 	Response.GetString("hash", m_sLastTourLootHash, sizeof(m_sLastTourLootHash));
 	delete Response;
 
-	CreateTimer(0.2, Timer_OpenTourLootPageToAll);
+	CreateTimer(0.1, Timer_OpenTourLootPageToAll);
 }
 
 public Action Timer_OpenTourLootPageToAll(Handle timer, any data)
