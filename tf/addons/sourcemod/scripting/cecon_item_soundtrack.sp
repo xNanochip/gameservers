@@ -231,21 +231,21 @@ public bool MvM_IsInDanger(bool &critical)
 
 public void MvM_EnableDangerMode()
 {
-	PrintToChatAll("Danger Mode");
+	//PrintToChatAll("Danger Mode");
 	SendEventUniqueToAll("OST_MVM_BOMB_PROXIMITY_START", 1);
 	m_bWasInDangerBefore = true;
 }
 
 public void MvM_EnableCriticalMode()
 {
-	PrintToChatAll("Critical Mode");
+	//PrintToChatAll("Critical Mode");
 	SendEventUniqueToAll("OST_MVM_BOMB_PROXIMITY_START_SKIP_INTRO", 1);
 	m_bWasInDangerBefore = true;
 }
 
 public void MvM_DisableDangerMode()
 {
-	PrintToChatAll("Safe Mode");
+	//PrintToChatAll("Safe Mode");
 	SendEventUniqueToAll("OST_MVM_BOMB_PROXIMITY_STOP", 1);
 	m_bWasInDangerBefore = false;
 }
