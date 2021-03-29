@@ -5,26 +5,29 @@
 #include <sdktools>
 #include <morecolors>
 
+// THIS PLUGIN IS ROUGHLY BASED ON THIS PLUGIN - http://forums.alliedmods.net/showthread.php?t=189956
 public Plugin myinfo =
 {
     name        = "Rough Sourcemod AimPlotter",
     author      = "MitchDizzle_, steph&nie",
-    description = "",
-    version     = "0.0.1",
-    url         = "http://forums.alliedmods.net/showthread.php?t=189956"
+    description = "Show where client is aiming - for spotting cheaters!",
+    version     = "0.0.2",
+    url         = "https://sappho.io"
 }
 
 float LastLaser[MAXPLAYERS+1][3];
 bool LaserE[MAXPLAYERS+1];
-new g_sprite;
+int g_sprite;
 
 public void OnPluginStart()
 {
+    // need to load this or the targeting stuff doesn't work
     LoadTranslations("common.phrases");
-    RegAdminCmd("sm_laser", togglelaser, ADMFLAG_BAN);
+    // only admins should have access to this!
     RegAdminCmd("sm_aimplot", togglelaser, ADMFLAG_BAN);
 }
 
+// precache the laser sprite
 public void OnMapStart()
 {
     g_sprite = PrecacheModel("materials/sprites/laserbeam.vmt");
@@ -38,9 +41,13 @@ public Action togglelaser(int client, int args)
     }
     else
     {
+        // init first arg
         char arg1[32];
+        // get client name
         GetCmdArg(1, arg1, sizeof(arg1));
-        char arg2[32];
+        // init second arg
+        char arg2[8];
+        // get on/off string
         GetCmdArg(2, arg2, sizeof(arg2));
 
         // -1 = toggle, 0 = turn off, 1 = turn on
@@ -53,11 +60,13 @@ public Action togglelaser(int client, int args)
         {
             offon = 1;
         }
+        // init vars for targeting users
         char target_name[MAX_TARGET_LENGTH];
         int target_list[MAXPLAYERS];
         int target_count;
         bool tn_is_ml;
 
+        // target users!
         if
         (
             (
@@ -73,6 +82,7 @@ public Action togglelaser(int client, int args)
                     tn_is_ml
                 )
             )
+            // we can't find any!
             <= 0
         )
         {
@@ -80,19 +90,25 @@ public Action togglelaser(int client, int args)
             return Plugin_Handled;
         }
 
+        // loop thru found targets
         for (int i = 0; i < target_count; i++)
         {
+            // assign current target to a more readable variable
             int targetclient = target_list[i];
+            // are they a real target?
             if (IsValidClientOrBot(targetclient))
             {
+                // toggle
                 if (offon == -1)
                 {
                     LaserE[targetclient] = !LaserE[targetclient];
                 }
+                // off
                 else if (offon == 0)
                 {
                     LaserE[targetclient] = false;
                 }
+                // on
                 else if (offon == 1)
                 {
                     LaserE[targetclient] = true;
@@ -107,10 +123,13 @@ public Action togglelaser(int client, int args)
 public void OnClientPutInServer(int client)
 {
     LaserE[client] = false;
-    LastLaser[client] = NULL_VECTOR;
 }
 
+// color defines
+int red[4]   = {255,000,000,100};
+int white[4] = {255,255,255,100};
 
+// runs every second, might be better in OnGameFrame ? not sure
 public Action OnPlayerRunCmd
 (
     int client,
@@ -126,9 +145,14 @@ public Action OnPlayerRunCmd
     int mouse[2]
 )
 {
+    // if the laser isn't enabled, null it
     if (!LaserE[client])
     {
-        LastLaser[client] = NULL_VECTOR;
+        // only null it if it aint already null
+        if (!IsNullVector(LastLaser[client]))
+        {
+            LastLaser[client] = NULL_VECTOR;
+        }
         return Plugin_Continue;
     }
 
@@ -136,15 +160,19 @@ public Action OnPlayerRunCmd
     if (IsClientInGame(client) && LaserE[client] && IsPlayerAlive(client))
     {
         TraceEye(client, pos);
-        if (GetVectorDistance(pos, LastLaser[client]) > 1.1)
+        if (GetVectorDistance(pos, LastLaser[client]) > 0.5)
         {
+            // might color it team colors, white if mouse 1, black if player did damage, but i'll do that later if ever.
+            // for now:
+            // if the user is pressing m1 color the beam red
             if (buttons & IN_ATTACK)
             {
-                SetUpLaser(LastLaser[client], pos, {255,0,0,100});
+                SetUpLaser(LastLaser[client], pos, red);
             }
+            // otherwise, color it white
             else
             {
-                SetUpLaser(LastLaser[client], pos, {255,255,255,100});
+                SetUpLaser(LastLaser[client], pos, white);
             }
             LastLaser[client] = pos;
         }
@@ -152,6 +180,7 @@ public Action OnPlayerRunCmd
     return Plugin_Continue;
 }
 
+// set up the laser sprite
 void SetUpLaser(float start[3], float end[3], int color[4])
 {
     TE_SetupBeamPoints
@@ -170,9 +199,10 @@ void SetUpLaser(float start[3], float end[3], int color[4])
         color,      // color
         0           // beam speed
     );
-    TE_SendToAdmins();
+    TE_SendToAdminsAndSTV();
 }
 
+// trace 200 units in front of the player, if we hit something before then, trace over top of it
 void TraceEye(int client, float pos[3])
 {
     float angles[3];
@@ -180,34 +210,46 @@ void TraceEye(int client, float pos[3])
     float angvec[3];
     float newpos[3];
 
+    // get clients eye position
     GetClientEyePosition(client, origin);
+    // get where the client is looking
     GetClientEyeAngles(client, angles);
+    // convert angles to being in front of the user (? no idea)
     GetAngleVectors(angles, angvec, NULL_VECTOR, NULL_VECTOR);
-
+    // scale the angles 200 units
     ScaleVector(angvec, 200.0);
+    // add em
     AddVectors(origin, angvec, newpos);
+    // trace with a filter to ignore teammates and ourselves !
     TR_TraceRayFilter(origin, newpos, MASK_VISIBLE, RayType_EndPoint, TraceEntityFilterPlayer, client);
+    // if we hit something, set pos to where we hit
     if (TR_DidHit())
     {
         TR_GetEndPosition(pos);
     }
+    // otherwise, set pos to 200 units in front of us, aka newpos
     else
     {
         pos = newpos;
     }
 }
 
+// draw over clients on the other team, don't draw over teammates
 public bool TraceEntityFilterPlayer(int entity, int contentsMask, int client)
 {
+    // don't trace on ourselves!
     if (entity == client)
     {
         return false;
     }
 
+    // we ran into an entity. are they a client?
     if (IsValidClientOrBot(entity))
     {
+        // yeah, theyre a client. what team are they on?
         int clientTeam = GetClientTeam(client);
         int entTeam = GetClientTeam(entity);
+        // are they on our team? if so, don't draw on them, keep tracing thru them!
         if (clientTeam == entTeam)
         {
             return false;
@@ -216,7 +258,7 @@ public bool TraceEntityFilterPlayer(int entity, int contentsMask, int client)
     return true;
 }
 
-
+// is valid client stock
 bool IsValidClientOrBot(int client)
 {
     return
@@ -230,17 +272,63 @@ bool IsValidClientOrBot(int client)
     );
 }
 
-void TE_SendToAdmins()
+// duh
+void TE_SendToAdminsAndSTV()
 {
     int total = 0;
     int[] clients = new int[MaxClients];
+
+    int stv = FindSTV();
+
     for (int i = 1; i <= MaxClients; i++)
     {
-        if (IsClientInGame(i) && CheckCommandAccess(i, "sm_ban", ADMFLAG_GENERIC))
+        if
+        (
+            IsClientInGame(i)
+            &&
+            (
+                CheckCommandAccess(i, "sm_ban", ADMFLAG_GENERIC)
+                ||
+                stv == i
+            )
+        )
         {
-
             clients[total++] = i;
         }
     }
     TE_Send(clients, total);
+}
+
+// adapted & deuglified from f2stocks
+// Finds STV Bot
+int CachedSTV;
+int FindSTV()
+{
+    if
+    (
+        !(
+               CachedSTV >= 1
+            && CachedSTV <= MaxClients
+            && IsClientConnected(CachedSTV)
+            && IsClientInGame(CachedSTV)
+            && IsClientSourceTV(CachedSTV)
+        )
+    )
+    {
+        CachedSTV = -1;
+        for (int client = 1; client <= MaxClients; client++)
+        {
+            if
+            (
+                   IsClientConnected(client)
+                && IsClientInGame(client)
+                && IsClientSourceTV(client)
+            )
+            {
+                CachedSTV = client;
+                break;
+            }
+        }
+    }
+    return CachedSTV;
 }
