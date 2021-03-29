@@ -83,6 +83,10 @@ Handle attrib_float_handle;
 int bonus_currency_counter = 0;
 public void OnPluginStart()
 {
+	if(GameRules_GetProp("m_bPlayingMannVsMachine") == 0)
+	{
+		SetFailState("Only works in MvM");
+	}
 
 	HookEvent("upgrades_file_changed", upgrades_file_changed);
 
