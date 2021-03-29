@@ -680,6 +680,8 @@ public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool succ
 	// Getting response size.
 }
 
+bool m_bIsTourLootLoading = false;
+
 public void RequestTourLoot()
 {
 	char sPopFile[256];
@@ -722,10 +724,14 @@ public void RequestTourLoot()
 	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "mission", sPopFile);
 	Steam_SendHTTPRequest(hRequest, RequestTourLoot_Callback);
 	PrintToChatAll("Requesting Tour Loot. Please stand by...");
+	
+	m_bIsTourLootLoading = true;
+	CreateTimer(1.0, Timer_OpenTourLootLoadingPage);
 }
 
 public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
 {
+	m_bIsTourLootLoading = false;
 	// PrintToChatAll("Requesting Tour Loot. Please stand by...");
 
 	// If request was not succesful, return.
@@ -751,10 +757,10 @@ public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HT
 	Response.GetString("hash", m_sLastTourLootHash, sizeof(m_sLastTourLootHash));
 	delete Response;
 
-	CreateTimer(0.1, Timer_OpenTourLootPageToAll);
+	OpenTourLootPageToAll();
 }
 
-public Action Timer_OpenTourLootPageToAll(Handle timer, any data)
+public void OpenTourLootPageToAll()
 {
 	for (int i = 1; i <= MaxClients; i++)
 	{
@@ -774,6 +780,34 @@ public void OpenLastTourLootPage(int client)
 	CEconHTTP_CreateAbsoluteBackendURL(url, url, sizeof(url));
 
 	TF2Motd_OpenURL(client, url, "\x01* Please set \x03cl_disablehtmlmotd 0 \x01in your console and type \x03!loot \x01in chat to see the loot.");
+	
+	PrintToChatAll("\x01* Type \x03!loot \x01in chat to reopen the tour loot preview.");
+}
+
+public void OpenTourLootLoadingPageToAll()
+{
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientReady(i))continue;
+
+		OpenTourLootLoadingPage(i);
+	}
+}
+
+public void OpenTourLootLoadingPage(int client)
+{
+	if (!m_bIsTourLootLoading)return;
+	
+	char url[PLATFORM_MAX_PATH];
+	Format(url, sizeof(url), "/tourloot");
+	CEconHTTP_CreateAbsoluteBackendURL(url, url, sizeof(url));
+	
+	TF2Motd_OpenURL(client, url, "\x01* Please set \x03cl_disablehtmlmotd 0 \x01in your console and type \x03!loot \x01in chat to see the loot.");
+}
+
+public Action Timer_OpenTourLootLoadingPage(Handle timer, any data)
+{
+	OpenTourLootLoadingPageToAll();
 }
 
 public Action cLoot(int client, int args)
