@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.1.12b"
+#define PLUGIN_VERSION  "4.1.13b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -89,6 +89,7 @@ bool SOURCEBANS;
 bool GBANS;
 bool STEAMTOOLS;
 bool STEAMWORKS;
+bool AIMPLOTTER;
 
 // CVARS
 ConVar stac_enabled;
@@ -710,6 +711,10 @@ public Action checkNativesEtc(Handle timer)
     if (CommandExists("gb_ban"))
     {
         GBANS = true;
+    }
+    if (CommandExists("sm_aimplot"))
+    {
+        AIMPLOTTER = true;
     }
 
     if (DEBUG)
@@ -1697,6 +1702,12 @@ public Action OnPlayerRunCmd
                     engineTime[3][Cl] - engineTime[4][Cl],
                     engineTime[4][Cl] - engineTime[5][Cl]
                 );
+
+                if (AIMPLOTTER)
+                {
+                    ServerCommand("sm_aimplot #%i on", userid);
+                }
+
                 // BAN USER if they trigger too many detections
                 if (pSilentDetects[Cl] >= maxPsilentDetections && maxPsilentDetections > 0)
                 {
@@ -1796,6 +1807,12 @@ public Action OnPlayerRunCmd
                     sensFor[Cl],
                     hurtWeapon[Cl]
                 );
+
+                if (AIMPLOTTER)
+                {
+                    ServerCommand("sm_aimplot #%i on", userid);
+                }
+
                 // BAN USER if they trigger too many detections
                 if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
                 {
@@ -1823,6 +1840,13 @@ public Action Timer_decr_aimsnaps(Handle timer, any userid)
         {
             aimsnapDetects[Cl]--;
         }
+        if (aimsnapDetects[Cl] <= 0)
+        {
+            if (AIMPLOTTER)
+            {
+                ServerCommand("sm_aimplot #%i off", userid);
+            }
+        }
     }
 }
 
@@ -1836,8 +1860,16 @@ public Action Timer_decr_pSilent(Handle timer, any userid)
         {
             pSilentDetects[Cl]--;
         }
+        if (pSilentDetects[Cl] <= 0)
+        {
+            if (AIMPLOTTER)
+            {
+                ServerCommand("sm_aimplot #%i off", userid);
+            }
+        }
     }
 }
+
 
 public Action Timer_decr_settingsChanges(Handle timer, any userid)
 {
