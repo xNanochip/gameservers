@@ -181,7 +181,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 				int iBaseDefID = GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex");
 				int item_slot = TF2Econ_GetItemSlot(iBaseDefID, TF2_GetPlayerClass(client));
 
-				//----------------------------------------------//
+				//--------------------------------------------------------------------------//
 				// Some weapons	have their slot index mismatched with the real value.
 				// Here are some weapons that have a different slot index.
 
@@ -203,7 +203,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 					item_slot = 3;
 				}
 				// Hardcode the PDAs to 3th slot.
-				if(StrEqual(hDef.m_sClassName, "tf_weapon_pda_engineer_build"))
+				if(StrEqual(hDef.m_sClassName, "tf_weapon_pda_engineer_destroy"))
 				{
 					item_slot = 3;
 				}

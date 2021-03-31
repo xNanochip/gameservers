@@ -54,7 +54,6 @@ enum struct CEItemBaseIndex
 }
 ArrayList m_hItemIndexes;
 
-
 public void OnPluginStart()
 {
 	RegServerCmd("ce_mvm_equip_itemname", cMvMEquipItemName, "");
@@ -743,9 +742,6 @@ public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HT
 	PrintToServer(content);
 
 	KeyValues Response = new KeyValues("Response");
-
-	// ======================== //
-	// Parsing loadout response.
 
 	// If we fail to import content return.
 	if (!Response.ImportFromString(content))return;
