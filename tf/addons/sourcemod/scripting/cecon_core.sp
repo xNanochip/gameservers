@@ -881,31 +881,6 @@ public any Native_GetEconomySchema(Handle plugin, int numParams)
 	return m_Schema;
 }
 
-//============= Copyright Amper Software, All rights reserved. ============//
-//
-// Purpose: Used for tracking different events happening in game, and connect
-// them with economy features, like quests or achievements.
-//
-//=========================================================================//
-
-//-------------------------------------------------------------------
-// Purpose: Fired when a new entity is created.
-//-------------------------------------------------------------------
-public void OnEntityCreated(int entity, const char[] classname)
-{
-	// Hook objects (Buildings) with OnTakeDamage SDKHook
-	if(StrContains(classname, "obj_") != -1)
-	{
-		SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
-	}
-
-	// Hook players with OnTouch SDKHook
-	if(StrContains(classname, "item_healthkit") != -1)
-	{
-		SDKHook(entity, SDKHook_Touch, OnTouch);
-	}
-}
-
 //-------------------------------------------------------------------
 // Purpose: Fired when something touches an entity.
 //-------------------------------------------------------------------
@@ -989,16 +964,25 @@ public Action cTestEvnt(int client, int args)
 //-------------------------------------------------------------------
 public void LateHooking()
 {
+	// Hook objects (Buildings) with OnTakeDamage SDKHook
 	int ent = -1;
 	while ((ent = FindEntityByClassname(ent, "obj_*")) != -1)
 	{
 		SDKHook(ent, SDKHook_OnTakeDamage, OnTakeDamage);
 	}
 
+	// Hook players with OnTouch SDKHook
 	ent = -1;
 	while ((ent = FindEntityByClassname(ent, "item_healthkit_*")) != -1)
 	{
 		SDKHook(ent, SDKHook_Touch, OnTouch);
+	}
+
+	// Hook Tanks with OnTakeDamage SDKHook
+	ent = -1;
+	while ((ent = FindEntityByClassname(ent, "tank_boss")) != -1)
+	{
+		SDKHook(ent, SDKHook_Touch, OnTakeDamage);
 	}
 
 	for (int i = 1; i <= MaxClients; i++)
@@ -1008,6 +992,30 @@ public void LateHooking()
 			SDKHook(i, SDKHook_OnTakeDamage, OnTakeDamage);
 			SDKHook(i, SDKHook_WeaponSwitchPost, OnWeaponSwitch);
 		}
+	}
+}
+
+//-------------------------------------------------------------------
+// Purpose: Fired when a new entity is created.
+//-------------------------------------------------------------------
+public void OnEntityCreated(int entity, const char[] classname)
+{
+	// Hook objects (Buildings) with OnTakeDamage SDKHook
+	if(StrContains(classname, "obj_") != -1)
+	{
+		SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
+	}
+	
+	// Hook Tanks with OnTakeDamage SDKHook
+	if(StrContains(classname, "tank_boss") != -1)
+	{
+		SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
+	}
+
+	// Hook players with OnTouch SDKHook
+	if(StrContains(classname, "item_healthkit") != -1)
+	{
+		SDKHook(entity, SDKHook_Touch, OnTouch);
 	}
 }
 
