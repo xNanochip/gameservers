@@ -11,10 +11,10 @@
 #include <tf2_stocks>
 #include <tf2motd>
 
-#define Q_UNIQUE 6
-#define TF_TEAM_DEFENDERS 2
+#define TF_TEAM_UNASSIGNED 0
+#define TF_TEAM_SPECTATOR 1
 #define TF_TEAM_INVADERS 3
-#define TF_MVM_MAX_WAVES 12
+#define TF_TEAM_DEFENDERS 2
 
 public Plugin myinfo =
 {
@@ -221,11 +221,6 @@ public Action teamplay_round_win(Handle hEvent, const char[] szName, bool bDontB
 	}
 
 	return Plugin_Continue;
-}
-
-public bool IsValidWave(int index)
-{
-	return index > 0 && index < TF_MVM_MAX_WAVES;
 }
 
 public void OnDefendersWon()
@@ -633,7 +628,7 @@ public void SendWaveCompletionTime(int wave, int seconds)
 	int iCount = 0;
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (!IsClientReady(i))continue;
+		if (!IsClientEngaged(i))continue;
 
 		char sSteamID[64];
 		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
@@ -692,7 +687,7 @@ public void RequestTourLoot()
 	int iCount = 0;
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (!IsClientReady(i))continue;
+		if (!IsClientEngaged(i))continue;
 
 		char sSteamID[64];
 		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
@@ -814,4 +809,19 @@ public Action cLoot(int client, int args)
 {
 	OpenLastTourLootPage(client);
 	return Plugin_Handled;
+}
+
+//-------------------------------------------------------------------
+// Purpose: Returns true if client is a not a bot and also has a 
+// non-spectator team.
+//-------------------------------------------------------------------
+public bool IsClientEngaged(int client)
+{
+	if (!IsClientReady(client))return false;
+	
+	int nTeam = GetClientTeam(client);
+	if (nTeam == TF_TEAM_UNASSIGNED)return false;
+	if (nTeam == TF_TEAM_SPECTATOR)return false;
+	
+	return true;
 }
