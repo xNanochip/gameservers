@@ -31,7 +31,7 @@ public void OnConfigsExecuted()
 	{
 		if(m_iMapListSerial == -1)
 		{
-			LogError("Error loading quickplay map rotation.");
+			LogError("Error loading Quickplay map rotation.");
 		}
 	}
 }
@@ -43,6 +43,8 @@ public Action ce_mm_empty_change_map(int args)
 	char sQuery[PLATFORM_MAX_PATH], sMap[PLATFORM_MAX_PATH];
 	GetCmdArg(1, sQuery, sizeof(sQuery));
 	
+	ArrayList hCandidates = new ArrayList(ByteCountToCells(PLATFORM_MAX_PATH));
+	
 	// Trying to find a map with this popfile.
 	for (int i = 0; i < m_hMapList.Length; i++)
 	{
@@ -52,10 +54,22 @@ public Action ce_mm_empty_change_map(int args)
 		
 		if (strncmp(buffer, sQuery, len) == 0)
 		{
-			strcopy(sMap, sizeof(sMap), buffer);
-			break;
+			hCandidates.PushString(buffer);
 		}
 	}
+	
+	if(hCandidates.Length > 0)
+	{
+		LogMessage("Choosing between %d matching candidates:", hCandidates.Length);
+		int iIndex = GetRandomInt(0, hCandidates.Length - 1);
+		
+		hCandidates.GetString(iIndex, sMap, sizeof(sMap));
+		LogMessage("| Rolled number: %d (%s)", iIndex, sMap);
+	} else {
+		LogMessage("Zero candidates found.");
+	}
+	
+	delete hCandidates;
 	
 	
 	if(!StrEqual(sMap, ""))

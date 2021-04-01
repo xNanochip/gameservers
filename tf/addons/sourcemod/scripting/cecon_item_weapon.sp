@@ -181,7 +181,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 				int iBaseDefID = GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex");
 				int item_slot = TF2Econ_GetItemSlot(iBaseDefID, TF2_GetPlayerClass(client));
 
-				//----------------------------------------------//
+				//--------------------------------------------------------------------------//
 				// Some weapons	have their slot index mismatched with the real value.
 				// Here are some weapons that have a different slot index.
 
@@ -203,7 +203,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 					item_slot = 3;
 				}
 				// Hardcode the PDAs to 3th slot.
-				if(StrEqual(hDef.m_sClassName, "tf_weapon_pda_engineer_build"))
+				if(StrEqual(hDef.m_sClassName, "tf_weapon_pda_engineer_destroy"))
 				{
 					item_slot = 3;
 				}
@@ -581,6 +581,11 @@ public void OnDrawWeapon(int client, int iWeapon)
 
 public void OnWeaponSwitch(int client, int weapon)
 {
+	// Validate that we have really switched to this weapon. 
+	// This fixes cases when some weapon become invisible.
+	int iActiveWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
+	if (iActiveWeapon != weapon)return;
+	
 	if (m_hLastWeapon[client] == weapon)return; // Nothing has changed.
 	int iLastWeapon = m_hLastWeapon[client];
 

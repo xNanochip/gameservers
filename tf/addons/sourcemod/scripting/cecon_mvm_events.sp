@@ -83,12 +83,6 @@ Handle attrib_float_handle;
 int bonus_currency_counter = 0;
 public void OnPluginStart()
 {
-	if(GameRules_GetProp("m_bPlayingMannVsMachine") == 0)
-	{
-		// Only works in MVM.
-		ServerCommand("sm plugins unload cecon_mvm_events");
-	}
-
 	HookEvent("upgrades_file_changed", upgrades_file_changed);
 
 	HookEvent("mvm_mission_complete", mvm_mission_complete);
@@ -159,6 +153,15 @@ public void OnPluginStart()
 
 	AddNormalSoundHook(OnSound);
 	CreateTimer(1.0, UpdateTimer, 0, TIMER_REPEAT);
+}
+
+public void OnMapStart()
+{
+	if(GameRules_GetProp("m_bPlayingMannVsMachine") == 0)
+	{
+		// Only works in MVM.
+		ServerCommand("sm plugins unload cecon_mvm_events");
+	}
 }
 
 public void OnClientPutInServer(int client)
