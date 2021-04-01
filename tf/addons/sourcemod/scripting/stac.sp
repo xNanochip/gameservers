@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.1.13b"
+#define PLUGIN_VERSION  "4.1.14b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -607,7 +607,14 @@ void setStacVars()
     }
 
     // aimsnap var
-    maxAimsnapDetections    = GetConVarInt(stac_max_aimsnap_detections);
+    if (!GameRules_GetProp("m_bPlayingMannVsMachine"))
+    {
+        maxAimsnapDetections = GetConVarInt(stac_max_aimsnap_detections);
+    }
+    else
+    {
+        maxAimsnapDetections = -1;
+    }
 
     // psilent var
     maxPsilentDetections    = GetConVarInt(stac_max_psilent_detections);
