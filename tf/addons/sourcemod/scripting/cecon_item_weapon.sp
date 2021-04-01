@@ -581,6 +581,11 @@ public void OnDrawWeapon(int client, int iWeapon)
 
 public void OnWeaponSwitch(int client, int weapon)
 {
+	// Validate that we have really switched to this weapon. 
+	// This fixes cases when some weapon become invisible.
+	int iActiveWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
+	if (iActiveWeapon != weapon)return;
+	
 	if (m_hLastWeapon[client] == weapon)return; // Nothing has changed.
 	int iLastWeapon = m_hLastWeapon[client];
 
