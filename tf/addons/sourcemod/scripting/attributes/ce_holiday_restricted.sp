@@ -18,7 +18,8 @@ enum CEHoliday
 	CEHoliday_Invalid,
 	CEHoliday_Birthday,
 	CEHoliday_Halloween,
-	CEHoliday_HalloweenOrFullMoon
+	CEHoliday_HalloweenOrFullMoon,
+	CEHoliday_AprilFools
 }
 
 public bool CEconItems_ShouldItemBeBlocked(int client, CEItem xItem, const char[] type)
@@ -36,6 +37,10 @@ public bool CEconItems_ShouldItemBeBlocked(int client, CEItem xItem, const char[
 		case CEHoliday_HalloweenOrFullMoon:
 		{
 			return !TF2_IsHolidayActive(TFHoliday_HalloweenOrFullMoon); 
+		}
+		case CEHoliday_AprilFools:
+		{
+			return !TF2_IsHolidayActive(TFHoliday_AprilFools); 
 		}
 	}
 	
