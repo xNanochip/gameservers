@@ -19,7 +19,7 @@ echo "Seeking for .sp in $SCRIPTS_DIR/**/*"
 for p in $SCRIPTS_DIR/**/*
 do
     if [ ${p##*.} == 'sp' ]; then
-        if [[ $p =~ "disabled/" ]] || [[ $p =~ "external/" ]] || [[ $p =~ "economy/" ]]; then
+        if [[ $p =~ "include/" ]] || [[ $p =~ "disabled/" ]] || [[ $p =~ "external/" ]] || [[ $p =~ "economy/" ]]; then
             continue
         fi
         PLUGIN_NAME=`realpath --relative-to $SCRIPTS_DIR $p`
