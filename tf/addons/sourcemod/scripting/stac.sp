@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.1.12b"
+#define PLUGIN_VERSION  "4.1.14b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -89,7 +89,10 @@ bool SOURCEBANS;
 bool GBANS;
 bool STEAMTOOLS;
 bool STEAMWORKS;
+bool AIMPLOTTER;
 
+// are we in MVM
+bool MVM;
 // CVARS
 ConVar stac_enabled;
 ConVar stac_verbose_info;
@@ -606,7 +609,14 @@ void setStacVars()
     }
 
     // aimsnap var
-    maxAimsnapDetections    = GetConVarInt(stac_max_aimsnap_detections);
+    if (MVM)
+    {
+        maxAimsnapDetections = -1;
+    }
+    else
+    {
+        maxAimsnapDetections = GetConVarInt(stac_max_aimsnap_detections);
+    }
 
     // psilent var
     maxPsilentDetections    = GetConVarInt(stac_max_psilent_detections);
@@ -711,7 +721,14 @@ public Action checkNativesEtc(Handle timer)
     {
         GBANS = true;
     }
-
+    if (CommandExists("sm_aimplot"))
+    {
+        AIMPLOTTER = true;
+    }
+    if (GameRules_GetProp("m_bPlayingMannVsMachine"))
+    {
+        MVM = true;
+    }
     if (DEBUG)
     {
         LogMessage
@@ -1697,6 +1714,12 @@ public Action OnPlayerRunCmd
                     engineTime[3][Cl] - engineTime[4][Cl],
                     engineTime[4][Cl] - engineTime[5][Cl]
                 );
+
+                if (AIMPLOTTER)
+                {
+                    ServerCommand("sm_aimplot #%i on", userid);
+                }
+
                 // BAN USER if they trigger too many detections
                 if (pSilentDetects[Cl] >= maxPsilentDetections && maxPsilentDetections > 0)
                 {
@@ -1796,6 +1819,12 @@ public Action OnPlayerRunCmd
                     sensFor[Cl],
                     hurtWeapon[Cl]
                 );
+
+                if (AIMPLOTTER)
+                {
+                    ServerCommand("sm_aimplot #%i on", userid);
+                }
+
                 // BAN USER if they trigger too many detections
                 if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
                 {
@@ -1823,6 +1852,13 @@ public Action Timer_decr_aimsnaps(Handle timer, any userid)
         {
             aimsnapDetects[Cl]--;
         }
+        if (aimsnapDetects[Cl] <= 0)
+        {
+            if (AIMPLOTTER)
+            {
+                ServerCommand("sm_aimplot #%i off", userid);
+            }
+        }
     }
 }
 
@@ -1836,8 +1872,16 @@ public Action Timer_decr_pSilent(Handle timer, any userid)
         {
             pSilentDetects[Cl]--;
         }
+        if (pSilentDetects[Cl] <= 0)
+        {
+            if (AIMPLOTTER)
+            {
+                ServerCommand("sm_aimplot #%i off", userid);
+            }
+        }
     }
 }
+
 
 public Action Timer_decr_settingsChanges(Handle timer, any userid)
 {

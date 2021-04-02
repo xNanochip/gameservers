@@ -3,10 +3,10 @@
 #include <sourcemod>
 #include <geoip>
 #undef REQUIRE_EXTENSIONS
-#include <steamtools>
 #include <geoipcity>
+#include <SteamWorks>
 
-#define PLUGIN_VERSION		"1.3.1"
+#define PLUGIN_VERSION		"1.4.2"
 
 enum OS {
 	OS_Unknown = -1,
@@ -16,9 +16,9 @@ enum OS {
 	OS_Total = 3
 };	
 
-public Plugin:myinfo = {
-	name		= "[ANY] Player Analytics",
-	author		= "Dr. McKay",
+public Plugin myinfo = {
+	name		= "Player Analytics",
+	author		= "Dr. McKay / Bara / sneaK",
 	description	= "Logs analytical data about connecting players",
 	version		= PLUGIN_VERSION,
 	url			= "http://www.doctormckay.com"
@@ -27,41 +27,26 @@ public Plugin:myinfo = {
 //#define DEBUG
 
 #if !defined DEBUG
-new Handle:g_DB;
+Handle g_DB;
 #endif
-new bool:g_SteamTools;
-new String:g_IP[64];
-new String:g_GameFolder[64];
-new Handle:g_OSGamedata;
-new String:g_OSConVar[OS_Total][64];
+char g_IP[64];
+char g_GameFolder[64];
+Handle g_OSGamedata;
+char g_OSConVar[OS_Total][64];
 
-new g_ConnectTime[MAXPLAYERS + 1];
-new g_NumPlayers[MAXPLAYERS + 1];
-new g_RowID[MAXPLAYERS + 1] = {-1, ...};
-new String:g_ConnectMethod[MAXPLAYERS + 1][64];
-new g_MOTDDisabled[MAXPLAYERS + 1] = {-1, ...};
-new Handle:g_MOTDTimer[MAXPLAYERS + 1];
+int g_ConnectTime[MAXPLAYERS + 1];
+int g_NumPlayers[MAXPLAYERS + 1];
+int g_RowID[MAXPLAYERS + 1] = {-1, ...};
+char g_ConnectMethod[MAXPLAYERS + 1][64];
+int g_MOTDDisabled[MAXPLAYERS + 1] = {-1, ...};
+Handle g_MOTDTimer[MAXPLAYERS + 1];
 new OS:g_OS[MAXPLAYERS + 1];
-new Handle:g_OSTimer[MAXPLAYERS + 1];
-new g_OSQueries[MAXPLAYERS + 1];
+Handle g_OSTimer[MAXPLAYERS + 1];
+int g_OSQueries[MAXPLAYERS + 1];
 
-#define STEAMTOOLS_AVAILABLE() (g_SteamTools && GetFeatureStatus(FeatureType_Native, "Steam_IsConnected") == FeatureStatus_Available)
+#define STEAMWORKS_AVAILABLE() (GetFeatureStatus(FeatureType_Native, "SteamWorks_IsLoaded") == FeatureStatus_Available)
 
-#if !defined DEBUG
-#define UPDATE_FILE		"player_analytics.txt"
-#define CONVAR_PREFIX	"player_analytics"
-
-#include "mckayupdater.sp"
-#endif
-
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max) {
-	MarkNativeAsOptional("Steam_GetNumClientSubscriptions");
-	MarkNativeAsOptional("Steam_GetClientSubscription");
-	MarkNativeAsOptional("Steam_GetNumClientDLCs");
-	MarkNativeAsOptional("Steam_GetClientDLC");
-	MarkNativeAsOptional("Steam_GetPublicIP");
-	MarkNativeAsOptional("Steam_IsConnected");
-	
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 #if !defined DEBUG
 	if(SQL_CheckConfig("player_analytics")) {
 		g_DB = SQL_Connect("player_analytics", true, error, err_max);
@@ -73,8 +58,8 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max) 
 		return APLRes_Failure;
 	}
 	
-	SQL_SetCharset(g_DB, "utf8");
-	SQL_TQuery(g_DB, OnTableCreated, "CREATE TABLE IF NOT EXISTS `player_analytics` (id int(11) NOT NULL AUTO_INCREMENT, server_ip varchar(32) NOT NULL, name varchar(32), auth varchar(32), connect_time int(11) NOT NULL, connect_date date NOT NULL, connect_method varchar(64) DEFAULT NULL, numplayers tinyint(4) NOT NULL, map varchar(64) NOT NULL, duration int(11) DEFAULT NULL, flags varchar(32) NOT NULL, ip varchar(32) NOT NULL, city varchar(45), region varchar(45), country varchar(45), country_code varchar(2), country_code3 varchar(3), premium tinyint(1), html_motd_disabled tinyint(1), os varchar(32), PRIMARY KEY (id)) ENGINE=InnoDB  DEFAULT CHARSET=utf8");
+	SQL_SetCharset(g_DB, "utf8mb4");
+	SQL_TQuery(g_DB, OnTableCreated, "CREATE TABLE IF NOT EXISTS `player_analytics` (id int(11) NOT NULL AUTO_INCREMENT, server_ip varchar(32) NOT NULL, name varchar(64), auth varchar(32), connect_time int(11) NOT NULL, connect_date date NOT NULL, connect_method varchar(64) DEFAULT NULL, numplayers tinyint(4) NOT NULL, map varchar(64) NOT NULL, duration int(11) DEFAULT NULL, flags varchar(32) NOT NULL, ip varchar(32) NOT NULL, city varchar(45), region varchar(45), country varchar(45), country_code varchar(2), country_code3 varchar(3), premium tinyint(1), html_motd_disabled tinyint(1), os varchar(32), PRIMARY KEY (id)) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4");
 #endif
 	
 	RegPluginLibrary("player_analytics");
@@ -91,11 +76,9 @@ public OnTableCreated(Handle:owner, Handle:hndl, const String:error[], any:data)
 }
 #endif
 
-public OnPluginStart() {
-	if(!g_SteamTools || !Steam_IsConnected()) {
-		new ip = GetConVarInt(FindConVar("hostip"));
-		Format(g_IP, sizeof(g_IP), "%d.%d.%d.%d:%d", ((ip & 0xFF000000) >> 24) & 0xFF, ((ip & 0x00FF0000) >> 16) & 0xFF, ((ip & 0x0000FF00) >>  8) & 0xFF, ((ip & 0x000000FF) >>  0) & 0xFF, GetConVarInt(FindConVar("hostport")));
-	}
+public void OnPluginStart() {
+	int ip = GetConVarInt(FindConVar("hostip"));
+	Format(g_IP, sizeof(g_IP), "%d.%d.%d.%d:%d", ((ip & 0xFF000000) >> 24) & 0xFF, ((ip & 0x00FF0000) >> 16) & 0xFF, ((ip & 0x0000FF00) >>  8) & 0xFF, ((ip & 0x000000FF) >>  0) & 0xFF, GetConVarInt(FindConVar("hostport")));
 	
 	GetGameFolderName(g_GameFolder, sizeof(g_GameFolder));
 	g_OSGamedata = LoadGameConfigFile("detect_os.games");
@@ -108,21 +91,14 @@ public OnPluginStart() {
 	}
 }
 
-public Steam_SteamServersConnected() {
-	new octets[4];
-	Steam_GetPublicIP(octets);
-	Format(g_IP, sizeof(g_IP), "%d.%d.%d.%d:%d", octets[0], octets[1], octets[2], octets[3], GetConVarInt(FindConVar("hostport")));
+public void OnAllPluginsLoaded() {
+	if (!STEAMWORKS_AVAILABLE())
+	{
+		LogMessage("SteamWorks extension not found, prime status logging will be unavailable");
+	}
 }
 
-public Steam_FullyLoaded() {
-	g_SteamTools = true;
-}
-
-public Steam_Shutdown() {
-	g_SteamTools = false;
-}
-
-public OnClientConnected(client) {
+public void OnClientConnected(int client) {
 	if(IsFakeClient(client)) {
 		return;
 	}
@@ -133,7 +109,7 @@ public OnClientConnected(client) {
 	g_RowID[client] = -1;
 	g_OS[client] = OS_Unknown;
 	
-	decl String:buffer[30];
+	char buffer[30];
 	if(GetClientInfo(client, "cl_connectmethod", buffer, sizeof(buffer))) {
 #if !defined DEBUG
 		SQL_EscapeString(g_DB, buffer, g_ConnectMethod[client], sizeof(g_ConnectMethod[]));
@@ -146,7 +122,7 @@ public OnClientConnected(client) {
 	}
 }
 
-public OnClientPutInServer(client) {
+public void OnClientPutInServer(int client) {
 	if(IsFakeClient(client)) {
 		return;
 	}
@@ -154,13 +130,13 @@ public OnClientPutInServer(client) {
 	QueryClientConVar(client, "cl_disablehtmlmotd", OnMOTDQueried);
 	g_MOTDTimer[client] = CreateTimer(30.0, Timer_MOTDTimeout, GetClientUserId(client));
 	
-	for(new i = 0; i < _:OS_Total; i++) {
+	for(int i = 0; i < _:OS_Total; i++) {
 		QueryClientConVar(client, g_OSConVar[i], OnOSQueried);
 	}
 	g_OSTimer[client] = CreateTimer(30.0, Timer_OSTimeout, GetClientUserId(client));
 }
 
-public OnMOTDQueried(QueryCookie:cookie, client, ConVarQueryResult:result, const String:cvarName[], const String:cvarValue[]) {
+public void OnMOTDQueried(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue) {
 	if(g_MOTDTimer[client] == INVALID_HANDLE) {
 		return; // Timed out
 	}
@@ -175,8 +151,8 @@ public OnMOTDQueried(QueryCookie:cookie, client, ConVarQueryResult:result, const
 	g_MOTDTimer[client] = INVALID_HANDLE;
 }
 
-public Action:Timer_MOTDTimeout(Handle:timer, any:userid) {
-	new client = GetClientOfUserId(userid);
+public Action Timer_MOTDTimeout(Handle timer, any userid) {
+	int client = GetClientOfUserId(userid);
 	if(client == 0) {
 		return;
 	}
@@ -185,7 +161,7 @@ public Action:Timer_MOTDTimeout(Handle:timer, any:userid) {
 	g_MOTDTimer[client] = INVALID_HANDLE;
 }
 
-public OnOSQueried(QueryCookie:cookie, client, ConVarQueryResult:result, const String:cvarName[], const String:cvarValue[]) {
+public void OnOSQueried(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue) {
 	if(g_OSTimer[client] == INVALID_HANDLE) {
 		return; // Timed out
 	}
@@ -198,20 +174,20 @@ public OnOSQueried(QueryCookie:cookie, client, ConVarQueryResult:result, const S
 		}
 		return;
 	} else {
-		for(new i = 0; i < _:OS_Total; i++) {
+		for(int i = 0; i < _:OS_Total; i++) {
 			if(StrEqual(cvarName, g_OSConVar[i])) {
 				g_OS[client] = OS:i;
 				break;
 			}
 		}
-		
+
 		CloseHandle(g_OSTimer[client]);
 		g_OSTimer[client] = INVALID_HANDLE;
 	}
 }
 
-public Action:Timer_OSTimeout(Handle:timer, any:userid) {
-	new client = GetClientOfUserId(userid);
+public Action Timer_OSTimeout(Handle timer, any userid) {
+	int client = GetClientOfUserId(userid);
 	if(client == 0) {
 		return;
 	}
@@ -219,7 +195,7 @@ public Action:Timer_OSTimeout(Handle:timer, any:userid) {
 	g_OSTimer[client] = INVALID_HANDLE;
 }
 
-public OnClientPostAdminCheck(client) {
+public void OnClientPostAdminCheck(int client) {
 	if(IsFakeClient(client)) {
 		return;
 	}
@@ -227,8 +203,8 @@ public OnClientPostAdminCheck(client) {
 	CreateTimer(1.0, Timer_HandleConnect, GetClientUserId(client), TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 }
 
-public Action:Timer_HandleConnect(Handle:timer, any:userid) {
-	new client = GetClientOfUserId(userid);
+public Action Timer_HandleConnect(Handle timer, any userid) {
+	int client = GetClientOfUserId(userid);
 	if(client == 0) {
 		return Plugin_Stop;
 	}
@@ -236,17 +212,26 @@ public Action:Timer_HandleConnect(Handle:timer, any:userid) {
 	if(g_MOTDTimer[client] != INVALID_HANDLE || g_OSTimer[client] != INVALID_HANDLE || g_ConnectTime[client] == 0) {
 		return Plugin_Continue;
 	}
+
+	char date[64];
+	char map[64];
+	new AdminFlag:flags[32];
+	char flagstring[64];
+	char ip[64];
+	char city[45];
+	char region[45];
+	char country_name[45];
+	char country_code[3];
+	char country_code3[4];
 	
-	new String:date[64], String:map[64], AdminFlag:flags[32], String:flagstring[64], String:ip[64], String:city[45], String:region[45], String:country_name[45], String:country_code[3], String:country_code3[4];
-	
-	new String:buffers[10][256];
+	char buffers[10][256];
 	FormatTime(date, sizeof(date), "%Y-%m-%d");
 	GetCurrentMap(map, sizeof(map));
 	GetClientName(client, buffers[0], sizeof(buffers[]));
-	GetClientAuthString(client, buffers[1], sizeof(buffers[]));
-	new num = FlagBitsToArray(GetUserFlagBits(client), flags, sizeof(flags));
-	for(new i = 0; i < num; i++) {
-		new flagchar;
+	GetClientAuthId(client, AuthId_Steam2, buffers[1], sizeof(buffers[]));
+	int num = FlagBitsToArray(GetUserFlagBits(client), flags, sizeof(flags));
+	for(int i = 0; i < num; i++) {
+		int flagchar;
 		FindFlagChar(flags[i], flagchar);
 		flagstring[i] = flagchar;
 	}
@@ -263,8 +248,8 @@ public Action:Timer_HandleConnect(Handle:timer, any:userid) {
 	strcopy(buffers[5], sizeof(buffers[]), country_code);
 	strcopy(buffers[6], sizeof(buffers[]), country_code3);
 	
-	if(STEAMTOOLS_AVAILABLE() && StrEqual(g_GameFolder, "tf")) {
-		if(Steam_CheckClientSubscription(client, 0) && !Steam_CheckClientDLC(client, 459)) {
+	if(STEAMWORKS_AVAILABLE() && SteamWorks_IsLoaded() && StrEqual(g_GameFolder, "csgo")) {
+		if(k_EUserHasLicenseResultDoesNotHaveLicense == SteamWorks_HasLicenseForApp(client, 624820)) {
 			strcopy(buffers[7], sizeof(buffers[]), "0");
 		} else {
 			strcopy(buffers[7], sizeof(buffers[]), "1");
@@ -283,8 +268,8 @@ public Action:Timer_HandleConnect(Handle:timer, any:userid) {
 		strcopy(buffers[9], sizeof(buffers[]), "Linux");
 	}
 	
-	decl String:escapedBuffers[10][513];
-	for(new i = 0; i < sizeof(buffers); i++) {
+	char escapedBuffers[10][513];
+	for(int i = 0; i < sizeof(buffers); i++) {
 		if(strlen(buffers[i]) == 0) {
 			strcopy(escapedBuffers[i], sizeof(escapedBuffers[]), "NULL");
 		} else {
@@ -295,7 +280,7 @@ public Action:Timer_HandleConnect(Handle:timer, any:userid) {
 		}
 	}
 	
-	decl String:query[512];
+	char query[512];
 	Format(query, sizeof(query), "INSERT INTO `player_analytics` SET server_ip = '%s', name = %s, auth = %s, connect_time = %d, connect_date = '%s', connect_method = %s, numplayers = %d, map = '%s', flags = '%s', ip = '%s', city = %s, region = %s, country = %s, country_code = %s, country_code3 = %s, premium = %s, html_motd_disabled = %s, os = %s",
 		g_IP, escapedBuffers[0], escapedBuffers[1], g_ConnectTime[client], date, g_ConnectMethod[client], g_NumPlayers[client], map, flagstring, ip, escapedBuffers[2], escapedBuffers[3], escapedBuffers[4], escapedBuffers[5], escapedBuffers[6], escapedBuffers[7], escapedBuffers[8], escapedBuffers[9]);
 	
@@ -308,8 +293,8 @@ public Action:Timer_HandleConnect(Handle:timer, any:userid) {
 }
 
 GetRealClientCount() {
-	new total = 0;
-	for(new i = 1; i <= MaxClients; i++) {
+	int total = 0;
+	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && !IsFakeClient(i)) {
 			total++;
 		}
@@ -319,7 +304,7 @@ GetRealClientCount() {
 
 #if !defined DEBUG
 public OnRowInserted(Handle:owner, Handle:hndl, const String:error[], any:userid) {
-	new client = GetClientOfUserId(userid);
+	int client = GetClientOfUserId(userid);
 	if(client == 0) {
 		return;
 	}
@@ -331,7 +316,7 @@ public OnRowInserted(Handle:owner, Handle:hndl, const String:error[], any:userid
 	
 	g_RowID[client] = SQL_GetInsertId(hndl);
 	
-	new Handle:fwd = CreateGlobalForward("PA_OnConnectionLogged", ET_Ignore, Param_Cell, Param_Cell);
+	Handle fwd = CreateGlobalForward("PA_OnConnectionLogged", ET_Ignore, Param_Cell, Param_Cell);
 	Call_StartForward(fwd);
 	Call_PushCell(client);
 	Call_PushCell(g_RowID[client]);
@@ -340,13 +325,13 @@ public OnRowInserted(Handle:owner, Handle:hndl, const String:error[], any:userid
 }
 #endif
 
-public OnClientDisconnect(client) {
+public void OnClientDisconnect(int client) {
 	if(g_RowID[client] == -1 || g_ConnectTime[client] == 0) {
 		g_ConnectTime[client] = 0;
 		return;
 	}
 	
-	decl String:query[256];
+	char query[256];
 	Format(query, sizeof(query), "UPDATE `player_analytics` SET duration = %d WHERE id = %d", GetTime() - g_ConnectTime[client], g_RowID[client]);
 #if !defined DEBUG
 	SQL_TQuery(g_DB, OnRowUpdated, query, g_RowID[client]);
@@ -366,7 +351,7 @@ public OnRowUpdated(Handle:owner, Handle:hndl, const String:error[], any:id) {
 #endif
 
 public Native_GetConnectionID(Handle:plugin, numParams) {
-	new client = GetNativeCell(1);
+	int client = GetNativeCell(1);
 	if(client < 1 || client > MaxClients || !IsClientConnected(client) || IsFakeClient(client)) {
 		ThrowNativeError(SP_ERROR_PARAM, "Client index %d is invalid, not connected, or fake", client);
 		return -1;
