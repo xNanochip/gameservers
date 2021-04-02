@@ -1089,7 +1089,7 @@ Action CheckClientCommand(int client, char[] cmd) {
 
         regexList = commandSection.Regexes;
 
-       for (int i = 0; i < regexList.Length; i++) {
+        for (int i = 0; i < regexList.Length; i++) {
             regex = regexList.Get(i);
 
             matchCount = regex.MatchAll(command, errorcode);
