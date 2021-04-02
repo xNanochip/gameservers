@@ -8,7 +8,7 @@ cp_freight_final1
 cp_fulgur_rc2a
 cp_glassworks_rc6a
 cp_gorge
-cp_gullywash_f1a
+cp_gullywash_f3
 cp_kalinka_rc6a
 cp_mountainlab
 cp_powerhouse
@@ -16,13 +16,13 @@ cp_process_f7
 cp_snakewater_final1
 cp_steel
 cp_sunshine
-koth_ashville_rc2c
+koth_ashville_rc2d
 koth_bagel_rc3
 koth_cascade_v2_b5
-koth_clearcut_b15c
+koth_clearcut_b15d
 koth_daenam_b10
 koth_databank_rc2
-koth_harvestalpine_v3b
+koth_harvest_final
 koth_highpass
 koth_king
 koth_product_rcx
@@ -30,7 +30,7 @@ koth_ramjam_rc1
 koth_slaughter_b2a
 koth_spillway_rc3a
 koth_synthetic_rc6a
-pl_badwater_pro_v12
+pl_badwater_pro_v9
 pl_barnblitz_pro6
 pl_borneo
 pl_enclosure_final
