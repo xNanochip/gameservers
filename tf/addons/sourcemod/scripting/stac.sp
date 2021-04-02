@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.1.14b"
+#define PLUGIN_VERSION  "4.1.15b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -611,6 +611,7 @@ void setStacVars()
     // aimsnap var
     if (MVM)
     {
+        StacLog("[StAC] MvM detected, disabling aimsnap check!");
         maxAimsnapDetections = -1;
     }
     else
@@ -725,9 +726,13 @@ public Action checkNativesEtc(Handle timer)
     {
         AIMPLOTTER = true;
     }
-    if (GameRules_GetProp("m_bPlayingMannVsMachine"))
+    if (GameRules_GetProp("m_bPlayingMannVsMachine") == 1)
     {
         MVM = true;
+    }
+    else if (GameRules_GetProp("m_bPlayingMannVsMachine") == 0)
+    {
+        MVM = false;
     }
     if (DEBUG)
     {
@@ -1026,6 +1031,7 @@ public void OnMapStart()
         RunOptimizeCvars();
     }
     timeSinceMapStart = GetEngineTime();
+    CreateTimer(0.1, checkNativesEtc);
 }
 
 public void OnMapEnd()
