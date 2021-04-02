@@ -162,7 +162,7 @@ public void OnMapStart()
 	if(GameRules_GetProp("m_bPlayingMannVsMachine") == 0)
 	{
 		// Only works in MVM.
-		// ServerCommand("sm plugins unload cecon_mvm_events");
+		ServerCommand("sm plugins unload cecon_mvm_events");
 	}
 }
 
