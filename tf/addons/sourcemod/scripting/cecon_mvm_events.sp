@@ -138,17 +138,17 @@ public void OnPluginStart()
 		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
 		PrepSDKCall_SetReturnInfo(SDKType_CBaseEntity, SDKPass_Plain);
 		get_condition_provider_handle = EndPrepSDKCall();
-	
+
 		StartPrepSDKCall(SDKCall_Static);
 		PrepSDKCall_SetFromConf(hData, SDKConf_Signature, "CAttributeManager::AttribHookValueFloat");
-		
+
 		PrepSDKCall_AddParameter(SDKType_Float, SDKPass_Plain);
 		PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
 		PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer, VDECODE_FLAG_ALLOWNULL);
 		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
 		PrepSDKCall_AddParameter(SDKType_Bool, SDKPass_Plain);
 		PrepSDKCall_SetReturnInfo(SDKType_Float, SDKPass_Plain);
-		
+
 		attrib_float_handle = EndPrepSDKCall();
 	} else {
 	}
@@ -834,10 +834,10 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 			break;
 		}
 	}
-	
+
 	// Before we only made it fire the event, if a player has damaged the tank at least once.
 	// However the issue with that is if we have multiple tanks at the same time, only the first one
-	// will register. - Moonly 
+	// will register. - Moonly
 
 	int resource = GetPlayerResourceEntity();
 	for (int i = 1; i <= MaxClients; i++)
@@ -1329,11 +1329,10 @@ public Action player_stunned(Handle hEvent, const char[] szName, bool bDontBroad
 	int victim = GetClientOfUserId(GetEventInt(hEvent, "victim"));
 	bool capping = GetEventBool(hEvent, "victim_capping");
 	bool big_stun = GetEventBool(hEvent, "big_stun");
-	
-	
+
+
 	if (stunner == 0)
 	{
-		PrintToChatAll("(victim \"%N\")", victim);
 		float vecvictim[3];
 		GetEntPropVector(victim, Prop_Send, "m_vecOrigin", vecvictim);
 
@@ -1514,7 +1513,7 @@ public void TF2_OnConditionAdded(int client, TFCond cond)
 				}
 
 				// Snare upgrade detection
-				
+
 				if (GetAttributeValue(entity, "applies_snare_effect", 1.0) != 1.0)
 				{
 					CEcon_SendEventToClientUnique(entity, "TF_MVM_STUN_ROBOT_JAR", 1);
@@ -1528,11 +1527,11 @@ public void TF2_OnConditionAdded(int client, TFCond cond)
 		case TFCond_Jarated:
 		{
 			int entity = GetConditionProvider(client, cond);
-			
+
 			if (IsClientValid(entity) && !IsFakeClient(entity) && IsFakeClient(client))
 			{
 				int iJar = GetPlayerWeaponSlot(entity, 1);
-				
+
 				// Snare upgrade detection
 				if (GetAttributeValue(iJar, "applies_snare_effect", 1.0) != 1.0)
 				{
