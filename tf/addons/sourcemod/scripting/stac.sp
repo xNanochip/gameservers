@@ -91,6 +91,8 @@ bool STEAMTOOLS;
 bool STEAMWORKS;
 bool AIMPLOTTER;
 
+// are we in MVM
+bool MVM;
 // CVARS
 ConVar stac_enabled;
 ConVar stac_verbose_info;
@@ -607,13 +609,13 @@ void setStacVars()
     }
 
     // aimsnap var
-    if (!GameRules_GetProp("m_bPlayingMannVsMachine"))
+    if (MVM)
     {
-        maxAimsnapDetections = GetConVarInt(stac_max_aimsnap_detections);
+        maxAimsnapDetections = -1;
     }
     else
     {
-        maxAimsnapDetections = -1;
+        maxAimsnapDetections = GetConVarInt(stac_max_aimsnap_detections);
     }
 
     // psilent var
@@ -723,7 +725,10 @@ public Action checkNativesEtc(Handle timer)
     {
         AIMPLOTTER = true;
     }
-
+    if (GameRules_GetProp("m_bPlayingMannVsMachine"))
+    {
+        MVM = true;
+    }
     if (DEBUG)
     {
         LogMessage
