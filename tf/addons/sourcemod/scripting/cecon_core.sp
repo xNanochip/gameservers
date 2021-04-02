@@ -812,7 +812,7 @@ public void Schema_CheckForUpdates_Callback(HTTPRequestHandle request, bool succ
 				LogMessage("No new updates found.");
 			} else {
 				LogMessage("A new version detected. Updating...");
-				Schema_ForceUpdate();
+				// Schema_ForceUpdate();
 			}
 
 			delete kv;
