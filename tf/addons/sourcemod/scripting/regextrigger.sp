@@ -2,7 +2,7 @@
 #pragma newdecls required
 
 #define PLUGIN_DESCRIPTION "Regex triggers for names, chat, and commands."
-#define PLUGIN_VERSION "2.5.10creatorsTF"
+#define PLUGIN_VERSION "2.5.11creatorsTF"
 #define MAX_EXPRESSION_LENGTH 512
 #define MATCH_SIZE 64
 
@@ -601,6 +601,10 @@ int FindRegexFlags(const char[] flags) {
         else if (StrEqual(sBuffer[i], "NO_UTF8_CHECK")) {
             new_flags |= PCRE_NO_UTF8_CHECK;
         }
+        else if (StrEqual(sBuffer[i], "UCP")) {
+            new_flags |= PCRE_UCP;
+        }
+
     }
 
     return new_flags;
@@ -1085,7 +1089,7 @@ Action CheckClientCommand(int client, char[] cmd) {
 
         regexList = commandSection.Regexes;
 
-        for (int i = 0; i < regexList.Length; i++) {
+       for (int i = 0; i < regexList.Length; i++) {
             regex = regexList.Get(i);
 
             matchCount = regex.MatchAll(command, errorcode);
