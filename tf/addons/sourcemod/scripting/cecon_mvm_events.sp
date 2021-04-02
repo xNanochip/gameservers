@@ -1,7 +1,6 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-//#include <cecon>
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
@@ -12,9 +11,9 @@
 
 public Plugin myinfo =
 {
-	name = "Creators.TF Economy - TF2 MVM Events",
+	name = "Creators.TF Economy - TF2 MvM Events",
 	author = "Creators.TF Team",
-	description = "Creators.TF TF2 MVM Events",
+	description = "Creators.TF TF2 MvM Events",
 	version = "1.0",
 	url = "https://creators.tf"
 }
@@ -38,7 +37,7 @@ enum struct PlayerDataMission
 enum struct PlayerData
 {
 	int touched_cp_area;
-	int tank_damage_wave;
+	// int tank_damage_wave;
 	int tank_damage_last_second;
 
 	// Bit mask of every client index who damaged the player
@@ -59,7 +58,7 @@ enum struct PlayerData
 	void Init(int client)
 	{
 		this.touched_cp_area = -1;
-		this.tank_damage_wave = 0;
+		// this.tank_damage_wave = 0;
 		this.tank_damage_last_second = 0;
 		this.killed_by = 0;
 		this.hit_tracker = 0;
@@ -131,25 +130,28 @@ public void OnPluginStart()
 
 	HookEvent("player_used_powerup_bottle", player_used_powerup_bottle);
 
-	Handle data_mvm = LoadGameConfigFile("tf2.cecon_mvm_events");
-	StartPrepSDKCall(SDKCall_Raw);
-	if (PrepSDKCall_SetFromConf(data_mvm,SDKConf_Signature,"CTFPlayerShared::GetConditionProvider"))
+	Handle hData = LoadGameConfigFile("tf2.cecon_mvm_events");
+	if(hData != null)
 	{
+		StartPrepSDKCall(SDKCall_Raw);
+		PrepSDKCall_SetFromConf(hData, SDKConf_Signature, "CTFPlayerShared::GetConditionProvider");
 		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
 		PrepSDKCall_SetReturnInfo(SDKType_CBaseEntity, SDKPass_Plain);
-	}
-	get_condition_provider_handle = EndPrepSDKCall();
-
-	StartPrepSDKCall(SDKCall_Static);
-	if (PrepSDKCall_SetFromConf(data_mvm,SDKConf_Signature,"CAttributeManager::AttribHookValueFloat")) {
+		get_condition_provider_handle = EndPrepSDKCall();
+	
+		StartPrepSDKCall(SDKCall_Static);
+		PrepSDKCall_SetFromConf(hData, SDKConf_Signature, "CAttributeManager::AttribHookValueFloat");
+		
 		PrepSDKCall_AddParameter(SDKType_Float, SDKPass_Plain);
 		PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
 		PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer, VDECODE_FLAG_ALLOWNULL);
 		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
 		PrepSDKCall_AddParameter(SDKType_Bool, SDKPass_Plain);
 		PrepSDKCall_SetReturnInfo(SDKType_Float, SDKPass_Plain);
+		
+		attrib_float_handle = EndPrepSDKCall();
+	} else {
 	}
-	attrib_float_handle = EndPrepSDKCall();
 
 	AddNormalSoundHook(OnSound);
 	CreateTimer(1.0, UpdateTimer, 0, TIMER_REPEAT);
@@ -160,7 +162,7 @@ public void OnMapStart()
 	if(GameRules_GetProp("m_bPlayingMannVsMachine") == 0)
 	{
 		// Only works in MVM.
-		ServerCommand("sm plugins unload cecon_mvm_events");
+		// ServerCommand("sm plugins unload cecon_mvm_events");
 	}
 }
 
@@ -186,6 +188,7 @@ public Action UpdateTimer(Handle timer, any data)
 		int player_resource = GetPlayerResourceEntity();
 		for (int i = 1; i <= TF_MAXPLAYERS; i++)
 		{
+			// Not a bot.
 			if (IsClientValid(i) && !IsFakeClient(i))
 			{
 				if (TF2_IsPlayerInCondition(i, TFCond_CritOnKill))
@@ -492,6 +495,11 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SAPPED", 1, hEvent);
 					}
 
+					if (!(GetEntityFlags(attacker) & FL_ONGROUND))
+					{
+						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_WHILE_AIRBORNE", 1, hEvent);
+					}
+
 					if (TF2_IsPlayerInCondition(client, TFCond_Dazed))
 					{
 						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_STUNNED", 1, hEvent);
@@ -712,7 +720,7 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 	int resource = GetPlayerResourceEntity();
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		player_data[i].tank_damage_wave = GetEntProp(resource, Prop_Send, "m_iDamageBoss", 4, i);
+		// player_data[i].tank_damage_wave = GetEntProp(resource, Prop_Send, "m_iDamageBoss", 4, i);
 	}
 
 	return Plugin_Continue;
@@ -723,7 +731,7 @@ public void OnWaveEnd(Handle hEvent)
 	int resource = GetPlayerResourceEntity();
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		player_data[i].tank_damage_wave = 0;
+		// player_data[i].tank_damage_wave = 0;
 	}
 }
 
@@ -805,7 +813,6 @@ public bool FilterTank(int entity, int contentsMosk, int tank)
 
 public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-
 	//Check if one of tanks is a blimp
 	bool is_blimp = false;
 	for (int i = FindEntityByClassname(-1, "tank_boss"); i != -1; i = FindEntityByClassname(i, "tank_boss"))
@@ -820,32 +827,37 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 		vecdown[2] -= 40;
 		vec[2] += 90;
 
-		TR_TraceRayFilter(vec,vecdown,MASK_SOLID_BRUSHONLY,RayType_EndPoint,FilterTank,i);
+		TR_TraceRayFilter(vec, vecdown, MASK_SOLID_BRUSHONLY, RayType_EndPoint, FilterTank, i);
 		if (!TR_DidHit())
 		{
 			is_blimp = true;
 			break;
 		}
 	}
+	
+	// Before we only made it fire the event, if a player has damaged the tank at least once.
+	// However the issue with that is if we have multiple tanks at the same time, only the first one
+	// will register. - Moonly 
 
 	int resource = GetPlayerResourceEntity();
 	for (int i = 1; i <= MaxClients; i++)
 	{
+		/*
 		int damage = 0;
 		if (IsClientValid(i))
 		{
 			damage = GetEntProp(resource, Prop_Send, "m_iDamageBoss", 4, i) - player_data[i].tank_damage_wave;
-			if (damage > 0) {
+			if (damage > 0)
+			{*/
 				CEcon_SendEventToClientFromGameEvent(i, "TF_MVM_DESTROY_TANK", 1, hEvent);
 
 				if (is_blimp)
 				{
 					CEcon_SendEventToClientFromGameEvent(i, "TF_MVM_DESTROY_TANK_BLIMP", 1, hEvent);
 				}
-			}
-
+			/*}
 		}
-		player_data[i].tank_damage_wave += damage;
+		player_data[i].tank_damage_wave += damage;*/
 	}
 
 	return Plugin_Continue;
@@ -1317,13 +1329,13 @@ public Action player_stunned(Handle hEvent, const char[] szName, bool bDontBroad
 	int victim = GetClientOfUserId(GetEventInt(hEvent, "victim"));
 	bool capping = GetEventBool(hEvent, "victim_capping");
 	bool big_stun = GetEventBool(hEvent, "big_stun");
-
-
+	
+	
 	if (stunner == 0)
 	{
+		PrintToChatAll("(victim \"%N\")", victim);
 		float vecvictim[3];
 		GetEntPropVector(victim, Prop_Send, "m_vecOrigin", vecvictim);
-
 
 		// Search for rocket pack pyros nearbly
 		for (int i = 1; i < MaxClients; i++)
@@ -1502,6 +1514,7 @@ public void TF2_OnConditionAdded(int client, TFCond cond)
 				}
 
 				// Snare upgrade detection
+				
 				if (GetAttributeValue(entity, "applies_snare_effect", 1.0) != 1.0)
 				{
 					CEcon_SendEventToClientUnique(entity, "TF_MVM_STUN_ROBOT_JAR", 1);
@@ -1515,13 +1528,19 @@ public void TF2_OnConditionAdded(int client, TFCond cond)
 		case TFCond_Jarated:
 		{
 			int entity = GetConditionProvider(client, cond);
-			// Snare upgrade detection
-			if (GetAttributeValue(entity, "applies_snare_effect", 1.0) != 1.0)
+			
+			if (IsClientValid(entity) && !IsFakeClient(entity) && IsFakeClient(client))
 			{
-				CEcon_SendEventToClientUnique(entity, "TF_MVM_STUN_ROBOT_JAR", 1);
-				if (IsGiantNotBuster(client) && TF2_GetPlayerClass(client) == TFClass_Scout)
+				int iJar = GetPlayerWeaponSlot(entity, 1);
+				
+				// Snare upgrade detection
+				if (GetAttributeValue(iJar, "applies_snare_effect", 1.0) != 1.0)
 				{
-					CEcon_SendEventToClientUnique(entity, "TF_MVM_STUN_ROBOT_JAR_GIANT_SCOUT", 1);
+					CEcon_SendEventToClientUnique(entity, "TF_MVM_STUN_ROBOT_JAR", 1);
+					if (IsGiantNotBuster(client) && TF2_GetPlayerClass(client) == TFClass_Scout)
+					{
+						CEcon_SendEventToClientUnique(entity, "TF_MVM_STUN_ROBOT_JAR_GIANT_SCOUT", 1);
+					}
 				}
 			}
 		}
@@ -1670,6 +1689,7 @@ public float GetAttributeValue(int entity, char[] attribute, float inValue)
 {
 	if (attrib_float_handle == null)
 	{
+		LogMessage("Null");
 		return inValue;
 	}
 

@@ -79,7 +79,8 @@ bool m_bIsEventQueueProcessed = false;
 
 ArrayList m_hEventsQueue;
 
-ConVar ce_events_debug;
+ConVar 	ce_events_queue_debug,
+		ce_events_log;
 
 enum struct CEQueuedEvent
 {
@@ -149,7 +150,8 @@ public void OnPluginStart()
 
 	g_hOnClientEvent = CreateGlobalForward("CEcon_OnClientEvent", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_Cell);
 	RegAdminCmd("ce_events_test", cTestEvnt, ADMFLAG_ROOT, "Tests a CEcon event.");
-	ce_events_debug = CreateConVar("ce_events_debug", "0");
+	ce_events_queue_debug = CreateConVar("ce_events_queue_debug", "0");
+	ce_events_log = CreateConVar("ce_events_log", "0");
 
 	// Hook all needed entities when plugin late loads.
 	LateHooking();
@@ -212,7 +214,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public Action player_spawn(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
-	m_iLastWeapon[client] = -1;
+	SetClientLastWeapon(client, -1);
 
 	return Plugin_Continue;
 }
@@ -905,7 +907,7 @@ public Action OnTouch(int entity, int toucher)
 			int iLunchBox = GetPlayerWeaponSlot(hOwner, 1);
 			if(IsValidEntity(iLunchBox))
 			{
-				m_iLastWeapon[hOwner] = iLunchBox;
+				SetClientLastWeapon(hOwner, iLunchBox);
 			}
 		}
 	}
@@ -931,12 +933,12 @@ public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &dam
 					int iWrench = GetPlayerWeaponSlot(attacker, 2);
 					if(IsValidEntity(iWrench))
 					{
-						m_iLastWeapon[attacker] = iWrench;
+						SetClientLastWeapon(attacker, iWrench);
 					}
 				}
 			} else {
 				// Player killed someone with a hitscan weapon. Saving the one.
-				m_iLastWeapon[attacker] = weapon;
+				SetClientLastWeapon(attacker, weapon);
 			}
 		}
 	}
@@ -1027,6 +1029,26 @@ public void OnClientPutInServer(int client)
 
 public void OnWeaponSwitch(int client, int weapon)
 {
+	// Validate that we have really switched to this weapon. 
+	// This fixes cases when some weapon become invisible.
+	int iActiveWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
+	if (iActiveWeapon != weapon)return;
+	
+	SetClientLastWeapon(client, weapon);
+}
+
+public void SetClientLastWeapon(int client, int weapon)
+{
+	if (m_iLastWeapon[client] == weapon)return;
+	
+	/*
+	if(weapon > 0)
+	{
+		char sName[32];
+		GetEntityNetClass(weapon, sName, sizeof(sName));
+		PrintToChatAll("m_iLastWeapon => %s", sName);
+	}
+	*/
 	m_iLastWeapon[client] = weapon;
 }
 
@@ -1110,12 +1132,18 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	if (!IsClientValid(client))return;
+	
 
 	char event[128];
 	GetNativeString(2, event, sizeof(event));
 
 	int add = GetNativeCell(3);
 	int unique_id = GetNativeCell(4);
+	
+	if(ce_events_log.BoolValue)
+	{
+		LogMessage("%s (client \"%N\") (add %d) (unique_id)", event, client, add, unique_id);
+	}
 	
 	// We only start new queue, if we are sure nothing is currently being proccessed.
 	bool bShouldStartQueue = m_hEventsQueue.Length == 0;
@@ -1144,13 +1172,13 @@ public void StartEventsProcessQueue()
 	// If we don't, make this as the one.
 	m_bIsEventQueueProcessed = true;
 	
-	if(ce_events_debug.BoolValue) LogMessage("Queue started...");
+	if(ce_events_queue_debug.BoolValue) LogMessage("Queue started...");
 	ProcessNextEventsChunk();
 }
 
 public void ProcessNextEventsChunk()
 {
-	if(ce_events_debug.BoolValue) LogMessage("%d events left.", m_hEventsQueue.Length);
+	if(ce_events_queue_debug.BoolValue) LogMessage("%d events left.", m_hEventsQueue.Length);
 	// We only process this amount of events per a frame.
 	for (int i = 0; i < EVENT_MAX_EVENTS_PER_FRAME; i++)
 	{
@@ -1170,7 +1198,7 @@ public void ProcessNextEventsChunk()
 		if (!IsClientValid(client))continue;
 		
 		// Log the event execution.
-		if(ce_events_debug.BoolValue)
+		if(ce_events_queue_debug.BoolValue)
 		{
 			LogMessage("%s (client \"%N\") (add %d) (unique_id %d)", xEvent.m_sEvent, client, xEvent.m_iAdd, xEvent.m_iUniqueID);
 		}
@@ -1187,13 +1215,13 @@ public void ProcessNextEventsChunk()
 	// If there are any more events to process, wait till another frame.
 	if(m_hEventsQueue.Length > 0)
 	{
-		if(ce_events_debug.BoolValue) LogMessage("Waiting until next frame...");
+		if(ce_events_queue_debug.BoolValue) LogMessage("Waiting until next frame...");
 		RequestFrame(RF_ProcessNextEventChunk);
 	} else {
 		
 		// We're done.
 		m_bIsEventQueueProcessed = false;
-		if(ce_events_debug.BoolValue) LogMessage("Queue ended.");
+		if(ce_events_queue_debug.BoolValue) LogMessage("Queue ended.");
 	}
 }
 

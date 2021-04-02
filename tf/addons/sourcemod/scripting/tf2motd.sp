@@ -38,6 +38,7 @@ public void OnPluginStart()
 
 	RegConsoleCmd("sm_campaign", cOpenCampaign, "Opens active Creators.TF Campaign");
 	RegConsoleCmd("sm_ca", cOpenCampaign, "Opens active Creators.TF Campaign");
+	RegConsoleCmd("sm_cc", cOpenCampaign, "Opens active Creators.TF Campaign");
 
 	RegConsoleCmd("sm_inventory", cOpenInventory, "Opens your Creators.TF Inventory");
 	RegConsoleCmd("sm_i", cOpenInventory, "Opens your Creators.TF Inventory");
