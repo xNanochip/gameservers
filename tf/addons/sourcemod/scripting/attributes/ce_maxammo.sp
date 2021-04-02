@@ -28,8 +28,8 @@ public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem xItem, co
 			{
 				switch(iSlot)
 				{
-					case 0: TF2Attrib_SetByName(entity, "maxammo primary increased", flBonus);
-					case 1: TF2Attrib_SetByName(entity, "maxammo secondary increased", flBonus);
+					case 0: TF2Attrib_SetByName(entity, "hidden primary max ammo bonus", flBonus);
+					case 1: TF2Attrib_SetByName(entity, "hidden secondary max ammo penalty", flBonus);
 				}
 
 			}
@@ -39,8 +39,8 @@ public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem xItem, co
 			{
 				switch(iSlot)
 				{
-					case 0: TF2Attrib_SetByName(entity, "maxammo primary reduced", flPenalty);
-					case 1: TF2Attrib_SetByName(entity, "maxammo secondary reduced", flPenalty);
+					case 0: TF2Attrib_SetByName(entity, "hidden primary max ammo bonus", flPenalty);
+					case 1: TF2Attrib_SetByName(entity, "hidden secondary max ammo penalty", flPenalty);
 				}
 			}
 		}
