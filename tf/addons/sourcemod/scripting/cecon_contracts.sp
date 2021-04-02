@@ -16,6 +16,7 @@
 #include <tf2>
 #include <tf2_stocks>
 #include <tf_econ_data>
+#include <clientprefs>
 #include <cecon_contracts>
 
 #define QUEST_HUD_REFRESH_RATE 0.5
@@ -54,14 +55,22 @@ bool m_bIsObjectiveMarked[MAXPLAYERS + 1][MAX_OBJECTIVES + 1];
 ConVar ce_quest_friend_sharing_enabled;
 ConVar ce_quest_background_enabled;
 
+bool m_bUIEnabled[MAXPLAYERS + 1];
+
+Handle g_CTFCookieQuestsShowDisplay;
+
 public void OnPluginStart()
 {
+    g_CTFCookieQuestsShowDisplay = RegClientCookie("CTFCookieQuestsShowDisplay", "Whether to show contracts HUD or not.", CookieAccess_Public);
+    
 	RegServerCmd("ce_quest_dump", cDump, "");
 	RegServerCmd("ce_quest_activate", cQuestActivate, "");
 
 	RegConsoleCmd("sm_q", cQuestPanel);
 	RegConsoleCmd("sm_quest", cQuestPanel);
 	RegConsoleCmd("sm_contract", cQuestPanel);
+	
+	RegConsoleCmd("ce_questhud_enabled", cQuestUI);
 
 	OnLateLoad();
 
@@ -72,6 +81,7 @@ public void OnPluginStart()
 
 	ce_quest_friend_sharing_enabled = CreateConVar("ce_quest_friend_sharing_enabled", "1", "Enabled \"Friendly Fire\" feature, that allows to share progress with friends.");
 	ce_quest_background_enabled = CreateConVar("ce_quest_background_enabled", "1", "Enable background quests to track themselves.");
+
 }
 
 public Action cQuestPanel(int client, int args)
@@ -672,6 +682,7 @@ public void OnClientDisconnect(int client)
 
 public void PrepareClientData(int client)
 {
+	GetClientQuestVisibility(client);
 	RequestClientSteamFriends(client);
 	RequestClientContractProgress(client);
 }
@@ -797,6 +808,7 @@ public Action Timer_HudRefresh(Handle timer, any data)
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
+		if (!m_bUIEnabled[i])continue;
 
 		CEQuestDefinition xQuest;
 		if(GetClientActiveQuest(i, xQuest))
@@ -1440,6 +1452,15 @@ public bool AddPointsToClientObjective(int client, CEQuestObjectiveDefinition xO
 				AddQuestUpdateBatch(client, xQuest.m_iIndex, iObjectiveIndex, iAfter);
 
 				bool bIsHalloween = StrEqual(xQuest.m_sPostfix, "MP");
+				
+				if(xQuest.m_bBackground)
+				{
+					if(m_bUIEnabled[client])
+					{
+						PrintHintText(client, "[%d/%d] %s (%s) +%d%s", xProgress.m_iProgress[iObjectiveIndex], iLimit, xObjective.m_sName, xQuest.m_sName, xObjective.m_iPoints, xQuest.m_sPostfix);
+					}
+					PrintToConsole(client, "* [%d/%d] %s (%s) +%d%s", xProgress.m_iProgress[iObjectiveIndex], iLimit, xObjective.m_sName, xQuest.m_sName, xObjective.m_iPoints, xQuest.m_sPostfix);
+				}
 
 				// ------------------------ //
 				// SOUND					//
@@ -1659,4 +1680,58 @@ public bool QuestIsListeningForEvent(CEQuestDefinition xQuest, const char[] even
 	Format(sEvent, sizeof(sEvent), "%s;", event);
 
 	return StrContains(xQuest.m_sAggregatedEvents, sEvent, false) != -1;
+}
+
+public bool SetClientQuestVisibility(int client, bool visible)
+{
+    if (AreClientCookiesCached(client))
+    {
+        char sValue[8];
+        IntToString(visible ? 1 : 0, sValue, sizeof(sValue));
+
+		SetClientCookie(client, g_CTFCookieQuestsShowDisplay, sValue);
+		
+		GetClientQuestVisibility(client);
+    }
+}
+
+public Action cQuestUI(int client, int args)
+{
+	char sCmdName[32];
+	GetCmdArg(0, sCmdName, sizeof(sCmdName));
+	
+	if(args > 0)
+	{
+		char sArg1[2];
+		GetCmdArg(1, sArg1, sizeof(sArg1));
+	
+		bool bEnabled = StringToInt(sArg1) > 0;
+		SetClientQuestVisibility(client, bEnabled);
+	} else {
+		PrintToConsole(client, "\"%s\" = \"%d\"", sCmdName, m_bUIEnabled[client] ? 1 : 0);
+		PrintToConsole(client, " - Whether to show contracts UI or not.", sCmdName, m_bUIEnabled ? 1 : 0);
+	}
+	
+	
+	return Plugin_Handled;
+}
+
+public bool GetClientQuestVisibility(int client)
+{	
+    if (AreClientCookiesCached(client))
+    {
+        char sValue[8];
+		GetClientCookie(client, g_CTFCookieQuestsShowDisplay, sValue, sizeof(sValue));
+		
+		if(StrEqual(sValue, ""))
+		{
+			SetClientQuestVisibility(client, true);
+			return true;
+		} else {
+			m_bUIEnabled[client] = StrEqual(sValue, "1");
+		}
+		
+    }
+    
+    return true;
 }

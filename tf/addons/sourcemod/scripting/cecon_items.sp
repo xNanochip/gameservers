@@ -1449,7 +1449,8 @@ public Action player_spawn(Event hEvent, const char[] szName, bool bDontBroadcas
 	m_bFullReapplication[client] = true;
 
 	// Users are in respawn room by default when they spawn.
-	m_bInRespawn[client] = true;
+	// m_bInRespawn[client] = true;
+	
 }
 
 public void RF_LoadoutApplication(int client)

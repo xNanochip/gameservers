@@ -250,12 +250,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 				TF2_RemoveWeaponSlot(client, item_slot);
 				EquipPlayerWeapon(client, iWeapon);
 
-				DataPack hPack = new DataPack();
-				hPack.WriteCell(client);
-				hPack.WriteCell(iWeapon);
-				hPack.Reset();
-
-				RequestFrame(RF_OnWeaponDraw, hPack);
+				OnDrawWeapon(client, iWeapon);
 
 				return iWeapon;
 			}
@@ -595,52 +590,11 @@ public void OnWeaponSwitch(int client, int weapon)
 	}
 
 	m_hLastWeapon[client] = weapon;
-	float flHolsterTime;
-
-	// HACK: The only weapon that has "holster_anim_time" attribute is Thermal Thruster.
-	// We can check the "m_flHolsterAnimTime" netprop of the player that is always >0 when we're
-	// holstering the rocketpack. However I can't understand what defines its value.
-	//
-	// We need to find a way to detect exact amount of time needed for the animation to play, so that
-	// this doesn't break when Valve push new weapons using that attrib. (Which is probably never, so we're fine for now.)
-	//
-	// P.S. Inb4 this doesn't age well.
-
-	if(GetEntPropFloat(client, Prop_Send, "m_flHolsterAnimTime") > 0)
-	{
-		// HACK: Sets the holster time to 0.8 as that's the time rocketpack uses to holster.
-		flHolsterTime = 0.8;
-	}
 
 	if(CEconItems_IsEntityCustomEconItem(weapon))
 	{
-		DataPack hPack = new DataPack();
-		hPack.WriteCell(client);
-		hPack.WriteCell(weapon);
-		hPack.Reset();
-
-		if(flHolsterTime > 0.0)
-		{
-			CreateTimer(flHolsterTime, Timer_OnWeaponDraw, hPack);
-		} else {
-			RequestFrame(RF_OnWeaponDraw, hPack);
-		}
+		OnDrawWeapon(client, weapon);
 	}
-}
-
-public Action Timer_OnWeaponDraw(Handle timer, DataPack hPack)
-{
-	RequestFrame(RF_OnWeaponDraw, hPack);
-}
-
-public void RF_OnWeaponDraw(DataPack hPack)
-{
-	int client = hPack.ReadCell();
-	int weapon = hPack.ReadCell();
-	hPack.Reset();
-	delete hPack;
-
-	OnDrawWeapon(client, weapon);
 }
 
 public void OnWeaponDropped(int weapon)
