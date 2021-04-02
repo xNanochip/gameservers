@@ -53,7 +53,7 @@ while read p; do
         fi
     fi
 
-    if [[ $p =~ "disabled/" ]] || [[ $p =~ "external/" ]] || [[ $p =~ "economy/" ]] || [[ ! -f "$PLUGIN_SCRIPT_PATH" ]]; then
+    if [[ $p =~ "include/" ]] || [[ $p =~ "disabled/" ]] || [[ $p =~ "external/" ]] || [[ $p =~ "economy/" ]] || [[ ! -f "$PLUGIN_SCRIPT_PATH" ]]; then
         continue
     fi
 
