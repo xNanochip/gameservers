@@ -43,7 +43,7 @@ enum struct CEItemDefinitionWeapon
 
 	char m_sWorldModel[256];
 	bool m_bPreserveAttributes;
-	
+
 	int m_iStylesCount;
 	int m_iStyles[MAX_STYLES];
 	char m_sLogName[PLATFORM_MAX_PATH];
@@ -82,7 +82,7 @@ public Action player_death(Event hEvent, const char[] szName, bool bDontBroadcas
 public Action player_death_PRE(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int client = GetClientOfUserId(hEvent.GetInt("attacker"));
-	
+
 	int iWeapon = CEcon_GetLastUsedWeapon(client);
 	if(IsValidEntity(iWeapon))
 	{
@@ -100,8 +100,8 @@ public Action player_death_PRE(Event hEvent, const char[] szName, bool bDontBroa
 			}
 		}
 	}
-	
-	return Plugin_Continue; 
+
+	return Plugin_Continue;
 }
 
 //--------------------------------------------------------------------
@@ -177,7 +177,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 		} else {
 			int iWeapon = CreateWeapon(client, hDef.m_iBaseIndex, hDef.m_sClassName, item.m_nQuality, hDef.m_bPreserveAttributes);
 			if(iWeapon > -1)
-			{				
+			{
 				int iBaseDefID = GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex");
 				int item_slot = TF2Econ_GetItemSlot(iBaseDefID, TF2_GetPlayerClass(client));
 
@@ -246,17 +246,29 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 
 				// Making weapon visible.
 				SetEntProp(iWeapon, Prop_Send, "m_bValidatedAttachedEntity", 1);
-				
+
 				TF2_RemoveWeaponSlot(client, item_slot);
 				EquipPlayerWeapon(client, iWeapon);
 
-				OnDrawWeapon(client, iWeapon);
+				DataPack pack = new DataPack();
+				pack.WriteCell(client);
+				pack.WriteCell(iWeapon);
+				RequestFrame(RF_OnDrawWeapon, pack);
 
 				return iWeapon;
 			}
 		}
 	}
 	return -1;
+}
+
+public void RF_OnDrawWeapon(any data)
+{
+	DataPack pack = data;
+	int client = pack.ReadCell();
+	int weapon = pack.ReadCell();
+	delete pack;
+	OnDrawWeapon(client, weapon);
 }
 
 //--------------------------------------------------------------------
@@ -312,7 +324,7 @@ public void ProcessEconSchema(KeyValues kv)
 
 				hDef.m_iClip = kv.GetNum("weapon_clip");
 				hDef.m_iAmmo = kv.GetNum("weapon_ammo");
-				
+
 				hDef.m_bPreserveAttributes = kv.GetNum("preserve_attributes", 0) == 1;
 
 				kv.GetString("world_model", hDef.m_sWorldModel, sizeof(hDef.m_sWorldModel));
@@ -359,7 +371,7 @@ public int CreateWeapon(int client, int index, const char[] classname, int quali
 {
 	int nFlags = OVERRIDE_ALL | FORCE_GENERATION;
 	if (preserve)nFlags |= PRESERVE_ATTRIBUTES;
-	
+
 	Handle hWeapon = TF2Items_CreateItem(nFlags);
 
 	char class[128];
@@ -576,11 +588,11 @@ public void OnDrawWeapon(int client, int iWeapon)
 
 public void OnWeaponSwitch(int client, int weapon)
 {
-	// Validate that we have really switched to this weapon. 
+	// Validate that we have really switched to this weapon.
 	// This fixes cases when some weapon become invisible.
 	int iActiveWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
 	if (iActiveWeapon != weapon)return;
-	
+
 	if (m_hLastWeapon[client] == weapon)return; // Nothing has changed.
 	int iLastWeapon = m_hLastWeapon[client];
 
