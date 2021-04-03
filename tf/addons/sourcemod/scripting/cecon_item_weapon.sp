@@ -253,6 +253,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 				DataPack pack = new DataPack();
 				pack.WriteCell(client);
 				pack.WriteCell(iWeapon);
+				pack.Reset();
 				RequestFrame(RF_OnDrawWeapon, pack);
 
 				return iWeapon;
