@@ -43,7 +43,7 @@ enum struct CEItemDefinitionWeapon
 
 	char m_sWorldModel[256];
 	bool m_bPreserveAttributes;
-	
+
 	int m_iStylesCount;
 	int m_iStyles[MAX_STYLES];
 	char m_sLogName[PLATFORM_MAX_PATH];
@@ -61,10 +61,32 @@ ArrayList m_hStyles;
 char m_sWeaponModel[2049][256];
 int m_hLastWeapon[MAXPLAYERS + 1];
 
+Handle 	g_hSdkGetMaxAmmo,
+		g_hSdkGetMaxClip;
+
 public void OnPluginStart()
 {
 	HookEvent("player_death", player_death);
 	HookEvent("player_death", player_death_PRE, EventHookMode_Pre);
+	
+	Handle hGameConf = LoadGameConfigFile("tf2.weapons");
+	if (hGameConf != null)
+	{
+		// This call calculates the max ammo of a given weapon of a slot
+		StartPrepSDKCall(SDKCall_Player);
+		PrepSDKCall_SetFromConf(hGameConf, SDKConf_Signature, "CTFPlayer::GetMaxAmmo");
+		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+		PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+		g_hSdkGetMaxAmmo = EndPrepSDKCall();
+		
+		StartPrepSDKCall(SDKCall_Entity);
+		PrepSDKCall_SetFromConf(hGameConf, SDKConf_Virtual, "CTFWeaponBase::GetMaxClip1");
+		PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+		g_hSdkGetMaxClip = EndPrepSDKCall();
+
+		CloseHandle(hGameConf);
+	}
 }
 
 public Action player_death(Event hEvent, const char[] szName, bool bDontBroadcast)
@@ -82,7 +104,7 @@ public Action player_death(Event hEvent, const char[] szName, bool bDontBroadcas
 public Action player_death_PRE(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int client = GetClientOfUserId(hEvent.GetInt("attacker"));
-	
+
 	int iWeapon = CEcon_GetLastUsedWeapon(client);
 	if(IsValidEntity(iWeapon))
 	{
@@ -100,8 +122,8 @@ public Action player_death_PRE(Event hEvent, const char[] szName, bool bDontBroa
 			}
 		}
 	}
-	
-	return Plugin_Continue; 
+
+	return Plugin_Continue;
 }
 
 //--------------------------------------------------------------------
@@ -177,7 +199,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 		} else {
 			int iWeapon = CreateWeapon(client, hDef.m_iBaseIndex, hDef.m_sClassName, item.m_nQuality, hDef.m_bPreserveAttributes);
 			if(iWeapon > -1)
-			{				
+			{
 				int iBaseDefID = GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex");
 				int item_slot = TF2Econ_GetItemSlot(iBaseDefID, TF2_GetPlayerClass(client));
 
@@ -231,32 +253,52 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 					}
 				}
 
-				if(hDef.m_iClip > 0)
-				{
-					SetEntProp(iWeapon, Prop_Send, "m_iClip1", hDef.m_iClip);
-				}
-
-				if(hDef.m_iAmmo > 0)
-				{
-					SetEntData(client, FindSendPropInfo("CTFPlayer", "m_iAmmo") + (item_slot == 0 ? 4 : 8), hDef.m_iAmmo);
-				}
-
 				strcopy(m_sWeaponModel[iWeapon], sizeof(m_sWeaponModel[]), hDef.m_sWorldModel);
 				ParseCosmeticModel(client, m_sWeaponModel[iWeapon], sizeof(m_sWeaponModel[]));
 
 				// Making weapon visible.
 				SetEntProp(iWeapon, Prop_Send, "m_bValidatedAttachedEntity", 1);
-				
+
 				TF2_RemoveWeaponSlot(client, item_slot);
 				EquipPlayerWeapon(client, iWeapon);
 
-				OnDrawWeapon(client, iWeapon);
+				DataPack DrawPack = new DataPack();
+				DrawPack.WriteCell(client);
+				DrawPack.WriteCell(iWeapon);
+				DrawPack.Reset();
+				RequestFrame(RF_OnDrawWeapon, DrawPack);
+
+				DataPack RegenPack = new DataPack();
+				RegenPack.WriteCell(client);
+				RegenPack.WriteCell(iWeapon);
+				RegenPack.Reset();
+				RequestFrame(RF_RegenerateWeapon, RegenPack);
 
 				return iWeapon;
 			}
 		}
 	}
 	return -1;
+}
+
+public void RF_OnDrawWeapon(any data)
+{
+	DataPack pack = data;
+	int client = pack.ReadCell();
+	int weapon = pack.ReadCell();
+	delete pack;
+	
+	OnDrawWeapon(client, weapon);
+}
+
+public void RF_RegenerateWeapon(any data)
+{
+	DataPack pack = data;
+	int client = pack.ReadCell();
+	int weapon = pack.ReadCell();
+	delete pack;
+	
+	TF2_RegenerateWeaponAmmo(client, weapon);
 }
 
 //--------------------------------------------------------------------
@@ -312,7 +354,7 @@ public void ProcessEconSchema(KeyValues kv)
 
 				hDef.m_iClip = kv.GetNum("weapon_clip");
 				hDef.m_iAmmo = kv.GetNum("weapon_ammo");
-				
+
 				hDef.m_bPreserveAttributes = kv.GetNum("preserve_attributes", 0) == 1;
 
 				kv.GetString("world_model", hDef.m_sWorldModel, sizeof(hDef.m_sWorldModel));
@@ -359,7 +401,7 @@ public int CreateWeapon(int client, int index, const char[] classname, int quali
 {
 	int nFlags = OVERRIDE_ALL | FORCE_GENERATION;
 	if (preserve)nFlags |= PRESERVE_ATTRIBUTES;
-	
+
 	Handle hWeapon = TF2Items_CreateItem(nFlags);
 
 	char class[128];
@@ -576,11 +618,11 @@ public void OnDrawWeapon(int client, int iWeapon)
 
 public void OnWeaponSwitch(int client, int weapon)
 {
-	// Validate that we have really switched to this weapon. 
+	// Validate that we have really switched to this weapon.
 	// This fixes cases when some weapon become invisible.
 	int iActiveWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
 	if (iActiveWeapon != weapon)return;
-	
+
 	if (m_hLastWeapon[client] == weapon)return; // Nothing has changed.
 	int iLastWeapon = m_hLastWeapon[client];
 
@@ -762,4 +804,47 @@ public bool CEconItems_ShouldItemBeBlocked(int client, CEItem xItem, const char[
 		}
 	}
 	return false;
+}
+
+#define TF_AMMO_PRIMARY 1
+#define TF_AMMO_SECONDARY 2
+
+public void TF2_RegenerateWeaponAmmo(int client, int weapon)
+{
+	int iAmmoType = TF2_GetWeaponAmmoType(client, weapon);
+	
+	int iMaxAmmo = CTFPlayer_GetMaxAmmo(client, iAmmoType);
+	int iClipSize = CTFWeaponBase_GetMaxClip1(weapon);
+
+	SetEntData(client, FindSendPropInfo("CTFPlayer", "m_iAmmo") + iAmmoType * 4, iMaxAmmo	);
+	SetEntProp(weapon, Prop_Send, "m_iClip1", iClipSize);
+}
+
+public int TF2_GetWeaponAmmoType(int client, int weapon)
+{
+	int iType = 0;
+	for (int i = 0; i < 2; i++)
+	{
+		int iWeapon = GetPlayerWeaponSlot(client, i);
+		if(iWeapon == weapon)
+		{
+			switch(i)
+			{
+				case 0:iType = TF_AMMO_PRIMARY;
+				case 1:iType = TF_AMMO_SECONDARY;
+			}
+			break;
+		}
+	}
+	return iType;
+}
+
+public int CTFPlayer_GetMaxAmmo(int client, int ammo)
+{
+	return SDKCall(g_hSdkGetMaxAmmo, client, ammo, -1);
+}
+
+public int CTFWeaponBase_GetMaxClip1(int weapon)
+{
+	return SDKCall(g_hSdkGetMaxClip, weapon);
 }
