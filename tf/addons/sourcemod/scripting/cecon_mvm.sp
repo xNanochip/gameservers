@@ -880,7 +880,6 @@ public void RF_UpdateSteamGameName(any data)
 	Format(sGame, sizeof(sGame), "Team Fortress (Wave %d/%d :: %s)", iCurrentWave, iMaxWaves, sRound);
 	
 	Steam_SetGameDescription(sGame);
-	PrintToServer(sGame);
 }
 
 public Action MvM_RestartWave()
