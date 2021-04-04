@@ -1221,7 +1221,7 @@ public Action medigun_shield_blocked_damage(Handle hEvent, const char[] szName, 
 	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
 	int damage = GetEventInt(hEvent, "damage");
 
-	CEcon_SendEventToClientFromGameEvent(damage, "TF_MVM_BLOCK_DAMAGE_SHIELD", 1, hEvent);
+	CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_BLOCK_DAMAGE_SHIELD", 1, hEvent);
 }
 
 public Action medic_death(Handle hEvent, const char[] szName, bool bDontBroadcast)
