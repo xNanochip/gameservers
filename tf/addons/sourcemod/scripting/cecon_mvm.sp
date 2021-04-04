@@ -844,42 +844,47 @@ public void UpdateSteamGameName()
 
 public void RF_UpdateSteamGameName(any data)
 {	 
-	char sRound[16];
-	switch(GameRules_GetRoundState())
+	if(TF2MvM_IsPlayingMvM())
 	{
-		case RoundState_Init, 
-		RoundState_Pregame, 
-		RoundState_StartGame, 
-		RoundState_Preround,
-		RoundState_BetweenRounds:
+		char sRound[16];
+		switch(GameRules_GetRoundState())
 		{
-			strcopy(sRound, sizeof(sRound), "Setup");
+			case RoundState_Init, 
+			RoundState_Pregame, 
+			RoundState_StartGame, 
+			RoundState_Preround,
+			RoundState_BetweenRounds:
+			{
+				strcopy(sRound, sizeof(sRound), "Setup");
+			}
+				
+				
+			case RoundState_RoundRunning,
+			RoundState_TeamWin:
+			{
+				strcopy(sRound, sizeof(sRound), "In-Wave");
+			}
+				
+			case RoundState_Restart,
+			RoundState_Stalemate,
+			RoundState_GameOver,
+			RoundState_Bonus:
+			{
+				strcopy(sRound, sizeof(sRound), "Game Over");
+			}
 		}
-			
-			
-		case RoundState_RoundRunning,
-		RoundState_TeamWin:
-		{
-			strcopy(sRound, sizeof(sRound), "In-Wave");
-		}
-			
-		case RoundState_Restart,
-		RoundState_Stalemate,
-		RoundState_GameOver,
-		RoundState_Bonus:
-		{
-			strcopy(sRound, sizeof(sRound), "Game Over");
-		}
+		
+		int iResource = FindEntityByClassname(-1, "tf_objective_resource");
+		int iCurrentWave = GetEntProp(iResource, Prop_Send, "m_nMannVsMachineWaveCount");
+		int iMaxWaves = GetEntProp(iResource, Prop_Send, "m_nMannVsMachineMaxWaveCount");
+		
+		char sGame[64];
+		Format(sGame, sizeof(sGame), "Team Fortress (Wave %d/%d :: %s)", iCurrentWave, iMaxWaves, sRound);
+		
+		Steam_SetGameDescription(sGame);
+	} else {
+		Steam_SetGameDescription("Team Fortress");
 	}
-	
-	int iResource = FindEntityByClassname(-1, "tf_objective_resource");
-	int iCurrentWave = GetEntProp(iResource, Prop_Send, "m_nMannVsMachineWaveCount");
-	int iMaxWaves = GetEntProp(iResource, Prop_Send, "m_nMannVsMachineMaxWaveCount");
-	
-	char sGame[64];
-	Format(sGame, sizeof(sGame), "Team Fortress (Wave %d/%d :: %s)", iCurrentWave, iMaxWaves, sRound);
-	
-	Steam_SetGameDescription(sGame);
 }
 
 public Action MvM_RestartWave()
