@@ -10,7 +10,7 @@ public Plugin myinfo =
     name             = "Disable Autobalance during bad times",
     author           = "stephanie",
     description      = "Don't autobalance people during these times",
-    version          = "0.0.1",
+    version          = "0.0.2",
     url              = "https://sappho.io"
 }
 
@@ -79,7 +79,7 @@ void CheckGamemode()
     if (StrContains(curMap, "cp_", false) != -1)
     {
         int iEnt = -1;
-        while ((iEnt = FindEntityByClassname(iEnt, "team_control_point")) > 0)
+        while ((iEnt = FindEntityByClassname(iEnt, "team_control_point")) != -1)
         {
             // If there is a blu CP or a neutral CP, then it's not an attack/defend map
             if (GetEntProp(iEnt, Prop_Send, "m_iTeamNum") != view_as<int>(TFTeam_Red))
@@ -120,7 +120,7 @@ void checkPoints()
     // init to -1 to search from first ent
     int iEnt = -1;
     // search thru ents to find all the control points and check their teams
-    while ((iEnt = FindEntityByClassname(iEnt, "team_control_point")) > 0)
+    while ((iEnt = FindEntityByClassname(iEnt, "team_control_point")) != -1)
     {
         // uncapped
         if (GetEntProp(iEnt, Prop_Send, "m_iTeamNum") == view_as<int>(TFTeam_Unassigned))
