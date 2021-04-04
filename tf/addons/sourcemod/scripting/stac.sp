@@ -15,11 +15,11 @@
 #undef REQUIRE_PLUGIN
 #include <updater>
 #include <sourcebanspp>
-#undef REQUIRE_EXTENSIONS
+#undef REQUIRE_EXTENSIONS 
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.1.14b"
+#define PLUGIN_VERSION  "4.1.17b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -193,8 +193,6 @@ public void OnPluginStart()
     // grab player spawns
     HookEvent("player_spawn", ePlayerSpawned);
 
-    // check natives capibility
-    CreateTimer(0.1, checkNativesEtc);
     // check EVERYONE's cvars on plugin reload
     CreateTimer(0.5, checkEveryone);
 
@@ -609,14 +607,7 @@ void setStacVars()
     }
 
     // aimsnap var
-    if (MVM)
-    {
-        maxAimsnapDetections = -1;
-    }
-    else
-    {
-        maxAimsnapDetections = GetConVarInt(stac_max_aimsnap_detections);
-    }
+    maxAimsnapDetections    = GetConVarInt(stac_max_aimsnap_detections);
 
     // psilent var
     maxPsilentDetections    = GetConVarInt(stac_max_psilent_detections);
@@ -725,13 +716,19 @@ public Action checkNativesEtc(Handle timer)
     {
         AIMPLOTTER = true;
     }
-    if (GameRules_GetProp("m_bPlayingMannVsMachine"))
+
+    if (GameRules_GetProp("m_bPlayingMannVsMachine") == 1)
     {
         MVM = true;
     }
+    else
+    {
+        MVM = false;
+    }
+
     if (DEBUG)
     {
-        LogMessage
+        StacLog
         (
             "\nSTEAMTOOLS = %i\nSTEAMWORKS = %i\nSOURCEBANS = %i\nGBANS = %i",
             STEAMTOOLS,
@@ -1026,6 +1023,7 @@ public void OnMapStart()
         RunOptimizeCvars();
     }
     timeSinceMapStart = GetEngineTime();
+    CreateTimer(0.1, checkNativesEtc);
 }
 
 public void OnMapEnd()
@@ -1745,6 +1743,8 @@ public Action OnPlayerRunCmd
     if
     (
         engineTime[0][Cl] - timeSinceDidHurt[Cl] <= (tickinterv * 3)
+        &&
+        !MVM
     )
     {
         if (aDiffReal >= 10.0)

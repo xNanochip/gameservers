@@ -449,7 +449,15 @@ public void StartCoordinatorLongPolling()
 
 	char sURL[64];
 	Format(sURL, sizeof(sURL), "%s/api/coordinator", m_sBaseEconomyURL);
-
+	
+	// Getting Server IP
+	int iIPVals[4];
+	Steam_GetPublicIP(iIPVals);
+	char sIP[64];
+	Format(sIP, sizeof(sIP), "%d.%d.%d.%d", iIPVals[0], iIPVals[1], iIPVals[2], iIPVals[3]);
+	//Format(sIP, sizeof(sIP), "%d.%d.%d.%d", 192, 168, 100, 68);
+	int iPort = FindConVar("hostport").IntValue;
+	
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
 	Steam_SetHTTPRequestNetworkActivityTimeout(httpRequest, 40);
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "session_id", m_sSessionKey);
@@ -471,10 +479,11 @@ public void StartCoordinatorLongPolling()
 		iPlayerCount++;
 	}
 	
-
-	char sAccessHeader[256];
-	Format(sAccessHeader, sizeof(sAccessHeader), "Provider %s", m_sEconomyAccessKey);
-	Steam_SetHTTPRequestHeaderValue(httpRequest, "Access", sAccessHeader);
+	// Access Header
+	char sHeader[256];
+	
+	Format(sHeader, sizeof(sHeader), "Provider %s (Address \"%s:%d\")", m_sEconomyAccessKey, sIP, iPort);
+	Steam_SetHTTPRequestHeaderValue(httpRequest, "Access", sHeader);
 
 	Steam_SendHTTPRequest(httpRequest, Coordinator_Request_Callback);
 }
