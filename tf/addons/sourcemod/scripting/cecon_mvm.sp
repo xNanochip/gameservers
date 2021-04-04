@@ -196,6 +196,7 @@ public Action teamplay_round_start(Handle hEvent, const char[] szName, bool bDon
 	}
 
 	m_bWaitForGameRestart = false;
+	UpdateSteamGameName();
 }
 
 public void ProcessTime(int time, bool success)
@@ -218,6 +219,7 @@ public Action teamplay_round_win(Handle hEvent, const char[] szName, bool bDontB
 	{
 		m_bWeJustFailed = true;
 	}
+	UpdateSteamGameName();
 
 	return Plugin_Continue;
 }
@@ -228,6 +230,7 @@ public void OnDefendersWon()
 	ProcessTime(time, true);
 	PrintGameStats();
 	ClearWaveStartTime();
+	UpdateSteamGameName();
 }
 
 public void OnDefendersLost()
@@ -236,6 +239,7 @@ public void OnDefendersLost()
 	ProcessTime(time, false);
 	PrintGameStats();
 	ClearWaveStartTime();
+	UpdateSteamGameName();
 }
 
 public void SetWaveStartTime()
@@ -295,6 +299,7 @@ public void ResetStats()
 	m_bJustFinishedTheMission = false;
 
 	strcopy(m_sLastTourLootHash, sizeof(m_sLastTourLootHash), "");
+	UpdateSteamGameName();
 }
 
 public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroadcast)
@@ -310,11 +315,15 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 	// Let's start with 1 and not zero.
 	m_iCurrentWave = iRealWave;
 	SetWaveStartTime();
+	UpdateSteamGameName();
 }
 
 public Action mvm_mission_complete(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	m_bJustFinishedTheMission = true;
+	UpdateSteamGameName();
+	
+	CreateTimer(10.0, Timer_RestartMvMGame);
 }
 
 public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBroadcast)
@@ -327,6 +336,7 @@ public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBr
 	int iWave = m_iCurrentWave;
 	int iTime = GetTotalWaveTime();
 	SendWaveCompletionTime(iWave, iTime);
+	UpdateSteamGameName();
 }
 
 public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroadcast)
@@ -338,12 +348,14 @@ public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroa
 	} else {
 		m_bWaitForGameRestart = true;
 	}
+	UpdateSteamGameName();
 }
 
 public void OnMvMGameStart()
 {
 	// Someone joined the game.
 	ResetStats();
+	UpdateSteamGameName();
 }
 
 public void OnMvMGameEnd()
@@ -355,6 +367,7 @@ public void OnMvMGameEnd()
 	{
 		ScheduleServerRestart();
 	}
+	UpdateSteamGameName();
 }
 
 public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
@@ -370,6 +383,7 @@ public void OnMapStart()
 		RequestFrame(RF_RecalculatePlayerCount);
 
 		ScheduleServerRestart();
+		UpdateSteamGameName();
 	}
 }
 
@@ -803,6 +817,7 @@ public Action Timer_OpenTourLootLoadingPage(Handle timer, any data)
 
 public Action cLoot(int client, int args)
 {
+	UpdateSteamGameName();
 	OpenLastTourLootPage(client);
 	return Plugin_Handled;
 }
@@ -820,4 +835,82 @@ public bool IsClientEngaged(int client)
 	if (nTeam == TF_TEAM_SPECTATOR)return false;
 	
 	return true;
+}
+
+public void UpdateSteamGameName()
+{
+	RequestFrame(RF_UpdateSteamGameName);
+}
+
+public void RF_UpdateSteamGameName(any data)
+{	 
+	char sRound[16];
+	switch(GameRules_GetRoundState())
+	{
+		case RoundState_Init, 
+		RoundState_Pregame, 
+		RoundState_StartGame, 
+		RoundState_Preround,
+		RoundState_BetweenRounds:
+		{
+			strcopy(sRound, sizeof(sRound), "Setup");
+		}
+			
+			
+		case RoundState_RoundRunning,
+		RoundState_TeamWin:
+		{
+			strcopy(sRound, sizeof(sRound), "In-Wave");
+		}
+			
+		case RoundState_Restart,
+		RoundState_Stalemate,
+		RoundState_GameOver,
+		RoundState_Bonus:
+		{
+			strcopy(sRound, sizeof(sRound), "Game Over");
+		}
+	}
+	
+	int iResource = FindEntityByClassname(-1, "tf_objective_resource");
+	int iCurrentWave = GetEntProp(iResource, Prop_Send, "m_nMannVsMachineWaveCount");
+	int iMaxWaves = GetEntProp(iResource, Prop_Send, "m_nMannVsMachineMaxWaveCount");
+	
+	char sGame[64];
+	Format(sGame, sizeof(sGame), "Team Fortress (Wave %d/%d :: %s)", iCurrentWave, iMaxWaves, sRound);
+	
+	Steam_SetGameDescription(sGame);
+	PrintToServer(sGame);
+}
+
+public Action MvM_RestartWave()
+{
+	int iResource = FindEntityByClassname(-1, "tf_objective_resource");
+	int iCurrentWave = GetEntProp(iResource, Prop_Send, "m_nMannVsMachineWaveCount");
+	MvM_JumpToWave(iCurrentWave);
+}
+
+public Action MvM_RestartGame()
+{
+	MvM_JumpToWave(1);
+	ResetStats();
+	UpdateSteamGameName();
+}
+
+public void MvM_JumpToWave(int wave)
+{
+	int iOldFlags = GetCommandFlags("tf_mvm_jump_to_wave");
+	SetCommandFlags("tf_mvm_jump_to_wave", iOldFlags & ~FCVAR_CHEAT);
+	ServerCommand("tf_mvm_jump_to_wave %d", wave);
+	CreateTimer(0.25, Timer_ResetJumpToWaveCmdFlags, iOldFlags, 0);
+}
+
+public Action Timer_ResetJumpToWaveCmdFlags(Handle timer, any flags)
+{
+	SetCommandFlags("tf_mvm_jump_to_wave", flags);
+}
+
+public Action Timer_RestartMvMGame(Handle timer, any data)
+{
+	MvM_RestartGame();
 }
