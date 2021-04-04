@@ -42,7 +42,6 @@ int m_iWaveTime;
 
 bool m_bWaitForGameRestart;
 bool m_bWeJustFailed;
-bool m_bJustFinishedTheMission;
 
 char m_sLastTourLootHash[128];
 
@@ -74,7 +73,6 @@ public void OnPluginStart()
 
 	RegConsoleCmd("sm_loot", cLoot, "Opens the latest Tour Loot page");
 
-	RegAdminCmd("ce_mvm_force_loot", cForceLoot, ADMFLAG_ROOT);
 	RegAdminCmd("ce_mvm_set_wave_time", cSetWave, ADMFLAG_ROOT);
 
 	// SigSegv extension workaround.
@@ -296,9 +294,6 @@ public void ResetStats()
 	m_iTotalTime = 0;
 	ClearWaveStartTime();
 
-	m_bJustFinishedTheMission = false;
-
-	strcopy(m_sLastTourLootHash, sizeof(m_sLastTourLootHash), "");
 	UpdateSteamGameName();
 }
 
@@ -320,7 +315,6 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 
 public Action mvm_mission_complete(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	m_bJustFinishedTheMission = true;
 	UpdateSteamGameName();
 	
 	CreateTimer(10.0, Timer_RestartMvMGame);
@@ -354,6 +348,7 @@ public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroa
 public void OnMvMGameStart()
 {
 	// Someone joined the game.
+	strcopy(m_sLastTourLootHash, sizeof(m_sLastTourLootHash), "");
 	ResetStats();
 	UpdateSteamGameName();
 }
@@ -361,6 +356,7 @@ public void OnMvMGameStart()
 public void OnMvMGameEnd()
 {
 	// Everyone left the game.
+	strcopy(m_sLastTourLootHash, sizeof(m_sLastTourLootHash), "");
 	ResetStats();
 
 	if(TF2MvM_IsPlayingMvM())
@@ -423,16 +419,6 @@ public void LoadSigsegvExtension()
 public bool TF2MvM_IsPlayingMvM()
 {
 	return (GameRules_GetProp("m_bPlayingMannVsMachine") != 0);
-}
-
-/**
-*	Purpose: 	ce_mvm_force_loot command.
-*/
-public Action cForceLoot(int client, int args)
-{
-	RequestTourLoot();
-
-	return Plugin_Handled;
 }
 
 /**
@@ -650,6 +636,22 @@ public void SendWaveCompletionTime(int wave, int seconds)
 		Format(sKey, sizeof(sKey), "steamids[%d]", iCount);
 		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sSteamID);
 
+		Format(sKey, sizeof(sKey), "classes[%d]", iCount);
+		char sClass[32];
+		switch(TF2_GetPlayerClass(i))
+		{
+			case TFClass_Scout:strcopy(sClass, sizeof(sClass), "scout");
+			case TFClass_Soldier:strcopy(sClass, sizeof(sClass), "soldier");
+			case TFClass_Pyro:strcopy(sClass, sizeof(sClass), "pyro");
+			case TFClass_DemoMan:strcopy(sClass, sizeof(sClass), "demo");
+			case TFClass_Heavy:strcopy(sClass, sizeof(sClass), "heavy");
+			case TFClass_Engineer:strcopy(sClass, sizeof(sClass), "engineer");
+			case TFClass_Medic:strcopy(sClass, sizeof(sClass), "medic");
+			case TFClass_Sniper:strcopy(sClass, sizeof(sClass), "sniper");
+			case TFClass_Spy:strcopy(sClass, sizeof(sClass), "spy");
+		}
+		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sClass);
+
 		iCount++;
 	}
 
@@ -675,84 +677,8 @@ public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool succ
 	char[] content = new char[size + 1];
 
 	Steam_GetHTTPResponseBodyData(request, content, size);
-
 	Steam_ReleaseHTTPRequest(request);
-	PrintToServer(content);
-
-	if(m_bJustFinishedTheMission)
-	{
-		RequestTourLoot();
-		m_bJustFinishedTheMission = false;
-	}
-
-	// Getting response size.
-}
-
-bool m_bIsTourLootLoading = false;
-
-public void RequestTourLoot()
-{
-	char sPopFile[256];
-	GetPopFileName(sPopFile, sizeof(sPopFile));
-
-	HTTPRequestHandle hRequest = CEconHTTP_CreateBaseHTTPRequest("/api/IEconomySDK/UserMvMTourLoot", HTTPMethod_POST);
-
-	int iCount = 0;
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if (!IsClientEngaged(i))continue;
-
-		char sSteamID[64];
-		GetClientAuthId(i, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-
-		char sKey[32];
-		Format(sKey, sizeof(sKey), "steamids[%d]", iCount);
-		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sSteamID);
-
-		Format(sKey, sizeof(sKey), "classes[%d]", iCount);
-		char sClass[32];
-		switch(TF2_GetPlayerClass(i))
-		{
-			case TFClass_Scout:strcopy(sClass, sizeof(sClass), "scout");
-			case TFClass_Soldier:strcopy(sClass, sizeof(sClass), "soldier");
-			case TFClass_Pyro:strcopy(sClass, sizeof(sClass), "pyro");
-			case TFClass_DemoMan:strcopy(sClass, sizeof(sClass), "demo");
-			case TFClass_Heavy:strcopy(sClass, sizeof(sClass), "heavy");
-			case TFClass_Engineer:strcopy(sClass, sizeof(sClass), "engineer");
-			case TFClass_Medic:strcopy(sClass, sizeof(sClass), "medic");
-			case TFClass_Sniper:strcopy(sClass, sizeof(sClass), "sniper");
-			case TFClass_Spy:strcopy(sClass, sizeof(sClass), "spy");
-		}
-		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sClass);
-
-		iCount++;
-	}
-
-	// Setting mission name.
-	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "mission", sPopFile);
-	Steam_SendHTTPRequest(hRequest, RequestTourLoot_Callback);
-	PrintToChatAll("Requesting Tour Loot. Please stand by...");
 	
-	m_bIsTourLootLoading = true;
-	CreateTimer(1.0, Timer_OpenTourLootLoadingPage);
-}
-
-public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
-{
-	m_bIsTourLootLoading = false;
-	// PrintToChatAll("Requesting Tour Loot. Please stand by...");
-
-	// If request was not succesful, return.
-	if (!success)return;
-	if (code != HTTPStatusCode_OK)return;
-
-	// Getting response size.
-	int size = Steam_GetHTTPResponseBodySize(request);
-	char[] content = new char[size + 1];
-
-	Steam_GetHTTPResponseBodyData(request, content, size);
-	Steam_ReleaseHTTPRequest(request);
-
 	PrintToServer(content);
 
 	KeyValues Response = new KeyValues("Response");
@@ -761,58 +687,76 @@ public void RequestTourLoot_Callback(HTTPRequestHandle request, bool success, HT
 	if (!Response.ImportFromString(content))return;
 	Response.GetString("hash", m_sLastTourLootHash, sizeof(m_sLastTourLootHash));
 	delete Response;
-
-	OpenTourLootPageToAll();
+	
+	if(!StrEqual(m_sLastTourLootHash, ""))
+	{
+		OpenTourLootMsgToAll();
+	}
 }
 
-public void OpenTourLootPageToAll()
+public void OpenTourLootMsgToAll()
 {
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
 
-		OpenLastTourLootPage(i);
+		OpenLastTourLootMsg(i);
 	}
+}
+
+public void OpenLastTourLootMsg(int client)
+{
+	ClientCommand(client, "playgamesound ui/hint.wav");
+	Menu menu = new Menu(Menu_QuickSwitch);
+	menu.SetTitle("Your Loot for completing\nthis mission is available.\nWould you like to see it?.");
+	menu.AddItem("yes", "Open it.");
+	menu.AddItem("no", "Nah.");
+		
+	menu.ExitButton = false;
+	menu.Display(client, 20);
+}
+
+public int Menu_QuickSwitch(Menu menu, MenuAction action, int client, int param2)
+{
+    if (action == MenuAction_Select)
+    {
+        char info[32];
+        menu.GetItem(param2, info, sizeof(info));
+        if(StrEqual(info, "yes"))
+        {
+        	OpenLastTourLootPage(client);
+       	} else {
+			PrintToChat(client, "\x01* Type \x03!loot \x01in chat to reopen the tour loot preview.");
+       	}
+    } else if (action == MenuAction_End)
+    {
+        delete menu;
+    }
 }
 
 public void OpenLastTourLootPage(int client)
 {
 	if (StrEqual(m_sLastTourLootHash, ""))return;
 
-	char url[PLATFORM_MAX_PATH];
-	Format(url, sizeof(url), "/tourloot?hash=%s", m_sLastTourLootHash);
+	char sSteamID[64];
+	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
 
+	char url[PLATFORM_MAX_PATH];
+	Format(url, sizeof(url), "/tourloot?hash=%s&steamid=%s", m_sLastTourLootHash, sSteamID);
 	CEconHTTP_CreateAbsoluteBackendURL(url, url, sizeof(url));
 
 	TF2Motd_OpenURL(client, url, "\x01* Please set \x03cl_disablehtmlmotd 0 \x01in your console and type \x03!loot \x01in chat to see the loot.");
 	
-	PrintToChatAll("\x01* Type \x03!loot \x01in chat to reopen the tour loot preview.");
-}
-
-public void OpenTourLootLoadingPageToAll()
-{
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if (!IsClientReady(i))continue;
-
-		OpenTourLootLoadingPage(i);
-	}
+	PrintToChat(client, "\x01* Type \x03!loot \x01in chat to reopen the tour loot preview.");
 }
 
 public void OpenTourLootLoadingPage(int client)
 {
-	if (!m_bIsTourLootLoading)return;
-	
 	char url[PLATFORM_MAX_PATH];
 	Format(url, sizeof(url), "/tourloot");
 	CEconHTTP_CreateAbsoluteBackendURL(url, url, sizeof(url));
 	
 	TF2Motd_OpenURL(client, url, "\x01* Please set \x03cl_disablehtmlmotd 0 \x01in your console and type \x03!loot \x01in chat to see the loot.");
-}
-
-public Action Timer_OpenTourLootLoadingPage(Handle timer, any data)
-{
-	OpenTourLootLoadingPageToAll();
 }
 
 public Action cLoot(int client, int args)
@@ -896,9 +840,10 @@ public Action MvM_RestartWave()
 
 public Action MvM_RestartGame()
 {
-	MvM_JumpToWave(1);
-	ResetStats();
-	UpdateSteamGameName();
+	char sPopFile[256];
+	GetPopFileName(sPopFile, sizeof(sPopFile));
+	
+	ServerCommand("tf_mvm_popfile %s", sPopFile);
 }
 
 public void MvM_JumpToWave(int wave)
