@@ -62,7 +62,7 @@ public Action ToggleCTFHat(int client, int args)
 
     if (bHatsOff[client])
     {
-        PrintToChat(client, "\x01* Toggled Creators.TF custom cosmetics \x07FF000OFF\x01! Be warned, this may cause invisible heads or feet for some cosmetics!");
+        PrintToChat(client, "\x01* Toggled Creators.TF custom cosmetics \x07FF0000OFF\x01! Be warned, this may cause invisible heads or feet for some cosmetics!");
     }
     else
     {
