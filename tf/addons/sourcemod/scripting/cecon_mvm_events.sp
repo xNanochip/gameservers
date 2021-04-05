@@ -743,6 +743,7 @@ public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroa
 	int wave_number = GetEntProp(objective_resource, Prop_Send,"m_nMannVsMachineWaveCount");
 
 	CEcon_SendEventToAll("TF_MVM_WAVE_FAIL", 1, GetRandomInt(0, 9999));
+	CEcon_SendEventToAll("TF_MVM_WAVE_END", 1, GetRandomInt(0, 9999));
 
 	if (wave_number == 1)
 	{
@@ -784,8 +785,9 @@ public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBr
 		}
 	}
 	CEcon_SendEventToAll("TF_MVM_WAVE_COMPLETE", 1, GetRandomInt(0, 9999));
+	CEcon_SendEventToAll("TF_MVM_WAVE_END", 1, GetRandomInt(0, 9999));
 
-	int wave_stats = FindEntityByClassname(-1,"tf_mann_vs_machine_stats");
+	int wave_stats = FindEntityByClassname(-1, "tf_mann_vs_machine_stats");
 
 	currency_grade_a_scored = false;
 
