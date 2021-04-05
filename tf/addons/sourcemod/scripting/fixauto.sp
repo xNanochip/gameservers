@@ -4,31 +4,46 @@
 #include <sourcemod>
 #include <sdktools>
 #include <tf2>
+#include <gamemode>
 
 public Plugin myinfo =
 {
     name             = "Disable Autobalance during bad times",
     author           = "stephanie",
     description      = "Don't autobalance people during these times",
-    version          = "0.0.2",
+    version          = "0.0.3",
     url              = "https://sappho.io"
 }
 
 /*
     Don't autobalance people during these times:
-    -   1 minute left in server time            - done !
-    -   30 sec or less in round time            - done !
-    -   one team owns 4 out of 5 cap points     - done !
-    -   cart is before the last point           - done !
+    -   1 minute left in server time
+    -   1 min or less in round time on non koth
+    -   30 sec or less in round time on koth
+    -   one team owns 4 out of 5 cap points
+    -   cart is before the last point
         this only includes the LAST last point on multistage pl maps
 
     TODO - if one team has 2 intel captures and the 3rd intel is picked up
 */
 
+int uncappedpoints;
+int redpoints;
+int blupoints;
+
+// stay disabled thru other events? [ for end of round autobalance ]
+bool staydisabled;
+// stored gamemode
+TF2_GameMode gamemode;
+
+
 // enable autobalance
 void EnableAuto()
 {
-    SetConVarInt(FindConVar("mp_autoteambalance"), 1);
+    if (!staydisabled)
+    {
+        SetConVarInt(FindConVar("mp_autoteambalance"), 1);
+    }
 }
 
 // disable autobalance
@@ -37,25 +52,18 @@ void DisableAuto()
     SetConVarInt(FindConVar("mp_autoteambalance"), 0);
 }
 
-bool FIVECP;
-bool PL;
-//bool KOTH;
-//bool CTF;
-
-int uncappedpoints;
-int redpoints;
-int blupoints;
-
 public void OnPluginStart()
 {
     CreateTimer(1.0, CheckMapTimeLeft, _, TIMER_REPEAT);
     HookEvent("teamplay_round_start", OnRoundStart);
     HookEvent("teamplay_point_captured", ControlPointCapped);
     HookEntityOutput("team_round_timer", "On30SecRemain", NearEndOfRound);
+    HookEntityOutput("team_round_timer", "On1MinRemain", NearEndOfRound);
 }
 
 public void OnMapStart()
 {
+    staydisabled = false;
     LogMessage("Map started. Enabling autobalance!");
     EnableAuto();
     CheckGamemode();
@@ -70,43 +78,10 @@ Action OnRoundStart(Event event, const char[] name, bool dontBroadcast)
 
 void CheckGamemode()
 {
-    FIVECP  = false;
-    PL      = false;
-
-    char curMap[64];
-    GetCurrentMap(curMap, sizeof(curMap));
-    // 5CP
-    if (StrContains(curMap, "cp_", false) != -1)
+    gamemode = TF2_DetectGameMode();
+    if (gamemode == TF2_GameMode_5CP)
     {
-        int iEnt = -1;
-        while ((iEnt = FindEntityByClassname(iEnt, "team_control_point")) != -1)
-        {
-            // If there is a blu CP or a neutral CP, then it's not an attack/defend map
-            if (GetEntProp(iEnt, Prop_Send, "m_iTeamNum") != view_as<int>(TFTeam_Red))
-            {
-                FIVECP = true;
-                LogMessage(">>>5CP detected<<<");
-                checkPoints();
-                break;
-            }
-        }
-        LogMessage("A/D detected");
-    }
-    // PL
-    else if (StrContains(curMap, "pl_", false) != -1)
-    {
-        LogMessage(">>>PAYLOAD detected<<<");
-        PL = true;
-    }
-    else if (StrContains(curMap, "koth_", false) != -1)
-    {
-        LogMessage(">>>KOTH detected<<<");
-        //KOTH = true;
-    }
-    else if (StrContains(curMap, "ctf_", false) != -1)
-    {
-        LogMessage(">>>CTF detected<<<");
-        //CTF = true;
+        checkPoints();
     }
 }
 
@@ -148,19 +123,27 @@ void checkPoints()
 Action ControlPointCapped(Event event, const char[] name, bool dontBroadcast)
 {
     // only do this on 5cp or payload duh
-    if (FIVECP || PL)
+    if (gamemode == TF2_GameMode_5CP || gamemode == TF2_GameMode_PL)
     {
         // recheck our points
         checkPoints();
 
-        if (FIVECP)
+        if (gamemode == TF2_GameMode_5CP)
         {
             // it should only ever be 4 vs 1 if someones pushing last
             if
             (
-                (redpoints == 4 && blupoints == 1)
+                (
+                    redpoints == 4
+                    &&
+                    blupoints == 1
+                )
                 ||
-                (blupoints == 4 && redpoints == 1)
+                (
+                    blupoints == 4
+                    &&
+                    redpoints == 1
+                )
             )
             {
                 LogMessage("Someone is pushing last. Disabling autobalance!");
@@ -172,7 +155,7 @@ Action ControlPointCapped(Event event, const char[] name, bool dontBroadcast)
                 EnableAuto();
             }
         }
-        else if (PL)
+        else if (gamemode == TF2_GameMode_PL)
         {
             // this means red only has one point left
             if (redpoints == 1)
@@ -199,10 +182,21 @@ void NearEndOfRound(const char[] output, int caller, int activator, float delay)
         &&
         // make sure we're not in stinky setup time
         GameRules_GetProp("m_bInSetup") == 0
+        &&
+        // make sure we're not in waiting for players
+        GameRules_GetProp("m_bInWaitingForPlayers") == 0
     )
     {
-        LogMessage("Near the end of the round, disabling autobalance!");
-        DisableAuto();
+        if (StrEqual(output, "On1MinRemain", true) && gamemode != TF2_GameMode_KOTH)
+        {
+            LogMessage("1 minute left in the round, we're not in koth. Disabling autobalance!");
+            DisableAuto();
+        }
+        else if (StrEqual(output, "On30SecRemain", true) && gamemode == TF2_GameMode_KOTH)
+        {
+            LogMessage("30 seconds left on a koth timer - Disabling autobalance!");
+            DisableAuto();
+        }
     }
 }
 
@@ -226,6 +220,7 @@ public Action CheckMapTimeLeft(Handle timer)
     {
         LogMessage("server time at 1 minute left, disabling autobalance");
         DisableAuto();
+        staydisabled = true;
     }
 
     return Plugin_Handled;
