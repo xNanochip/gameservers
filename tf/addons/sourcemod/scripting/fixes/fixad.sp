@@ -4,6 +4,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <tf2>
+#include <gamemode>
 
 public Plugin myinfo =
 {
@@ -21,20 +22,10 @@ public void OnMapStart()
 
 public Action CheckGamemode(Handle timer)
 {
-    char curMap[64];
-    GetCurrentMap(curMap, sizeof(curMap));
-    if (StrContains(curMap, "cp_", false) != -1)
+    TF2_GameMode gamemode = TF2_DetectGameMode();
+    if (gamemode == TF2_GameMode_ADCP)
     {
         int ent = -1;
-        while ((ent = FindEntityByClassname(ent, "team_control_point")) != -1)
-        {
-            // If there is a blu CP or a neutral CP, then it's not an attack/defend map
-            if (GetEntProp(ent, Prop_Send, "m_iTeamNum") != view_as<int>(TFTeam_Red))
-            {
-                break;
-            }
-        }
-        ent = -1;
         while ((ent = FindEntityByClassname(ent, "tf_gamerules")) != -1)
         {
             SetVariantBool(false);
