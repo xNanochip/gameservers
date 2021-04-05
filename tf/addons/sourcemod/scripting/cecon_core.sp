@@ -57,7 +57,7 @@ char m_sSchemaBuildVersion[64];	// Build version of the locally downloaded schem
 char m_sItemSchemaFilePath[96];	// File path to the items_config.cfg (Usually "addons/sourcemod/configs/items_config.cfg")
 
 Handle 	g_CEcon_OnSchemaUpdated,	// Forward, that notifies the sub plugins, if the schema has changed.
-		g_CEcon_OnSchemaPreUpdate;	// Forward, that notifies the sub plugins, that schema is about to be updated. This is used by plugins 
+		g_CEcon_OnSchemaPreUpdate;	// Forward, that notifies the sub plugins, that schema is about to be updated. This is used by plugins
 									// that wish to override the schema somehow.
 
 
@@ -68,7 +68,7 @@ Handle 	g_CEcon_OnSchemaUpdated,	// Forward, that notifies the sub plugins, if t
 // maximum value.
 #define EVENT_UNIQUE_INDEX_MAX_INT 10000
 // Don't process more than X events per a frame.
-#define EVENT_MAX_EVENTS_PER_FRAME 1
+#define EVENT_MAX_EVENTS_PER_FRAME 3
 
 // Fired when a new client even is fired.
 Handle g_hOnClientEvent;
@@ -128,7 +128,7 @@ public void OnPluginStart()
 
 	HookConVarChange(ce_coordinator_enabled, ce_coordinator_enabled__CHANGED);
 	HookConVarChange(ce_credentials_filename, ce_credentials_filename__CHANGED);
-	
+
 	CreateTimer(5.0, Timer_CoordinatorWatchDog);
 
 	// We check every 5 seconds if coordinator is running, if it is not
@@ -155,9 +155,9 @@ public void OnPluginStart()
 
 	// Hook all needed entities when plugin late loads.
 	LateHooking();
-	
+
 	HookEvent("player_spawn", player_spawn);
-	
+
 	m_hEventsQueue = new ArrayList(sizeof(CEQueuedEvent));
 }
 
@@ -449,7 +449,7 @@ public void StartCoordinatorLongPolling()
 
 	char sURL[64];
 	Format(sURL, sizeof(sURL), "%s/api/coordinator", m_sBaseEconomyURL);
-	
+
 	// Getting Server IP
 	int iIPVals[4];
 	Steam_GetPublicIP(iIPVals);
@@ -457,7 +457,7 @@ public void StartCoordinatorLongPolling()
 	Format(sIP, sizeof(sIP), "%d.%d.%d.%d", iIPVals[0], iIPVals[1], iIPVals[2], iIPVals[3]);
 	//Format(sIP, sizeof(sIP), "%d.%d.%d.%d", 192, 168, 100, 68);
 	int iPort = FindConVar("hostport").IntValue;
-	
+
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
 	Steam_SetHTTPRequestNetworkActivityTimeout(httpRequest, 40);
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "session_id", m_sSessionKey);
@@ -478,10 +478,10 @@ public void StartCoordinatorLongPolling()
 		Steam_SetHTTPRequestGetOrPostParameter(httpRequest, sKey, sSteamID);
 		iPlayerCount++;
 	}
-	
+
 	// Access Header
 	char sHeader[256];
-	
+
 	Format(sHeader, sizeof(sHeader), "Provider %s (Address \"%s:%d\")", m_sEconomyAccessKey, sIP, iPort);
 	Steam_SetHTTPRequestHeaderValue(httpRequest, "Access", sHeader);
 
@@ -752,7 +752,7 @@ public void Schema_CheckForUpdates(bool bIsForced)
 		// If we set to override the schema url, use value from the cvar.
 		strcopy(sURL, sizeof(sURL), sOverrideURL);
 	}
-	
+
 	LogMessage(sURL);
 
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
@@ -1016,7 +1016,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
 	}
-	
+
 	// Hook Tanks with OnTakeDamage SDKHook
 	if(StrContains(classname, "tank_boss") != -1)
 	{
@@ -1038,18 +1038,18 @@ public void OnClientPutInServer(int client)
 
 public void OnWeaponSwitch(int client, int weapon)
 {
-	// Validate that we have really switched to this weapon. 
+	// Validate that we have really switched to this weapon.
 	// This fixes cases when some weapon become invisible.
 	int iActiveWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
 	if (iActiveWeapon != weapon)return;
-	
+
 	SetClientLastWeapon(client, weapon);
 }
 
 public void SetClientLastWeapon(int client, int weapon)
 {
 	if (m_iLastWeapon[client] == weapon)return;
-	
+
 	/*
 	if(weapon > 0)
 	{
@@ -1067,13 +1067,13 @@ public void SetClientLastWeapon(int client, int weapon)
 public any Native_LastUsedWeapon(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
-	
+
 	int iWeapon = m_iLastWeapon[client];
-	
+
 	if (iWeapon <= 0)return -1;
 	if (!IsValidEntity(iWeapon))return -1;
 	if (!HasEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex"))return -1;
-	
+
 	return iWeapon;
 }
 
@@ -1141,29 +1141,29 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	if (!IsClientValid(client))return;
-	
+
 
 	char event[128];
 	GetNativeString(2, event, sizeof(event));
 
 	int add = GetNativeCell(3);
 	int unique_id = GetNativeCell(4);
-	
+
 	if(ce_events_log.BoolValue)
 	{
 		LogMessage("%s (client \"%N\") (add %d) (unique_id)", event, client, add, unique_id);
 	}
-	
+
 	// We only start new queue, if we are sure nothing is currently being proccessed.
 	bool bShouldStartQueue = m_hEventsQueue.Length == 0;
-	
+
 	// Create a new struct and push it to the queue.
 	CEQueuedEvent xEvent;
 	xEvent.m_iUserID = GetClientUserId(client);
 	strcopy(xEvent.m_sEvent, sizeof(xEvent.m_sEvent), event);
 	xEvent.m_iAdd = add;
 	xEvent.m_iUniqueID = unique_id;
-	
+
 	m_hEventsQueue.PushArray(xEvent);
 
 	// Start the queue next frame.
@@ -1177,10 +1177,10 @@ public void StartEventsProcessQueue()
 {
 	// We already have a working queue processor.
 	if (m_bIsEventQueueProcessed)return;
-	
+
 	// If we don't, make this as the one.
 	m_bIsEventQueueProcessed = true;
-	
+
 	if(ce_events_queue_debug.BoolValue) LogMessage("Queue started...");
 	ProcessNextEventsChunk();
 }
@@ -1193,25 +1193,25 @@ public void ProcessNextEventsChunk()
 	{
 		// We exceeded the queue, there's nothing there anymore.
 		if (m_hEventsQueue.Length < 1)break;
-		
+
 		// Get first element in the queue.
 		CEQueuedEvent xEvent;
 		m_hEventsQueue.GetArray(0, xEvent);
-		
+
 		// And remove it.
 		m_hEventsQueue.Erase(0);
-		
+
 		int client = GetClientOfUserId(xEvent.m_iUserID);
-		
+
 		// This client doesn't exist anymore, skip this event.
 		if (!IsClientValid(client))continue;
-		
+
 		// Log the event execution.
 		if(ce_events_queue_debug.BoolValue)
 		{
 			LogMessage("%s (client \"%N\") (add %d) (unique_id %d)", xEvent.m_sEvent, client, xEvent.m_iAdd, xEvent.m_iUniqueID);
 		}
-			
+
 		// Send it to plugins.
 		Call_StartForward(g_hOnClientEvent);
 		Call_PushCell(client);
@@ -1220,14 +1220,14 @@ public void ProcessNextEventsChunk()
 		Call_PushCell(xEvent.m_iUniqueID);
 		Call_Finish();
 	}
-	
+
 	// If there are any more events to process, wait till another frame.
 	if(m_hEventsQueue.Length > 0)
 	{
 		if(ce_events_queue_debug.BoolValue) LogMessage("Waiting until next frame...");
 		RequestFrame(RF_ProcessNextEventChunk);
 	} else {
-		
+
 		// We're done.
 		m_bIsEventQueueProcessed = false;
 		if(ce_events_queue_debug.BoolValue) LogMessage("Queue ended.");
