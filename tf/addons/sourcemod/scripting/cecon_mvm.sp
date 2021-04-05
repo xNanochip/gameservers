@@ -70,6 +70,8 @@ public void OnPluginStart()
 
 	HookEvent("teamplay_round_win", teamplay_round_win);
 	HookEvent("teamplay_round_start", teamplay_round_start);
+	
+	HookEvent("player_changeclass", player_changeclass);
 
 	RegConsoleCmd("sm_loot", cLoot, "Opens the latest Tour Loot page");
 
@@ -310,6 +312,11 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 	// Let's start with 1 and not zero.
 	m_iCurrentWave = iRealWave;
 	SetWaveStartTime();
+	UpdateSteamGameName();
+}
+
+public Action player_changeclass(Event hEvent, const char[] szName, bool bDontBroadcast)
+{
 	UpdateSteamGameName();
 }
 
@@ -822,8 +829,18 @@ public void RF_UpdateSteamGameName(any data)
 		int iCurrentWave = GetEntProp(iResource, Prop_Send, "m_nMannVsMachineWaveCount");
 		int iMaxWaves = GetEntProp(iResource, Prop_Send, "m_nMannVsMachineMaxWaveCount");
 		
+		char sTeamComp[16];
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if (!IsClientEngaged(i))continue;
+			TFClassType nClass = TF2_GetPlayerClass(i);
+			
+			int iClass = view_as<int>(nClass);
+			Format(sTeamComp, sizeof(sTeamComp), "%s%d", sTeamComp, iClass);
+		}
+		
 		char sGame[64];
-		Format(sGame, sizeof(sGame), "Team Fortress (Wave %d/%d :: %s)", iCurrentWave, iMaxWaves, sRound);
+		Format(sGame, sizeof(sGame), "Team Fortress (Wave %d/%d :: %s :: %s)", iCurrentWave, iMaxWaves, sRound, sTeamComp);
 		
 		Steam_SetGameDescription(sGame);
 	} else {

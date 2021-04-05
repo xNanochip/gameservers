@@ -22,6 +22,7 @@
 #define QUEST_HUD_REFRESH_RATE 0.5
 #define QUEST_PANEL_MAX_CHARS 30
 #define BACKEND_QUEST_UPDATE_INTERVAL 20.0 // Every 20 seconds.
+#define BACKEND_QUEST_UPDATE_LIMIT 10 // Dont allow more than 10 quests to be updated at the same time.
 
 #define CHAR_FULL "█"
 #define CHAR_PROGRESS "▓"
@@ -1636,9 +1637,13 @@ public Action Timer_QuestUpdateInterval(Handle timer, any data)
 	if (m_QuestUpdateBatches.Length == 0)return;
 
 	HTTPRequestHandle hRequest = CEconHTTP_CreateBaseHTTPRequest("/api/IEconomySDK/UserQuests", HTTPMethod_POST);
+	
+	int iCount = 0;
 
 	for (int i = 0; i < m_QuestUpdateBatches.Length; i++)
 	{
+		if (iCount >= BACKEND_QUEST_UPDATE_LIMIT)break;
+		
 		CEQuestUpdateBatch xBatch;
 		m_QuestUpdateBatches.GetArray(i, xBatch);
 
@@ -1649,10 +1654,20 @@ public Action Timer_QuestUpdateInterval(Handle timer, any data)
 		IntToString(xBatch.m_iPoints, sValue, sizeof(sValue));
 
 		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sValue);
+		
+		m_QuestUpdateBatches.Erase(i);
+		i--;
+		iCount++;
 	}
+	
+	LogMessage("Sending a batch of %d quests. (%d left in the queue.)", iCount, m_QuestUpdateBatches.Length);
 
 	Steam_SendHTTPRequest(hRequest, QuestUpdate_Callback);
-	delete m_QuestUpdateBatches;
+	
+	if(m_QuestUpdateBatches.Length == 0)
+	{
+		delete m_QuestUpdateBatches;
+	}
 }
 
 public void QuestUpdate_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
