@@ -70,6 +70,8 @@ public void OnPluginStart()
 
 	HookEvent("teamplay_round_win", teamplay_round_win);
 	HookEvent("teamplay_round_start", teamplay_round_start);
+	
+	HookEvent("player_changeclass", player_changeclass);
 
 	RegConsoleCmd("sm_loot", cLoot, "Opens the latest Tour Loot page");
 
@@ -310,6 +312,11 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 	// Let's start with 1 and not zero.
 	m_iCurrentWave = iRealWave;
 	SetWaveStartTime();
+	UpdateSteamGameName();
+}
+
+public Action player_changeclass(Event hEvent, const char[] szName, bool bDontBroadcast)
+{
 	UpdateSteamGameName();
 }
 
