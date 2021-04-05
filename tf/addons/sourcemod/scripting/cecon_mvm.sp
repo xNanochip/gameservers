@@ -822,8 +822,18 @@ public void RF_UpdateSteamGameName(any data)
 		int iCurrentWave = GetEntProp(iResource, Prop_Send, "m_nMannVsMachineWaveCount");
 		int iMaxWaves = GetEntProp(iResource, Prop_Send, "m_nMannVsMachineMaxWaveCount");
 		
+		char sTeamComp[16];
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if (!IsClientEngaged(i))continue;
+			TFClassType nClass = TF2_GetPlayerClass(i);
+			
+			int iClass = view_as<int>(nClass);
+			Format(sTeamComp, sizeof(sTeamComp), "%s%d", sTeamComp, iClass);
+		}
+		
 		char sGame[64];
-		Format(sGame, sizeof(sGame), "Team Fortress (Wave %d/%d :: %s)", iCurrentWave, iMaxWaves, sRound);
+		Format(sGame, sizeof(sGame), "Team Fortress (Wave %d/%d :: %s :: %s)", iCurrentWave, iMaxWaves, sRound, sTeamComp);
 		
 		Steam_SetGameDescription(sGame);
 	} else {
