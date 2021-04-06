@@ -68,7 +68,10 @@ public void OnPluginStart()
 	write_wave_time_enabled = CreateConVar("sm_write_wave_time", "1", "write wave time in client chat");
 
 
-	HookConVarChange(FindConVar("sig_vanilla_mode"), VanillaModeChanged);
+	ConVar sig_vanilla_mode = FindConVar("sig_vanilla_mode");
+	if (sig_vanilla_mode != null) {
+		HookConVarChange(sig_vanilla_mode, VanillaModeChanged);
+	}
 	RegConsoleCmd("sm_wave_time", Command_WaveTime, "Shows times for all waves in the mission");
 	RegConsoleCmd("sm_fuck_go_back", Command_RestartGame, "Restart game");
 	RegConsoleCmd("sm_wave_summary", Command_WaveTime, "Shows times for all waves in the mission");
