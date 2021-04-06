@@ -4039,10 +4039,31 @@
 					type "sym"
 					sym  "_ZN24CTFProjectile_BallOfFire11RocketTouchEP11CBaseEntity"
 				}
-				"CTFProjectile_BallOfFire::RocketTouch"
+				"CTFGameRules::CleanUpMap"
 				{
 					type "sym"
-					sym  "_ZN24CTFProjectile_BallOfFire11RocketTouchEP11CBaseEntity"
+					sym  "_ZN12CTFGameRules10CleanUpMapEv"
+				}
+				"CBaseEntity::ReadKeyField"
+				{
+					type "sym"
+					sym  "_ZN11CBaseEntity12ReadKeyFieldEPKcP9variant_t"
+				}
+				"CGameUI::Deactivate"
+				{
+					type "sym"
+					sym  "_ZN7CGameUI10DeactivateEP11CBaseEntity"
+				}
+				"CBaseEntityOutput::FireOutput"
+				{
+					type "sym"
+					sym  "_ZN17CBaseEntityOutput10FireOutputE9variant_tP11CBaseEntityS2_f"
+				}
+				"CRC_File"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_Z8CRC_FilePjPKc"
 				}
 			}
 			
