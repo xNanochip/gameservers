@@ -1615,7 +1615,7 @@ public void AddQuestUpdateBatch(int client, int quest, int objective, int points
 		CEQuestUpdateBatch xBatch;
 		m_QuestUpdateBatches.GetArray(i, xBatch);
 
-		if (StrEqual(xBatch.m_sSteamID, sSteamID))continue;
+		if (!StrEqual(xBatch.m_sSteamID, sSteamID))continue;
 		if (xBatch.m_iQuest != quest)continue;
 		if (xBatch.m_iObjective != objective)continue;
 
