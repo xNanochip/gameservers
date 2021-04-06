@@ -2,6 +2,7 @@
 
 #pragma semicolon 1
 #pragma newdecls required
+#pragma dynamic 1048576
 
 #include <sdktools>
 #include <sdkhooks>
