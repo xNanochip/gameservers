@@ -383,6 +383,8 @@ public void OnMapStart()
 {
 	if(TF2MvM_IsPlayingMvM())
 	{
+		
+		PrintToServer("load sigsegv extension on level start");
 		LoadSigsegvExtension();
 		RequestFrame(RF_RecalculatePlayerCount);
 
