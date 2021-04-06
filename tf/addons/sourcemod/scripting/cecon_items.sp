@@ -81,10 +81,10 @@ Handle 	g_CEcon_ShouldItemBeBlocked,
 		g_CEcon_OnEquipItem,
 		g_CEcon_OnItemIsEquipped,
 		g_CEcon_OnClientLoadoutUpdated,
-		
+
 		g_CEcon_OnUnequipItem,
 		g_CEcon_OnItemIsUnequipped,
-		
+
 		g_CEcon_OnCustomEntityStyleUpdated;
 
 // SDKCalls for native TF2 economy reading.
@@ -119,28 +119,28 @@ ConVar ce_items_use_backend_loadout;
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	RegPluginLibrary("cecon_items");
-	
+
 	g_CEcon_ShouldItemBeBlocked 	= new GlobalForward("CEconItems_ShouldItemBeBlocked", ET_Event, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnEquipItem 			= new GlobalForward("CEconItems_OnEquipItem", ET_Event, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnItemIsEquipped 		= new GlobalForward("CEconItems_OnItemIsEquipped", ET_Ignore, Param_Cell, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnClientLoadoutUpdated 	= new GlobalForward("CEconItems_OnClientLoadoutUpdated", ET_Ignore, Param_Cell);
-	
+
 	g_CEcon_OnUnequipItem 			= new GlobalForward("CEconItems_OnUnequipItem", ET_Single, Param_Cell, Param_Array, Param_String);
 	g_CEcon_OnItemIsUnequipped		= new GlobalForward("CEconItems_OnItemIsUnequipped", ET_Single, Param_Cell, Param_Array, Param_String);
-	
+
 	g_CEcon_OnCustomEntityStyleUpdated	= new GlobalForward("CEconItems_OnCustomEntityStyleUpdated", ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
 
 	// Items
     CreateNative("CEconItems_CreateNamedItem", Native_CreateNamedItem);
 	CreateNative("CEconItems_CreateItem", Native_CreateItem);
 	CreateNative("CEconItems_DestroyItem", Native_DestroyItem);
-	
+
     CreateNative("CEconItems_IsEntityCustomEconItem", Native_IsEntityCustomEconItem);
     CreateNative("CEconItems_GetEntityItemStruct", Native_GetEntityItemStruct);
-    
+
 	CreateNative("CEconItems_GetItemDefinitionByIndex", Native_GetItemDefinitionByIndex);
 	CreateNative("CEconItems_GetItemDefinitionByName", Native_GetItemDefinitionByName);
-    
+
 
 	// Attributes
 	CreateNative("CEconItems_MergeAttributes", Native_MergeAttributes);
@@ -150,7 +150,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("CEconItems_GetAttributeIntegerFromArray", Native_GetAttributeIntegerFromArray);
 	CreateNative("CEconItems_GetAttributeFloatFromArray", Native_GetAttributeFloatFromArray);
 	CreateNative("CEconItems_GetAttributeBoolFromArray", Native_GetAttributeBoolFromArray);
-	
+
 	CreateNative("CEconItems_SetAttributeStringInArray", Native_SetAttributeStringInArray);
 	CreateNative("CEconItems_SetAttributeIntegerInArray", Native_SetAttributeIntegerInArray);
 	CreateNative("CEconItems_SetAttributeFloatInArray", Native_SetAttributeFloatInArray);
@@ -168,27 +168,27 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
     CreateNative("CEconItems_IsAttributeNameOriginal", Native_IsAttributeNameOriginal);
     CreateNative("CEconItems_ApplyOriginalAttributes", Native_ApplyOriginalAttributes);
-    
+
     // Loadout
     CreateNative("CEconItems_RequestClientLoadoutUpdate", Native_RequestClientLoadoutUpdate);
     CreateNative("CEconItems_IsClientLoadoutCached", Native_IsClientLoadoutCached);
-    
+
     CreateNative("CEconItems_IsClientWearingItem", Native_IsClientWearingItem);
     CreateNative("CEconItems_IsItemFromClientClassLoadout", Native_IsItemFromClientClassLoadout);
     CreateNative("CEconItems_IsItemFromClientLoadout", Native_IsItemFromClientLoadout);
-    
+
     CreateNative("CEconItems_GiveItemToClient", Native_GiveItemToClient);
     CreateNative("CEconItems_RemoveItemFromClient", Native_RemoveItemFromClient);
-    
+
     CreateNative("CEconItems_GetClientLoadoutSize", Native_GetClientLoadoutSize);
     CreateNative("CEconItems_GetClientItemFromLoadoutByIndex", Native_GetClientItemFromLoadoutByIndex);
-    
+
     CreateNative("CEconItems_GetClientWearedItemsCount", Native_GetClientWearedItemsCount);
     CreateNative("CEconItems_GetClientWearedItemByIndex", Native_GetClientWearedItemByIndex);
-    
+
     // Styles
     CreateNative("CEconItems_SetCustomEntityStyle", Native_SetCustomEntityStyle);
-    
+
     return APLRes_Success;
 }
 
@@ -240,9 +240,9 @@ public void OnPluginStart()
 
 	RegServerCmd("ce_loadout_reset", cResetLoadout);
 	RegAdminCmd("ce_item_debug", cItemDebug, ADMFLAG_ROOT);
-	
+
 	CreateTimer(BACKEND_ATTRIBUTE_UPDATE_INTERVAL, Timer_AttributeUpdateInterval, _, TIMER_REPEAT);
-	
+
 	ce_items_use_backend_loadout = CreateConVar("ce_items_use_backend_loadout", "1");
 }
 
@@ -256,7 +256,7 @@ public Action cResetLoadout(int args)
 	if (IsClientValid(iTarget))
 	{
 		if (m_bWaitingForLoadout[iTarget])return Plugin_Handled;
-		
+
 		m_nLoadoutUpdatedForClass[iTarget] = TF2_GetClass(sArg2);
 		CEconItems_RequestClientLoadoutUpdate(iTarget, false);
 
@@ -267,21 +267,21 @@ public Action cResetLoadout(int args)
 public Action cItemDebug(int client, int args)
 {
 	char argument[64];
-	
+
 	if (args > 0)
 	{
 		GetCmdArg(1, argument, sizeof(argument));
-		
+
 		// Special edge cases here first:
 		if (StrEqual(argument, "active_weapon", false))
 		{
 			int iWeapon = CEcon_GetLastUsedWeapon(client);
-			
+
 			CEItem xItem;
 			CEconItems_GetEntityItemStruct(iWeapon, xItem);
-			
+
 			CEItemDefinition xDef;
-			
+
 			// Grab the Item Definition of the item (sounds weird, I know).
 			if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, xDef))
 			{
@@ -294,25 +294,25 @@ public Action cItemDebug(int client, int args)
 				PrintToConsole(client, "	m_nQuality = %d", xItem.m_nQuality);
 				PrintToConsole(client, "	m_Attributes =");
 				PrintToConsole(client, "	[");
-				
+
 				// Print out all of the attributes.
 				for (int j = 0; j < xItem.m_Attributes.Length; j++)
 				{
 					CEAttribute xAttr;
 					xItem.m_Attributes.GetArray(j, xAttr);
-					
+
 					PrintToConsole(client, "		\"%s\" = \"%s\"", xAttr.m_sName, xAttr.m_sValue);
 				}
 				PrintToConsole(client, "	]");
 				PrintToConsole(client, "]");
 				PrintToConsole(client, "");
-				
+
 				return Plugin_Handled;
 			}
 		}
 	}
-	
-	
+
+
 	// Go through each of the items on the user:
 	int iCount = CEconItems_GetClientWearedItemsCount(client);
 	for (int i = 0; i < iCount; i++)
@@ -322,14 +322,14 @@ public Action cItemDebug(int client, int args)
 		if(CEconItems_GetClientWearedItemByIndex(client, i, xItem))
 		{
 			CEItemDefinition xDef;
-			
+
 			// Grab the Item Definition of the item (sounds weird, I know).
 			if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, xDef))
 			{
 				// ZoNiCaL - For a nicer debugging experience (mainly for me) and to see information that I only really want,
 				// you can now only show certain information (e.g weapons only, cosmetics, etc...)
 				//if (!StrEqual(argument, xDef.m_sType, false) && args > 0) { continue; }
-				
+
 				// Print out the information:
 				PrintToConsole(client, "[%d] \"%s\" (%s) =", i, xDef.m_sName, xDef.m_sType);
 				PrintToConsole(client, "[");
@@ -338,13 +338,13 @@ public Action cItemDebug(int client, int args)
 				PrintToConsole(client, "	m_nQuality = %d", xItem.m_nQuality);
 				PrintToConsole(client, "	m_Attributes =");
 				PrintToConsole(client, "	[");
-				
+
 				// Print out all of the attributes.
 				for (int j = 0; j < xItem.m_Attributes.Length; j++)
 				{
 					CEAttribute xAttr;
 					xItem.m_Attributes.GetArray(j, xAttr);
-					
+
 					PrintToConsole(client, "		\"%s\" = \"%s\"", xAttr.m_sName, xAttr.m_sValue);
 				}
 				PrintToConsole(client, "	]");
@@ -353,9 +353,9 @@ public Action cItemDebug(int client, int args)
 			}
 		}
 	}
-		
+
 	return Plugin_Handled;
-	
+
 }
 
 //---------------------------------------------------------------------
@@ -377,7 +377,7 @@ public void PrecacheItemsFromSchema(KeyValues hSchema)
     // Initiate the array.
 	m_ItemDefinitons = new ArrayList(sizeof(CEItemDefinition));
 	m_IndexedDictionary = new StringMap();
-	
+
 	if (hSchema == null)return;
 
 	if(hSchema.JumpToKey("Items"))
@@ -406,9 +406,9 @@ public void PrecacheItemsFromSchema(KeyValues hSchema)
 					hDef.m_Attributes = CEconItems_AttributesKeyValuesToArrayList(hSchema);
 					hSchema.GoBack();
 				}
-				
+
 				int iNumericIndex = m_ItemDefinitons.Length;
-				
+
 				m_IndexedDictionary.SetValue(sSectionName, iNumericIndex, true);
 				m_IndexedDictionary.SetValue(hDef.m_sName, iNumericIndex, true);
 
@@ -444,32 +444,32 @@ public void ParseExtraItemsAndAddToSchema(KeyValues hSchema)
 		{
 			return;
 		}
-		
+
 		int iLastIndex = -1;
 		bool bIsAvailable;
-		
+
 		DirectoryListing hDir = OpenDirectory(sPath);
 		char sFileName[PLATFORM_MAX_PATH];
 		while(hDir.GetNext(sFileName, sizeof(sFileName)))
 		{
 			Format(sFileName, sizeof(sFileName), "%s\\%s", sPath, sFileName);
 			if (!FileExists(sFileName))continue;
-			
-			
+
+
 			KeyValues hBuffer = new KeyValues("Item");
 			if (!hBuffer.ImportFromFile(sFileName))
 			{
 				LogError("Failed to load \"%s\". Check syntax of the file.", sFileName);
 				continue;
 			}
-			
+
 			char sName[11];
-			
+
 			do {
-				
+
 				iLastIndex++;
 				IntToString(iLastIndex, sName, sizeof(sName));
-				
+
 				if(hSchema.JumpToKey(sName, false))
 				{
 					bIsAvailable = false;
@@ -477,21 +477,21 @@ public void ParseExtraItemsAndAddToSchema(KeyValues hSchema)
 				} else {
 					bIsAvailable = true;
 				}
-				
+
 			} while (!bIsAvailable);
-					
+
 			if(hSchema.JumpToKey(sName, true))
 			{
 				LogMessage("Asigning \"%s\" to item index %s", sFileName, sName);
 				hSchema.Import(hBuffer);
 				hSchema.GoBack();
 			}
-			
+
 			delete hBuffer;
-			
+
 		}
 	}
-	
+
 	hSchema.Rewind();
 }
 
@@ -501,13 +501,13 @@ public void ParseExtraItemsAndAddToSchema(KeyValues hSchema)
 public any Native_GetItemDefinitionByIndex(Handle plugin, int numParams)
 {
 	int index = GetNativeCell(1);
-	
+
 	if (m_IndexedDictionary == null)return false;
 	if (m_ItemDefinitons == null)return false;
-	
+
 	char sIndex[11];
 	IntToString(index, sIndex, sizeof(sIndex));
-	
+
 	int iIndex;
 	if(m_IndexedDictionary.GetValue(sIndex, iIndex))
 	{
@@ -515,7 +515,7 @@ public any Native_GetItemDefinitionByIndex(Handle plugin, int numParams)
 		{
 			CEItemDefinition buffer;
 			m_ItemDefinitons.GetArray(iIndex, buffer);
-	
+
 			SetNativeArray(2, buffer, sizeof(CEItemDefinition));
 			return true;
 		}
@@ -532,10 +532,10 @@ public any Native_GetItemDefinitionByName(Handle plugin, int numParams)
 	char sName[128];
 	GetNativeString(1, sName, sizeof(sName));
 	if (StrEqual(sName, ""))return false;
-	
+
 	if (m_IndexedDictionary == null)return false;
 	if (m_ItemDefinitons == null)return false;
-	
+
 	int iIndex;
 	if(m_IndexedDictionary.GetValue(sName, iIndex))
 	{
@@ -543,7 +543,7 @@ public any Native_GetItemDefinitionByName(Handle plugin, int numParams)
 		{
 			CEItemDefinition buffer;
 			m_ItemDefinitons.GetArray(iIndex, buffer);
-	
+
 			SetNativeArray(2, buffer, sizeof(CEItemDefinition));
 			return true;
 		}
@@ -572,7 +572,7 @@ public void FlushItemDefinitionCache()
 
     // Clean the array itself.
 	delete m_ItemDefinitons;
-	
+
 	delete m_IndexedDictionary;
 }
 
@@ -619,7 +619,7 @@ public any Native_CreateNamedItem(Handle plugin, int numParams)
 {
 	char sName[128];
 	GetNativeString(2, sName, sizeof(sName));
-	
+
     int quality = GetNativeCell(3);
     ArrayList overrides = GetNativeCell(4);
 
@@ -644,9 +644,9 @@ public any Native_DestroyItem(Handle plugin, int numParams)
 {
 	CEItem hItem;
 	GetNativeArray(1, hItem, sizeof(CEItem));
-	
+
 	delete hItem.m_Attributes;
-	
+
 	SetNativeArray(1, hItem, sizeof(CEItem));
 }
 
@@ -719,7 +719,7 @@ public any Native_IsEntityCustomEconItem(Handle plugin, int numParams)
 {
 	int iEntity = GetNativeCell(1);
 	if (!IsEntityValid(iEntity))return false;
-	
+
 	return IsEntityCustomEconItem(iEntity);
 }
 
@@ -742,20 +742,20 @@ public any Native_AttributesKeyValuesToArrayList(Handle plugin, int numParams)
 	{
 		do {
 			CEAttribute attr;
-			
+
 			// Test if this attribute is written in compact mode.
 			kv.GetString(NULL_STRING, attr.m_sValue, sizeof(attr.m_sValue));
 			if(StrEqual(attr.m_sValue, ""))
-			{	
+			{
 				// If it's not, then get values inside the keys.
 				kv.GetString("name", attr.m_sName, sizeof(attr.m_sName));
-				kv.GetString("value", attr.m_sValue, sizeof(attr.m_sValue));		
+				kv.GetString("value", attr.m_sValue, sizeof(attr.m_sValue));
 			} else {
-				// Otherwise, we already have the value in the struct, so just 
+				// Otherwise, we already have the value in the struct, so just
 				// get the section name as the name.
 				kv.GetSectionName(attr.m_sName, sizeof(attr.m_sName));
 			}
-			
+
 			Attributes.PushArray(attr);
 		} while (kv.GotoNextKey(false));
 		kv.GoBack();
@@ -778,10 +778,10 @@ public any Native_MergeAttributes(Handle plugin, int numParams)
 	{
 		return new ArrayList(sizeof(CEAttribute));
 	} else if(hArray1 == null)
-	{	
+	{
 		return hArray2.Clone();
 	} else if(hArray2 == null)
-	{	
+	{
 		return hArray1.Clone();
 	}
 
@@ -896,7 +896,7 @@ public any Native_SetAttributeStringInArray(Handle plugin, int numParams)
 {
     ArrayList hArray = GetNativeCell(1);
     if(hArray == null) return;
-    
+
     char sName[128], sValue[128];
     GetNativeString(2, sName, sizeof(sName));
     GetNativeString(3, sValue, sizeof(sValue));
@@ -912,12 +912,12 @@ public any Native_SetAttributeStringInArray(Handle plugin, int numParams)
 			i--;
 		}
 	}
-	
+
 	CEAttribute xNewAttr;
 	strcopy(xNewAttr.m_sName, sizeof(xNewAttr.m_sName), sName);
 	strcopy(xNewAttr.m_sValue, sizeof(xNewAttr.m_sValue), sValue);
 	hArray.PushArray(xNewAttr);
-	
+
 	return;
 }
 
@@ -928,15 +928,15 @@ public any Native_SetAttributeIntegerInArray(Handle plugin, int numParams)
 {
     ArrayList hArray = GetNativeCell(1);
     if(hArray == null) return;
-    
+
     char sName[128], sValue[128];
     GetNativeString(2, sName, sizeof(sName));
-    
+
     int iValue = GetNativeCell(3);
     IntToString(iValue, sValue, sizeof(sValue));
-    
+
     CEconItems_SetAttributeStringInArray(hArray, sName, sValue);
-	
+
 	return;
 }
 
@@ -947,15 +947,15 @@ public any Native_SetAttributeFloatInArray(Handle plugin, int numParams)
 {
     ArrayList hArray = GetNativeCell(1);
     if(hArray == null) return;
-    
+
     char sName[128], sValue[128];
     GetNativeString(2, sName, sizeof(sName));
-    
+
     float flValue = GetNativeCell(3);
     FloatToString(flValue, sValue, sizeof(sValue));
-    
+
     CEconItems_SetAttributeStringInArray(hArray, sName, sValue);
-	
+
 	return;
 }
 
@@ -966,15 +966,15 @@ public any Native_SetAttributeBoolInArray(Handle plugin, int numParams)
 {
     ArrayList hArray = GetNativeCell(1);
     if(hArray == null) return;
-    
+
     char sName[128], sValue[128];
     GetNativeString(2, sName, sizeof(sName));
-    
+
     bool bValue = GetNativeCell(3);
     IntToString(bValue ? 1 : 0, sValue, sizeof(sValue));
-    
+
     CEconItems_SetAttributeStringInArray(hArray, sName, sValue);
-	
+
 	return;
 }
 
@@ -1059,24 +1059,24 @@ public any Native_SetEntityAttributeString(Handle plugin, int numParams)
 {
     int entity = GetNativeCell(1);
     if (m_hEconItem[entity].m_Attributes == null)return;
-    
+
     char sName[128], sValue[128];
     GetNativeString(2, sName, sizeof(sName));
     GetNativeString(3, sValue, sizeof(sValue));
-    
+
     bool bNetworked = GetNativeCell(4);
-	
+
 	// We may have multiple instances of this item in different
 	// loadouts. Make sure to update them all.
 	if(m_hEconItem[entity].m_iIndex > 0)
 	{
 		int iItemIndex = m_hEconItem[entity].m_iIndex;
 		int iClient = m_hEconItem[entity].m_iClient;
-		
+
 		for (int i = 0; i < view_as<int>(CEconLoadoutClass); i++)
 		{
 			CEconLoadoutClass nClass = view_as<CEconLoadoutClass>(i);
-			
+
 			int iCount = CEconItems_GetClientLoadoutSize(iClient, nClass);
 			for (int j = 0; j < iCount; j++)
 			{
@@ -1091,7 +1091,7 @@ public any Native_SetEntityAttributeString(Handle plugin, int numParams)
 			}
 		}
 	}
-	
+
 	if(bNetworked)
 	{
 		int iItemIndex = m_hEconItem[entity].m_iIndex;
@@ -1100,7 +1100,7 @@ public any Native_SetEntityAttributeString(Handle plugin, int numParams)
 			AddAttributeUpdateBatch(iItemIndex, sName, sValue);
 		}
 	}
-	
+
 	return;
 }
 
@@ -1110,16 +1110,16 @@ public any Native_SetEntityAttributeString(Handle plugin, int numParams)
 public any Native_SetEntityAttributeInteger(Handle plugin, int numParams)
 {
     int entity = GetNativeCell(1);
-    
+
     char sName[128], sValue[128];
     GetNativeString(2, sName, sizeof(sName));
-    
+
     int iValue = GetNativeCell(3);
     IntToString(iValue, sValue, sizeof(sValue));
     bool bNetworked = GetNativeCell(4);
-    
+
     CEconItems_SetEntityAttributeString(entity, sName, sValue, bNetworked);
-	
+
 	return;
 }
 
@@ -1129,16 +1129,16 @@ public any Native_SetEntityAttributeInteger(Handle plugin, int numParams)
 public any Native_SetEntityAttributeFloat(Handle plugin, int numParams)
 {
     int entity = GetNativeCell(1);
-    
+
     char sName[128], sValue[128];
     GetNativeString(2, sName, sizeof(sName));
-    
+
     float flValue = GetNativeCell(3);
     FloatToString(flValue, sValue, sizeof(sValue));
     bool bNetworked = GetNativeCell(4);
-    
+
     CEconItems_SetEntityAttributeString(entity, sName, sValue, bNetworked);
-	
+
 	return;
 }
 
@@ -1148,16 +1148,16 @@ public any Native_SetEntityAttributeFloat(Handle plugin, int numParams)
 public any Native_SetEntityAttributeBool(Handle plugin, int numParams)
 {
     int entity = GetNativeCell(1);
-    
+
     char sName[128], sValue[128];
     GetNativeString(2, sName, sizeof(sName));
-    
+
     bool bValue = GetNativeCell(3);
     IntToString(bValue ? 1 : 0, sValue, sizeof(sValue));
     bool bNetworked = GetNativeCell(4);
-    
+
     CEconItems_SetEntityAttributeString(entity, sName, sValue, bNetworked);
-	
+
 	return;
 }
 
@@ -1266,9 +1266,9 @@ public any Native_IsItemFromClientClassLoadout(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	CEconLoadoutClass nClass = GetNativeCell(2);
-	
+
 	if (m_Loadout[client][nClass] == null)return false;
-	
+
 	CEItem xItem;
 	GetNativeArray(3, xItem, sizeof(CEItem));
 
@@ -1290,10 +1290,10 @@ public any Native_IsClientWearingItem(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	if (m_MyItems[client] == null)return false;
-	
+
 	CEItem xNeedle;
 	GetNativeArray(2, xNeedle, sizeof(CEItem));
-	
+
 	for (int i = 0; i < m_MyItems[client].Length; i++)
 	{
 		CEItem hItem;
@@ -1315,7 +1315,7 @@ public any Native_GiveItemToClient(Handle plugin, int numParams)
 	{
 		m_MyItems[client] = new ArrayList(sizeof(CEItem));
 	}
-	
+
 	CEItem xItem;
 	GetNativeArray(2, xItem, sizeof(CEItem));
 
@@ -1332,7 +1332,7 @@ public any Native_RemoveItemFromClient(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	if (m_MyItems[client] == null)return;
-	
+
 	CEItem xNeedle;
 	GetNativeArray(2, xNeedle, sizeof(CEItem));
 
@@ -1341,7 +1341,7 @@ public any Native_RemoveItemFromClient(Handle plugin, int numParams)
 	{
 		CEItem hItem;
 		m_MyItems[client].GetArray(i, hItem);
-		
+
 		if(hItem.m_Attributes == xNeedle.m_Attributes)
 		{
 			m_MyItems[client].Erase(i);
@@ -1349,7 +1349,7 @@ public any Native_RemoveItemFromClient(Handle plugin, int numParams)
 			i--;
 		}
 	}
-	
+
 	if(bRemoved)
 	{
 		CEItemDefinition xDef;
@@ -1361,7 +1361,7 @@ public any Native_RemoveItemFromClient(Handle plugin, int numParams)
 			Call_PushArray(xNeedle, sizeof(CEItem));
 			Call_PushString(xDef.m_sType);
 			Call_Finish();
-			
+
 			// Call subplugins that we've unequipped this item.
 			Call_StartForward(g_CEcon_OnItemIsUnequipped);
 			Call_PushCell(client);
@@ -1369,16 +1369,16 @@ public any Native_RemoveItemFromClient(Handle plugin, int numParams)
 			Call_PushString(xDef.m_sType);
 			Call_Finish();
 		}
-		
-		// If removed, let's check if this item isn't in the player loadout. 
+
+		// If removed, let's check if this item isn't in the player loadout.
 		// It it is not, remove it, as it was not created by the econ.
 		// This is to prevent memory leaks.
-		
+
 		if(!CEconItems_IsItemFromClientLoadout(client, xNeedle))
 		{
 			CEconItems_DestroyItem(xNeedle);
 		}
-		
+
 	}
 }
 
@@ -1426,7 +1426,7 @@ public void RemoveAllClientWearableItems(int client)
 public any Native_IsClientLoadoutCached(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
-	
+
 	return m_bLoadoutCached[client];
 }
 
@@ -1450,7 +1450,7 @@ public Action player_spawn(Event hEvent, const char[] szName, bool bDontBroadcas
 
 	// Users are in respawn room by default when they spawn.
 	// m_bInRespawn[client] = true;
-	
+
 }
 
 public void RF_LoadoutApplication(int client)
@@ -1472,14 +1472,14 @@ public any Native_RequestClientLoadoutUpdate(Handle plugin, int numParams)
 {
 	// If we decided not to use backend loadout, don't do anything.
 	if (!ce_items_use_backend_loadout.BoolValue)return false;
-	
+
 	int client = GetNativeCell(1);
 	if (m_bWaitingForLoadout[client])return false;
-	
+
 	bool apply = GetNativeCell(2);
-	
+
 	if (!IsClientReady(client))return false;
-	
+
 	m_bWaitingForLoadout[client] = true;
 
 	DataPack pack = new DataPack();
@@ -1569,7 +1569,7 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 						int iIndex = Response.GetNum("id", -1);
 						int iDefID = Response.GetNum("defid", -1);
 						int iQuality = Response.GetNum("quality", -1);
-						
+
 						ArrayList hOverrides;
 						if(Response.JumpToKey("attributes"))
 						{
@@ -1584,7 +1584,7 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 							hItem.m_iClient = client;
 							m_Loadout[client][nClass].PushArray(hItem);
 						}
-						
+
 						delete hOverrides;
 
 					} while (Response.GotoNextKey());
@@ -1597,7 +1597,7 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 	m_bLoadoutCached[client] = true;
 
 	delete Response;
-	
+
 	Call_StartForward(g_CEcon_OnClientLoadoutUpdated);
 	Call_PushCell(client);
 	Call_Finish();
@@ -1609,7 +1609,7 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 		bool bShouldRespawn = false;
 		if (m_nLoadoutUpdatedForClass[client] == TFClass_Unknown)bShouldRespawn = true;
 		if (m_nLoadoutUpdatedForClass[client] == TF2_GetPlayerClass(client))bShouldRespawn = true;
-		
+
 		if(bShouldRespawn)
 		{
 			bIsRespawned = true;
@@ -1617,7 +1617,7 @@ public void RequestClientLoadout_Callback(HTTPRequestHandle request, bool succes
 			m_nLoadoutUpdatedForClass[client] = view_as<TFClassType>(-1);
 		}
 	}
-	
+
 	if(!bIsRespawned && apply)
 	{
 		LoadoutApplication(client, true);
@@ -1665,17 +1665,17 @@ public void ApplyClientLoadout(int client)
 
 public void ClearClientLoadout(int client, bool full)
 {
-	CEconLoadoutClass nCurrentClass = CEconLoadoutClass_Unknown; 
-	
+	CEconLoadoutClass nCurrentClass = CEconLoadoutClass_Unknown;
+
 	if(IsClientValid(client))
 	{
 		nCurrentClass = GetCEconLoadoutClassFromTFClass(TF2_GetPlayerClass(client));
 	}
-	
+
 	for (int i = 0; i < view_as<int>(CEconLoadoutClass); i++)
 	{
 		CEconLoadoutClass nClass = view_as<CEconLoadoutClass>(i);
-		
+
 		if (m_Loadout[client][nClass] == null)continue;
 
 		// Don't remove items of the current class, as we still may need them.
@@ -1685,7 +1685,7 @@ public void ClearClientLoadout(int client, bool full)
 			{
 				CEItem hItem;
 				m_Loadout[client][nClass].GetArray(j, hItem);
-	
+
 				CEconItems_DestroyItem(hItem);
 			}
 		}
@@ -1702,9 +1702,9 @@ public int Native_GetClientLoadoutSize(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	CEconLoadoutClass nClass = GetNativeCell(2);
-	
+
 	if (m_Loadout[client][nClass] == null)return -1;
-	
+
 	return m_Loadout[client][nClass].Length;
 }
 
@@ -1716,18 +1716,18 @@ public any Native_GetClientItemFromLoadoutByIndex(Handle plugin, int numParams)
 	int client = GetNativeCell(1);
 	CEconLoadoutClass nClass = GetNativeCell(2);
 	if (m_Loadout[client][nClass] == null)return false;
-	
+
 	int index = GetNativeCell(3);
-	
+
 	if (index < 0)return false;
 	if (index >= m_Loadout[client][nClass].Length)return false;
-	
-	
+
+
 	CEItem xItem;
 	m_Loadout[client][nClass].GetArray(index, xItem);
-	
+
 	SetNativeArray(4, xItem, sizeof(CEItem));
-	
+
 	return true;
 }
 
@@ -1737,9 +1737,9 @@ public any Native_GetClientItemFromLoadoutByIndex(Handle plugin, int numParams)
 public int Native_GetClientWearedItemsCount(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
-	
+
 	if (m_MyItems[client] == null)return -1;
-	
+
 	return m_MyItems[client].Length;
 }
 
@@ -1750,17 +1750,17 @@ public any Native_GetClientWearedItemByIndex(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	if (m_MyItems[client] == null)return false;
-	
+
 	int index = GetNativeCell(2);
-	
+
 	if (index < 0)return false;
 	if (index >= m_MyItems[client].Length)return false;
-	
+
 	CEItem xItem;
 	m_MyItems[client].GetArray(index, xItem);
-	
+
 	SetNativeArray(3, xItem, sizeof(CEItem));
-	
+
 	return true;
 }
 
@@ -1771,17 +1771,17 @@ public any Native_IsItemFromClientLoadout(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	if (m_MyItems[client] == null)return false;
-	
+
 	CEItem xItem;
 	GetNativeArray(2, xItem, sizeof(CEItem));
-	
+
 	for (int i = 0; i < view_as<int>(CEconLoadoutClass); i++)
 	{
 		CEconLoadoutClass nClass = view_as<CEconLoadoutClass>(i);
-		
+
 		if (CEconItems_IsItemFromClientClassLoadout(client, nClass, xItem))return true;
 	}
-	
+
 	return false;
 }
 
@@ -1791,13 +1791,13 @@ public any Native_IsItemFromClientLoadout(Handle plugin, int numParams)
 public any Native_GetEntityItemStruct(Handle plugin, int numParams)
 {
 	int entity = GetNativeCell(1);
-	
+
 	if(CEconItems_IsEntityCustomEconItem(entity))
 	{
 		SetNativeArray(2, m_hEconItem[entity], sizeof(CEItem));
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -1808,9 +1808,9 @@ public any Native_SetCustomEntityStyle(Handle plugin, int numParams)
 {
 	int entity = GetNativeCell(1);
 	int style = GetNativeCell(2);
-	
+
 	if (!CEconItems_IsEntityCustomEconItem(entity))return;
-	
+
 	Call_StartForward(g_CEcon_OnCustomEntityStyleUpdated);
 	Call_PushCell(m_hEconItem[entity].m_iClient);
 	Call_PushCell(entity);
@@ -1876,7 +1876,7 @@ public void OnEntityDestroyed(int entity)
 			CEconItems_RemoveItemFromClient(xItem.m_iClient, xItem);
 		}
 	}
-	
+
 	ClearEntityData(entity);
 }
 
@@ -1929,7 +1929,7 @@ public void OnClientPostAdminCheck(int client)
 public void FlushClientData(int client)
 {
 	ClearClientLoadout(client, true);
-	
+
 	delete m_MyItems[client];
 	m_bWaitingForLoadout[client] = false;
 	m_bInRespawn[client] = false;
@@ -1951,21 +1951,21 @@ public void AddAttributeUpdateBatch(int index, const char[] name, const char[] v
 	{
 		m_AttributeUpdateBatches = new ArrayList(sizeof(CEAttributeUpdateBatch));
 	}
-	
+
 	for (int i = 0; i < m_AttributeUpdateBatches.Length; i++)
 	{
 		CEAttributeUpdateBatch xBatch;
 		m_AttributeUpdateBatches.GetArray(i, xBatch);
-		
+
 		if (xBatch.m_iIndex != index)continue;
-		
+
 		if(StrEqual(xBatch.m_sAttr, name))
 		{
 			m_AttributeUpdateBatches.Erase(i);
 			i--;
 		}
 	}
-	
+
 	CEAttributeUpdateBatch xBatch;
 	xBatch.m_iIndex = index;
 	strcopy(xBatch.m_sAttr, sizeof(xBatch.m_sAttr), name);
@@ -1977,20 +1977,20 @@ public Action Timer_AttributeUpdateInterval(Handle timer, any data)
 {
 	if (m_AttributeUpdateBatches == null)return;
 	if (m_AttributeUpdateBatches.Length == 0)return;
-	
+
 	HTTPRequestHandle hRequest = CEconHTTP_CreateBaseHTTPRequest("/api/IEconomySDK/ItemAttributes", HTTPMethod_POST);
-	
+
 	for (int i = 0; i < m_AttributeUpdateBatches.Length; i++)
 	{
 		CEAttributeUpdateBatch xBatch;
 		m_AttributeUpdateBatches.GetArray(i, xBatch);
-		
+
 		char sKey[128];
 		Format(sKey, sizeof(sKey), "items[%d][%s]", xBatch.m_iIndex, xBatch.m_sAttr);
-		
+
 		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, xBatch.m_sValue);
 	}
-	
+
 	Steam_SendHTTPRequest(hRequest, AttributeUpdate_Callback);
 	delete m_AttributeUpdateBatches;
 }
@@ -2000,6 +2000,6 @@ public void AttributeUpdate_Callback(HTTPRequestHandle request, bool success, HT
 	// If request was not succesful, return.
 	if (!success)return;
 	if (code != HTTPStatusCode_OK)return;
-	
+
 	// Cool, we've updated everything.
 }

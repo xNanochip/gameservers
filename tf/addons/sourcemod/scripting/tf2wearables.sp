@@ -119,10 +119,10 @@ public int Native_CreateWearable(Handle plugin, int numParams)
 	SetEntProp(entity, Prop_Send, "m_bValidatedAttachedEntity", 1);
 
 	// CEconEntity
-	SetEntProp(entity, Prop_Send, "m_iEntityLevel", -1);
 	SetEntProp(entity, Prop_Send, "m_iItemIDLow", 2048);
 	SetEntProp(entity, Prop_Send, "m_iItemIDHigh", 0);
 	SetEntProp(entity, Prop_Send, "m_iAccountID", GetSteamAccountID(client));
+	SetEntProp(entity, Prop_Send, "m_iEntityLevel", -1);
 
 	DispatchSpawn(entity);
 	SetVariantString("!activator");

@@ -811,6 +811,8 @@ public bool CEconItems_ShouldItemBeBlocked(int client, CEItem xItem, const char[
 
 public void TF2_RegenerateWeaponAmmo(int client, int weapon)
 {
+	if (!IsValidEntity(weapon))return;
+	
 	int iAmmoType = TF2_GetWeaponAmmoType(client, weapon);
 	
 	int iMaxAmmo = CTFPlayer_GetMaxAmmo(client, iAmmoType);
