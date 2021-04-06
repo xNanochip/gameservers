@@ -376,16 +376,17 @@ public void OnMvMGameEnd()
 
 public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
 {
-	PrintToServer("load sigsegv extension on level init");
-	LoadSigsegvExtension();
+	// Not perfect but simplest way to do at this stage of map loading
+	if (strncmp(mapName, "mvm_", 4) == 0)
+	{
+		LoadSigsegvExtension();
+	}
 }
 
 public void OnMapStart()
 {
 	if(TF2MvM_IsPlayingMvM())
 	{
-		
-		PrintToServer("load sigsegv extension on level start");
 		LoadSigsegvExtension();
 		RequestFrame(RF_RecalculatePlayerCount);
 
