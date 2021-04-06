@@ -426,6 +426,7 @@ public Action Timer_BackToPubs(Handle timer, any data)
 public void LoadSigsegvExtension()
 {
 	ServerCommand("sm exts load sigsegv.ext.2.tf2");
+	ServerExecute();
 }
 
 public bool TF2MvM_IsPlayingMvM()
