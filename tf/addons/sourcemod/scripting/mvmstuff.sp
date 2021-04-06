@@ -189,7 +189,7 @@ public Action ResetSourceTVFakeClient(Handle timer, int data)
 		SetEntityFlags(data, GetEntityFlags(data) &~ FL_FAKECLIENT);
 	}
 }
-void ResetCustomUpgrades() {
+void ResetCustomUpgrades(int data) {
 
 	SetConVarString(FindConVar("sig_mvm_custom_upgrades_file"),"");
 }
@@ -204,7 +204,7 @@ public void OnClientDisconnect_Post(int client)
 	if(players == 0) {
 		ResetAllStats();
 		if (extramodded_set){
-			RequestFrame(ResetCustomUpgrades);
+			RequestFrame(ResetCustomUpgrades, 0);
 			extramodded_set = false;
 		}
 		if (mvm10_set) {
