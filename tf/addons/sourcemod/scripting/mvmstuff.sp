@@ -828,7 +828,7 @@ public Action OnAnyDamage(int victim, int& attacker, int& inflictor, float& dama
 			if ((damagetype & DMG_SHOCK) == DMG_SHOCK && strcmp(classname,"tf_weapon_mechanical_arm") == 0) {
 				damage = SDKCall(attrib_float_prep,damage,"mult_dmg",weapon,0,false);
 			}
-			if (damagecustom == 46 && (strcmp(classname,"tf_weapon_raygun") == 0 || strcmp(classname,"tf_weapon_drg_pomson") == 0)) {
+			if (damagecustom == 46 && (strcmp(classname, "tf_weapon_raygun") == 0 || strcmp(classname, "tf_weapon_drg_pomson") == 0)) {
 				damage = SDKCall(attrib_float_prep,damage,"mult_dmg",weapon,0,false);
 			}
 		}
