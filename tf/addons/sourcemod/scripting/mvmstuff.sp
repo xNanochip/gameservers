@@ -9,13 +9,13 @@
 #include <tf2attributes>
 #include <SteamWorks>
 
-#define TF_DMG_MELEE                        (1 << 27) | (1 << 12) | (1 << 7) 
+#define TF_DMG_MELEE                        (1 << 27) | (1 << 12) | (1 << 7)
 
 public Plugin myinfo = 
 {
 	name = "MvM stuff",
 	author = "rafradek",
-	description = ***REPLACED API INFO***,
+	description = "Changes to the Mann vs. Machine Gamemode",
 	version = SOURCEMOD_VERSION,
 	url = "http://www.sourcemod.net/"
 };
@@ -32,10 +32,10 @@ ConVar write_wave_time_enabled;
 
 float wave_times[64];
 bool wave_passed[64];
-float wave_start_time=0.0;
-float waves_total_time=0.0;
-int last_wave_number=0;
-int fail_counter_tick=0; //if increases 4 times in a singe tick, mission is restarted;
+float wave_start_time = 0.0;
+float waves_total_time = 0.0;
+int last_wave_number = 0;
+int fail_counter_tick = 0; //if increases 4 times in a singe tick, mission is restarted;
 
 Handle wave_time_timer = null;
 Handle reset_mission_timer = null;
@@ -51,7 +51,6 @@ Handle burn_prep;
 bool mission_lockbug_check = false;
 
 StringMap whitelisted_afterburn_items;
-
 
 public void OnPluginStart()
 {
@@ -69,9 +68,11 @@ public void OnPluginStart()
 
 
 	ConVar sig_vanilla_mode = FindConVar("sig_vanilla_mode");
-	if (sig_vanilla_mode != null) {
+	if (sig_vanilla_mode != null)
+	{
 		HookConVarChange(sig_vanilla_mode, VanillaModeChanged);
 	}
+	
 	RegConsoleCmd("sm_wave_time", Command_WaveTime, "Shows times for all waves in the mission");
 	RegConsoleCmd("sm_fuck_go_back", Command_RestartGame, "Restart game");
 	RegConsoleCmd("sm_wave_summary", Command_WaveTime, "Shows times for all waves in the mission");
@@ -89,7 +90,8 @@ public void OnPluginStart()
 	Handle game_conf = LoadGameConfigFile("tf2.mvm");
 
 	StartPrepSDKCall(SDKCall_Static);
-	if (PrepSDKCall_SetFromConf(game_conf,SDKConf_Signature,"CAttributeManager::AttribHookValueFloat")) {
+	if (PrepSDKCall_SetFromConf(game_conf,SDKConf_Signature,"CAttributeManager::AttribHookValueFloat"))
+	{
 		PrepSDKCall_AddParameter(SDKType_Float, SDKPass_Plain);
 		PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
 		PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer, VDECODE_FLAG_ALLOWNULL);
@@ -100,7 +102,8 @@ public void OnPluginStart()
 	attrib_float_prep = EndPrepSDKCall();
 
 	StartPrepSDKCall(SDKCall_Raw);
-	if (PrepSDKCall_SetFromConf(game_conf,SDKConf_Signature,"CTFPlayerShared::Burn")) {
+	if (PrepSDKCall_SetFromConf(game_conf,SDKConf_Signature,"CTFPlayerShared::Burn"))
+	{
 		PrepSDKCall_AddParameter(SDKType_CBasePlayer, SDKPass_Pointer, VDECODE_FLAG_ALLOWNULL);
 		PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer, VDECODE_FLAG_ALLOWNULL);
 		PrepSDKCall_AddParameter(SDKType_Float, SDKPass_Plain);
@@ -121,6 +124,9 @@ public void OnPluginStart()
 
 public void SetGameDescription()
 {
+	// This functionality already exists in cecon_mvm.sp, plus it also has team composition values.
+	// - Moonly
+	/*
 	char gameDesc[64] = "Team Fortress";
 	//if (GetEntProp(FindEntityByClassname(-1,"tf_gamerules"), Prop_Send,"m_bPlayingMannVsMachine", 1) != 0) {
 		int resource = FindEntityByClassname(-1,"tf_objective_resource");
@@ -135,38 +141,48 @@ public void SetGameDescription()
 			StrCat(gameDesc,64, " :: Setup)");
 	//}
 	SteamWorks_SetGameDescription(gameDesc);
+	*/
 }
+
 public void VanillaModeChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	if (strcmp("0",newValue) != 0) {
+	if (strcmp("0",newValue) != 0)
+	{
 		vanilla_mode = false;
 		ServerCommand("exec sigvanilla.cfg");
-		if (extramodded_set){
+		
+		if (extramodded_set)
+		{
 			SetConVarString(FindConVar("sig_mvm_custom_upgrades_file"),"");
 			extramodded_set = false;
 		}
-		if (mvm10_set) {
+		
+		if (mvm10_set)
+		{
 			SetConVarInt(FindConVar("sig_mvm_red_team_max_players"), 0);
 			mvm10_set = false;
 		}
-	}
-	else{
+	} else {
 		vanilla_mode = true;
 		ServerCommand("exec sig.cfg");
 	}
 }
+
 public void OnClientPutInServer(int client)
 {
 	SDKHook(client, SDKHook_OnTakeDamage, OnPlayerDamage);
 	SDKHook(client, SDKHook_OnTakeDamage, OnAnyDamage);
-	if (IsFakeClient(client)){
+	if (IsFakeClient(client))
+	{
 		SDKHook(client, SDKHook_WeaponEquip, OnWeaponEquip)
-	}
-	else {
+	} else {
 		SDKHook(client, SDKHook_PreThink, OnPlayerThink);
 	}
-	for (int i = 1; i <= MaxClients; i++) {
-		if (IsClientConnected(i) && IsClientSourceTV(i)) {
+	
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientConnected(i) && IsClientSourceTV(i))
+		{
 			SetEntityFlags(i, GetEntityFlags(i) &~ FL_FAKECLIENT);
 		}
 	}
@@ -176,8 +192,10 @@ public void OnClientPutInServer(int client)
 
 public bool OnClientConnect (int client, char[] rejectmsg, int maxlen)
 {
-	for (int i = 1; i <= MaxClients; i++) {
-		if (IsClientConnected(i) && IsClientSourceTV(i)) {
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientConnected(i) && IsClientSourceTV(i))
+		{
 			SetEntityFlags(i, GetEntityFlags(i) | FL_FAKECLIENT);
 			CreateTimer(0.0,ResetSourceTVFakeClient, i);
 			break;
@@ -188,28 +206,38 @@ public bool OnClientConnect (int client, char[] rejectmsg, int maxlen)
 
 public Action ResetSourceTVFakeClient(Handle timer, int data)
 {
-	if (IsClientSourceTV(data)) {
+	if (IsClientSourceTV(data))
+	{
 		SetEntityFlags(data, GetEntityFlags(data) &~ FL_FAKECLIENT);
 	}
 }
-void ResetCustomUpgrades(int data) {
 
+void ResetCustomUpgrades(int data)
+{
 	SetConVarString(FindConVar("sig_mvm_custom_upgrades_file"),"");
 }
+
 public void OnClientDisconnect_Post(int client)
 {
 	int players = 0;
-	for (int i = 1; i <= MaxClients; i++){
-		if (IsClientInGame(i) && !IsFakeClient(i)){
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i) && !IsFakeClient(i))
+		{
 			players++;
 		}
 	}
-	if(players == 0) {
+	
+	if(players == 0)
+	{
 		ResetAllStats();
-		if (extramodded_set){
+		
+		if (extramodded_set)
+		{
 			RequestFrame(ResetCustomUpgrades, 0);
 			extramodded_set = false;
 		}
+		
 		if (mvm10_set) {
 			SetConVarInt(FindConVar("sig_mvm_red_team_max_players"), 0);
 			mvm10_set = false;
@@ -217,6 +245,7 @@ public void OnClientDisconnect_Post(int client)
 	}
 	SetGameDescription();
 }
+
 public Action Command_Vanilla_Mode(int client, int args)
 {
 	if (args < 1)
@@ -224,6 +253,7 @@ public Action Command_Vanilla_Mode(int client, int args)
 		ReplyToCommand(client, "[MvM-Admin] Usage: sm_potato_mode <0|1>");
 		return Plugin_Handled;
 	}
+	
 	char target[2];
 	GetCmdArg(1, target, 2);
 	SetConVarBool(FindConVar("sig_vanilla_mode"),strcmp(target,"0") != 0);
@@ -234,89 +264,86 @@ public Action Command_Vanilla_Mode(int client, int args)
 
 public Action Command_CallVote(int client, const char[] command, int args)
 {
-	if (args == 0) {
-		Handle message = StartMessageOne("VoteSetup",client,USERMSG_RELIABLE);
-		//if (GetUserMessageType() == UM_Protobuf)
-		//{
-		//	Protobuf pb = UserMessageToProtobuf(message);
-		//}
-		//else
-		//{
-			//BfWrite bf = UserMessageToBfWrite(message);
-			BfWriteByte(message,11);
-			BfWriteString(message,"Kick");
-			BfWriteString(message,"");
+	if (args == 0)
+	{
+		Handle message = StartMessageOne("VoteSetup", client, USERMSG_RELIABLE);
+		
+		BfWriteByte(message,11);
+		BfWriteString(message,"Kick");
+		BfWriteString(message,"");
+		BfWriteByte(message,1);
+		BfWriteString(message,"RestartGame");
+		BfWriteString(message,"");
+		BfWriteByte(message,1);
+		BfWriteString(message,"ChangeLevel");
+		BfWriteString(message,"");
+		BfWriteByte(message,1);
+		BfWriteString(message,"ChangeMission");
+		BfWriteString(message,"");
+		BfWriteByte(message,1);
+		BfWriteString(message,"RestartWave");
+		BfWriteString(message,"#Winpanel_PVE_Evil_Wins");
+		BfWriteByte(message,1);
+		
+		if (GetConVarBool(vote_em_enabled))
+		{
+			BfWriteString(message,"Upgrade");
+			BfWriteString(message,"#TF_Coach_FreeAccount_Title");
 			BfWriteByte(message,1);
-			BfWriteString(message,"RestartGame");
-			BfWriteString(message,"");
+		}
+		if (GetConVarBool(vote_10mvm_enabled))
+		{
+			BfWriteString(message,"10mvm");
+			BfWriteString(message,"#TF_hwn2018_pyro_in_chinatown_style1");
 			BfWriteByte(message,1);
-			BfWriteString(message,"ChangeLevel");
-			BfWriteString(message,"");
-			BfWriteByte(message,1);
-			BfWriteString(message,"ChangeMission");
-			BfWriteString(message,"");
-			BfWriteByte(message,1);
-			BfWriteString(message,"RestartWave");
-			BfWriteString(message,"#Winpanel_PVE_Evil_Wins");
-			BfWriteByte(message,1);
-			if (GetConVarBool(vote_em_enabled)) {
-				BfWriteString(message,"Upgrade");
-				BfWriteString(message,"#TF_Coach_FreeAccount_Title");
-				BfWriteByte(message,1);
-			}
-			if (GetConVarBool(vote_10mvm_enabled)) {
-				BfWriteString(message,"10mvm");
-				BfWriteString(message,"#TF_hwn2018_pyro_in_chinatown_style1");
-				BfWriteByte(message,1);
-			}
-		//}
+		}
 
 		EndMessage();
 
 		return Plugin_Handled;
-	}
-	else
-	{
+	} else {
+		
 		char buf[128];
 		GetCmdArg(1,buf,128);
-		if (strcmp(buf,"RestartWave") == 0 && GetEntProp(FindEntityByClassname(-1,"tf_objective_resource"), Prop_Send,"m_bMannVsMachineBetweenWaves") == 0){
+		if (strcmp(buf,"RestartWave") == 0 && GetEntProp(FindEntityByClassname(-1,"tf_objective_resource"), Prop_Send,"m_bMannVsMachineBetweenWaves") == 0)
+		{
 			NativeVote vote = new NativeVote(RestartWaveHandler, NativeVotesType_Custom_YesNo);
 	
 			vote.Initiator = client;
 			vote.SetDetails("Restart current wave?");
 			vote.DisplayVoteToAll(15);
-			
-		}
-		else if (strcmp(buf,"Upgrade") == 0 && !vanilla_mode && GetEntProp(FindEntityByClassname(-1,"tf_objective_resource"), Prop_Send,"m_bMannVsMachineBetweenWaves") == 1){
+		} else if (strcmp(buf,"Upgrade") == 0 && !vanilla_mode && GetEntProp(FindEntityByClassname(-1,"tf_objective_resource"), Prop_Send,"m_bMannVsMachineBetweenWaves") == 1)
+		{
 			NativeVote vote = new NativeVote(UpgradesHandler, NativeVotesType_Custom_YesNo);
 	
 			vote.Initiator = client;
 			char oldval[128];
 			GetConVarString(FindConVar("sig_mvm_custom_upgrades_file"),oldval,128);
 			if (strcmp(oldval,"mvm_upgrades_sigsegv_extra_v19.txt") == 0)
+			{
 				vote.SetDetails("Revert to the original upgrades?");
-			else
+			} else {
 				vote.SetDetails("Use extra modded upgrades?");
+			}
 			vote.DisplayVoteToAll(15);
 			
-		}
-		else if (strcmp(buf,"10mvm") == 0 && !vanilla_mode){
+		} else if (strcmp(buf,"10mvm") == 0 && !vanilla_mode)
+		{
 			NativeVote vote = new NativeVote(MVM10Handler, NativeVotesType_Custom_YesNo);
 	
 			vote.Initiator = client;
 
 			if (mvm10_set)
+			{
 				vote.SetDetails("Revert to 6 max players?");
-			else
+			} else {
 				vote.SetDetails("Enable 10 max players?");
+			}
 			vote.DisplayVoteToAll(15);
 			
-		}
-		else
-		{
+		} else {
 			return Plugin_Continue;
 		}
-
 	}
 	return Plugin_Handled;
 }
@@ -325,30 +352,31 @@ public int RestartWaveHandler(NativeVote vote, MenuAction action, int param1, in
 {
 	switch (action)
 	{
-		case MenuAction_End:{
+		case MenuAction_End:
+		{
 			vote.Close();
 		}
 		
-		case MenuAction_VoteCancel:{
+		case MenuAction_VoteCancel:
+		{
 			if (param1 == VoteCancel_NoVotes)
+			{
 				vote.DisplayFail(NativeVotesFail_NotEnoughVotes);
-			else
+			} else {
 				vote.DisplayFail(NativeVotesFail_Generic);
+			}
 		}
 		
-		case MenuAction_VoteEnd:{
+		case MenuAction_VoteEnd:
+		{
 			if (param1 == NATIVEVOTES_VOTE_NO)
-				vote.DisplayFail(NativeVotesFail_Loses);
-			else
 			{
+				vote.DisplayFail(NativeVotesFail_Loses);
+			} else {
+				
 				vote.DisplayPass("Restarting the wave");
 				// Do something because it passed
 				ServerCommand("mp_restartgame_immediate 1");
-				/*int game_win = CreateEntityByName("game_round_win");
-				DispatchSpawn(game_win);
-				SetVariantInt(3);
-				AcceptEntityInput(game_win,"SetTeam",-1,-1,0);
-				AcceptEntityInput(game_win,"RoundWin",-1,-1,0);*/
 			}
 		}
 	}
@@ -358,24 +386,31 @@ public int UpgradesHandler(NativeVote vote, MenuAction action, int param1, int p
 {
 	switch (action)
 	{
-		case MenuAction_End: {
+		case MenuAction_End:
+		{
 			vote.Close();
 		}
-		case MenuAction_VoteCancel: {
+		case MenuAction_VoteCancel:
+		{
 			if (param1 == VoteCancel_NoVotes)
+			{
 				vote.DisplayFail(NativeVotesFail_NotEnoughVotes);
-			else
+			} else {
 				vote.DisplayFail(NativeVotesFail_Generic);
+			}
 		}
 		
-		case MenuAction_VoteEnd: {
+		case MenuAction_VoteEnd:
+		{
 			if (param1 == NATIVEVOTES_VOTE_NO)
+			{
 				vote.DisplayFail(NativeVotesFail_Loses);
-			else {
-				if (extramodded_set){
+			} else {
+				
+				if (extramodded_set)
+				{
 					vote.DisplayPass("Reverting default upgrades");
-				}
-				else {
+				} else {
 					vote.DisplayPass("Using extra modded upgrades");
 				}
 				CreateTimer(0.0, TimerPutUpgrades, 1);
@@ -388,25 +423,32 @@ public int MVM10Handler(NativeVote vote, MenuAction action, int param1, int para
 {
 	switch (action)
 	{
-		case MenuAction_End: {
+		case MenuAction_End:
+		{
 			vote.Close();
 		}
-		case MenuAction_VoteCancel: {
+		case MenuAction_VoteCancel:
+		{
 			if (param1 == VoteCancel_NoVotes)
+			{
 				vote.DisplayFail(NativeVotesFail_NotEnoughVotes);
-			else
+			} else {
 				vote.DisplayFail(NativeVotesFail_Generic);
+			}
 		}
 		
-		case MenuAction_VoteEnd: {
+		case MenuAction_VoteEnd:
+		{
 			if (param1 == NATIVEVOTES_VOTE_NO)
+			{
 				vote.DisplayFail(NativeVotesFail_Loses);
-			else {
-				if (mvm10_set){
+			} else {
+				
+				if (mvm10_set)
+				{
 					vote.DisplayPass("Reverting to 6 max players");
 					SetConVarInt(FindConVar("sig_mvm_red_team_max_players"), 0);
-				}
-				else {
+				} else {
 					vote.DisplayPass("Enabling 10 max players");
 					SetConVarInt(FindConVar("sig_mvm_red_team_max_players"), 10);
 				}
