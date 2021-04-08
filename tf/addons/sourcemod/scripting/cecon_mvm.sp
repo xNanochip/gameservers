@@ -56,11 +56,6 @@ ArrayList m_hItemIndexes;
 
 public void OnPluginStart()
 {
-	RegServerCmd("ce_mvm_equip_itemname", cMvMEquipItemName, "");
-	RegServerCmd("ce_mvm_get_itemdef_id", cMvMGetItemDefID, "");
-	RegServerCmd("ce_mvm_set_attribute", cMvMSetEntityAttribute, "");
-
-	ce_mvm_check_itemname_cvar = CreateConVar("ce_mvm_check_itemname_cvar", "-1", "", FCVAR_PROTECTED);
 	ce_mvm_show_game_time = CreateConVar("ce_mvm_show_game_time", "1", "Enables game time summary to be shown in chat");
 	ce_mvm_switch_to_pubs_timer = CreateConVar("ce_mvm_switch_to_pubs_timer", "300", "Switch to pubs after this amount of time.");
 
@@ -454,23 +449,12 @@ public Action cSetWave(int client, int args)
 /**
 *	Purpose: 	ce_mvm_equip_itemname command.
 */
-public Action cMvMEquipItemName(int args)
+public Action SIG_OnGiveCustomItem(int client, const char[] itemname)
 {
-	char sArg1[11], sArg2[128];
-	GetCmdArg(1, sArg1, sizeof(sArg1));
-	GetCmdArg(2, sArg2, sizeof(sArg2));
-	int iClient = StringToInt(sArg1);
-
-	if (!StrEqual(sArg2, ""))
+	CEItem xItem;
+	if(CEconItems_CreateNamedItem(xItem, itemname, 6, null))
 	{
-		if (IsClientValid(iClient))
-		{
-			CEItem xItem;
-			if(CEconItems_CreateNamedItem(xItem, sArg2, 6, null))
-			{
-				CEconItems_GiveItemToClient(iClient, xItem);
-			}
-		}
+		CEconItems_GiveItemToClient(client, xItem);
 	}
 
 	return Plugin_Handled;
@@ -479,27 +463,21 @@ public Action cMvMEquipItemName(int args)
 /**
 *	Purpose: 	ce_mvm_get_itemdef_id command.
 */
-public Action cMvMGetItemDefID(int args)
+public Action SIG_GetCustomItemID(const char[] itemname, const char[] classname, int &base_item_id)
 {
-	char sArg1[128];
-	GetCmdArg(1, sArg1, sizeof(sArg1));
-
-	char sArg2[128];
-	GetCmdArg(2, sArg2, sizeof(sArg2));
 	
-	PrintToChatAll("received coomand %s %s", sArg1, sArg2);
-	if (!StrEqual(sArg1, ""))
+	PrintToChatAll("received coomand %s %s", itemname, classname);
+	if (!StrEqual(itemname, ""))
 	{
 		CEItemDefinition xDef;
-		if(CEconItems_GetItemDefinitionByName(sArg1, xDef))
+		if(CEconItems_GetItemDefinitionByName(itemname, xDef))
 		{
-			ce_mvm_check_itemname_cvar.SetInt(GetDefinitionBaseIndex(xDef.m_iIndex));
-			PrintToChatAll("got item def %d", ce_mvm_check_itemname_cvar.IntValue);
-			PrintToServer("got item def %d", ce_mvm_check_itemname_cvar.IntValue);
+			base_item_id = GetDefinitionBaseIndex(xDef.m_iIndex);
+			PrintToChatAll("got item def %d", base_item_id);
+			PrintToServer("got item def %d", base_item_id);
 			return Plugin_Handled;
 		}
 	}
-	ce_mvm_check_itemname_cvar.SetInt(-1);
 
 	return Plugin_Handled;
 }
@@ -507,18 +485,9 @@ public Action cMvMGetItemDefID(int args)
 /**
 *	Purpose: 	ce_mvm_set_attribute command.
 */
-public Action cMvMSetEntityAttribute(int args)
+public Action SIG_GetCustomItemID(int entity, const char[] attrib, const char[] value)
 {
-	char sName[128], sEntity[11], sValue[11];
-	GetCmdArg(1, sEntity, sizeof(sEntity));
-	int iEntity = StringToInt(sEntity);
-
-	GetCmdArg(2, sName, sizeof(sName));
-	GetCmdArg(3, sValue, sizeof(sValue));
-
-	if (!IsValidEntity(iEntity))return Plugin_Handled;
-
-	CEconItems_SetEntityAttributeString(iEntity, sName, sValue);
+	CEconItems_SetEntityAttributeString(entity, attrib, value);
 
 	return Plugin_Handled;
 }
