@@ -152,6 +152,8 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 		
 		int iWear = TF2Wear_CreateWearable(client, false, sModel);
 		SetEntProp(iWear, Prop_Send, "m_iItemDefinitionIndex", hDef.m_iBaseIndex);
+		SetEntProp(iWear, Prop_Send, "m_iEntityQuality", item.m_nQuality);
+		SetEntProp(iWear, Prop_Send, "m_bInitialized", 1);
 		
 		return iWear;
 	}

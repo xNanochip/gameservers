@@ -108,6 +108,11 @@ deploy-brz:
     - brzpub
     <<: *deploy_template
 
+deploy-chicago:
+    tags:
+    - chicago
+    <<: *deploy_template
+
 deploy-fastdl:
     stage: deploy
     script:

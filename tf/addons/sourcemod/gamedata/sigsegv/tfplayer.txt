@@ -758,7 +758,11 @@
 					type "sym"
 					sym  "_ZN9CTFPlayer35IsAllowedToInitiateTauntWithPartnerEPK13CEconItemViewPci"
 				}
-				
+				"CTFPlayer::InputIgnitePlayer"
+				{
+					type "sym"
+					sym  "_ZN9CTFPlayer17InputIgnitePlayerER11inputdata_t"
+				}
 			//	"GetTFConditionName"
 			//	{
 			//		type "sym"

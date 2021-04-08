@@ -58,12 +58,8 @@ ConVar ce_quest_background_enabled;
 
 bool m_bUIEnabled[MAXPLAYERS + 1];
 
-Handle g_CTFCookieQuestsShowDisplay;
-
 public void OnPluginStart()
 {
-    g_CTFCookieQuestsShowDisplay = RegClientCookie("CTFCookieQuestsShowDisplay", "Whether to show contracts HUD or not.", CookieAccess_Public);
-    
 	RegServerCmd("ce_quest_dump", cDump, "");
 	RegServerCmd("ce_quest_activate", cQuestActivate, "");
 
@@ -71,8 +67,6 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_quest", cQuestPanel);
 	RegConsoleCmd("sm_contract", cQuestPanel);
 	
-	RegConsoleCmd("ce_questhud_enabled", cQuestUI);
-
 	OnLateLoad();
 
 	CreateTimer(QUEST_HUD_REFRESH_RATE, Timer_HudRefresh, _, TIMER_REPEAT);
@@ -683,7 +677,6 @@ public void OnClientDisconnect(int client)
 
 public void PrepareClientData(int client)
 {
-	GetClientQuestVisibility(client);
 	RequestClientSteamFriends(client);
 	RequestClientContractProgress(client);
 }
@@ -1615,7 +1608,7 @@ public void AddQuestUpdateBatch(int client, int quest, int objective, int points
 		CEQuestUpdateBatch xBatch;
 		m_QuestUpdateBatches.GetArray(i, xBatch);
 
-		if (StrEqual(xBatch.m_sSteamID, sSteamID))continue;
+		if (!StrEqual(xBatch.m_sSteamID, sSteamID))continue;
 		if (xBatch.m_iQuest != quest)continue;
 		if (xBatch.m_iObjective != objective)continue;
 
@@ -1695,58 +1688,4 @@ public bool QuestIsListeningForEvent(CEQuestDefinition xQuest, const char[] even
 	Format(sEvent, sizeof(sEvent), "%s;", event);
 
 	return StrContains(xQuest.m_sAggregatedEvents, sEvent, false) != -1;
-}
-
-public bool SetClientQuestVisibility(int client, bool visible)
-{
-    if (AreClientCookiesCached(client))
-    {
-        char sValue[8];
-        IntToString(visible ? 1 : 0, sValue, sizeof(sValue));
-
-		SetClientCookie(client, g_CTFCookieQuestsShowDisplay, sValue);
-		
-		GetClientQuestVisibility(client);
-    }
-}
-
-public Action cQuestUI(int client, int args)
-{
-	char sCmdName[32];
-	GetCmdArg(0, sCmdName, sizeof(sCmdName));
-	
-	if(args > 0)
-	{
-		char sArg1[2];
-		GetCmdArg(1, sArg1, sizeof(sArg1));
-	
-		bool bEnabled = StringToInt(sArg1) > 0;
-		SetClientQuestVisibility(client, bEnabled);
-	} else {
-		PrintToConsole(client, "\"%s\" = \"%d\"", sCmdName, m_bUIEnabled[client] ? 1 : 0);
-		PrintToConsole(client, " - Whether to show contracts UI or not.", sCmdName, m_bUIEnabled ? 1 : 0);
-	}
-	
-	
-	return Plugin_Handled;
-}
-
-public bool GetClientQuestVisibility(int client)
-{	
-    if (AreClientCookiesCached(client))
-    {
-        char sValue[8];
-		GetClientCookie(client, g_CTFCookieQuestsShowDisplay, sValue, sizeof(sValue));
-		
-		if(StrEqual(sValue, ""))
-		{
-			SetClientQuestVisibility(client, true);
-			return true;
-		} else {
-			m_bUIEnabled[client] = StrEqual(sValue, "1");
-		}
-		
-    }
-    
-    return true;
 }

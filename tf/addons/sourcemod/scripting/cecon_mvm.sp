@@ -2,6 +2,7 @@
 
 #pragma semicolon 1
 #pragma newdecls required
+#pragma dynamic 1048576
 
 #include <sdktools>
 #include <sdkhooks>
@@ -375,7 +376,11 @@ public void OnMvMGameEnd()
 
 public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
 {
-	LoadSigsegvExtension();
+	// Not perfect but simplest way to do at this stage of map loading
+	if (strncmp(mapName, "mvm_", 4) == 0)
+	{
+		LoadSigsegvExtension();
+	}
 }
 
 public void OnMapStart()
@@ -421,6 +426,7 @@ public Action Timer_BackToPubs(Handle timer, any data)
 public void LoadSigsegvExtension()
 {
 	ServerCommand("sm exts load sigsegv.ext.2.tf2");
+	ServerExecute();
 }
 
 public bool TF2MvM_IsPlayingMvM()
