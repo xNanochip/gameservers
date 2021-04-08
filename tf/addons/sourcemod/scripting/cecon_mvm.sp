@@ -463,10 +463,10 @@ public Action SIG_OnGiveCustomItem(int client, const char[] itemname)
 /**
 *	Purpose: 	ce_mvm_get_itemdef_id command.
 */
-public Action SIG_GetCustomItemID(const char[] itemname, const char[] classname, int &base_item_id)
+public Action SIG_GetCustomItemID(const char[] itemname, int classindex, int& base_item_id)
 {
 	
-	PrintToChatAll("received coomand %s %s", itemname, classname);
+	PrintToChatAll("received coomand %s %d %d", itemname, classindex, base_item_id);
 	if (!StrEqual(itemname, ""))
 	{
 		CEItemDefinition xDef;
