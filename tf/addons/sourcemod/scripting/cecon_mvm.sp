@@ -493,9 +493,9 @@ public Action cMvMGetItemDefID(int args)
 		CEItemDefinition xDef;
 		if(CEconItems_GetItemDefinitionByName(sArg1, xDef))
 		{
-			
-			PrintToChatAll("got item def %d", xDef.m_iIndex);
 			ce_mvm_check_itemname_cvar.SetInt(GetDefinitionBaseIndex(xDef.m_iIndex));
+			PrintToChatAll("got item def %d", ce_mvm_check_itemname_cvar.IntValue);
+			PrintToServer("got item def %d", ce_mvm_check_itemname_cvar.IntValue);
 			return Plugin_Handled;
 		}
 	}
