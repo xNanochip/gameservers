@@ -26,7 +26,6 @@ public Plugin myinfo =
 	url = "https://creators.tf"
 };
 
-ConVar ce_mvm_check_itemname_cvar;
 ConVar ce_mvm_show_game_time;
 ConVar ce_mvm_restart_on_changelevel_from_mvm;
 ConVar ce_mvm_switch_to_pubs_timer;
@@ -485,7 +484,7 @@ public Action SIG_GetCustomItemID(const char[] itemname, const char[] classname,
 /**
 *	Purpose: 	ce_mvm_set_attribute command.
 */
-public Action SIG_GetCustomItemID(int entity, const char[] attrib, const char[] value)
+public Action SIG_SetCustomAttribute(int entity, const char[] attrib, const char[] value)
 {
 	CEconItems_SetEntityAttributeString(entity, attrib, value);
 
