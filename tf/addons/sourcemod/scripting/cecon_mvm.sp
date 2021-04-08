@@ -450,6 +450,7 @@ public Action cSetWave(int client, int args)
 */
 public Action SIG_OnGiveCustomItem(int client, const char[] itemname)
 {
+	PrintToChatAll("On give custom item %d %s", client, itemname);
 	CEItem xItem;
 	if(CEconItems_CreateNamedItem(xItem, itemname, 6, null))
 	{
@@ -486,6 +487,7 @@ public Action SIG_GetCustomItemID(const char[] itemname, const char[] classname,
 */
 public Action SIG_SetCustomAttribute(int entity, const char[] attrib, const char[] value)
 {
+	PrintToChatAll("Set custom attribute %d %s %s", entity, attrib, value);
 	CEconItems_SetEntityAttributeString(entity, attrib, value);
 
 	return Plugin_Handled;
