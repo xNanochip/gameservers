@@ -483,13 +483,18 @@ public Action cMvMGetItemDefID(int args)
 {
 	char sArg1[128];
 	GetCmdArg(1, sArg1, sizeof(sArg1));
-	
 
+	char sArg2[128];
+	GetCmdArg(2, sArg2, sizeof(sArg2));
+	
+	PrintToChatAll("received coomand %s %s", sArg1, sArg2);
 	if (!StrEqual(sArg1, ""))
 	{
 		CEItemDefinition xDef;
 		if(CEconItems_GetItemDefinitionByName(sArg1, xDef))
 		{
+			
+			PrintToChatAll("got item def %d", xDef.m_iIndex);
 			ce_mvm_check_itemname_cvar.SetInt(GetDefinitionBaseIndex(xDef.m_iIndex));
 			return Plugin_Handled;
 		}
