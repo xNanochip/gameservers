@@ -450,7 +450,6 @@ public Action cSetWave(int client, int args)
 */
 public Action SIG_OnGiveCustomItem(int client, const char[] itemname)
 {
-	PrintToChatAll("On give custom item %d %s", client, itemname);
 	CEItem xItem;
 	if(CEconItems_CreateNamedItem(xItem, itemname, 6, null))
 	{
@@ -465,16 +464,12 @@ public Action SIG_OnGiveCustomItem(int client, const char[] itemname)
 */
 public Action SIG_GetCustomItemID(const char[] itemname, int classindex, int& base_item_id)
 {
-	
-	PrintToChatAll("received coomand %s %d %d", itemname, classindex, base_item_id);
 	if (!StrEqual(itemname, ""))
 	{
 		CEItemDefinition xDef;
 		if(CEconItems_GetItemDefinitionByName(itemname, xDef))
 		{
 			base_item_id = GetDefinitionBaseIndex(xDef.m_iIndex);
-			PrintToChatAll("got item def %d", base_item_id);
-			PrintToServer("got item def %d", base_item_id);
 			return Plugin_Handled;
 		}
 	}
@@ -487,7 +482,6 @@ public Action SIG_GetCustomItemID(const char[] itemname, int classindex, int& ba
 */
 public Action SIG_SetCustomAttribute(int entity, const char[] attrib, const char[] value)
 {
-	PrintToChatAll("Set custom attribute %d %s %s", entity, attrib, value);
 	CEconItems_SetEntityAttributeString(entity, attrib, value);
 
 	return Plugin_Handled;
