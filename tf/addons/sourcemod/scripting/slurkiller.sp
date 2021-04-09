@@ -17,7 +17,7 @@ public Plugin myinfo =
     name             = "Slur Killer",
     author           = "steph&nie",
     description      = ".",
-    version          = "1.1.4",
+    version          = "1.2.0",
     url              = "https://sappho.io/"
 };
 
@@ -26,6 +26,7 @@ Regex nword;
 Regex fslur;
 Regex tslur;
 Regex cslur;
+Regex nazi;
 
 bool hasClientBeenWarned[MAXPLAYERS+1];
 
@@ -33,10 +34,11 @@ public void OnPluginStart()
 {
     // set up regex
     // regex modified from: https://github.com/Blank-Cheque/Slurs
-    nword  = new Regex("[n|ñ]+[i!\\|1a4l]+[gq4]{2,}([ea@4o03r]+|\b)",               PCRE_CASELESS | PCRE_MULTILINE);
-    fslur  = new Regex("f+[a@4]+(g+|q{2,}|qg+|gq+)",                                PCRE_CASELESS | PCRE_MULTILINE);
-    tslur  = new Regex("(tr([ao0]+){2}n)|t+r+[a4o0@]+n+([il1][e3]+|y+|[e3]r+)s?",   PCRE_CASELESS | PCRE_MULTILINE);
-    cslur  = new Regex("\\bc[o0]{2}ns?\\b",                                         PCRE_CASELESS | PCRE_MULTILINE);
+    nword  = new Regex("[n|ñ]+[i!\\|1a4l]+[gq4]{2,}([ea@4o03r]+|\b)",                    PCRE_CASELESS | PCRE_MULTILINE);
+    fslur  = new Regex("f+[a@4]+(g+|q{2,}|qg+|gq+)",                                     PCRE_CASELESS | PCRE_MULTILINE);
+    tslur  = new Regex("(tr([ao0]+){2}n)|t+r+[a4o0@]+n+([il1][e3]+|y+|[e3]r+)s?",        PCRE_CASELESS | PCRE_MULTILINE);
+    cslur  = new Regex("\\bc[o0]{2}ns?\\b",                                              PCRE_CASELESS | PCRE_MULTILINE);
+    nazi   = new Regex("(ᛋᛋ|atomwaffen|\b1488\b|卐|卍|⚡⚡|✠|⊕|white pride|kekistan)",       PCRE_CASELESS | PCRE_MULTILINE);
 }
 
 public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArgs)
@@ -45,6 +47,14 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
     if (!IsValidClient(Cl))
     {
         return Plugin_Continue;
+    }
+
+    if (MatchRegex(nazi, sArgs) > 0)
+    {
+        char reason[512];
+        Format(reason, sizeof(reason), "AutoBanned for nazism, user said: %s", sArgs);
+        SBPP_BanPlayer(0, Cl, 0, reason);
+        return Plugin_Handled;
     }
 
     if
