@@ -4065,6 +4065,44 @@
 					lib  "engine"
 					sym  "_Z8CRC_FilePjPKc"
 				}
+				"CTFMedigunShield::RemoveShield"
+				{
+					type "sym"
+					sym  "_ZN16CTFMedigunShield12RemoveShieldEv"
+				}
+				"CTFMedigunShield::UpdateShieldPosition"
+				{
+					type "sym"
+					sym  "_ZN16CTFMedigunShield20UpdateShieldPositionEv"
+				}
+				"CTFMedigunShield::ShieldThink"
+				{
+					type "sym"
+					sym  "_ZN16CTFMedigunShield11ShieldThinkEv"
+				}
+				"UTIL_PlayerDecalTrace"
+				{
+					type "sym"
+					sym  "_Z21UTIL_PlayerDecalTraceP10CGameTracei"
+				}
+				"TE_PlayerDecal"
+				{
+					type "sym"
+					sym  "_Z14TE_PlayerDecalR16IRecipientFilterfPK6Vectorii"
+				}
+				"CBaseClient::FillUserInfo"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN11CBaseClient12FillUserInfoER13player_info_s"
+				}
+				"CBaseServer::UserInfoChanged"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN11CBaseServer15UserInfoChangedEi"
+				}
+				
 			}
 			
 			"addrs_group"

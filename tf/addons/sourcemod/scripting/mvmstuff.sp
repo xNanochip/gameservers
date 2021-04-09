@@ -509,6 +509,12 @@ public Action Command_RestartGame(int client, int args)
 bool firstfakeballspawn = true;
 public void OnMapStart()
 {
+	if (GameRules_GetProp("m_bPlayingMannVsMachine") == 0) {
+		ServerCommand("sm plugins unload mvmstuff");
+		return;
+	}
+
+
 	ResetAllStats();
 	SetGameDescription();
 	firstrestart = false;
