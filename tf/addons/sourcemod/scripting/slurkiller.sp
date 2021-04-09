@@ -17,7 +17,7 @@ public Plugin myinfo =
     name             = "Slur Killer",
     author           = "steph&nie",
     description      = ".",
-    version          = "1.2.0",
+    version          = "1.2.1",
     url              = "https://sappho.io/"
 };
 
@@ -34,11 +34,11 @@ public void OnPluginStart()
 {
     // set up regex
     // regex modified from: https://github.com/Blank-Cheque/Slurs
-    nword  = new Regex("[n|ñ]+[i!\\|1a4l]+[gq4]{2,}([ea@4o03r]+|\b)",                    PCRE_CASELESS | PCRE_MULTILINE);
-    fslur  = new Regex("f+[a@4]+(g+|q{2,}|qg+|gq+)",                                     PCRE_CASELESS | PCRE_MULTILINE);
-    tslur  = new Regex("(tr([ao0]+){2}n)|t+r+[a4o0@]+n+([il1][e3]+|y+|[e3]r+)s?",        PCRE_CASELESS | PCRE_MULTILINE);
-    cslur  = new Regex("\\bc[o0]{2}ns?\\b",                                              PCRE_CASELESS | PCRE_MULTILINE);
-    nazi   = new Regex("(ᛋᛋ|atomwaffen|\b1488\b|卐|卍|⚡⚡|✠|⊕|white pride|kekistan)",       PCRE_CASELESS | PCRE_MULTILINE);
+    nword  = new Regex("[n|ñ]+[i!\\|1a4l]+[gq4]{2,}([ea@4o03r]+|\b)",                    PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
+    fslur  = new Regex("f+[a@4]+(g+|q{2,}|qg+|gq+)",                                     PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
+    tslur  = new Regex("(tr([ao0]+){2}n)|t+r+[a4o0@]+n+([il1][e3]+|y+|[e3]r+)s?",        PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
+    cslur  = new Regex("\\bc[o0]{2}ns?\\b",                                              PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
+    nazi   = new Regex("(ᛋᛋ|atomwaffen|\b1488\b|卐|卍|⚡⚡|✠|⊕|white pride|kekistan)", PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
 }
 
 public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArgs)
