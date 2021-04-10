@@ -34,11 +34,11 @@ public void OnPluginStart()
 {
     // set up regex
     // regex modified from: https://github.com/Blank-Cheque/Slurs
-    nword  = new Regex("[n|ñ]+[i!\\|1a4l]+[gq4]{2,}([ea@4o03r]+|\b)",                    PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
-    fslur  = new Regex("f+[a@4]+[gq]+(\b|[o0a]+t+)",                                     PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
-    tslur  = new Regex("(tr([ao0]+){2}n)|t+r+[a4o0@]+n+([il1][e3]+|y+|[e3]r+)s?",        PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
-    cslur  = new Regex("\\bc[o0]{2}ns?\\b",                                              PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
-    nazi   = new Regex("(ᛋᛋ|atomwaffen|1488|卐|卍|⚡⚡|white pride|kekistan)",           PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
+    nword  = new Regex("[n|ñ]+[i!\\|1al]+[gq]{2,}([ea@o03r]+|\b)",                    PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
+    fslur  = new Regex("f+[a@4]+[gq]+(\b|[o0a]+t+)",                                  PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
+    tslur  = new Regex("(tr[ao0]{2,}n)|t+r+[a4@]n+([il1][e3]+|y+|[e3]r+)s?",          PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
+    cslur  = new Regex("\\bc[o0]{2}ns?\\b",                                           PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
+    nazi   = new Regex("(ᛋᛋ|atomwaffen|1488|卐|卍|⚡⚡|white pride|kekistan)",      PCRE_CASELESS | PCRE_MULTILINE | PCRE_UTF8);
 }
 
 public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArgs)
