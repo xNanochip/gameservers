@@ -33,6 +33,7 @@ koth_synthetic_rc6a
 pl_badwater_pro_v12
 pl_barnblitz_pro6
 pl_borneo
+pl_cactuscanyon
 pl_enclosure_final
 pl_fifthcurve_rc1
 pl_pier
