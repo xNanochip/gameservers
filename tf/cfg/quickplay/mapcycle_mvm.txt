@@ -19,7 +19,7 @@ mvm_hoovydam_b8
 mvm_production_rc6
 mvm_rustvalley_rc3a
 mvm_seabed_b6
-mvm_sharp_rc6a
+mvm_sharp_rc8
 mvm_silentsky_rc4
 mvm_swirl_rc1
 mvm_tensai_rc3
