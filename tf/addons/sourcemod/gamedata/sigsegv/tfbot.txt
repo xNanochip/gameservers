@@ -380,6 +380,11 @@
 					type "sym"
 					sym  "_ZN6CTFBot14UpdateOnRemoveEv"
 				}
+				"CTFBot::UpdateLookingAroundForEnemies"
+				{
+					type "sym"
+					sym  "_ZN6CTFBot29UpdateLookingAroundForEnemiesEv"
+				}
 				
 			}
 		}

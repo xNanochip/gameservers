@@ -56,8 +56,6 @@ bool m_bIsObjectiveMarked[MAXPLAYERS + 1][MAX_OBJECTIVES + 1];
 ConVar ce_quest_friend_sharing_enabled;
 ConVar ce_quest_background_enabled;
 
-bool m_bUIEnabled[MAXPLAYERS + 1];
-
 public void OnPluginStart()
 {
 	RegServerCmd("ce_quest_dump", cDump, "");
@@ -802,7 +800,6 @@ public Action Timer_HudRefresh(Handle timer, any data)
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientReady(i))continue;
-		if (!m_bUIEnabled[i])continue;
 
 		CEQuestDefinition xQuest;
 		if(GetClientActiveQuest(i, xQuest))
@@ -1449,10 +1446,7 @@ public bool AddPointsToClientObjective(int client, CEQuestObjectiveDefinition xO
 				
 				if(xQuest.m_bBackground)
 				{
-					if(m_bUIEnabled[client])
-					{
-						PrintHintText(client, "[%d/%d] %s (%s) +%d%s", xProgress.m_iProgress[iObjectiveIndex], iLimit, xObjective.m_sName, xQuest.m_sName, xObjective.m_iPoints, xQuest.m_sPostfix);
-					}
+					PrintHintText(client, "[%d/%d] %s (%s) +%d%s", xProgress.m_iProgress[iObjectiveIndex], iLimit, xObjective.m_sName, xQuest.m_sName, xObjective.m_iPoints, xQuest.m_sPostfix);
 					PrintToConsole(client, "* [%d/%d] %s (%s) +%d%s", xProgress.m_iProgress[iObjectiveIndex], iLimit, xObjective.m_sName, xQuest.m_sName, xObjective.m_iPoints, xQuest.m_sPostfix);
 				}
 
