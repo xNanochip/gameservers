@@ -28,6 +28,7 @@ public void OnPluginStart()
     RegConsoleCmd("sm_togglectfhats",   ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
     RegConsoleCmd("sm_togglehats",      ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
     RegConsoleCmd("sm_ctfhats",         ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
+    RegConsoleCmd("sm_nohats",          ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
 
     ctfHatsCookie = RegClientCookie("ctfHatsTransmitCookie_", "Cookie for determining if Creators.TF hats are visible to player or not.", CookieAccess_Public);
 }
