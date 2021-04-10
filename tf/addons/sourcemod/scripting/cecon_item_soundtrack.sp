@@ -45,7 +45,7 @@ enum struct Event_t
 
 	bool m_bForceStart;
 	bool m_bForceStop;
-	
+
     bool m_bFireOnce;
     bool m_bSkipPost;
 
@@ -82,7 +82,7 @@ Handle m_hTimer[MAXPLAYERS + 1];
 
 int m_iQueueLength[MAXPLAYERS + 1];
 int m_iQueuePointer[MAXPLAYERS + 1];
-Sample_t m_hQueue[MAXPLAYERS + 1][16];
+Sample_t m_hQueue[MAXPLAYERS + 1][32];
 Sample_t m_hPreSample[MAXPLAYERS + 1];
 Sample_t m_hPostSample[MAXPLAYERS + 1];
 
@@ -108,16 +108,16 @@ public void OnPluginStart()
 	HookEvent("teamplay_round_win", teamplay_round_win);
 	HookEvent("teamplay_point_captured", teamplay_point_captured);
 	HookEvent("mvm_wave_complete", mvm_wave_complete);
-	
+
 	CreateTimer(0.5, Timer_EscordProgressUpdate, _, TIMER_REPEAT);
 	RegServerCmd("ce_soundtrack_setkit", cSetKit, "");
 	RegServerCmd("ce_soundtrack_dump", cDump, "");
 
 	HookEntityOutput("team_round_timer", "On30SecRemain", OnEntityOutput);
 	HookEntityOutput("team_round_timer", "On1MinRemain", OnEntityOutput);
-	
+
 	AddNormalSoundHook(view_as<NormalSHook>(OnSoundHook));
-	
+
 	CreateTimer(MVM_DANGER_CHECK_INTERVAL, Timer_MvMDangerCheck, _, TIMER_REPEAT);
 }
 
@@ -133,11 +133,11 @@ float m_flBombCalmDownAfter;
 
 public Action Timer_MvMDangerCheck(Handle timer, any data)
 {
-	if(TF2MvM_IsPlayingMvM())	
+	if(TF2MvM_IsPlayingMvM())
 	{
 		bool bIsCritical = false;
 		bool bDanger = MvM_IsInDanger(bIsCritical);
-		
+
 		if(bDanger != m_bWasInDangerBefore)
 		{
 			if(bDanger)
@@ -166,25 +166,25 @@ public bool MvM_IsInDanger(bool &critical)
 {
 	critical = false;
 	if (!TF2MvM_IsPlayingMvM())return false;
-	
+
 	float flTime = GetEngineTime();
-	
+
 	int iHatch = FindEntityByClassname(-1, "func_capturezone");
 	if(iHatch > -1)
 	{
 		float vecPosHatch[3], vecPosHatchMins[3], vecPosHatchMaxs[3];
 		GetEntPropVector(iHatch, Prop_Send, "m_vecMins", vecPosHatchMins);
 		GetEntPropVector(iHatch, Prop_Send, "m_vecMaxs", vecPosHatchMaxs);
-		
+
 		for (int i = 0; i < 3; i++)vecPosHatch[i] = vecPosHatchMins[i] + (vecPosHatchMaxs[i] - vecPosHatchMins[i]) / 2;
-		
+
 		// Check if a tank is near the hatch.
 		int iTank = -1;
 		while((iTank = FindEntityByClassname(iTank, "tank_boss")) != -1)
 		{
 			float vecPosTank[3];
 			GetEntPropVector(iTank, Prop_Send, "m_vecOrigin", vecPosTank);
-		
+
 			float flDistance = GetVectorDistance(vecPosHatch, vecPosTank, false);
 			if(flDistance < MVM_BOMB_DANGER_RADIUS)
 			{
@@ -208,14 +208,14 @@ public bool MvM_IsInDanger(bool &critical)
 				{
 					float vecPosFlag[3];
 					GetClientAbsOrigin(iOwner, vecPosFlag);
-				
+
 					float flDistance = GetVectorDistance(vecPosHatch, vecPosFlag, false);
 					if(flDistance < MVM_BOMB_DANGER_RADIUS)
 					{
 						if(flDistance < MVM_BOMB_CRITICAL_RADIUS)
 						{
 							critical = true;
-						}	
+						}
 						m_flBombCalmDownAfter = flTime + MVM_BOMB_CALM_DELAY;
 						return true;
 					}
@@ -223,9 +223,9 @@ public bool MvM_IsInDanger(bool &critical)
 			}
 		}
 	}
-	
+
 	if (m_flBombCalmDownAfter > flTime)return true;
-	
+
 	return false;
 }
 
@@ -251,7 +251,7 @@ public void MvM_DisableDangerMode()
 }
 
 //---------------------------------------------------------------------------------------
-// Purpose:	Fired when a sound if played. 
+// Purpose:	Fired when a sound if played.
 //---------------------------------------------------------------------------------------
 public Action OnSoundHook(int[] clients, int &numClients, char[] sample, int &entity, int &channel, float &volume, int &level, int &pitch, int &flags, char[] soundEntry, int &seed)
 {
@@ -265,7 +265,7 @@ public Action OnSoundHook(int[] clients, int &numClients, char[] sample, int &en
 			}
 		}
 	}
-	
+
 	if(StrEqual(sample, ")mvm/mvm_tank_explode.wav"))
 	{
 		for (int i = 1; i <= MaxClients; i++)
@@ -310,13 +310,13 @@ public void FlushSchema()
 public void ParseEconomySchema(KeyValues hConf)
 {
 	FlushSchema();
-	
+
 	m_hKitDefs = new ArrayList(sizeof(Soundtrack_t));
 	m_hEventDefs = new ArrayList(sizeof(Event_t));
 	m_hSampleDefs = new ArrayList(sizeof(Sample_t));
-	
+
 	if (hConf == null)return;
-	
+
 	if(hConf.JumpToKey("Items", false))
 	{
 		if(hConf.GotoFirstSubKey())
@@ -330,7 +330,7 @@ public void ParseEconomySchema(KeyValues hConf)
 			} while (hConf.GotoNextKey());
 		}
 	}
-	
+
 	hConf.Rewind();
 }
 
@@ -444,7 +444,7 @@ public void CEconItems_OnClientLoadoutUpdated(int client)
 public void UpdateClientSountrack(int client)
 {
 	int iMusicKitDefIndex = -1;
-	
+
 	int iCount = CEconItems_GetClientLoadoutSize(client, CEconLoadoutClass_General);
 	for (int i = 0; i <= iCount; i++)
 	{
@@ -454,7 +454,7 @@ public void UpdateClientSountrack(int client)
 			iMusicKitDefIndex = xItem.m_iItemDefinitionIndex;
 		}
 	}
-	
+
 	int iKitID = GetKitIndexByDefID(iMusicKitDefIndex);
 
 	if(iKitID != m_iMusicKit[client])
@@ -463,7 +463,7 @@ public void UpdateClientSountrack(int client)
 		{
 			PrintToChat(client, "\x01* Game soundtrack removed.");
 		} else {
-			
+
 			CEItemDefinition xDef;
 			if(CEconItems_GetItemDefinitionByIndex(iMusicKitDefIndex, xDef))
 			{
@@ -629,7 +629,7 @@ public Action teamplay_broadcast_audio(Event hEvent, const char[] szName, bool b
 	bool bWillOverride = false;
 	if (StrContains(sOldSound, "YourTeamWon") != -1)bWillOverride = true;
 	if (StrContains(sOldSound, "YourTeamLost") != -1)bWillOverride = true;
-	
+
 	if (!bWillOverride)return Plugin_Continue;
 
 	for (int i = 1; i < MaxClients; i++)
@@ -1065,7 +1065,7 @@ public void StopEventsForAll()
 public Action teamplay_round_win(Event hEvent, const char[] szName, bool bDontBroadcast)
 {
 	MvM_DisableDangerMode();
-	
+
 	int iWinReason = GetEventInt(hEvent, "winreason");
 	if(m_nPayloadStage == 2 && iWinReason == 1)
 	{
