@@ -4102,6 +4102,11 @@
 					lib  "engine"
 					sym  "_ZN11CBaseServer15UserInfoChangedEi"
 				}
+				"GetClassIndexFromString"
+				{
+					type "sym"
+					sym  "_Z23GetClassIndexFromStringPKci"
+				}
 				
 			}
 			
