@@ -113,7 +113,7 @@ deploy-chicago:
     - chicago
     <<: *deploy_template
 
-deploy-europe:
+deploy-europe2:
     tags:
     - eu2
     <<: *deploy_template
