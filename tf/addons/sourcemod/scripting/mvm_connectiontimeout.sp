@@ -21,6 +21,10 @@ ConVar cvTime;
 public void OnPluginStart()
 {
 	cvTime = CreateConVar("connectiontimeout_time", "300.0", "After a player is taking too long to connect, they will be kicked after this many seconds.");
+}
+
+public void OnMapStart()
+{
 	if (GameRules_GetProp("m_bPlayingMannVsMachine") == 0)
 	{
 		Handle plugin = GetMyHandle();
