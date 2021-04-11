@@ -113,6 +113,11 @@ deploy-chicago:
     - chicago
     <<: *deploy_template
 
+deploy-europe:
+    tags:
+    - eu2
+    <<: *deploy_template
+
 deploy-fastdl:
     stage: deploy
     script:
