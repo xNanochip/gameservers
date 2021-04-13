@@ -648,12 +648,30 @@ public void SendWaveCompletionTime(int wave, int seconds)
 
 	// Setting mission name.
 	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "mission", sPopFile);
+	
+	DataPack hPack = new DataPack();
+	hPack.WriteCell(wave);
+	hPack.WriteCell(seconds);
+	hPack.Reset();
 
-	Steam_SendHTTPRequest(hRequest, SendWaveCompletionTime_Callback);
+	Steam_SendHTTPRequest(hRequest, SendWaveCompletionTime_Callback, hPack);
 }
 
-public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
+public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code, any pack)
 {
+	DataPack hPack = pack;
+	
+	if(!success || code != HTTPStatusCode_OK)
+	{
+		
+		LogMessage("Updating wave information failed. Try again in a bit.");
+		CreateTimer(1.0, Timer_SendWaveAgain, hPack);
+		
+		return;
+	}
+		
+	delete hPack;
+	
 	// Getting response size.
 	int size = Steam_GetHTTPResponseBodySize(request);
 	char[] content = new char[size + 1];
@@ -674,6 +692,17 @@ public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool succ
 	{
 		OpenTourLootMsgToAll();
 	}
+}
+
+public Action Timer_SendWaveAgain(Handle timer, any data)
+{
+	DataPack hPack = data;
+	
+	int wave = hPack.ReadCell();
+	int time = hPack.ReadCell();
+	delete hPack;
+	
+	SendWaveCompletionTime(wave, time);
 }
 
 public void OpenTourLootMsgToAll()

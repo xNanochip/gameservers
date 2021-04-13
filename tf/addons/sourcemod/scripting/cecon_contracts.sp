@@ -1585,6 +1585,9 @@ enum struct CEQuestUpdateBatch
 	int m_iPoints;
 }
 
+bool m_bIsUpdatingBatch;
+bool m_bWasUpdatedWhileUpdating;
+
 ArrayList m_QuestUpdateBatches;
 
 public void AddQuestUpdateBatch(int client, int quest, int objective, int points)
@@ -1616,6 +1619,8 @@ public void AddQuestUpdateBatch(int client, int quest, int objective, int points
 	xBatch.m_iObjective = objective;
 	xBatch.m_iPoints 	= points;
 	m_QuestUpdateBatches.PushArray(xBatch);
+	
+	if (m_bIsUpdatingBatch)m_bWasUpdatedWhileUpdating = true;
 }
 
 public Action Timer_QuestUpdateInterval(Handle timer, any data)
@@ -1641,31 +1646,58 @@ public Action Timer_QuestUpdateInterval(Handle timer, any data)
 		IntToString(xBatch.m_iPoints, sValue, sizeof(sValue));
 
 		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sValue);
-		
-		m_QuestUpdateBatches.Erase(i);
-		i--;
 		iCount++;
 	}
 	
 	LogMessage("Sending a batch of %d quests. (%d left in the queue.)", iCount, m_QuestUpdateBatches.Length);
 
-	Steam_SendHTTPRequest(hRequest, QuestUpdate_Callback);
+	Steam_SendHTTPRequest(hRequest, QuestUpdate_Callback, iCount);
+	m_bIsUpdatingBatch = true;
+}
+
+public void QuestUpdate_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code, any count)
+{
+	m_bIsUpdatingBatch = false;
+	bool bUpdated = m_bWasUpdatedWhileUpdating;
+	m_bWasUpdatedWhileUpdating = false;
 	
+	Steam_ReleaseHTTPRequest(request);
+	int iCount = count;
+
+	// If request was not succesful, return.
+	if (!success || code != HTTPStatusCode_OK)
+	{
+		LogMessage("Sending batch request returned with %d error. Try to send the next time. (Buffer remaining: %d, Batches affected: %d)", code, m_QuestUpdateBatches.Length, iCount);
+		return;
+	}
+	
+	if (m_QuestUpdateBatches == null)return;
+
+	// Cool, we've updated everything.
+	
+	// If nothing has changed while we're making the request, remove the N batches at the bottom of the list.
+	if(!bUpdated)
+	{
+		// Remove the batch updates that we just 
+		for (int i = 0; i < iCount; i++)
+		{
+			if (i >= m_QuestUpdateBatches.Length)break;
+			
+			m_QuestUpdateBatches.Erase(i);
+			i--;
+			iCount--;
+		}
+	} else {	
+		LogMessage("Batch order has been updated while request was made. We are not sure if we can remove them now.");
+	}
+	
+	LogMessage("Succesfully updated %d batches. %d left in the queue.", count, m_QuestUpdateBatches.Length);
+	
+	// If it's empty - delete it.
 	if(m_QuestUpdateBatches.Length == 0)
 	{
 		delete m_QuestUpdateBatches;
 	}
-}
-
-public void QuestUpdate_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
-{
-	Steam_ReleaseHTTPRequest(request);
-
-	// If request was not succesful, return.
-	if (!success)return;
-	if (code != HTTPStatusCode_OK)return;
-
-	// Cool, we've updated everything.
 }
 
 public Action teamplay_round_win(Event event, const char[] name, bool dontBroadcast)

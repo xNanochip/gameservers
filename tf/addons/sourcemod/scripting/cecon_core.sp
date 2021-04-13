@@ -67,8 +67,6 @@ Handle 	g_CEcon_OnSchemaUpdated,	// Forward, that notifies the sub plugins, if t
 // When we generate a random event index, this value is used as the
 // maximum value.
 #define EVENT_UNIQUE_INDEX_MAX_INT 10000
-// Don't process more than X events per a frame.
-#define EVENT_MAX_EVENTS_PER_FRAME 3
 
 // Fired when a new client even is fired.
 Handle g_hOnClientEvent;
@@ -80,7 +78,8 @@ bool m_bIsEventQueueProcessed = false;
 ArrayList m_hEventsQueue;
 
 ConVar 	ce_events_queue_debug,
-		ce_events_log;
+		ce_events_log,
+		ce_events_per_frame;
 
 enum struct CEQueuedEvent
 {
@@ -125,6 +124,7 @@ public void OnPluginStart()
 	// ConVars
 	ce_coordinator_enabled = CreateConVar("ce_coordinator_enabled", "1", "If true, coordinator will be online.");
 	ce_credentials_filename = CreateConVar("ce_credentials_filename", "economy.cfg", "Filename of the econome config.");
+	ce_events_per_frame = CreateConVar("ce_events_per_frame", "2", "Don't process more than X events per a frame.");
 
 	HookConVarChange(ce_coordinator_enabled, ce_coordinator_enabled__CHANGED);
 	HookConVarChange(ce_credentials_filename, ce_credentials_filename__CHANGED);
@@ -1189,7 +1189,7 @@ public void ProcessNextEventsChunk()
 {
 	if(ce_events_queue_debug.BoolValue) LogMessage("%d events left.", m_hEventsQueue.Length);
 	// We only process this amount of events per a frame.
-	for (int i = 0; i < EVENT_MAX_EVENTS_PER_FRAME; i++)
+	for (int i = 0; i < ce_events_per_frame.IntValue; i++)
 	{
 		// We exceeded the queue, there's nothing there anymore.
 		if (m_hEventsQueue.Length < 1)break;

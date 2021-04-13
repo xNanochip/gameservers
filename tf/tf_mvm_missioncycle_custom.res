@@ -107,8 +107,8 @@
 		}
 		"21"
 		{
-			"map" 		"mvm_sharp_rc8"
-			"popfile" 	"mvm_sharp_rc8_adv_sudden_equinox"
+			"map" 		"mvm_sharp_rc9"
+			"popfile" 	"mvm_sharp_rc9_adv_sudden_equinox"
 		}
 		"22"
 		{
