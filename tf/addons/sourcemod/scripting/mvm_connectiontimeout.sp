@@ -42,7 +42,7 @@ public void OnClientConnected(int client)
 public Action Timer_ConnectionTimeout(Handle timer, any data)
 {	
 	int client = GetClientOfUserId(data);
-	if (!IsClientInGame(client))
+	if (client > 0 && client <= MaxClients && !IsClientInGame(client))
 	{
 		KickClient(client, "Connection timeout: creators.tf/assetpack");
 	}
