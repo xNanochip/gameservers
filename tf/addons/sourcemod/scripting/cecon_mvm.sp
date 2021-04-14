@@ -11,6 +11,7 @@
 #include <cecon_http>
 #include <tf2_stocks>
 #include <tf2motd>
+#include <regex>
 
 #define TF_TEAM_UNASSIGNED 0
 #define TF_TEAM_SPECTATOR 1
@@ -22,7 +23,7 @@ public Plugin myinfo =
 	name = "Creators.TF - Mann vs Machines",
 	author = "Creators.TF Team",
 	description = "Creators.TF - Mann vs Machines",
-	version = "1.00",
+	version = "1.01",
 	url = "https://creators.tf"
 };
 
@@ -45,6 +46,8 @@ bool m_bWeJustFailed;
 
 char m_sLastTourLootHash[128];
 
+Regex dhooksRegex;
+Regex numbersRegex;
 
 enum struct CEItemBaseIndex
 {
@@ -65,7 +68,7 @@ public void OnPluginStart()
 
 	HookEvent("teamplay_round_win", teamplay_round_win);
 	HookEvent("teamplay_round_start", teamplay_round_start);
-	
+
 	HookEvent("player_changeclass", player_changeclass);
 
 	RegConsoleCmd("sm_loot", cLoot, "Opens the latest Tour Loot page");
@@ -141,7 +144,7 @@ public void ParseEconomySchema(KeyValues hSchema)
 		}
 	}
 
-    // Make sure we do that every time
+	// Make sure we do that every time
 	hSchema.Rewind();
 
 }
@@ -318,7 +321,7 @@ public Action player_changeclass(Event hEvent, const char[] szName, bool bDontBr
 public Action mvm_mission_complete(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	UpdateSteamGameName();
-	
+
 	CreateTimer(10.0, Timer_RestartMvMGame);
 }
 
@@ -379,6 +382,9 @@ public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
 
 public void OnMapStart()
 {
+	dhooksRegex  = CompileRegex("\\[\\d+\\] DHooks");
+	numbersRegex = CompileRegex("\\d+");
+
 	if(TF2MvM_IsPlayingMvM())
 	{
 		LoadSigsegvExtension();
@@ -418,6 +424,36 @@ public Action Timer_BackToPubs(Handle timer, any data)
 }
 
 public void LoadSigsegvExtension()
+{
+	RequestFrame(checkDhooksExtNum);
+}
+
+void checkDhooksExtNum()
+{
+	char ExtsPrintOut[2048];
+	ServerCommandEx(ExtsPrintOut, sizeof(ExtsPrintOut), "sm exts list");
+	char dhooksid[32];
+	char idid[16];
+	if (MatchRegex(dhooksRegex, ExtsPrintOut) > 0)
+	{
+		if (GetRegexSubString(dhooksRegex, 0, dhooksid, sizeof(dhooksid)))
+		{
+			LogMessage("dhooksid %s", dhooksid);
+			TrimString(dhooksid);
+			if (MatchRegex(numbersRegex, dhooksid) > 0)
+			{
+				if (GetRegexSubString(numbersRegex, 0, idid, sizeof(idid)))
+				{
+					LogMessage("idid %s", idid);
+					ServerCommand("sm exts unload %s", idid);
+					RequestFrame(LoadSigsegvForReal);
+				}
+			}
+		}
+	}
+}
+
+void LoadSigsegvForReal()
 {
 	ServerCommand("sm exts load sigsegv.ext.2.tf2");
 	ServerExecute();
@@ -543,17 +579,17 @@ public void RecalculatePlayerCount()
 
 public int GetRealClientCount()
 {
-    int count = 0;
+	int count = 0;
 
-    for (int i = 1; i <= MaxClients; i++)
-    {
-        if (IsClientInGame(i) && !IsFakeClient(i))
-        {
-            count++;
-        }
-    }
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i) && !IsFakeClient(i))
+		{
+			count++;
+		}
+	}
 
-    return count;
+	return count;
 }
 
 public void TimeToStopwatchTimer(int time, char[] buffer, int size)
@@ -648,7 +684,7 @@ public void SendWaveCompletionTime(int wave, int seconds)
 
 	// Setting mission name.
 	Steam_SetHTTPRequestGetOrPostParameter(hRequest, "mission", sPopFile);
-	
+
 	DataPack hPack = new DataPack();
 	hPack.WriteCell(wave);
 	hPack.WriteCell(seconds);
@@ -660,25 +696,25 @@ public void SendWaveCompletionTime(int wave, int seconds)
 public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code, any pack)
 {
 	DataPack hPack = pack;
-	
+
 	if(!success || code != HTTPStatusCode_OK)
 	{
-		
+
 		LogMessage("Updating wave information failed. Try again in a bit.");
 		CreateTimer(1.0, Timer_SendWaveAgain, hPack);
-		
+
 		return;
 	}
-		
+
 	delete hPack;
-	
+
 	// Getting response size.
 	int size = Steam_GetHTTPResponseBodySize(request);
 	char[] content = new char[size + 1];
 
 	Steam_GetHTTPResponseBodyData(request, content, size);
 	Steam_ReleaseHTTPRequest(request);
-	
+
 	PrintToServer(content);
 
 	KeyValues Response = new KeyValues("Response");
@@ -687,7 +723,7 @@ public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool succ
 	if (!Response.ImportFromString(content))return;
 	Response.GetString("hash", m_sLastTourLootHash, sizeof(m_sLastTourLootHash));
 	delete Response;
-	
+
 	if(!StrEqual(m_sLastTourLootHash, ""))
 	{
 		OpenTourLootMsgToAll();
@@ -697,11 +733,11 @@ public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool succ
 public Action Timer_SendWaveAgain(Handle timer, any data)
 {
 	DataPack hPack = data;
-	
+
 	int wave = hPack.ReadCell();
 	int time = hPack.ReadCell();
 	delete hPack;
-	
+
 	SendWaveCompletionTime(wave, time);
 }
 
@@ -722,27 +758,27 @@ public void OpenLastTourLootMsg(int client)
 	menu.SetTitle("Your Loot for completing\nthis mission is available.\nWould you like to see it?.");
 	menu.AddItem("yes", "Open it.");
 	menu.AddItem("no", "Nah.");
-		
+
 	menu.ExitButton = false;
 	menu.Display(client, 20);
 }
 
 public int Menu_QuickSwitch(Menu menu, MenuAction action, int client, int param2)
 {
-    if (action == MenuAction_Select)
-    {
-        char info[32];
-        menu.GetItem(param2, info, sizeof(info));
-        if(StrEqual(info, "yes"))
-        {
-        	OpenLastTourLootPage(client);
-       	} else {
+	if (action == MenuAction_Select)
+	{
+		char info[32];
+		menu.GetItem(param2, info, sizeof(info));
+		if(StrEqual(info, "yes"))
+		{
+			OpenLastTourLootPage(client);
+		} else {
 			PrintToChat(client, "\x01* Type \x03!loot \x01in chat to reopen the tour loot preview.");
-       	}
-    } else if (action == MenuAction_End)
-    {
-        delete menu;
-    }
+		}
+	} else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
 }
 
 public void OpenLastTourLootPage(int client)
@@ -757,7 +793,7 @@ public void OpenLastTourLootPage(int client)
 	CEconHTTP_CreateAbsoluteBackendURL(url, url, sizeof(url));
 
 	TF2Motd_OpenURL(client, url, "\x01* Please set \x03cl_disablehtmlmotd 0 \x01in your console and type \x03!loot \x01in chat to see the loot.");
-	
+
 	PrintToChat(client, "\x01* Type \x03!loot \x01in chat to reopen the tour loot preview.");
 }
 
@@ -766,7 +802,7 @@ public void OpenTourLootLoadingPage(int client)
 	char url[PLATFORM_MAX_PATH];
 	Format(url, sizeof(url), "/tourloot");
 	CEconHTTP_CreateAbsoluteBackendURL(url, url, sizeof(url));
-	
+
 	TF2Motd_OpenURL(client, url, "\x01* Please set \x03cl_disablehtmlmotd 0 \x01in your console and type \x03!loot \x01in chat to see the loot.");
 }
 
@@ -778,17 +814,17 @@ public Action cLoot(int client, int args)
 }
 
 //-------------------------------------------------------------------
-// Purpose: Returns true if client is a not a bot and also has a 
+// Purpose: Returns true if client is a not a bot and also has a
 // non-spectator team.
 //-------------------------------------------------------------------
 public bool IsClientEngaged(int client)
 {
 	if (!IsClientReady(client))return false;
-	
+
 	int nTeam = GetClientTeam(client);
 	if (nTeam == TF_TEAM_UNASSIGNED)return false;
 	if (nTeam == TF_TEAM_SPECTATOR)return false;
-	
+
 	return true;
 }
 
@@ -798,28 +834,28 @@ public void UpdateSteamGameName()
 }
 
 public void RF_UpdateSteamGameName(any data)
-{	 
+{
 	if(TF2MvM_IsPlayingMvM())
 	{
 		char sRound[16];
 		switch(GameRules_GetRoundState())
 		{
-			case RoundState_Init, 
-			RoundState_Pregame, 
-			RoundState_StartGame, 
+			case RoundState_Init,
+			RoundState_Pregame,
+			RoundState_StartGame,
 			RoundState_Preround,
 			RoundState_BetweenRounds:
 			{
 				strcopy(sRound, sizeof(sRound), "Setup");
 			}
-				
-				
+
+
 			case RoundState_RoundRunning,
 			RoundState_TeamWin:
 			{
 				strcopy(sRound, sizeof(sRound), "In-Wave");
 			}
-				
+
 			case RoundState_Restart,
 			RoundState_Stalemate,
 			RoundState_GameOver,
@@ -828,24 +864,24 @@ public void RF_UpdateSteamGameName(any data)
 				strcopy(sRound, sizeof(sRound), "Game Over");
 			}
 		}
-		
+
 		int iResource = FindEntityByClassname(-1, "tf_objective_resource");
 		int iCurrentWave = GetEntProp(iResource, Prop_Send, "m_nMannVsMachineWaveCount");
 		int iMaxWaves = GetEntProp(iResource, Prop_Send, "m_nMannVsMachineMaxWaveCount");
-		
+
 		char sTeamComp[16];
 		for (int i = 1; i <= MaxClients; i++)
 		{
 			if (!IsClientEngaged(i))continue;
 			TFClassType nClass = TF2_GetPlayerClass(i);
-			
+
 			int iClass = view_as<int>(nClass);
 			Format(sTeamComp, sizeof(sTeamComp), "%s%d", sTeamComp, iClass);
 		}
-		
+
 		char sGame[64];
 		Format(sGame, sizeof(sGame), "Team Fortress (Wave %d/%d :: %s :: %s)", iCurrentWave, iMaxWaves, sRound, sTeamComp);
-		
+
 		Steam_SetGameDescription(sGame);
 	} else {
 		Steam_SetGameDescription("Team Fortress");
@@ -863,7 +899,7 @@ public Action MvM_RestartGame()
 {
 	char sPopFile[256];
 	GetPopFileName(sPopFile, sizeof(sPopFile));
-	
+
 	ServerCommand("tf_mvm_popfile %s", sPopFile);
 }
 
