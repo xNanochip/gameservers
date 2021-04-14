@@ -23,7 +23,7 @@ public Plugin myinfo =
 	name = "Creators.TF - Mann vs Machines",
 	author = "Creators.TF Team",
 	description = "Creators.TF - Mann vs Machines",
-	version = "1.02",
+	version = "1.03",
 	url = "https://creators.tf"
 };
 
@@ -385,7 +385,7 @@ public void OnMapStart()
 	dhooksRegex  = CompileRegex("\\[\\d+\\] DHooks");
 	numbersRegex = CompileRegex("\\d+");
 
-	if(TF2MvM_IsPlayingMvM())
+	if (TF2MvM_IsPlayingMvM())
 	{
 		LoadSigsegvExtension();
 		RequestFrame(RF_RecalculatePlayerCount);
@@ -425,19 +425,26 @@ public Action Timer_BackToPubs(Handle timer, any data)
 
 public void LoadSigsegvExtension()
 {
-	RequestFrame(checkDhooksExtNum);
+	// unload comp fixes, the only plugin that uses dhooks - this takes at least a frame
+	ServerCommand("sm plugins unload external/tf2-comp-fixes.smx");
+	// wait a bit
+	CreateTimer(0.1, checkDhooksExtNum);
 }
 
-void checkDhooksExtNum()
+// moronic that sourcemod forces me to do this instead of allowing forcible unloading of extensions by name
+Action checkDhooksExtNum(Handle timer)
 {
 	char ExtsPrintOut[2048];
+	// get exts list
 	ServerCommandEx(ExtsPrintOut, sizeof(ExtsPrintOut), "sm exts list");
 	char dhooksid[32];
 	char idid[16];
 	if (MatchRegex(dhooksRegex, ExtsPrintOut) > 0)
 	{
+		// dhooks found
 		if (GetRegexSubString(dhooksRegex, 0, dhooksid, sizeof(dhooksid)))
 		{
+			// id [still includes the "DHooks" at the front]
 			LogMessage("dhooksid %s", dhooksid);
 			TrimString(dhooksid);
 			if (MatchRegex(numbersRegex, dhooksid) > 0)
@@ -446,16 +453,15 @@ void checkDhooksExtNum()
 				{
 					LogMessage("idid %s", idid);
 					// yep
-					ServerCommand("sm plugins unload external/tf2-comp-fixes.smx");
 					ServerCommand("sm exts unload %s", idid);
-					RequestFrame(LoadSigsegvForReal);
+					CreateTimer(0.1, LoadSigsegvForReal);
 				}
 			}
 		}
 	}
 }
 
-void LoadSigsegvForReal()
+Action LoadSigsegvForReal(Handle timer)
 {
 	ServerCommand("sm exts load sigsegv.ext.2.tf2");
 	ServerExecute();
