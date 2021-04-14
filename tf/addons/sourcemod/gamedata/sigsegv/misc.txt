@@ -4107,6 +4107,21 @@
 					type "sym"
 					sym  "_Z23GetClassIndexFromStringPKci"
 				}
+				"CTFWearable::Equip"
+				{
+					type "sym"
+					sym  "_ZN11CTFWearable5EquipEP11CBasePlayer"
+				}
+				"CBaseAnimating::GetNumBones"
+				{
+					type "sym"
+					sym  "_ZN14CBaseAnimating11GetNumBonesEv"
+				}
+				"CObjectSentrygun::MakeScaledBuilding"
+				{
+					type "sym"
+					sym  "_ZN16CObjectSentrygun18MakeScaledBuildingEP9CTFPlayer"
+				}
 				
 			}
 			
