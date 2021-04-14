@@ -23,7 +23,7 @@ public Plugin myinfo =
 	name = "Creators.TF - Mann vs Machines",
 	author = "Creators.TF Team",
 	description = "Creators.TF - Mann vs Machines",
-	version = "1.01",
+	version = "1.02",
 	url = "https://creators.tf"
 };
 
@@ -445,6 +445,8 @@ void checkDhooksExtNum()
 				if (GetRegexSubString(numbersRegex, 0, idid, sizeof(idid)))
 				{
 					LogMessage("idid %s", idid);
+					// yep
+					ServerCommand("sm plugins unload external/tf2-comp-fixes.smx");
 					ServerCommand("sm exts unload %s", idid);
 					RequestFrame(LoadSigsegvForReal);
 				}
