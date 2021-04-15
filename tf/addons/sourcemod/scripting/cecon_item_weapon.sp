@@ -565,7 +565,7 @@ public void OnDrawWeapon(int client, int iWeapon)
 
 			bool bShouldDrawHands = false;
 
-			// These are the only weapons that for some reason brake
+			// These are the only weapons that for some reason break
 			// when this is set to 1. I guess we can go with the old way of doing things and just
 			// create the hand as the wearable. This will bring back the random red lights issue.
 			// VALVE PLS FIX (TM).

@@ -229,6 +229,9 @@ public void OnDefendersWon()
 	PrintGameStats();
 	ClearWaveStartTime();
 	UpdateSteamGameName();
+	
+	SendUniqueEventToEngaged("TF_MVM_STAT_WAVE_WIN", 1);
+	SendUniqueEventToEngaged("TF_MVM_STAT_WAVE_ATTEMPT", 1);
 }
 
 public void OnDefendersLost()
@@ -238,6 +241,9 @@ public void OnDefendersLost()
 	PrintGameStats();
 	ClearWaveStartTime();
 	UpdateSteamGameName();
+	
+	SendUniqueEventToEngaged("TF_MVM_STAT_WAVE_LOSS", 1);
+	SendUniqueEventToEngaged("TF_MVM_STAT_WAVE_ATTEMPT", 1);
 }
 
 public void SetWaveStartTime()
@@ -927,4 +933,14 @@ public Action Timer_ResetJumpToWaveCmdFlags(Handle timer, any flags)
 public Action Timer_RestartMvMGame(Handle timer, any data)
 {
 	MvM_RestartGame();
+}
+
+public void SendUniqueEventToEngaged(const char[] event, int add)
+{
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientEngaged(i))continue;
+		
+		CEcon_SendEventToClientUnique(i, event, add);
+	}
 }
