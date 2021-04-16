@@ -11,9 +11,9 @@ stages:
         vol=0;
         echo "set variables to 0";
         cd "/srv/daemon-data" && srv=1 || srv=0;
-        echo $srv
+        echo $srv;
         cd "/var/lib/pterodactyl/volumes" && vol=1 || vol=0;
-        echo $vol
+        echo $vol;
         if (( srv == 1 && vol == 1 )); then
             srvsize=$(du /srv/daemon-data/ -Hs | cut -f 1);
             volsize=$(du /var/lib/pterodactyl/volumes -Hs | cut -f 1);
