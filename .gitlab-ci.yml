@@ -7,30 +7,30 @@ stages:
     - whoami
 
     - >
-        srv=false;
-        vol=false;
-        echo "set variables to true";
-        cd "/srv/daemon-data"; echo "srv true"; srv=true; || echo "srv false"; srv=false;
-        cd "/var/lib/pterodactyl/volumes"; echo "vol true"; vol=true; || echo "vol false"; vol=false;
-
-        if (( srv && vol )); then
+        srv=0;
+        vol=0;
+        echo "set variables to 0";
+        cd "/srv/daemon-data" && srv=1 || srv=0;
+        echo $srv
+        cd "/var/lib/pterodactyl/volumes" && vol=1 || vol=0;
+        echo $vol
+        if (( srv == 1 && vol == 1 )); then
             srvsize=$(du /srv/daemon-data/ -Hs | cut -f 1);
             volsize=$(du /var/lib/pterodactyl/volumes -Hs | cut -f 1);
             if ((srvsize > volsize)); then
-                vol=false;
+                vol=0;
             elif ((volsize > srvsize)); then
-                srv=false;
+                srv=0;
             fi;
         fi;
 
-        if ((srv)); then
+        if ((srv == 1)); then
             cd /srv/daemon-data || exit;
-        elif ((vol)); then
+        elif ((vol == 1)); then
             cd /var/lib/pterodactyl/volumes || exit;
         else
             exit;
         fi;
-
     - >
         for d in ./*/ ; do
             cd "$d";
