@@ -12,23 +12,18 @@ stages:
 
         cd /srv/daemon-data && srv=true;
         cd /var/lib/pterodactyl/volumes && vol=true;
-        if (( srv && vol ))
-        then
+        if (( srv && vol )); then
             srvsize=$(du /srv/daemon-data/ -Hs | cut -f 1)
             volsize=$(du /var/lib/pterodactyl/volumes -Hs | cut -f 1)
-            if ((srvsize > volsize))
-            then
+            if ((srvsize > volsize)); then
                 vol=false
-            elif ((volsize > srvsize))
-            then
+            elif ((volsize > srvsize)); then
                 srv=false
             fi
         fi
-        if ((srv))
-        then
+        if ((srv)); then
             cd /srv/daemon-data || exit
-        elif ((vol))
-        then
+        elif ((vol)); then
             cd /var/lib/pterodactyl/volumes || exit
         else
             exit
