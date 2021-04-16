@@ -9,26 +9,27 @@ stages:
     - >
         srv=true;
         vol=true;
-        echo "set variables to true"
-        cd /srv/daemon-data || srv=false; echo "srv false"
-        cd /var/lib/pterodactyl/volumes || vol=false; echo "vol false"
+        echo "set variables to true";
+        cd /srv/daemon-data || srv=false; echo "srv false";
+        cd /var/lib/pterodactyl/volumes || vol=false; echo "vol false";
 
         if (( srv && vol )); then
-            srvsize=$(du /srv/daemon-data/ -Hs | cut -f 1)
-            volsize=$(du /var/lib/pterodactyl/volumes -Hs | cut -f 1)
+            srvsize=$(du /srv/daemon-data/ -Hs | cut -f 1);
+            volsize=$(du /var/lib/pterodactyl/volumes -Hs | cut -f 1);
             if ((srvsize > volsize)); then
-                vol=false
+                vol=false;
             elif ((volsize > srvsize)); then
-                srv=false
-            fi
-        fi
+                srv=false;
+            fi;
+        fi;
+
         if ((srv)); then
-            cd /srv/daemon-data || exit
+            cd /srv/daemon-data || exit;
         elif ((vol)); then
-            cd /var/lib/pterodactyl/volumes || exit
+            cd /var/lib/pterodactyl/volumes || exit;
         else
-            exit
-        fi
+            exit;
+        fi;
 
     - >
         for d in ./*/ ; do
