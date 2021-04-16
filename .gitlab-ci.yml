@@ -10,14 +10,8 @@ stages:
         srv=false;
         vol=false;
 
-        if [ -d "/srv/daemon-data" ]
-        then
-            srv=true;
-        fi
-        if [ -d "/var/lib/pterodactyl/volumes" ]
-        then
-            vol=true;
-        fi
+        cd /srv/daemon-data && srv=true;
+        cd /var/lib/pterodactyl/volumes && vol=true;
         if (( srv && vol ))
         then
             srvsize=$(du /srv/daemon-data/ -Hs | cut -f 1)
@@ -29,6 +23,7 @@ stages:
             then
                 srv=false
             fi
+        fi
         if ((srv))
         then
             cd /srv/daemon-data || exit
@@ -38,6 +33,7 @@ stages:
         else
             exit
         fi
+
     - >
         for d in ./*/ ; do
             cd "$d";
