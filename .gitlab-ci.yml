@@ -126,6 +126,11 @@ deploy-chicago3:
     - chicago3
     <<: *deploy_template
 
+deploy-uspotato1:
+    tags:
+    - uspotato1
+    <<: *deploy_template
+
 deploy-europe2:
     tags:
     - eu2
