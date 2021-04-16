@@ -32,11 +32,9 @@ stages:
         if ((srv))
         then
             cd /srv/daemon-data || exit
-        fi
         elif ((vol))
         then
             cd /var/lib/pterodactyl/volumes || exit
-        fi
         else
             exit
         fi
