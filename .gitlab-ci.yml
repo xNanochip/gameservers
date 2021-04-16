@@ -18,8 +18,10 @@ stages:
             volsize=$(du /var/lib/pterodactyl/volumes -Hs | cut -f 1);
             if ((srvsize > volsize)); then
                 vol=0;
+                echo "srv is bigger than vol, using that!";
             elif ((volsize > srvsize)); then
                 srv=0;
+                echo "vol is bigger than srv, using that!";
             fi;
         fi;
 
