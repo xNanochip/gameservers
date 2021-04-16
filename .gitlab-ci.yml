@@ -10,11 +10,11 @@ stages:
         srv=false;
         vol=false;
 
-        if [ -d "/srv/daemon-data" ];
+        if [ -d "/srv/daemon-data" ]
         then
             srv=true;
         fi
-        if [ -d "/var/lib/pterodactyl/volumes" ];
+        if [ -d "/var/lib/pterodactyl/volumes" ]
         then
             vol=true;
         fi
@@ -36,6 +36,7 @@ stages:
         elif ((vol))
         then
             cd /var/lib/pterodactyl/volumes || exit
+        fi
         else
             exit
         fi
