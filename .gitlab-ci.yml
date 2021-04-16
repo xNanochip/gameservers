@@ -7,11 +7,11 @@ stages:
     - whoami
 
     - >
-        srv=true;
-        vol=true;
+        srv=false;
+        vol=false;
         echo "set variables to true";
-        cd /srv/daemon-data || srv=false; echo "srv false";
-        cd /var/lib/pterodactyl/volumes || vol=false; echo "vol false";
+        cd "/srv/daemon-data"; echo "srv true"; srv=true; || echo "srv false"; srv=false;
+        cd "/var/lib/pterodactyl/volumes"; echo "vol true"; vol=true; || echo "vol false"; vol=false;
 
         if (( srv && vol )); then
             srvsize=$(du /srv/daemon-data/ -Hs | cut -f 1);
