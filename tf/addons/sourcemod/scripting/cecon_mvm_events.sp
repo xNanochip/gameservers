@@ -1114,6 +1114,12 @@ public Action player_ignited(Handle hEvent, const char[] szName, bool bDontBroad
 	return Plugin_Continue;
 }
 
+public int TF2_GetMaxHealth(int iClient)
+{
+    return GetEntProp(iClient, Prop_Data, "m_iMaxHealth");
+}
+
+
 public Action player_healed(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int patient = GetClientOfUserId(GetEventInt(hEvent, "patient"));
@@ -1130,6 +1136,11 @@ public Action player_healed(Handle hEvent, const char[] szName, bool bDontBroadc
 			}
 			else
 			{
+				// Is the patient being overhealed?
+				if (!(GetClientHealth(patient) > TF2_GetMaxHealth(patient)))
+				{
+					CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_HEALING_TEAMMATES_NO_OVERHEAL", amount, hEvent);
+				}
 				CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_HEALING_TEAMMATES", amount, hEvent);
 			}
 
