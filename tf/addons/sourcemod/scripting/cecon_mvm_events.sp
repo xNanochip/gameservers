@@ -1666,6 +1666,7 @@ public bool IsTauntKill(int damageTypeCustom)
 		case 24: return true;
 		case 29: return true;
 		case 33: return true;
+		case 52: return true;
 		case 53: return true;
 		case 63: return true;
 		case 82: return true;
