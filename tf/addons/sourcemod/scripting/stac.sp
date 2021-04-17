@@ -15,11 +15,11 @@
 #undef REQUIRE_PLUGIN
 #include <updater>
 #include <sourcebanspp>
-#undef REQUIRE_EXTENSIONS 
+#undef REQUIRE_EXTENSIONS
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.2.0"
+#define PLUGIN_VERSION  "4.2.1b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -51,6 +51,7 @@ int aimsnapDetects          [TFMAXPLAYERS+1] = -1; // set to -1 to ignore first 
 int pSilentDetects          [TFMAXPLAYERS+1] = -1; // ^
 int bhopDetects             [TFMAXPLAYERS+1] = -1; // set to -1 to ignore single jumps
 int cmdnumSpikeDetects      [TFMAXPLAYERS+1];
+int tbotDetects             [TFMAXPLAYERS+1];
 bool isConsecStringOfBhops  [TFMAXPLAYERS+1];
 int bhopConsecDetects       [TFMAXPLAYERS+1];
 int settingsChangesFor      [TFMAXPLAYERS+1];
@@ -60,13 +61,13 @@ float timeSinceSpawn        [TFMAXPLAYERS+1];
 float timeSinceTaunt        [TFMAXPLAYERS+1];
 float timeSinceTeled        [TFMAXPLAYERS+1];
 // STORED ANGLES PER CLIENT
-float clangles           [3][TFMAXPLAYERS+1][2];
+float clangles           [5][TFMAXPLAYERS+1][2];
 // STORED POS PER CLIENT
 float clpos              [2][TFMAXPLAYERS+1][3];
 // STORED cmdnum PER CLIENT
 int clcmdnum             [6][TFMAXPLAYERS+1];
 // STORED BUTTONS PER CLIENT
-int buttonsPrev             [TFMAXPLAYERS+1];
+int clbuttons               [TFMAXPLAYERS+1][2];
 // STORED GRAVITY STATE PER CLIENT
 bool highGrav               [TFMAXPLAYERS+1];
 // STORED MISC VARS PER CLIENT
@@ -808,8 +809,8 @@ public void OnPluginEnd()
     OnMapEnd();
 }
 
-// reseed random server seed to help prevent certain nospread stuff from working
-// this does not fix lmaobox's nospread, as it uses an essentially undetectable viewangle (maybe time based?) based method to remove spread
+// reseed random server seed to help prevent certain nospread stuff from working.
+// this probably doesn't do anything, but it makes me feel better.
 void ActuallySetRandomSeed()
 {
     int seed = GetURandomInt();
@@ -898,10 +899,11 @@ public Action ePlayerSpawned(Handle event, char[] name, bool dontBroadcast)
 Action hOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3])
 {
     // get ent classname AKA the weapon name
-    if (!IsValidEntity(weapon) || weapon <= 0)
+    if (!IsValidEntity(weapon) || weapon <= 0 || !IsValidClient(attacker))
     {
         return Plugin_Continue;
     }
+
     GetEntityClassname(weapon, hurtWeapon[attacker], 256);
     // get distance between attacker and victim
     float distance = GetVectorDistance(clpos[0][attacker], clpos[0][victim]);
@@ -916,7 +918,6 @@ Action hOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, i
     )
     {
         timeSinceDidHurt[attacker] = GetEngineTime();
-        return Plugin_Continue;
     }
     return Plugin_Continue;
 }
@@ -1054,6 +1055,7 @@ void ClearClBasedVars(int userid)
     pSilentDetects          [Cl] = -1; // ^
     bhopDetects             [Cl] = -1; // set to -1 to ignore single jumps
     cmdnumSpikeDetects      [Cl] = 0;
+    tbotDetects             [Cl] = 0;
     isConsecStringOfBhops   [Cl] = false;
     bhopConsecDetects       [Cl] = 0;
     settingsChangesFor      [Cl] = 0;
@@ -1062,8 +1064,6 @@ void ClearClBasedVars(int userid)
     timeSinceSpawn          [Cl] = 0.0;
     timeSinceTaunt          [Cl] = 0.0;
     timeSinceTeled          [Cl] = 0.0;
-    // STORED BUTTONS PER CLIENT
-    buttonsPrev             [Cl] = 0;
     // STORED GRAVITY STATE PER CLIENT
     highGrav                [Cl] = false;
     // STORED MISC VARS PER CLIENT
@@ -1223,6 +1223,8 @@ public Action OnPlayerRunCmd
 
     // grab angles
     // thanks to nosoop from the sm discord for some help with this
+    clangles[4][Cl] = clangles[3][Cl];
+    clangles[3][Cl] = clangles[2][Cl];
     clangles[2][Cl] = clangles[1][Cl];
     clangles[1][Cl] = clangles[0][Cl];
     clangles[0][Cl][0] = angles[0];
@@ -1235,6 +1237,10 @@ public Action OnPlayerRunCmd
     }
     clcmdnum[0][Cl] = cmdnum;
 
+    // grab buttons
+    clbuttons[2][Cl] = clbuttons[1][Cl];
+    clbuttons[1][Cl] = clbuttons[0][Cl];
+    clbuttons[0][Cl] = buttons;
 
     // grab position
     clpos[1][Cl] = clpos[0][Cl];
@@ -1260,6 +1266,44 @@ public Action OnPlayerRunCmd
 
     // neither of these tests need fancy checks, so we do them first
 
+    // grab single tick +attack inputs
+    if
+    (
+        !(
+            clbuttons[2][Cl] & IN_ATTACK
+        )
+        &&
+        (
+            clbuttons[1][Cl] & IN_ATTACK
+        )
+        &&
+        !(
+            clbuttons[0][Cl] & IN_ATTACK
+        )
+    )
+    {
+        if (GetClientAimTarget(Cl, true) > 0)
+        {
+            tbotDetects[Cl]++;
+            PrintToImportant
+            (
+                "{hotpink}[StAC]{white} Player %N may be {mediumpurple}triggerbotting{white}!\nDetections so far: {palegreen}%i{white}.\n{fullred}THIS IS AN ALPHA CHECK AND MAY NOT INDICATE CHEATING. THIS CHECK DOES NOT AUTOBAN YET.\n",
+                Cl,
+                tbotDetects[Cl]
+            );
+            StacLog
+            (
+                "[StAC] Player %N may be {mediumpurple}triggerbotting{white}!\nDetections so far: %i",
+                Cl,
+                tbotDetects[Cl]
+            );
+
+            if (AIMPLOTTER)
+            {
+                ServerCommand("sm_aimplot #%i on", userid);
+            }
+        }
+    }
     /*
         BHOP DETECTION - using lilac and ssac as reference, this one's better tho
     */
@@ -1284,7 +1328,7 @@ public Action OnPlayerRunCmd
             (
                 // player didn't press jump
                 !(
-                    buttons & IN_JUMP
+                    clbuttons[0][Cl] & IN_JUMP
                 )
                 // player is on the ground
                 &&
@@ -1313,12 +1357,12 @@ public Action OnPlayerRunCmd
             (
                 // last input didn't have a jump - include to prevent legits holding spacebar from triggering detections
                 !(
-                    buttonsPrev[Cl] & IN_JUMP
+                    clbuttons[1][Cl] & IN_JUMP
                 )
                 &&
                 // player pressed jump
                 (
-                    buttons & IN_JUMP
+                    clbuttons[0][Cl] & IN_JUMP
                 )
                 // they were on the ground when they pressed space
                 &&
@@ -1365,9 +1409,10 @@ public Action OnPlayerRunCmd
                     return Plugin_Handled;
                 }
             }
-            buttonsPrev[Cl] = buttons;
         }
     }
+
+
     /*
         TURN BIND TEST
     */
@@ -1594,7 +1639,6 @@ public Action OnPlayerRunCmd
 
     // we can reuse this for aimsnap as well!
     float aDiffReal = CalcAngDeg(clangles[0][Cl], clangles[1][Cl]);
-    // refactored from smac - make sure we don't fuck up angles near the x/y axes!
     if (aDiffReal > 180.0)
     {
         aDiffReal = FloatAbs(aDiffReal - 360.0);
@@ -1736,21 +1780,28 @@ public Action OnPlayerRunCmd
         AIMSNAP DETECTION
         Now lets be fair here - this also detects silent aim a lot too, but it's more for checking plain snaps.
     */
-    // only check if we actually did dmg with a hitscan weapon in the last 3(ish) ticks
-    // in the future i want this to look ahead 3 ticks and behind 3 ticks - aka, if there was a snap within +/- 3 ticks, record it
-    // currently it only looks behind
-    // this could probably be done with requestframe 3 times and then just checking (timeSinceDidHurt[Cl] <= (tickinterv * 6)
+    // only check if we actually did dmg with a hitscan weapon within 2(ish) ticks
+
+    aDiffReal = CalcAngDeg(clangles[0][Cl], clangles[4][Cl]);
+    if (aDiffReal > 180.0)
+    {
+        aDiffReal = FloatAbs(aDiffReal - 360.0);
+    }
+
     if
     (
-        engineTime[0][Cl] - timeSinceDidHurt[Cl] <= (tickinterv * 3)
+        engineTime[0][Cl] - timeSinceDidHurt[Cl] <= (tickinterv * 2)
         &&
         !MVM
     )
     {
-        if (aDiffReal >= 10.0)
+        if
+        (
+            aDiffReal >= 20.0
+        )
         {
             // fun fact: we don't actually need to check sens, but it can help with filtering out false detects in logs
-            //so far, i've not seen this get triggered very often though. */
+            // so far, i've not seen this get triggered very often though. */
 
             // init vars - weightedx and weightedy
             int wx;
@@ -1772,7 +1823,7 @@ public Action OnPlayerRunCmd
             {
                 PrintToImportant
                 (
-                    "{hotpink}[StAC]{white} Aimsnap detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.",
+                    "{hotpink}[StAC]{white} Aimsnap detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.\n{fullred}THIS IS AN ALPHA CHECK AND MAY NOT INDICATE CHEATING. THIS CHECK DOES NOT AUTOBAN YET.\n",
                     aDiffReal,
                     Cl,
                     aimsnapDetects[Cl]
@@ -1825,16 +1876,16 @@ public Action OnPlayerRunCmd
                     ServerCommand("sm_aimplot #%i on", userid);
                 }
 
-                // BAN USER if they trigger too many detections
-                if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
-                {
-                    char reason[128];
-                    Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
-                    char pubreason[128];
-                    Format(pubreason, sizeof(pubreason), "%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
-                    BanUser(userid, reason, pubreason);
-                    return Plugin_Handled;
-                }
+                //// BAN USER if they trigger too many detections
+                //if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
+                //{
+                //    char reason[128];
+                //    Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
+                //    char pubreason[128];
+                //    Format(pubreason, sizeof(pubreason), "%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
+                //    BanUser(userid, reason, pubreason);
+                //    return Plugin_Handled;
+                //}
             }
         }
     }
@@ -2730,33 +2781,33 @@ bool isWeaponHitscan(char weaponname[256])
     if
     (
     // multiclass shotgun
-        StrEqual(weaponname, "tf_weapon_shotgun")
+        StrContains(weaponname, "tf_weapon_shotgun") != -1
     // multiclass pistol
-    ||  StrEqual(weaponname, "tf_weapon_pistol")
+    ||  StrContains(weaponname, "tf_weapon_pistol") != -1
     // scout
-    ||  StrEqual(weaponname, "tf_weapon_scattergun")
-    ||  StrEqual(weaponname, "tf_weapon_handgun_scout_primary")
-    ||  StrEqual(weaponname, "tf_weapon_soda_popper")
-    ||  StrEqual(weaponname, "tf_weapon_pep_brawler_blaster")
-    ||  StrEqual(weaponname, "tf_weapon_handgun_scout_secondary")
+    ||  StrContains(weaponname, "tf_weapon_scattergun") != -1
+    ||  StrContains(weaponname, "tf_weapon_handgun_scout_primary") != -1
+    ||  StrContains(weaponname, "tf_weapon_soda_popper") != -1
+    ||  StrContains(weaponname, "tf_weapon_pep_brawler_blaster") != -1
+    ||  StrContains(weaponname, "tf_weapon_handgun_scout_secondary") != -1
     // soldier
-    ||  StrEqual(weaponname, "tf_weapon_shotgun_soldier")
+    ||  StrContains(weaponname, "tf_weapon_shotgun_soldier") != -1
     // pyro
-    ||  StrEqual(weaponname, "tf_weapon_shotgun_pyro")
+    ||  StrContains(weaponname, "tf_weapon_shotgun_pyro") != -1
     // pootis
-    ||  StrEqual(weaponname, "tf_weapon_minigun")
-    ||  StrEqual(weaponname, "tf_weapon_shotgun_hwg")
+    ||  StrContains(weaponname, "tf_weapon_minigun") != -1
+    ||  StrContains(weaponname, "tf_weapon_shotgun_hwg") != -1
     // engie
-    ||  StrEqual(weaponname, "tf_weapon_shotgun_primary")
-    ||  StrEqual(weaponname, "tf_weapon_sentry_revenge")
+    ||  StrContains(weaponname, "tf_weapon_shotgun_primary") != -1
+    ||  StrContains(weaponname, "tf_weapon_sentry_revenge") != -1
     // sniper
-    ||  StrEqual(weaponname, "tf_weapon_sniperrifle")
-    ||  StrEqual(weaponname, "tf_weapon_sniperrifle_decap")
-    ||  StrEqual(weaponname, "tf_weapon_sniperrifle_classic")
-    ||  StrEqual(weaponname, "tf_weapon_smg")
-    ||  StrEqual(weaponname, "tf_weapon_charged_smg")
+    ||  StrContains(weaponname, "tf_weapon_sniperrifle") != -1
+    ||  StrContains(weaponname, "tf_weapon_sniperrifle_decap") != -1
+    ||  StrContains(weaponname, "tf_weapon_sniperrifle_classic") != -1
+    ||  StrContains(weaponname, "tf_weapon_smg") != -1
+    ||  StrContains(weaponname, "tf_weapon_charged_smg") != -1
     // spy
-    ||  StrEqual(weaponname, "tf_weapon_revolver")
+    ||  StrContains(weaponname, "tf_weapon_revolver") != -1
     )
     {
         return true;
