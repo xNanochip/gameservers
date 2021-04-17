@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.2.1b"
+#define PLUGIN_VERSION  "4.2.2b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -67,7 +67,7 @@ float clpos              [2][TFMAXPLAYERS+1][3];
 // STORED cmdnum PER CLIENT
 int clcmdnum             [6][TFMAXPLAYERS+1];
 // STORED BUTTONS PER CLIENT
-int clbuttons               [TFMAXPLAYERS+1][2];
+int clbuttons            [3][TFMAXPLAYERS+1];
 // STORED GRAVITY STATE PER CLIENT
 bool highGrav               [TFMAXPLAYERS+1];
 // STORED MISC VARS PER CLIENT
@@ -76,7 +76,7 @@ int playerInBadCond         [TFMAXPLAYERS+1];
 bool userBanQueued          [TFMAXPLAYERS+1];
 // STORED SENS PER CLIENT
 float sensFor               [TFMAXPLAYERS+1];
-// get last 6 ticks
+// get last 11 ticks
 float engineTime        [11][TFMAXPLAYERS+1];
 // time since the map started (duh)
 float timeSinceMapStart;
