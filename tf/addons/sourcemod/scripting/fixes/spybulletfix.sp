@@ -16,8 +16,12 @@ public Plugin myinfo =
 // hook all entity spawns
 public void OnEntityCreated(int entity, const char[] classname)
 {
-    // wait a frame so ownerid is valid
-    RequestFrame(waitFrame, entity);
+    // Optimize
+    if (strncmp(classname, "tf_weapon_", 10) == 0)
+    {
+        // wait a frame so ownerid is valid
+        RequestFrame(waitFrame, entity);
+    }
 }
 
 // ^

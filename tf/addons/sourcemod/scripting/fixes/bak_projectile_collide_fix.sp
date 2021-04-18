@@ -44,10 +44,10 @@ public void OnGameFrame() {
 public void OnEntityCreated(int entity, const char[] class) {
 	int idx;
 
-	if (
-		StrEqual(class, "tf_projectile_ball_ornament") ||
+	if (strncmp(class, "tf_projectile_", 14) == 0 &&
+		(StrEqual(class, "tf_projectile_ball_ornament") ||
 		StrEqual(class, "tf_projectile_energy_ring") ||
-		StrEqual(class, "tf_projectile_balloffire")
+		StrEqual(class, "tf_projectile_balloffire"))
 	) {
 		for (idx = 0; idx < sizeof(projectiles); idx++) {
 			if (projectiles[idx].entity == 0) {

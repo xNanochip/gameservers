@@ -113,6 +113,7 @@ int m_iFailureCount = 0;					// Amount of failures that we have encountered in a
 ConVar 	ce_coordinator_enabled,		// If true, coordinator will be online.
 		ce_credentials_filename;	// Filename of the econome config.
 
+ConVar  g_hostport;
 
 //-------------------------------------------------------------------
 // Purpose: Fired when plugin starts.
@@ -158,6 +159,7 @@ public void OnPluginStart()
 
 	HookEvent("player_spawn", player_spawn);
 
+	g_hostport = FindConVar("hostport");
 	m_hEventsQueue = new ArrayList(sizeof(CEQueuedEvent));
 }
 
@@ -456,7 +458,7 @@ public void StartCoordinatorLongPolling()
 	char sIP[64];
 	Format(sIP, sizeof(sIP), "%d.%d.%d.%d", iIPVals[0], iIPVals[1], iIPVals[2], iIPVals[3]);
 	//Format(sIP, sizeof(sIP), "%d.%d.%d.%d", 192, 168, 100, 68);
-	int iPort = FindConVar("hostport").IntValue;
+	int iPort = g_hostport.IntValue;
 
 	HTTPRequestHandle httpRequest = Steam_CreateHTTPRequest(HTTPMethod_GET, sURL);
 	Steam_SetHTTPRequestNetworkActivityTimeout(httpRequest, 40);

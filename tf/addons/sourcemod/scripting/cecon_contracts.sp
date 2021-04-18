@@ -19,6 +19,8 @@
 #include <clientprefs>
 #include <cecon_contracts>
 
+#define TF_MAXPLAYERS 34
+
 #define QUEST_HUD_REFRESH_RATE 0.5
 #define QUEST_PANEL_MAX_CHARS 30
 #define BACKEND_QUEST_UPDATE_INTERVAL 20.0 // Every 20 seconds.
@@ -44,6 +46,8 @@ ArrayList m_hBackgroundQuests;
 
 ArrayList m_hFriends[MAXPLAYERS + 1];
 ArrayList m_hProgress[MAXPLAYERS + 1];
+
+char m_sPlayerSteamID64[TF_MAXPLAYERS][22];
 
 bool m_bWaitingForFriends[MAXPLAYERS + 1];
 bool m_bWaitingForProgress[MAXPLAYERS + 1];
@@ -683,6 +687,11 @@ public void OnClientDisconnect(int client)
 
 public void PrepareClientData(int client)
 {
+	if (!IsFakeClient(client))
+	{
+		GetClientAuthId(client, AuthId_SteamID64, m_sPlayerSteamID64[client], sizeof(m_sPlayerSteamID64[]));
+	}
+	
 	RequestClientSteamFriends(client);
 	RequestClientContractProgress(client);
 }
@@ -697,6 +706,8 @@ public void FlushClientData(int client)
 
 	m_xActiveQuestStruct[client].m_iIndex = 0;
 	m_iLastUniqueEvent[client] = 0;
+
+	m_sPlayerSteamID64[client] = "";
 }
 
 public void UpdateClientQuestProgress(int client, CEQuestClientProgress xProgress)
@@ -1578,14 +1589,16 @@ public bool AddPointsToClientObjective(int client, CEQuestObjectiveDefinition xO
 public bool AreClientsFriends(int client, int target)
 {
 	// Check if users are friends
-	char szAuth[256];
-	GetClientAuthId(target, AuthId_SteamID64, szAuth, sizeof(szAuth));
+
+	// Players are not friends to themselves
+	if (client == target)
+		return false;
 
 	bool bFriends = false;
 
 	if(m_hFriends[client] != null)
 	{
-		if(m_hFriends[client].FindString(szAuth) != -1)
+		if(m_hFriends[client].FindString(m_sPlayerSteamID64[target]) != -1)
 		{
 			return true;
 		}
@@ -1593,10 +1606,9 @@ public bool AreClientsFriends(int client, int target)
 
 	if(!bFriends)
 	{
-		GetClientAuthId(client, AuthId_SteamID64, szAuth, sizeof(szAuth));
 		if(m_hFriends[target] != null)
 		{
-			if(m_hFriends[target].FindString(szAuth) != -1)
+			if(m_hFriends[target].FindString(m_sPlayerSteamID64[client]) != -1)
 			{
 				return true;
 			}
