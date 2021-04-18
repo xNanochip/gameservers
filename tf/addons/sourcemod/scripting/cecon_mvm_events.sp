@@ -921,6 +921,7 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 			if (IsGiantNotBuster(client))
 			{
 				CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_STOMP_ROBOT_GIANT", 1, hEvent);
+				CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_STOMP_ROBOT_GIANT_DAMAGE", damage, hEvent);
 			}
 		}
 
@@ -1329,19 +1330,8 @@ public Action player_carryobject(Handle hEvent, const char[] szName, bool bDontB
 	int type = GetEventInt(hEvent, "object");
 	int entity = GetEventInt(hEvent, "index");
 	if (type == 2) //OBJ_SENTRYGUN
-	{
-		
-		
+	{		
 		player_data[builder].buster_save_sentry_ranged = GetAttributeValue(GetEntPropEnt(builder, Prop_Data, "m_hActiveWeapon"), "building_teleporting_pickup", 0.0) != 0.0;
-	
-		//ZONICAL: Debugging.
-		// ============================== DO NOT REMOVE ME ==============================
-		char classname[64];
-		int weapon = GetEntPropEnt(builder, Prop_Data, "m_hActiveWeapon");
-		GetEdictClassname(weapon, classname, sizeof(classname));
-		
-		PrintToServer("[ZONICAL] %s: %d", classname, player_data[builder].buster_save_sentry_ranged);
-		// ============================== DO NOT REMOVE ME ==============================
 		
 	}
 
