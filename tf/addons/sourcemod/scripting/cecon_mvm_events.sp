@@ -1330,6 +1330,23 @@ public Action player_carryobject(Handle hEvent, const char[] szName, bool bDontB
 	int entity = GetEventInt(hEvent, "index");
 	if (type == 2) //OBJ_SENTRYGUN
 	{
+		//ZONICAL: Debugging.
+		// ============================== DO NOT REMOVE ME ==============================
+		int iWeapon = GetEntPropEnt(builder, Prop_Data, "m_hActiveWeapon");
+		char szWeaponClassname[64]; 
+		GetEdictClassname(iWeapon, szWeaponClassname, sizeof(szWeaponClassname));
+
+		int iFirstWeaponSlot = GetPlayerWeaponSlot(builder, TFWeaponSlot_Primary);
+		int iSecondWeaponSlot = GetPlayerWeaponSlot(builder, TFWeaponSlot_Secondary);
+		
+		char szFirstWeaponSlotClassname[64]; 
+		GetEdictClassname(iFirstWeaponSlot, szFirstWeaponSlotClassname, sizeof(szFirstWeaponSlotClassname));
+		char szSecondWeaponSlotClassname[64]; 
+		GetEdictClassname(iSecondWeaponSlot, szSecondWeaponSlotClassname, sizeof(szSecondWeaponSlotClassname));
+		
+		PrintToServer("[ZONICAL] n: %s, p-s: %s, s-s: %s", szWeaponClassname, szFirstWeaponSlotClassname, szSecondWeaponSlotClassname);
+		// ============================== DO NOT REMOVE ME ==============================
+		
 		player_data[builder].buster_save_sentry_ranged = GetAttributeValue(GetEntPropEnt(builder, Prop_Data, "m_hActiveWeapon"), "building_teleporting_pickup", 0.0) != 0.0;
 	}
 
