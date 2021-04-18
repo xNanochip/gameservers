@@ -1155,17 +1155,24 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 
 	if(ce_events_log.BoolValue)
 	{
+		bool bSendMessage = true;
 		char szEventString[128];
 		GetConVarString(ce_events_log_event_filter, szEventString, sizeof(szEventString));
 		
 		if (!StrEqual(szEventString, ""))
 		{
-			if (StrContains(event, szEventString))
+			if (StrContains(event, szEventString, false) != -1)
 			{
-				LogMessage("%s (client \"%N\") (add %d) (unique_id)", event, client, add, unique_id);
+				bSendMessage = true;
 			}
+			else
+			{
+				bSendMessage = false;
+			}
+			
 		}
-		else
+		
+		if (bSendMessage)
 		{
 			LogMessage("%s (client \"%N\") (add %d) (unique_id)", event, client, add, unique_id);
 		}
