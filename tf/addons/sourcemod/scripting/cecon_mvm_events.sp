@@ -1332,7 +1332,7 @@ public Action player_carryobject(Handle hEvent, const char[] szName, bool bDontB
 	{
 		
 		
-		player_data[builder].buster_save_sentry_ranged = GetAttributeValue(GetEntPropEnt(builder, Prop_Data, "m_hActiveWeapon"), "engineer building_teleporting_pickup", 0.0) != 0.0;
+		player_data[builder].buster_save_sentry_ranged = GetAttributeValue(GetEntPropEnt(builder, Prop_Data, "m_hActiveWeapon"), "building_teleporting_pickup", 0.0) != 0.0;
 	
 		//ZONICAL: Debugging.
 		// ============================== DO NOT REMOVE ME ==============================
