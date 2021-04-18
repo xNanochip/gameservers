@@ -21,11 +21,50 @@ public Plugin myinfo =
 	url = "http://www.sourcemod.net/plugins.php?author=Pelipoika&search=1"
 };
 
+ArrayList g_SentryList;
+
+public void OnPluginStart() 
+{
+	g_SentryList = new ArrayList();
+}
+
+public void OnMapStart() 
+{
+	g_SentryList.Clear();
+}
+
+public void OnEntityCreated(int entity, const char[] classname)
+{
+    if (StrEqual(classname, "obj_sentrygun"))
+    {
+        RequestFrame(HookSentry, EntIndexToEntRef(entity));
+    }
+}
+
+void HookSentry(int entityref)
+{
+    int entity = EntRefToEntIndex(entityref);
+    if (IsValidEntity(entity))
+    {
+		g_SentryList.Push(entity);
+    }
+}
+
+public void OnEntityDestroyed(int entity)
+{
+	char classname[16];
+	GetEntityClassname(entity, classname, sizeof(classname));
+	if (StrEqual(classname, "obj_sentrygun"))
+    {
+        g_SentryList.Erase(g_SentryList.FindValue(entity));
+    }
+}
+
 public void OnGameFrame()
 {
-	int iBuilding = -1;
-	while((iBuilding = FindEntityByClassname(iBuilding, "obj_sentrygun")) != -1)
+	for (int i = 0; i < g_SentryList.Length; i++)
 	{
+		int iBuilding = g_SentryList.Get(i);
 		bool bClientSideAnim = !!GetEntProp(iBuilding, Prop_Send, "m_bClientSideAnimation");
 		int iState = GetEntProp(iBuilding, Prop_Send, "m_iState");
 
