@@ -22,14 +22,14 @@ forward void CEcon_OnSchemaPreUpdate(KeyValues hSchema);
 
 
 // Send an event to the client.
-native void CEcon_SendEventToClient(int client, const char[] name, int add, int unique_id);
+native void CEcon_SendEventToClient(int client, const char[] name, int add, int unique_id, bool allow_spectator = false);
 // Send an event to the client with random unique index.
-native void CEcon_SendEventToClientUnique(int client, const char[] name, int add);
+native void CEcon_SendEventToClientUnique(int client, const char[] name, int add, bool allow_spectator = false);
 // Send an event to the client attached to a real game event.
-native void CEcon_SendEventToClientFromGameEvent(int client, const char[] name, int add, Handle event);
+native void CEcon_SendEventToClientFromGameEvent(int client, const char[] name, int add, Handle event, bool allow_spectator = false);
 
 // Send an event to all clients.
-native void CEcon_SendEventToAll(const char[] name, int add, int unique_id);
+native void CEcon_SendEventToAll(const char[] name, int add, int unique_id, bool allow_spectator = false);
 // Returns weapon index client has last interacted with.
 native int CEcon_GetLastUsedWeapon(int client);
 
