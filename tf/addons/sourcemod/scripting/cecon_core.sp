@@ -1145,7 +1145,19 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	if (!IsClientValid(client))return;
-
+	
+	// If we are playing MvM, we shouldn't be processing events for bots.
+	if (GameRules_GetProp("m_bPlayingMannVsMachine") != 0)
+	{
+		if (IsFakeClient(client))
+		{
+			return;
+		}
+	}
+	
+	// TODO: Could we also add a check to prevent spectators from receiving any events? Or possibly pass through a
+	// default argument that prevents spectators from receiving events by default but it can be toggled? 
+	// Food for thought. - ZoNiCaL.
 
 	char event[128];
 	GetNativeString(2, event, sizeof(event));
