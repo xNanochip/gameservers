@@ -1194,7 +1194,7 @@ public Action mvm_medic_powerup_shared(Handle hEvent, const char[] szName, bool 
 
 	if (medigun != -1)
 	{
-		int target = GetEntPropEnt(client, Prop_Send, "m_hHealingTarget");
+		int target = GetEntPropEnt(medigun, Prop_Send, "m_hHealingTarget");
 		if (IsClientValid(target) && IsFakeClient(target))
 		{
 			CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_CANTEEN_SHARE_ROBOT", 1, hEvent);
