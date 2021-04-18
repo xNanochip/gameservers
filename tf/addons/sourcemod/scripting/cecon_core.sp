@@ -1093,9 +1093,8 @@ public any Native_SendEventToClientFromGameEvent(Handle plugin, int numParams)
 
 	int add = GetNativeCell(3);
 	int unique_id = GetNativeCell(4);
-	bool allow_spectator = GetNativeCell(5);
 
-	CEcon_SendEventToClient(client, event, add, unique_id, allow_spectator);
+	CEcon_SendEventToClient(client, event, add, unique_id);
 }
 
 //-------------------------------------------------------------------
@@ -1110,9 +1109,8 @@ public any Native_SendEventToClientUnique(Handle plugin, int numParams)
 
 	int add = GetNativeCell(3);
 	int unique_id = GetRandomInt(0, EVENT_UNIQUE_INDEX_MAX_INT);
-	bool allow_spectator = GetNativeCell(4);
 
-	CEcon_SendEventToClient(client, event, add, unique_id, allow_spectator);
+	CEcon_SendEventToClient(client, event, add, unique_id);
 }
 
 #define TF_TEAM_UNASSIGNED 0
@@ -1130,12 +1128,13 @@ public any Native_SendEventToAll(Handle plugin, int numParams)
 
 	int add = GetNativeCell(2);
 	int unique_id = GetNativeCell(3);
-	bool allow_spectator = GetNativeCell(4);
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientValid(i))continue;
-		CEcon_SendEventToClient(i, event, add, unique_id, allow_spectator);
+		if (GetClientTeam(i) < TF_TEAM_RED)continue;
+
+		CEcon_SendEventToClient(i, event, add, unique_id);
 	}
 }
 
@@ -1147,16 +1146,6 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 	int client = GetNativeCell(1);
 	if (!IsClientValid(client))return;
 	
-	// Spectators or anyone not assigned to a team should not be receiving any events at all.
-	// This can be overriden by changing allow_spectator to true when calling CEcon_SendEventToClient())
-	if (GetClientTeam(client) < TF_TEAM_RED)
-	{
-		bool allow_spectator = GetNativeCell(5);
-		
-		// Stop this event from being processed.
-		if (!allow_spectator)return;
-	}
-	
 	// If we are playing MvM, we shouldn't be processing events for bots.
 	if (GameRules_GetProp("m_bPlayingMannVsMachine") != 0)
 	{
@@ -1165,6 +1154,10 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 			return;
 		}
 	}
+	
+	// TODO: Could we also add a check to prevent spectators from receiving any events? Or possibly pass through a
+	// default argument that prevents spectators from receiving events by default but it can be toggled? 
+	// Food for thought. - ZoNiCaL.
 
 	char event[128];
 	GetNativeString(2, event, sizeof(event));
