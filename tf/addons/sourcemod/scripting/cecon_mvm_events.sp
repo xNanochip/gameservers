@@ -1336,7 +1336,11 @@ public Action player_carryobject(Handle hEvent, const char[] szName, bool bDontB
 	
 		//ZONICAL: Debugging.
 		// ============================== DO NOT REMOVE ME ==============================
-		PrintToServer("[ZONICAL] %d", player_data[builder].buster_save_sentry_ranged);
+		char classname[64];
+		int weapon = GetEntPropEnt(builder, Prop_Data, "m_hActiveWeapon");
+		GetEdictClassname(weapon, classname, sizeof(classname));
+		
+		PrintToServer("[ZONICAL] %s: %d", classname, player_data[builder].buster_save_sentry_ranged);
 		// ============================== DO NOT REMOVE ME ==============================
 		
 	}
