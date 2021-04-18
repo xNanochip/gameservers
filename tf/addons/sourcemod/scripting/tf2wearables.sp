@@ -219,10 +219,14 @@ public int Native_GetClientWearablesCount(Handle plugin, int numParams)
 
 	int iCount = 0;
 
-	int iEdict = -1;
-	while((iEdict = FindEntityByClassname(iEdict, "tf_wearable*")) != -1)
+	int next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
+	while (next != -1)
 	{
-		if (GetEntPropEnt(iEdict, Prop_Send, "m_hOwnerEntity") != client)continue;
+		int iEdict = next;
+		next = GetEntPropEnt(iEdict, Prop_Data, "m_hMovePeer");
+		char classname[32];
+		GetEntityClassname(iEdict, classname, 32);
+		if (strncmp(classname, "tf_wearable", 11) != 0) continue;
 
 		iCount++;
 	}

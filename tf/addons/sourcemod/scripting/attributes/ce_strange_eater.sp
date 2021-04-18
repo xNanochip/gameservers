@@ -255,11 +255,17 @@ public void CEcon_OnClientEvent(int client, const char[] name, int add, int uniq
 		}
 	}
 
-	int iEdict = -1;
-	while((iEdict = FindEntityByClassname(iEdict, "tf_wearable*")) != -1)
+	int next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
+	while (next != -1)
 	{
-		if (GetEntPropEnt(iEdict, Prop_Send, "m_hOwnerEntity") != client)continue;
-		
+		int iEdict = next;
+		next = GetEntPropEnt(iEdict, Prop_Data, "m_hMovePeer");
+
+		char classname[32];
+		GetEntityClassname(iEdict, classname, 32);
+
+		if (strncmp(classname, "tf_wearable", 11) != 0) continue;
+
 		char sClass[32];
 		GetEntityNetClass(iEdict, sClass, sizeof(sClass));
 		if (!StrEqual(sClass, "CTFWearable") && !StrEqual(sClass, "CTFWearableCampaignItem"))continue;
@@ -272,6 +278,7 @@ public void CEcon_OnClientEvent(int client, const char[] name, int add, int uniq
 			TickleEntityStrangeParts(iEdict, name, add);
 		}
 	}
+
 }
 
 public void TickleEntityStrangeParts(int entity, const char[] event, int add)

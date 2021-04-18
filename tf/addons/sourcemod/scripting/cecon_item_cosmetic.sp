@@ -103,16 +103,23 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 		ParseCosmeticModel(client, sModel, sizeof(sModel));
 		
 		// Let's try to remove base TF2 cosmetics with similar equip regions.
-		int iEdict = -1;
-		while((iEdict = FindEntityByClassname(iEdict, "tf_wearable*")) != -1)
+		int next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
+		while (next != -1)
 		{
+			int iEdict = next;
+			next = GetEntPropEnt(iEdict, Prop_Data, "m_hMovePeer");
+
+			char classname[32];
+			GetEntityClassname(iEdict, classname, 32);
+
+			if (strncmp(classname, "tf_wearable", 11) != 0) continue;
+
 			char sNetClassName[32];
 			GetEntityNetClass(iEdict, sNetClassName, sizeof(sNetClassName));
 			
 			// We only remove CTFWearable and CTFWearableCampaignItem items.
 			if (!StrEqual(sNetClassName, "CTFWearable") && !StrEqual(sNetClassName, "CTFWearableCampaignItem"))continue;
 			
-			if (GetEntPropEnt(iEdict, Prop_Send, "m_hOwnerEntity") != client)continue;
 			if (CEconItems_IsEntityCustomEconItem(iEdict))continue;
 			if (!HasEntProp(iEdict, Prop_Send, "m_iItemDefinitionIndex"))continue;
 			
@@ -137,10 +144,14 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 		{
 			iAttempts--;
 			
-			iEdict = -1;
-			while((iEdict = FindEntityByClassname(iEdict, "tf_wearable*")) != -1)
+			next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
+			while (next != -1)
 			{
-				if (GetEntPropEnt(iEdict, Prop_Send, "m_hOwnerEntity") != client)continue;
+				iEdict = next;
+				next = GetEntPropEnt(iEdict, Prop_Data, "m_hMovePeer");
+				char classname[32];
+				GetEntityClassname(iEdict, classname, 32);
+				if (strncmp(classname, "tf_wearable", 11) != 0) continue;
 				
 				if (!IsWearableCosmetic(iEdict))continue;
 				if (CEconItems_IsEntityCustomEconItem(iEdict))continue;
@@ -296,11 +307,14 @@ public int GetClientCosmeticsCount(int client)
 {
 	int iCount = 0;
 	
-	int iEdict = -1;
-	while((iEdict = FindEntityByClassname(iEdict, "tf_wearable*")) != -1)
+	int next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
+	while (next != -1)
 	{
-		// This cosmetic does not belong to the client.
-		if (GetEntPropEnt(iEdict, Prop_Send, "m_hOwnerEntity") != client)continue;
+		int iEdict = next;
+		next = GetEntPropEnt(iEdict, Prop_Data, "m_hMovePeer");
+		char classname[32];
+		GetEntityClassname(iEdict, classname, 32);
+		if (strncmp(classname, "tf_wearable", 11) != 0) continue;
 		if (!IsWearableCosmetic(iEdict))continue;
 		
 		iCount++;
