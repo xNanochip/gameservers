@@ -227,6 +227,9 @@ public void ParseEconomyConfig(KeyValues kv)
 				kv.GetString("restrictions/weapon", xQuest.m_sRestrictedToItemName, sizeof(xQuest.m_sRestrictedToItemName));
 				kv.GetString("restrictions/weapon_classname", xQuest.m_sRestrictedToClassname, sizeof(xQuest.m_sRestrictedToClassname));
 
+				// Weapon Slot Restriction
+				kv.GetString("restrictions/weapon_slot", xQuest.m_sRestrictedToWeaponSlot, sizeof(xQuest.m_sRestrictedToWeaponSlot));
+
 				// TF2 Class Restriction
 				char sTFClassName[64];
 				kv.GetString("restrictions/class", sTFClassName, sizeof(sTFClassName));
@@ -255,6 +258,9 @@ public void ParseEconomyConfig(KeyValues kv)
 							// Weapon Restriction
 							kv.GetString("restrictions/weapon", xObjective.m_sRestrictedToItemName, sizeof(xObjective.m_sRestrictedToItemName));
 							kv.GetString("restrictions/weapon_classname", xObjective.m_sRestrictedToClassname, sizeof(xObjective.m_sRestrictedToClassname));
+
+							// Weapon Slot Restriction
+							kv.GetString("restrictions/weapon_slot", xObjective.m_sRestrictedToWeaponSlot, sizeof(xObjective.m_sRestrictedToWeaponSlot));
 
 							if(kv.JumpToKey("hooks", false))
 							{
@@ -338,6 +344,7 @@ public Action cDump(int args)
 		LogMessage("  m_nRestrictedToClass = %d", xQuest.m_nRestrictedToClass);
 		LogMessage("  m_sRestrictedToItemName = \"%s\"", xQuest.m_sRestrictedToItemName);
 		LogMessage("  m_sRestrictedToClassname = \"%s\"", xQuest.m_sRestrictedToClassname);
+		LogMessage("  m_sRestrictedToWeaponSlot = \"%s\"", xQuest.m_sRestrictedToWeaponSlot);
 		LogMessage("  m_Objectives =");
 		LogMessage("  [");
 
@@ -357,6 +364,7 @@ public Action cDump(int args)
 				LogMessage("      m_iHooksCount = %d", xObjective.m_iHooksCount);
 				LogMessage("      m_sRestrictedToItemName = \"%s\"", xObjective.m_sRestrictedToItemName);
 				LogMessage("      m_sRestrictedToClassname = \"%s\"", xObjective.m_sRestrictedToClassname);
+				LogMessage("      m_sRestrictedToClassname = \"%s\"", xObjective.m_sRestrictedToWeaponSlot);
 				LogMessage("      m_Hooks =");
 				LogMessage("      [");
 
@@ -1042,6 +1050,56 @@ public bool CanClientTriggerObjective(int client, CEQuestObjectiveDefinition xOb
 		// If this check didn't pass, return false.
 		if (bFailed)return false;
 	}
+	
+	//------------------------------------------------
+	// Checking wepaon slot.
+
+	// This quest is restricted to a certain weapon slot.
+	if(!StrEqual(xObjective.m_sRestrictedToWeaponSlot, ""))
+	{
+		bFailed = true;
+		
+		char m_asListOfRestrictions[][] = {
+			"primary",
+			"secondary",
+			"melee",
+			"grenade",
+			"building",
+			"pda"
+		};
+		
+		int listOfSlots[] = {
+			TFWeaponSlot_Primary,
+			TFWeaponSlot_Secondary,
+			TFWeaponSlot_Melee,
+			TFWeaponSlot_Grenade,
+			TFWeaponSlot_Building,
+			TFWeaponSlot_PDA
+		};
+
+		// If entity does not exist, return false.
+		if (!IsValidEntity(iLastWeapon))return false;
+		
+		for (int i = 0; i < sizeof(m_asListOfRestrictions), i++;)
+		{
+			if (StrEqual(xObjective.m_sRestrictedToWeaponSlot, m_asListOfRestrictions[i]))
+			{
+				if (GetPlayerWeaponSlot(client, listOfSlots[i]) != iLastWeapon)
+				{
+					return false;
+				}
+				else 
+				{
+					bFailed = false;
+					break;
+				}
+				
+			}
+		}
+		
+		// If this check didn't pass, return false.
+		if (bFailed)return false;
+	}
 
 	return true;
 }
@@ -1446,6 +1504,7 @@ public bool AddPointsToClientObjective(int client, CEQuestObjectiveDefinition xO
 				
 				if(xQuest.m_bBackground)
 				{
+					// TODO: Contract hud enabled check
 					PrintHintText(client, "[%d/%d] %s (%s) +%d%s", xProgress.m_iProgress[iObjectiveIndex], iLimit, xObjective.m_sName, xQuest.m_sName, xObjective.m_iPoints, xQuest.m_sPostfix);
 					PrintToConsole(client, "* [%d/%d] %s (%s) +%d%s", xProgress.m_iProgress[iObjectiveIndex], iLimit, xObjective.m_sName, xQuest.m_sName, xObjective.m_iPoints, xQuest.m_sPostfix);
 				}
