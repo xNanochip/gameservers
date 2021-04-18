@@ -36,7 +36,12 @@ public void OnGameFrame() {
 	for (idx = 0; idx < sizeof(projectiles); idx++) {
 		if (projectiles[idx].entity != 0) {
 			// save the projectile's position for this frame
-			GetEntPropVector(projectiles[idx].entity, Prop_Send, "m_vecOrigin", projectiles[idx].position);
+			float pos[3];
+			pos[0] = projectiles[idx].position[0];
+			pos[1] = projectiles[idx].position[1];
+			pos[2] = projectiles[idx].position[2];
+
+			GetEntPropVector(projectiles[idx].entity, Prop_Send, "m_vecOrigin", pos);
 		}
 	}
 }
@@ -45,9 +50,9 @@ public void OnEntityCreated(int entity, const char[] class) {
 	int idx;
 
 	if (strncmp(class, "tf_projectile_", 14) == 0 &&
-		(StrEqual(class, "tf_projectile_ball_ornament") ||
-		StrEqual(class, "tf_projectile_energy_ring") ||
-		StrEqual(class, "tf_projectile_balloffire"))
+		(StrEqual(class[14], "ball_ornament") ||
+		StrEqual(class[14], "energy_ring") ||
+		StrEqual(class[14], "balloffire"))
 	) {
 		for (idx = 0; idx < sizeof(projectiles); idx++) {
 			if (projectiles[idx].entity == 0) {
@@ -79,7 +84,13 @@ Action SDKHookCB_Spawn(int entity) {
 	for (idx = 0; idx < sizeof(projectiles); idx++) {
 		if (projectiles[idx].entity == entity) {
 			// in case the projectile collides immediately after spawning
-			GetEntPropVector(entity, Prop_Send, "m_vecOrigin", projectiles[idx].position);
+			
+			float pos[3];
+			pos[0] = projectiles[idx].position[0];
+			pos[1] = projectiles[idx].position[1];
+			pos[2] = projectiles[idx].position[2];
+
+			GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
 			break;
 		}
 	}
@@ -98,7 +109,14 @@ Action SDKHookCB_Touch(int entity, int other) {
 				GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos1);
 
 				// roughly predict the projectile's next position
-				SubtractVectors(pos1, projectiles[idx].position, pos2);
+				
+				
+				float pos[3];
+				pos[0] = projectiles[idx].position[0];
+				pos[1] = projectiles[idx].position[1];
+				pos[2] = projectiles[idx].position[2];
+
+				SubtractVectors(pos1, pos, pos2);
 				ScaleVector(pos2, 1.3);
 				AddVectors(pos1, pos2, pos2);
 
