@@ -79,6 +79,7 @@ ArrayList m_hEventsQueue;
 
 ConVar 	ce_events_queue_debug,
 		ce_events_log,
+		ce_events_log_event_filter,
 		ce_events_per_frame;
 
 enum struct CEQueuedEvent
@@ -153,6 +154,7 @@ public void OnPluginStart()
 	RegAdminCmd("ce_events_test", cTestEvnt, ADMFLAG_ROOT, "Tests a CEcon event.");
 	ce_events_queue_debug = CreateConVar("ce_events_queue_debug", "0");
 	ce_events_log = CreateConVar("ce_events_log", "0");
+	ce_events_log_event_filter = CreateConVar("ce_events_log_event_filter", "");
 
 	// Hook all needed entities when plugin late loads.
 	LateHooking();
@@ -1153,7 +1155,21 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 
 	if(ce_events_log.BoolValue)
 	{
-		LogMessage("%s (client \"%N\") (add %d) (unique_id)", event, client, add, unique_id);
+		char szEventString[128];
+		GetConVarString(ce_events_log_event_filter, szEventString, sizeof(szEventString));
+		
+		if (!StrEqual(szEventString, ""))
+		{
+			if (StrContains(event, szEventString))
+			{
+				LogMessage("%s (client \"%N\") (add %d) (unique_id)", event, client, add, unique_id);
+			}
+		}
+		else
+		{
+			LogMessage("%s (client \"%N\") (add %d) (unique_id)", event, client, add, unique_id);
+		}
+		
 	}
 
 	// We only start new queue, if we are sure nothing is currently being proccessed.
