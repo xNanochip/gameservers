@@ -208,7 +208,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 
 	m_nThrowableType[entity] = 0;
 
-	if(StrContains(classname, "tf_projectile_jar") != -1)
+	if(strncmp(classname, "tf_projectile_jar", 17) == 0)
 	{
 		SDKHook(entity, SDKHook_Spawn, SDKHook_Projectile_OnSpawn);
 	}

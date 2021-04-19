@@ -147,7 +147,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 			next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
 			while (next != -1)
 			{
-				iEdict = next;
+				int iEdict = next;
 				next = GetEntPropEnt(iEdict, Prop_Data, "m_hMovePeer");
 				char classname[32];
 				GetEntityClassname(iEdict, classname, 32);
