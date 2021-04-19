@@ -8,7 +8,6 @@
 #include <tf2_stocks>
 #include <cecon>
 
-
 public Plugin myinfo =
 {
 	name = "Creators.TF Economy - TF2 MvM Events",
@@ -21,7 +20,6 @@ public Plugin myinfo =
 bool uses_custom_upgrades = false;
 
 #define TF_MAXPLAYERS 34 // 33 max players + 1 for offset
-
 
 // Player data that persist for the duration of the mission
 enum struct PlayerDataMission
@@ -37,9 +35,11 @@ enum struct PlayerDataMission
 enum struct PlayerData
 {
 	int touched_cp_area;
-	// int tank_damage_wave;
 	int tank_damage_last_second;
-
+	
+	// Use this for MVP check instead.
+	int tank_damage_wave;
+	
 	// Bit mask of every client index who damaged the player
 	int hit_tracker;
 
@@ -58,7 +58,7 @@ enum struct PlayerData
 	void Init(int client)
 	{
 		this.touched_cp_area = -1;
-		// this.tank_damage_wave = 0;
+		this.tank_damage_wave = 0;
 		this.tank_damage_last_second = 0;
 		this.killed_by = 0;
 		this.hit_tracker = 0;
@@ -80,6 +80,7 @@ Handle get_condition_provider_handle;
 Handle attrib_float_handle;
 
 int bonus_currency_counter = 0;
+
 public void OnPluginStart()
 {
 	HookEvent("upgrades_file_changed", upgrades_file_changed);
@@ -204,6 +205,7 @@ public Action UpdateTimer(Handle timer, any data)
 				}
 
 				player_data[i].tank_damage_last_second = tank_damage;
+				player_data[i].tank_damage_wave += tank_damage;
 			}
 		}
 	}
@@ -265,8 +267,8 @@ public void WidowmakerShootUpdate(int client)
 
 public Action player_changeclass(Event hEvent, const char[] name, bool dontBroadcast)
 {
-	int client = GetClientOfUserId(hEvent.GetInt("userid"));
-	int class = hEvent.GetInt("class");
+	//int client = GetClientOfUserId(hEvent.GetInt("userid"));
+	//int class = hEvent.GetInt("class");
 
 	return Plugin_Continue;
 }
@@ -716,29 +718,22 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 	CEcon_SendEventToAll("TF_MVM_WAVE_BEGIN", 1, GetRandomInt(0, 9999));
 
 	bonus_currency_counter = 0;
-
-	int resource = GetPlayerResourceEntity();
-	for (int i = 1; i <= MaxClients; i++)
+	
+	// (Safety), reset tank damage here as well.
+	for (int i; i < TF_MAXPLAYERS, i++;)
 	{
-		// player_data[i].tank_damage_wave = GetEntProp(resource, Prop_Send, "m_iDamageBoss", 4, i);
+		// Players only.
+		if (!IsClientValid(i) || IsFakeClient(i))continue;
+		
+		// Reset this players tank damage.
+		player_data[i].tank_damage_wave = 0;
 	}
 
 	return Plugin_Continue;
 }
 
-public void OnWaveEnd(Handle hEvent)
-{
-	int resource = GetPlayerResourceEntity();
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		// player_data[i].tank_damage_wave = 0;
-	}
-}
-
 public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	OnWaveEnd(hEvent);
-
 	int objective_resource = FindEntityByClassname(-1,"tf_objective_resource");
 	int wave_number = GetEntProp(objective_resource, Prop_Send,"m_nMannVsMachineWaveCount");
 
@@ -804,7 +799,30 @@ public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBr
 		}
 	}
 
-	OnWaveEnd(hEvent);
+	int iTankDamageMVP = -1;
+	int iDamageDealt = 0;
+	// Award tank MVP for tanks:
+	for (int i; i < TF_MAXPLAYERS, i++;)
+	{
+		// Players only.
+		if (!IsClientValid(i) || IsFakeClient(i))continue;
+		
+		// Has this player dealt the most damage?
+		if (player_data[i].tank_damage_wave > iDamageDealt && player_data[i].tank_damage_wave > 0)
+		{
+			iTankDamageMVP = i;
+			iDamageDealt = player_data[i].tank_damage_wave;
+		}
+		
+		// Reset this players tank damage.
+		player_data[i].tank_damage_wave = 0;
+	}
+	
+	// Send event to the MVP if we have one.
+	if (iTankDamageMVP != -1)
+	{
+		CEcon_SendEventToClientFromGameEvent(iTankDamageMVP, "TF_MVM_DAMAGE_TANK_MVP", 1, hEvent);
+	}
 
 	return Plugin_Continue;
 }
@@ -822,18 +840,13 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 		if (GetEntProp(i, Prop_Data, "m_iHealth") > 0)
 			continue;
 
-		float vec[3];
-		GetEntPropVector(i, Prop_Send, "m_vecOrigin", vec);
-		float vecdown[3];
-		vecdown = vec;
-		vecdown[2] -= 40;
-		vec[2] += 90;
-
-		TR_TraceRayFilter(vec, vecdown, MASK_SOLID_BRUSHONLY, RayType_EndPoint, FilterTank, i);
-		if (!TR_DidHit())
+		// Blimp check:
+		char sTankModelName[PLATFORM_MAX_PATH];
+		GetEntPropString(i, Prop_Data, "m_ModelName", sTankModelName, sizeof(sTankModelName));
+		
+		if (StrContains(sTankModelName, "boss_bot\boss_blimp", false))
 		{
 			is_blimp = true;
-			break;
 		}
 	}
 
@@ -841,26 +854,11 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 	// However the issue with that is if we have multiple tanks at the same time, only the first one
 	// will register. - Moonly
 
-	int resource = GetPlayerResourceEntity();
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		/*
-		int damage = 0;
-		if (IsClientValid(i))
-		{
-			damage = GetEntProp(resource, Prop_Send, "m_iDamageBoss", 4, i) - player_data[i].tank_damage_wave;
-			if (damage > 0)
-			{*/
-				CEcon_SendEventToClientFromGameEvent(i, "TF_MVM_DESTROY_TANK", 1, hEvent);
-
-				if (is_blimp)
-				{
-					CEcon_SendEventToClientFromGameEvent(i, "TF_MVM_DESTROY_TANK_BLIMP", 1, hEvent);
-				}
-			/*}
-		}
-		player_data[i].tank_damage_wave += damage;*/
-	}
+	if (!is_blimp)
+		CEcon_SendEventToAll("TF_MVM_DESTROY_TANK", 1, GetRandomInt(0, 10000));
+	else
+		CEcon_SendEventToAll("TF_MVM_DESTROY_TANK_BLIMP", 1, GetRandomInt(0, 10000));
+	
 
 	return Plugin_Continue;
 }
@@ -1246,6 +1244,9 @@ public Action medic_death(Handle hEvent, const char[] szName, bool bDontBroadcas
 
 	// Only count regular uber
 	bool charged_uber = charged && GetAttributeValue(healer, "set_charge_type", 0.0) == 0.0;
+	
+	
+	
 	if (charged_uber && IsClientValid(healer) && IsFakeClient(healer))
 	{
 		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_UBER_MEDIC", 1, hEvent);
@@ -1328,7 +1329,7 @@ public Action player_carryobject(Handle hEvent, const char[] szName, bool bDontB
 
 	int builder = GetClientOfUserId(GetEventInt(hEvent, "userid"));
 	int type = GetEventInt(hEvent, "object");
-	int entity = GetEventInt(hEvent, "index");
+	//int entity = GetEventInt(hEvent, "index");
 	if (type == 2) //OBJ_SENTRYGUN
 	{		
 		player_data[builder].buster_save_sentry_ranged = GetAttributeValue(GetEntPropEnt(builder, Prop_Data, "m_hActiveWeapon"), "building_teleporting_pickup", 0.0) != 0.0;
@@ -1500,7 +1501,7 @@ public Action building_healed(Handle hEvent, const char[] szName, bool bDontBroa
 {
 	int healer = GetEventInt(hEvent, "healer");
 	int amount = GetEventInt(hEvent, "amount");
-	int building = GetEventInt(hEvent, "building");
+	//int building = GetEventInt(hEvent, "building");
 
 	CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_REPAIR", amount, hEvent);
 }
