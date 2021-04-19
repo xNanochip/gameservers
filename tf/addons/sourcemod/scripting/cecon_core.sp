@@ -1158,6 +1158,10 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 	// TODO: Could we also add a check to prevent spectators from receiving any events? Or possibly pass through a
 	// default argument that prevents spectators from receiving events by default but it can be toggled? 
 	// Food for thought. - ZoNiCaL.
+	
+	// APPENDIX - I'm currently disabling all spectators from receiving events here,
+	// but I want it to become some sort of optional argument in the native later.
+	if (GetClientTeam(client) < TF_TEAM_RED) return;
 
 	char event[128];
 	GetNativeString(2, event, sizeof(event));
