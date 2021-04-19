@@ -978,6 +978,56 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 		// If this check didn't pass, return false.
 		if (bFailed)return false;
 	}
+	
+	//------------------------------------------------
+	// Checking wepaon slot.
+
+	// This quest is restricted to a certain weapon slot.
+	if(!StrEqual(xQuest.m_sRestrictedToWeaponSlot, ""))
+	{
+		bFailed = true;
+		
+		char m_asListOfRestrictions[][] = {
+			"primary",
+			"secondary",
+			"melee",
+			"grenade",
+			"building",
+			"pda"
+		};
+		
+		int listOfSlots[] = {
+			TFWeaponSlot_Primary,
+			TFWeaponSlot_Secondary,
+			TFWeaponSlot_Melee,
+			TFWeaponSlot_Grenade,
+			TFWeaponSlot_Building,
+			TFWeaponSlot_PDA
+		};
+
+		// If entity does not exist, return false.
+		if (!IsValidEntity(iLastWeapon))return false;
+		
+		for (int i = 0; i < sizeof(m_asListOfRestrictions), i++;)
+		{
+			if (StrEqual(xQuest.m_sRestrictedToWeaponSlot, m_asListOfRestrictions[i]))
+			{
+				if (GetPlayerWeaponSlot(client, listOfSlots[i]) != iLastWeapon)
+				{
+					return false;
+				}
+				else 
+				{
+					bFailed = false;
+					break;
+				}
+				
+			}
+		}
+		
+		// If this check didn't pass, return false.
+		if (bFailed)return false;
+	}
 
 	return true;
 }
