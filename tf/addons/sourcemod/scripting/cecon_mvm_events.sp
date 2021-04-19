@@ -844,17 +844,13 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 		char sTankModelName[PLATFORM_MAX_PATH];
 		GetEntPropString(i, Prop_Data, "m_ModelName", sTankModelName, sizeof(sTankModelName));
 		
-		if (StrContains(sTankModelName, "boss_bot\boss_blimp", false))
+		if (StrContains(sTankModelName, "boss_blimp", false) != -1)
 		{
 			is_blimp = true;
 		}
 	}
 
-	// Before we only made it fire the event, if a player has damaged the tank at least once.
-	// However the issue with that is if we have multiple tanks at the same time, only the first one
-	// will register. - Moonly
-
-	if (!is_blimp)
+	if (is_blimp)
 		CEcon_SendEventToAll("TF_MVM_DESTROY_TANK", 1, GetRandomInt(0, 10000));
 	else
 		CEcon_SendEventToAll("TF_MVM_DESTROY_TANK_BLIMP", 1, GetRandomInt(0, 10000));
