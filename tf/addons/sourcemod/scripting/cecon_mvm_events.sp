@@ -850,10 +850,10 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 		}
 	}
 
-	if (is_blimp)
+	//if (is_blimp)
 		CEcon_SendEventToAll("TF_MVM_DESTROY_TANK", 1, GetRandomInt(0, 10000));
-	else
-		CEcon_SendEventToAll("TF_MVM_DESTROY_TANK_BLIMP", 1, GetRandomInt(0, 10000));
+	//else
+		//CEcon_SendEventToAll("TF_MVM_DESTROY_TANK_BLIMP", 1, GetRandomInt(0, 10000));
 	
 
 	return Plugin_Continue;
