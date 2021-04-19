@@ -79,15 +79,37 @@ public void OnGameFrame()
         {
             if (iState != SENTRY_STATE_UPGRADING && iState != SENTRY_STATE_INACTIVE)
             {
-                SetEntProp(iBuilding, Prop_Send, "m_bClientSideAnimation", true);
+                SetEntProp(iBuilding, Prop_Send, "m_bClientSideAnimation", false);
             }
         }
         else
         {
             if (iState == SENTRY_STATE_UPGRADING || iState == SENTRY_STATE_INACTIVE)
             {
-                SetEntProp(iBuilding, Prop_Send, "m_bClientSideAnimation", false);
+                SetEntProp(iBuilding, Prop_Send, "m_bClientSideAnimation", true);
             }
         }
+
+        //if
+        //(
+        //    (
+        //        iState == SENTRY_STATE_UPGRADING
+        //        ||
+        //        iState == SENTRY_STATE_INACTIVE
+        //    )
+        //    && !bClientSideAnim
+        //)
+        //{
+        //    SetEntProp(iBuilding, Prop_Send, "m_bClientSideAnimation", true);
+        //}
+        //else if
+        //(
+        //       iState != SENTRY_STATE_UPGRADING
+        //    && iState != SENTRY_STATE_INACTIVE
+        //    && bClientSideAnim
+        //)
+        //{
+        //    SetEntProp(iBuilding, Prop_Send, "m_bClientSideAnimation", false);
+        //}
     }
 }
