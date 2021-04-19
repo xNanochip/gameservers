@@ -52,15 +52,18 @@ void HookSentry(int entityref)
 
 public void OnEntityDestroyed(int entity)
 {
-    char classname[16];
-    GetEntityClassname(entity, classname, sizeof(classname));
-    if (StrEqual(classname, "obj_sentrygun"))
+    if (IsValidEntity(entity))
     {
-        int index = g_SentryList.FindValue(entity);
-        // avoid exceptions
-        if (index != -1)
+        char classname[16];
+        GetEntityClassname(entity, classname, sizeof(classname));
+        if (StrEqual(classname, "obj_sentrygun"))
         {
-            g_SentryList.Erase(index);
+            int index = g_SentryList.FindValue(entity);
+            // avoid exceptions
+            if (index != -1)
+            {
+                g_SentryList.Erase(index);
+            }
         }
     }
 }
