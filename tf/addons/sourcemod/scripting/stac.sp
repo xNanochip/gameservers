@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.2.2b"
+#define PLUGIN_VERSION  "4.2.3b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -1025,6 +1025,7 @@ public void OnMapStart()
     }
     timeSinceMapStart = GetEngineTime();
     CreateTimer(0.1, checkNativesEtc);
+    dogshit = false;
 }
 
 public void OnMapEnd()
@@ -1142,20 +1143,30 @@ public void OnClientDisconnect(int Cl)
     }
 }
 
-// TODO: monitor server tickrate
-//float gameEngineTime[2];
-//float realTPS[2];
-//float minTPS = 10000.0;
-//public void OnGameFrame()
-//{
-//    gameEngineTime[1] = gameEngineTime[0];
-//    gameEngineTime[0] = GetEngineTime();
-//
-//    realTPS[1] = realTPS[0];
-//    realTPS[0] = 1/(gameEngineTime[0] - gameEngineTime[1]);
-//
-//    if (realTPS < (tps)
-//}
+// monitor server tickrate
+bool dogshit;
+float gameEngineTime[2];
+float realTPS[2];
+public void OnGameFrame()
+{
+    gameEngineTime[1] = gameEngineTime[0];
+    gameEngineTime[0] = GetEngineTime();
+
+    realTPS[1] = realTPS[0];
+    realTPS[0] = 1/(gameEngineTime[0] - gameEngineTime[1]);
+
+    float smoothedTPS = ((realTPS[0] + realTPS[1]) / 2);
+
+    if (realTPS[0] < (tps / 2.0))
+    {
+        LogMessage("%.2f", smoothedTPS);
+        if (!dogshit)
+        {
+            PrintToImportant("{hotpink}[StAC]{white} This server is running {fullred}like dogshit{white}.\nDisabling OnPlayerRunCmd checks until the next map.");
+            dogshit = true;
+        }
+    }
+}
 
 /*
     in OnPlayerRunCmd, we check for:
@@ -1180,6 +1191,11 @@ public Action OnPlayerRunCmd
     int mouse[2]
 )
 {
+    // server is laggy. SKIP!
+    if (dogshit)
+    {
+        return Plugin_Continue;
+    }
     // sanity check, don't let banned clients do anything!
     if (userBanQueued[Cl])
     {
