@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.2.4b"
+#define PLUGIN_VERSION  "4.2.5b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -1171,7 +1171,7 @@ public void OnGameFrame()
     {
         //LogMessage("%.2f", smoothedTPS);
         PrintToImportant("{hotpink}[StAC]{white} Server framerate stuttered. Expected: {palegreen}%f{white}, got {fullred}%f{white}.\nDisabling OnPlayerRunCmd checks for 30 seconds.", tps, realTPS[0]);
-        StacLog("[StAC] Server framerate stuttered. Expected: %f, got %f.\nDisabling OnPlayerRunCmd checks for 30 seconds.", tps, realTPS[0]);
+        StacLog("[StAC] Server framerate stuttered. Expected: %f, got %f.\nDisabling OnPlayerRunCmd checks for 5 seconds.", tps, realTPS[0]);
     }
 }
 
@@ -1476,7 +1476,7 @@ public Action OnPlayerRunCmd
         // don't touch if map or plugin just started - let the server framerate stabilize a bit
         || engineTime[0][Cl] - 1.0 < timeSinceMapStart
         // lets wait a bit if we had a lag spike in the last 30 seconds
-        || engineTime[0][Cl] - 30.0 < timeSinceLagSpike
+        || engineTime[0][Cl] - 5.0 < timeSinceLagSpike
         // make sure client isn't timing out - duh
         || IsClientTimingOut(Cl)
         // this is just for halloween shit - plenty of halloween effects can and will mess up all of these checks
@@ -1575,9 +1575,8 @@ public Action OnPlayerRunCmd
         || buttons & IN_RIGHT
         // make sure client doesn't have 2.5% or more packet loss - this would be annoying to play with for cheaters - but may be tweaked in the future if cheats decide to try to get around it
         || loss >= 2.5
-        // make sure client doesn't have 52% or more choke - nullcore fakechoke goes up to 51!
-        // we might not need to check this !! !
-        //|| choke >= 52.0
+        // make sure client doesn't have 80% or more choke
+        || choke >= 80.0
         // if a client misses 8 ticks, its safe to assume they're lagging
         // so check the difference between the last 10 ticks
         // if a client missed any of the 10 server ticks by 8 ticks of time or more, don't check them
