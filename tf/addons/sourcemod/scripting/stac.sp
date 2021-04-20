@@ -1160,6 +1160,11 @@ public void OnGameFrame()
 
     float smoothedTPS = ((realTPS[0] + realTPS[1]) / 2);
 
+    if (GetEngineTime() - 1.0 < timeSinceMapStart)
+    {
+        return;
+    }
+
     if (realTPS[0] < (tps / 2.0))
     {
         LogMessage("%.2f", smoothedTPS);
