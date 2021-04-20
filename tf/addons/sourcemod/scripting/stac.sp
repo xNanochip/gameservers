@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.2.3b"
+#define PLUGIN_VERSION  "4.2.4b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -80,6 +80,8 @@ float sensFor               [TFMAXPLAYERS+1];
 float engineTime        [11][TFMAXPLAYERS+1];
 // time since the map started (duh)
 float timeSinceMapStart;
+// time since the last lag spike occurred
+float timeSinceLagSpike;
 // weapon name, gets passed to aimsnap check
 char hurtWeapon             [TFMAXPLAYERS+1][256];
 // time since player did damage, for aimsnap check
@@ -151,7 +153,6 @@ int isSteamAlive            = -1;
 // server tickrate stuff
 float gameEngineTime[2];
 float realTPS[2];
-bool dogshit;
 
 // Log file
 File StacLogFile;
@@ -1032,7 +1033,6 @@ public void OnMapStart()
     }
     timeSinceMapStart = GetEngineTime();
     CreateTimer(0.1, checkNativesEtc);
-    dogshit = false;
 }
 
 public void OnMapEnd()
@@ -1167,14 +1167,11 @@ public void OnGameFrame()
         return;
     }
 
-    if (realTPS[0] < (tps / 2.0))
+    if (smoothedTPS < (tps / 2.0))
     {
-        LogMessage("%.2f", smoothedTPS);
-        if (!dogshit)
-        {
-            PrintToImportant("{hotpink}[StAC]{white} This server is running {fullred}like dogshit{white}.\nDisabling OnPlayerRunCmd checks until the next map.");
-            dogshit = true;
-        }
+        //LogMessage("%.2f", smoothedTPS);
+        PrintToImportant("{hotpink}[StAC]{white} Server framerate stuttered. Expected: {palegreen}%f{white}, got {fullred}%f{white}.\nDisabling OnPlayerRunCmd checks for 30 seconds.", tps, realTPS[0]);
+        StacLog("[StAC] Server framerate stuttered. Expected: %f, got %f.\nDisabling OnPlayerRunCmd checks for 30 seconds.", tps, realTPS[0]);
     }
 }
 
@@ -1201,11 +1198,6 @@ public Action OnPlayerRunCmd
     int mouse[2]
 )
 {
-    // server is laggy. SKIP!
-    if (dogshit)
-    {
-        return Plugin_Continue;
-    }
     // sanity check, don't let banned clients do anything!
     if (userBanQueued[Cl])
     {
@@ -1483,6 +1475,8 @@ public Action OnPlayerRunCmd
         || engineTime[0][Cl] - 1.0 < timeSinceTeled[Cl]
         // don't touch if map or plugin just started - let the server framerate stabilize a bit
         || engineTime[0][Cl] - 1.0 < timeSinceMapStart
+        // lets wait a bit if we had a lag spike in the last 30 seconds
+        || engineTime[0][Cl] - 30.0 < timeSinceLagSpike
         // make sure client isn't timing out - duh
         || IsClientTimingOut(Cl)
         // this is just for halloween shit - plenty of halloween effects can and will mess up all of these checks
