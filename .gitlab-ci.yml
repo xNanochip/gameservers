@@ -87,7 +87,8 @@ stages:
                         echo "chmodding"
                         chmod 744 build.sh;
                         chmod 744 start.sh;
-                        chmod 744 py-str0patch/str0.py;
+                        chmod 744 str0.py;
+                        chmod 744 str0.ini;
 
                         echo "running python script"
                         python3 ./str0.py ./.steam/sdk32/steamclient.so -c ./str0.ini
