@@ -148,6 +148,11 @@ bool logtofile              = true;
 // bool that gets set by steamtools/steamworks forwards - used to kick clients that dont auth
 int isSteamAlive            = -1;
 
+// server tickrate stuff
+float gameEngineTime[2];
+float realTPS[2];
+bool dogshit;
+
 // Log file
 File StacLogFile;
 
@@ -1144,9 +1149,7 @@ public void OnClientDisconnect(int Cl)
 }
 
 // monitor server tickrate
-bool dogshit;
-float gameEngineTime[2];
-float realTPS[2];
+
 public void OnGameFrame()
 {
     gameEngineTime[1] = gameEngineTime[0];
