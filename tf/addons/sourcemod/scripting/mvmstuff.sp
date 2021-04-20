@@ -48,8 +48,6 @@ bool vanilla_mode;
 Handle attrib_float_prep;
 Handle burn_prep;
 
-bool mission_lockbug_check = false;
-
 StringMap whitelisted_afterburn_items;
 
 public void OnPluginStart()
@@ -661,7 +659,6 @@ public void Event_WaveEnd(Event event, const char[] name, bool dontBroadcast)
 {
 
 	//PrintToChatAll("mvm_wave_end");
-	int resource = FindEntityByClassname(-1,"tf_objective_resource");
 	wave_passed[last_wave_number] = true;
 	wave_times[last_wave_number] = GetGameTime()-wave_start_time;
 	waves_total_time += GetGameTime()-wave_start_time;
@@ -682,7 +679,6 @@ public void Event_WaveFail(Event event, const char[] name, bool dontBroadcast)
 {
 
 	//PrintToChatAll("mvm_wave_fail");
-	int resource = FindEntityByClassname(-1,"tf_objective_resource");
 	
 	fail_counter_tick++;
 	if (fail_counter_tick > 3){
@@ -719,7 +715,6 @@ public void Event_RestartRound(Event event, const char[] name, bool dontBroadcas
 	if(!firstrestart){
 		firstrestart=true;
 	}
-	mission_lockbug_check = false;
 	SetGameDescription();
 }
 
@@ -802,7 +797,7 @@ public void OnEnergyBallSpawn(int entity)
 int last_stickbomb_victim = 0;
 public Action OnAnyDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3], int damagecustom)
 {
-	if (attacker != 0 && attacker < MAXPLAYERS && IsClientInGame(attacker) && weapon != 0 && IsValidEntity(weapon)){
+	if (attacker != 0 && attacker <= MaxClients && IsClientInGame(attacker) && weapon != 0 && IsValidEntity(weapon)){
 		if (!IsFakeClient(attacker) /*GetEntProp(victim, Prop_Send, "m_iTeamNum") == 3*/) {
 			char classname[32];
 			GetEntityClassname(weapon,classname,32);
@@ -860,7 +855,7 @@ public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& d
 		RequestFrame(ResetCaberSingle, weapon);
 	}
 
-	if (attacker != 0 && attacker != victim && attacker < MAXPLAYERS && IsClientInGame(attacker) ){
+	if (attacker != 0 && attacker != victim && attacker <= MaxClients && IsClientInGame(attacker) ){
 
 		if (weapon > 0 && IsValidEntity(weapon) && GetClientTeam(victim) != GetClientTeam(attacker)) {
 			if( /*GetClientTeam(victim) == 3 */ /*blue*/ !vanilla_mode && !IsFakeClient(attacker)) {
