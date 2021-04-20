@@ -890,6 +890,8 @@ public Action eRoundStart(Handle event, char[] name, bool dontBroadcast)
     DoTPSMath();
     // might as well do this here!
     ActuallySetRandomSeed();
+    // this counts
+    timeSinceMapStart = GetEngineTime();
 }
 
 public Action ePlayerSpawned(Handle event, char[] name, bool dontBroadcast)
