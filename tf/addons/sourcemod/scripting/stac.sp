@@ -1151,7 +1151,7 @@ public void OnClientDisconnect(int Cl)
 }
 
 // monitor server tickrate
-
+float stutterWaitLength = 5.0;
 public void OnGameFrame()
 {
     gameEngineTime[1] = gameEngineTime[0];
@@ -1170,8 +1170,8 @@ public void OnGameFrame()
     if (smoothedTPS < (tps / 2.0))
     {
         //LogMessage("%.2f", smoothedTPS);
-        PrintToImportant("{hotpink}[StAC]{white} Server framerate stuttered. Expected: {palegreen}%f{white}, got {fullred}%f{white}.\nDisabling OnPlayerRunCmd checks for 30 seconds.", tps, realTPS[0]);
-        StacLog("[StAC] Server framerate stuttered. Expected: %f, got %f.\nDisabling OnPlayerRunCmd checks for 5 seconds.", tps, realTPS[0]);
+        PrintToImportant("{hotpink}[StAC]{white} Server framerate stuttered. Expected: {palegreen}%f{white}, got {fullred}%f{white}.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, realTPS[0], stutterWaitLength);
+        StacLog("[StAC] Server framerate stuttered. Expected: %f, got %f.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, realTPS[0], stutterWaitLength);
     }
 }
 
@@ -1475,8 +1475,8 @@ public Action OnPlayerRunCmd
         || engineTime[0][Cl] - 1.0 < timeSinceTeled[Cl]
         // don't touch if map or plugin just started - let the server framerate stabilize a bit
         || engineTime[0][Cl] - 1.0 < timeSinceMapStart
-        // lets wait a bit if we had a lag spike in the last 30 seconds
-        || engineTime[0][Cl] - 5.0 < timeSinceLagSpike
+        // lets wait a bit if we had a lag spike in the last 5 seconds
+        || engineTime[0][Cl] - stutterWaitLength < timeSinceLagSpike
         // make sure client isn't timing out - duh
         || IsClientTimingOut(Cl)
         // this is just for halloween shit - plenty of halloween effects can and will mess up all of these checks
