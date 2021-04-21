@@ -69,6 +69,9 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_quest", cQuestPanel);
 	RegConsoleCmd("sm_contract", cQuestPanel);
 	
+	//ce_contracts_log = CreateConVar("ce_contracts_log", "0");
+	//ce_contracts_log_contract_filter = CreateConVar("ce_contracts_log_contract_filter", "");
+	
 	OnLateLoad();
 
 	CreateTimer(QUEST_HUD_REFRESH_RATE, Timer_HudRefresh, _, TIMER_REPEAT);
@@ -368,7 +371,7 @@ public Action cDump(int args)
 				LogMessage("      m_iHooksCount = %d", xObjective.m_iHooksCount);
 				LogMessage("      m_sRestrictedToItemName = \"%s\"", xObjective.m_sRestrictedToItemName);
 				LogMessage("      m_sRestrictedToClassname = \"%s\"", xObjective.m_sRestrictedToClassname);
-				LogMessage("      m_sRestrictedToClassname = \"%s\"", xObjective.m_sRestrictedToWeaponSlot);
+				LogMessage("      m_sRestrictedToWeaponSlot = \"%s\"", xObjective.m_sRestrictedToWeaponSlot);
 				LogMessage("      m_Hooks =");
 				LogMessage("      [");
 
@@ -778,8 +781,18 @@ public void SetClientActiveQuestByIndex(int client, int quest)
 
 			m_xActiveQuestStruct[client] = xQuest;
 
-			PrintToChat(client, "\x03You have activated '\x05%s\x03' contract. Type \x05!quest \x03or \x05!contract \x03to view current completion progress.", xQuest.m_sName);
-			PrintToChat(client, "\x03You can change your contract on \x05creators.tf \x03in \x05ConTracker \x03tab.");
+			// Print a warning saying that normal contracts on MVM won't register.
+			if (GameRules_GetProp("m_bPlayingMannVsMachine") != 0 && !IsQuestActive(xQuest))
+			{
+				PrintToChat(client, "\x05WARNING:\x03 Normal Creators.TF Contracts will \x05not\x03 work on \x05Mann vs Machine\x03 servers.");
+				PrintToChat(client, "\x03To complete them, you can join a \x05Creators.TF Pub\x03 server at \x05creators.tf/servers/creatorstf");
+			}
+			else
+			{
+				PrintToChat(client, "\x03You have activated '\x05%s\x03' contract. Type \x05!quest \x03or \x05!contract \x03to view current completion progress.", xQuest.m_sName);
+				PrintToChat(client, "\x03You can change your contract on \x05creators.tf \x03in \x05ConTracker \x03tab.");
+			}
+			
 
 			char sDecodeSound[64];
 			strcopy(sDecodeSound, sizeof(sDecodeSound), "Quest.Decode");
@@ -810,6 +823,12 @@ public bool IsQuestActive(CEQuestDefinition xQuest)
 
 	if (!StrEqual(xQuest.m_sRestrictedToMap, "") && StrContains(sMap, xQuest.m_sRestrictedToMap) == -1)return false;
 	if (!StrEqual(xQuest.m_sStrictRestrictedToMap, "") && !StrEqual(xQuest.m_sStrictRestrictedToMap, sMap))return false;
+
+	// If we're in MvM, we're only counting background contracts.
+	if (GameRules_GetProp("m_bPlayingMannVsMachine") != 0)
+	{
+		if (!xQuest.m_bBackground)return false;
+	}
 
 	return true;
 }
@@ -882,38 +901,95 @@ public Action Timer_HudRefresh(Handle timer, any data)
 	}
 }
 
-public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
+public bool IsCorrectClass(int client, TFClassType tfClass)
 {
-	if (!IsQuestActive(xQuest))return false;
-
-	bool bFailed = false;
-
 	//------------------------------------------------
 	// TF2 Player Class restriction.
-	if(xQuest.m_nRestrictedToClass != TFClass_Unknown)
+	if(tfClass != TFClass_Unknown)
 	{
-		bFailed = true;
-		if(TF2_GetPlayerClass(client) == xQuest.m_nRestrictedToClass)
+		if(TF2_GetPlayerClass(client) == tfClass)
 		{
-			bFailed = false;
+			return true;
+		}
+		else
+		{
+			return false;
 		}
 	}
+	else
+	{
+		return true;
+	}
+	
+}
 
-	if (bFailed)return false;
-
-	//------------------------------------------------
-	// Item Name restriction.
+public bool IsCorrectWeaponSlot(int client, const char[] sWeaponSlotRestriction)
+{
 	int iLastWeapon = CEcon_GetLastUsedWeapon(client);
 
-
-	// This quest is restricted to a specific item, check by name.
-	if(!StrEqual(xQuest.m_sRestrictedToItemName, ""))
+	//------------------------------------------------
+	// Checking wepaon slot.
+	// This quest is restricted to a certain weapon slot.
+	if(!StrEqual(sWeaponSlotRestriction, ""))
 	{
-		bFailed = true;
+		// If entity does not exist, return false.
+		if (!IsValidEntity(iLastWeapon))return false;
+		
+		/*
+			Using if-statements like this REALLY ugly for me and a big YandereDev moment, but I'm not going to 
+			spend another day trying to use for loops because then I will have a mental breakdown. -ZoNiCaL.
+		*/
+		
+		if (StrEqual(sWeaponSlotRestriction, "primary"))
+		{
+			if (GetPlayerWeaponSlot(client, TFWeaponSlot_Primary) == iLastWeapon) return true;
+		}
+		
+		else if (StrEqual(sWeaponSlotRestriction, "secondary"))
+		{
+			if (GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary) == iLastWeapon) return true;
+		}
+		
+		else if (StrEqual(sWeaponSlotRestriction, "melee"))
+		{
+			if (GetPlayerWeaponSlot(client, TFWeaponSlot_Melee) == iLastWeapon) return true;
+		}
+		
+		else if (StrEqual(sWeaponSlotRestriction, "grenade"))
+		{
+			if (GetPlayerWeaponSlot(client, TFWeaponSlot_Grenade) == iLastWeapon) return true;
+		}
+		
+		else if (StrEqual(sWeaponSlotRestriction, "building"))
+		{
+			if (GetPlayerWeaponSlot(client, TFWeaponSlot_Building) == iLastWeapon) return true;
+		}
+		
+		else if (StrEqual(sWeaponSlotRestriction, "pda"))
+		{
+			if (GetPlayerWeaponSlot(client, TFWeaponSlot_PDA) == iLastWeapon) return true;
+		}
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+	
+}
 
+public bool IsCorrectWeaponItemIndexName(int client, const char[] sWeaponIndexNameRestriction)
+{
+	int iLastWeapon = CEcon_GetLastUsedWeapon(client);
+	
+	//------------------------------------------------
+	// Item Name restriction.
+	// This quest is restricted to a specific item, check by name.
+	if(!StrEqual(sWeaponIndexNameRestriction, ""))
+	{
 		// We are 100% sure that if we expect an item name, and target
 		// entity is not valid, we need to return false.
-		if (!IsValidEntity(iLastWeapon))return false;
+		if (!IsValidEntity(iLastWeapon)) return false;
 
 		// Check if this entity was created by custom economy.
 		if (CEconItems_IsEntityCustomEconItem(iLastWeapon))
@@ -926,14 +1002,14 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 				CEItemDefinition xDef;
 				if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, xDef))
 				{
-	
 					// Comparing expected name with what definition has.
-					if (StrEqual(xDef.m_sName, xQuest.m_sRestrictedToItemName))
+					if (StrEqual(xDef.m_sName, sWeaponIndexNameRestriction))
 					{
 						// If they match, this check has passed.
-						bFailed = false;
+						return true;
 					}
 				}
+				return false;
 			}
 		} else {
 			// If this is not a custom econ item, check native TF2 item name.
@@ -944,224 +1020,64 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 			if(TF2Econ_GetItemName(iDefIndex, sName, sizeof(sName)))
 			{
 				// Comparing schema name and expected name.
-				if (StrEqual(sName, xQuest.m_sRestrictedToItemName))
+				if (StrEqual(sName, sWeaponIndexNameRestriction))
 				{
 					// If match, this check has passed.
-					bFailed = false;
+					return true;
 				}
 			}
 		}
-
-		// If this check didn't pass, return false.
-		if (bFailed)return false;
+		return false;
 	}
+	else
+	{
+		return true;
+	}
+}
 
+public bool IsCorrectWeaponClassname(int client, const char[] sWeaponClassname)
+{
+	int iLastWeapon = CEcon_GetLastUsedWeapon(client);
+	
 	//------------------------------------------------
 	// Checking entity classname.
 
 	// This quest is restricted to a specific class name.
-	if(!StrEqual(xQuest.m_sRestrictedToClassname, ""))
+	if(!StrEqual(sWeaponClassname, ""))
 	{
-		bFailed = true;
-
 		// If entity does not exist, return false.
 		if (!IsValidEntity(iLastWeapon))return false;
 
 		char sClassname[64];
 		GetEntityClassname(iLastWeapon, sClassname, sizeof(sClassname));
 
-		if(StrEqual(sClassname, xQuest.m_sRestrictedToClassname))
+		if(StrEqual(sClassname, sWeaponClassname))
 		{
-			bFailed = false;
+			return true;
 		}
-
-		// If this check didn't pass, return false.
-		if (bFailed)return false;
+		return false;
 	}
-	
-	//------------------------------------------------
-	// Checking wepaon slot.
-
-	// This quest is restricted to a certain weapon slot.
-	if(!StrEqual(xQuest.m_sRestrictedToWeaponSlot, ""))
+	else
 	{
-		bFailed = true;
-		
-		char m_asListOfRestrictions[][] = {
-			"primary",
-			"secondary",
-			"melee",
-			"grenade",
-			"building",
-			"pda"
-		};
-		
-		int listOfSlots[] = {
-			TFWeaponSlot_Primary,
-			TFWeaponSlot_Secondary,
-			TFWeaponSlot_Melee,
-			TFWeaponSlot_Grenade,
-			TFWeaponSlot_Building,
-			TFWeaponSlot_PDA
-		};
-
-		// If entity does not exist, return false.
-		if (!IsValidEntity(iLastWeapon))return false;
-		
-		for (int i = 0; i < sizeof(m_asListOfRestrictions), i++;)
-		{
-			if (StrEqual(xQuest.m_sRestrictedToWeaponSlot, m_asListOfRestrictions[i]))
-			{
-				if (GetPlayerWeaponSlot(client, listOfSlots[i]) != iLastWeapon)
-				{
-					return false;
-				}
-				else 
-				{
-					bFailed = false;
-					break;
-				}
-				
-			}
-		}
-		
-		// If this check didn't pass, return false.
-		if (bFailed)return false;
+		return true;
 	}
+}
 
+public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
+{
+	if (!IsQuestActive(xQuest)) return false;
+	if (!IsCorrectClass(client, xQuest.m_nRestrictedToClass)) return false;
+	if (!IsCorrectWeaponSlot(client, xQuest.m_sRestrictedToWeaponSlot))return false;
+	if (!IsCorrectWeaponItemIndexName(client, xQuest.m_sRestrictedToItemName))return false;
+	if (!IsCorrectWeaponClassname(client, xQuest.m_sRestrictedToClassname))return false;
 	return true;
 }
 
 public bool CanClientTriggerObjective(int client, CEQuestObjectiveDefinition xObjective)
 {
-	bool bFailed = false;
-
-	//------------------------------------------------
-	// Item Name restriction.
-	int iLastWeapon = CEcon_GetLastUsedWeapon(client);
-
-	// This quest is restricted to a specific item, check by name.
-	if(!StrEqual(xObjective.m_sRestrictedToItemName, ""))
-	{
-		bFailed = true;
-
-		// We are 100% sure that if we expect an item name, and target
-		// entity is not valid, we need to return false.
-		if (!IsValidEntity(iLastWeapon))return false;
-
-		// Check if this entity was created by custom economy.
-		if (CEconItems_IsEntityCustomEconItem(iLastWeapon))
-		{
-			// Getting entity item struct.
-			CEItem xItem;
-			if(CEconItems_GetEntityItemStruct(iLastWeapon, xItem))
-			{
-				// Getting item definition of this item.
-				CEItemDefinition xDef;
-				if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, xDef))
-				{
-					// Comparing expected name with what definition has.
-					if (StrEqual(xDef.m_sName, xObjective.m_sRestrictedToItemName))
-					{
-						// If they match, this check has passed.
-						bFailed = false;
-					}
-				}
-			}
-		} else {
-			// If this is not a custom econ item, check native TF2 item name.
-			int iDefIndex = GetEntProp(iLastWeapon, Prop_Send, "m_iItemDefinitionIndex");
-
-			// Getting item schema name.
-			char sName[64];
-			if(TF2Econ_GetItemName(iDefIndex, sName, sizeof(sName)))
-			{
-				// Comparing schema name and expected name.
-				if (StrEqual(sName, xObjective.m_sRestrictedToItemName))
-				{
-					// If match, this check has passed.
-					bFailed = false;
-				}
-			}
-		}
-
-		// If this check didn't pass, return false.
-		if (bFailed)return false;
-	}
-
-	//------------------------------------------------
-	// Checking entity classname.
-
-	// This quest is restricted to a specific class name.
-	if(!StrEqual(xObjective.m_sRestrictedToClassname, ""))
-	{
-		bFailed = true;
-
-		// If entity does not exist, return false.
-		if (!IsValidEntity(iLastWeapon))return false;
-
-		char sClassname[64];
-		GetEntityClassname(iLastWeapon, sClassname, sizeof(sClassname));
-
-		if(StrEqual(sClassname, xObjective.m_sRestrictedToClassname))
-		{
-			bFailed = false;
-		}
-
-		// If this check didn't pass, return false.
-		if (bFailed)return false;
-	}
-	
-	//------------------------------------------------
-	// Checking wepaon slot.
-
-	// This quest is restricted to a certain weapon slot.
-	if(!StrEqual(xObjective.m_sRestrictedToWeaponSlot, ""))
-	{
-		bFailed = true;
-		
-		char m_asListOfRestrictions[][] = {
-			"primary",
-			"secondary",
-			"melee",
-			"grenade",
-			"building",
-			"pda"
-		};
-		
-		int listOfSlots[] = {
-			TFWeaponSlot_Primary,
-			TFWeaponSlot_Secondary,
-			TFWeaponSlot_Melee,
-			TFWeaponSlot_Grenade,
-			TFWeaponSlot_Building,
-			TFWeaponSlot_PDA
-		};
-
-		// If entity does not exist, return false.
-		if (!IsValidEntity(iLastWeapon))return false;
-		
-		for (int i = 0; i < sizeof(m_asListOfRestrictions), i++;)
-		{
-			if (StrEqual(xObjective.m_sRestrictedToWeaponSlot, m_asListOfRestrictions[i]))
-			{
-				if (GetPlayerWeaponSlot(client, listOfSlots[i]) != iLastWeapon)
-				{
-					return false;
-				}
-				else 
-				{
-					bFailed = false;
-					break;
-				}
-				
-			}
-		}
-		
-		// If this check didn't pass, return false.
-		if (bFailed)return false;
-	}
-
+	if (!IsCorrectWeaponSlot(client, xObjective.m_sRestrictedToWeaponSlot))return false;
+	if (!IsCorrectWeaponItemIndexName(client, xObjective.m_sRestrictedToItemName))return false;
+	if (!IsCorrectWeaponClassname(client, xObjective.m_sRestrictedToClassname))return false;
 	return true;
 }
 
