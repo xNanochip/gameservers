@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.2.5b"
+#define PLUGIN_VERSION  "4.2.6b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -1284,44 +1284,6 @@ public Action OnPlayerRunCmd
 
     // neither of these tests need fancy checks, so we do them first
 
-    // grab single tick +attack inputs
-    if
-    (
-        !(
-            clbuttons[2][Cl] & IN_ATTACK
-        )
-        &&
-        (
-            clbuttons[1][Cl] & IN_ATTACK
-        )
-        &&
-        !(
-            clbuttons[0][Cl] & IN_ATTACK
-        )
-    )
-    {
-        if (GetClientAimTarget(Cl, true) > 0)
-        {
-            tbotDetects[Cl]++;
-            PrintToImportant
-            (
-                "{hotpink}[StAC]{white} Player %N may be {mediumpurple}triggerbotting{white}!\nDetections so far: {palegreen}%i{white}.\n{fullred}THIS IS AN ALPHA CHECK AND MAY NOT INDICATE CHEATING. THIS CHECK DOES NOT AUTOBAN YET.\n",
-                Cl,
-                tbotDetects[Cl]
-            );
-            StacLog
-            (
-                "[StAC] Player %N may be {mediumpurple}triggerbotting{white}!\nDetections so far: %i",
-                Cl,
-                tbotDetects[Cl]
-            );
-
-            if (AIMPLOTTER)
-            {
-                ServerCommand("sm_aimplot #%i on", userid);
-            }
-        }
-    }
     /*
         BHOP DETECTION - using lilac and ssac as reference, this one's better tho
     */
@@ -1905,6 +1867,70 @@ public Action OnPlayerRunCmd
                 //    BanUser(userid, reason, pubreason);
                 //    return Plugin_Handled;
                 //}
+            }
+        }
+    }
+    // grab single tick +attack inputs
+
+    int attack = 0;
+
+    if
+    (
+        !(
+            clbuttons[2][Cl] & IN_ATTACK
+        )
+        &&
+        (
+            clbuttons[1][Cl] & IN_ATTACK
+        )
+        &&
+        !(
+            clbuttons[0][Cl] & IN_ATTACK
+        )
+    )
+    {
+        attack = 1;
+    }
+    else if
+    (
+        !(
+            clbuttons[2][Cl] & IN_ATTACK2
+        )
+        &&
+        (
+            clbuttons[1][Cl] & IN_ATTACK2
+        )
+        &&
+        !(
+            clbuttons[0][Cl] & IN_ATTACK2
+        )
+    )
+    {
+        attack = 2;
+    }
+    if (attack > 0)
+    {
+        if (GetClientAimTarget(Cl, true) > 0)
+        {
+            tbotDetects[Cl]++;
+            PrintToImportant
+            (
+                "{hotpink}[StAC]{white} Player %N may be {mediumpurple}triggerbotting{white}!\nDetections so far: {palegreen}%i{white}. attack = {blue}%i\n{fullred}THIS IS AN ALPHA CHECK AND MAY NOT INDICATE CHEATING. THIS CHECK DOES NOT AUTOBAN YET.\n",
+                Cl,
+                tbotDetects[Cl],
+                attack
+            );
+            StacLog
+            (
+                "[StAC] Player %N may be triggerbotting!\nDetections so far: %i. attack = %i\nTHIS IS AN ALPHA CHECK AND MAY NOT INDICATE CHEATING. THIS CHECK DOES NOT AUTOBAN YET.\n",
+                Cl,
+                tbotDetects[Cl],
+                attack
+            );
+
+            if (AIMPLOTTER)
+            {
+                ServerCommand("sm_aimplot #%i on", userid);
             }
         }
     }
