@@ -240,11 +240,25 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 					next = GetEntPropEnt(iEdict, Prop_Data, "m_hMovePeer");
 					char classname[32];
 					GetEntityClassname(iEdict, classname, 32);
-					if (strncmp(classname, "tf_wearable", 11) != 0) continue;
+					
+					// We need to also include the demoshield entity here as well since that is also considered a weapon.
+					// The previous version of this check only checked to see if the classname string length matched with
+					// "tf_wearable". We can do that better with a StrContains check.
+					
+					// EDIT 23/04/21 8:09am - So you wanna know something really funny? This also applies to other weapons like
+					// the Razorback and the Contracker! Thanks TF2 Team! - ZoNiCaL.
+					if (StrContains(classname, "tf_wearable") == -1) continue;
 
 					char sClass[32];
 					GetEntityNetClass(iEdict, sClass, sizeof(sClass));
-					if (!StrEqual(sClass, "CTFWearable")) continue;
+					
+					// Make sure we include all types of wearables. With the same check above, we need to also include the
+					// other wearable weapon entites because it doesn't have CTFWearable in it's classname.
+					
+					if (!StrContains(sClass, "CTFWearable") == -1 && (
+					!StrEqual(classname, "tf_wearable_demoshield") ||
+					!StrEqual(classname, "tf_wearable_razorback")  ||
+					!StrEqual(classname, "tf_wearable_campaign_item") )) continue;
 
 					int iDefIndex = GetEntProp(iEdict, Prop_Send, "m_iItemDefinitionIndex");
 					if (iDefIndex == 0xFFFF)continue;
