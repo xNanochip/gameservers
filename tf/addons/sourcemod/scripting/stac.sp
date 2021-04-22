@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.2.6b"
+#define PLUGIN_VERSION  "4.2.7b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -119,7 +119,6 @@ ConVar stac_log_to_file;
 // VARIOUS DETECTION BOUNDS & CVAR VALUES
 bool DEBUG                  = false;
 float maxAllowedTurnSecs    = -1.0;
-bool kickForPingMasking     = false;
 bool banForMiscCheats       = true;
 bool optimizeCvars          = true;
 
@@ -291,16 +290,6 @@ void initCvars()
         _
     );
     HookConVarChange(stac_max_allowed_turn_secs, stacVarChanged);
-
-    // pingmasking
-    if (kickForPingMasking)
-    {
-        buffer = "1";
-    }
-    else
-    {
-        buffer = "0";
-    }
 
     // cheatvars ban bool
     if (banForMiscCheats)
@@ -1175,6 +1164,9 @@ public void OnGameFrame()
     }
 }
 
+
+//int laggyDetects[MAXPLAYERS+1];
+
 /*
     in OnPlayerRunCmd, we check for:
     - CMDNUM SPIKES
@@ -1209,6 +1201,30 @@ public Action OnPlayerRunCmd
     {
         return Plugin_Continue;
     }
+
+    //float ping = GetClientAvgLatency(Cl, NetFlow_Both) * 1000.0;
+    ////LogMessage("%f", ping);
+    //if (ping >= 600)
+    //{
+    //    if (laggyDetects[Cl] < (tps)*6.0)
+    //    {
+    //        laggyDetects[Cl]++;
+    //    }
+    //}
+    //else
+    //{
+    //    if (laggyDetects[Cl] > 0)
+    //    {
+    //        laggyDetects[Cl]--;
+    //    }
+    //}
+    //if (laggyDetects[Cl] > (tps)*5.0)
+    //{
+    //    SetEntityMoveType(Cl, MOVETYPE_NONE);
+    //    buttons = 0;
+    //    //TeleportEntity(Cl,  NULL_VECTOR, NULL_VECTOR, view_as<float>({0.0, 0.0, 0.0}));
+    //    return Plugin_Handled;
+    //}
 
     // originally from ssac - block invalid usercmds with invalid data
     if (cmdnum <= 0 || tickcount <= 0)
@@ -1535,23 +1551,25 @@ public Action OnPlayerRunCmd
         // make sure client isnt using a spin bind
         || buttons & IN_LEFT
         || buttons & IN_RIGHT
-        // make sure client doesn't have 2.5% or more packet loss - this would be annoying to play with for cheaters - but may be tweaked in the future if cheats decide to try to get around it
-        || loss >= 2.5
+        // make sure client doesn't have 1.5% or more packet loss
+        || loss >= 1.5
         // make sure client doesn't have 80% or more choke
         || choke >= 80.0
+        // ignore anyone with more than 600 ping. temp check.
+        || ping >= 600.0
         // if a client misses 8 ticks, its safe to assume they're lagging
         // so check the difference between the last 10 ticks
-        // if a client missed any of the 10 server ticks by 8 ticks of time or more, don't check them
-        || (engineTime[0][Cl] - engineTime[1][Cl])  >= (tickinterv*8.0)
-        || (engineTime[1][Cl] - engineTime[2][Cl])  >= (tickinterv*8.0)
-        || (engineTime[2][Cl] - engineTime[3][Cl])  >= (tickinterv*8.0)
-        || (engineTime[3][Cl] - engineTime[4][Cl])  >= (tickinterv*8.0)
-        || (engineTime[4][Cl] - engineTime[5][Cl])  >= (tickinterv*8.0)
-        || (engineTime[5][Cl] - engineTime[6][Cl])  >= (tickinterv*8.0)
-        || (engineTime[6][Cl] - engineTime[7][Cl])  >= (tickinterv*8.0)
-        || (engineTime[7][Cl] - engineTime[8][Cl])  >= (tickinterv*8.0)
-        || (engineTime[8][Cl] - engineTime[9][Cl])  >= (tickinterv*8.0)
-        || (engineTime[9][Cl] - engineTime[10][Cl]) >= (tickinterv*8.0)
+        // if a client missed any of the 10 server ticks by 6 ticks of time or more, don't check them
+        || (engineTime[0][Cl] - engineTime[1][Cl])  >= (tickinterv*6.0)
+        || (engineTime[1][Cl] - engineTime[2][Cl])  >= (tickinterv*6.0)
+        || (engineTime[2][Cl] - engineTime[3][Cl])  >= (tickinterv*6.0)
+        || (engineTime[3][Cl] - engineTime[4][Cl])  >= (tickinterv*6.0)
+        || (engineTime[4][Cl] - engineTime[5][Cl])  >= (tickinterv*6.0)
+        || (engineTime[5][Cl] - engineTime[6][Cl])  >= (tickinterv*6.0)
+        || (engineTime[6][Cl] - engineTime[7][Cl])  >= (tickinterv*6.0)
+        || (engineTime[7][Cl] - engineTime[8][Cl])  >= (tickinterv*6.0)
+        || (engineTime[8][Cl] - engineTime[9][Cl])  >= (tickinterv*6.0)
+        || (engineTime[9][Cl] - engineTime[10][Cl]) >= (tickinterv*6.0)
     )
     // if any of these things are true, don't check angles or cmdnum spikes
     {
@@ -1772,8 +1790,8 @@ public Action OnPlayerRunCmd
     if
     (
         engineTime[0][Cl] - timeSinceDidHurt[Cl] <= (tickinterv * 2)
-        &&
-        !MVM
+        //&&
+        //!MVM
     )
     {
         if
@@ -2340,6 +2358,7 @@ void NetPropEtcCheck(int userid)
         // there used to be an fov check here - but there's odd behavior that i don't want to work around regarding the m_iFov netprop.
         // sorry!
 
+
         // forcibly disables thirdperson with some cheats
         ClientCommand(Cl, "firstperson");
         if (DEBUG)
@@ -2681,13 +2700,17 @@ bool HasValidAngles(int Cl)
 {
     if
     (
-        // ignore weird angle resets in mge / dm
+        // ignore weird angle resets in mge / dm, ignore laggy players
            clangles[0][Cl][0] == 0.0
         || clangles[0][Cl][1] == 0.0
         || clangles[1][Cl][0] == 0.0
         || clangles[1][Cl][1] == 0.0
         || clangles[2][Cl][0] == 0.0
         || clangles[2][Cl][1] == 0.0
+        || clangles[3][Cl][0] == 0.0
+        || clangles[3][Cl][1] == 0.0
+        || clangles[4][Cl][0] == 0.0
+        || clangles[4][Cl][1] == 0.0
     )
     {
         return false;
