@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.3.4b"
+#define PLUGIN_VERSION  "4.3.5b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -67,7 +67,7 @@ float clpos              [2][TFMAXPLAYERS+1][3];
 // STORED cmdnum PER CLIENT
 int clcmdnum             [6][TFMAXPLAYERS+1];
 // STORED BUTTONS PER CLIENT
-int clbuttons            [3][TFMAXPLAYERS+1];
+int clbuttons            [6][TFMAXPLAYERS+1];
 // STORED GRAVITY STATE PER CLIENT
 bool highGrav               [TFMAXPLAYERS+1];
 // STORED MISC VARS PER CLIENT
@@ -1297,9 +1297,15 @@ public Action OnPlayerRunCmd
     clcmdnum[0][Cl] = cmdnum;
 
     // grab buttons
-    clbuttons[2][Cl] = clbuttons[1][Cl];
-    clbuttons[1][Cl] = clbuttons[0][Cl];
+    for (int i = 5; i > 0; --i)
+    {
+        clbuttons[i][Cl] = clbuttons[i-1][Cl];
+    }
     clbuttons[0][Cl] = buttons;
+
+    //clbuttons[2][Cl] = clbuttons[1][Cl];
+    //clbuttons[1][Cl] = clbuttons[0][Cl];
+    //clbuttons[0][Cl] = buttons;
 
     // grab position
     clpos[1][Cl] = clpos[0][Cl];
@@ -1931,11 +1937,7 @@ public Action OnPlayerRunCmd
                         "\nNetwork:\n %f loss\n %f choke\n %f ms ping\n",
                         loss,
                         choke,
-                        ping,
-                        clangles[0][Cl][0],
-                        clangles[0][Cl][1],
-                        clangles[1][Cl][0],
-                        clangles[1][Cl][1]
+                        ping
                     );
                     StacLog
                     (
@@ -2024,10 +2026,18 @@ public Action OnPlayerRunCmd
         if
         (
             !(
-                clbuttons[2][Cl] & IN_ATTACK
+                clbuttons[4][Cl] & IN_ATTACK
+            )
+            &&
+            !(
+                clbuttons[3][Cl] & IN_ATTACK
             )
             &&
             (
+                clbuttons[2][Cl] & IN_ATTACK
+            )
+            &&
+            !(
                 clbuttons[1][Cl] & IN_ATTACK
             )
             &&
@@ -2042,10 +2052,18 @@ public Action OnPlayerRunCmd
         else if
         (
             !(
-                clbuttons[2][Cl] & IN_ATTACK2
+                clbuttons[4][Cl] & IN_ATTACK2
+            )
+            &&
+            !(
+                clbuttons[3][Cl] & IN_ATTACK2
             )
             &&
             (
+                clbuttons[2][Cl] & IN_ATTACK2
+            )
+            &&
+            !(
                 clbuttons[1][Cl] & IN_ATTACK2
             )
             &&
