@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.3.1b"
+#define PLUGIN_VERSION  "4.3.2b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -1650,7 +1650,10 @@ public Action OnPlayerRunCmd
 
     if (clcmdnum[1][Cl] == clcmdnum[0][Cl])
     {
-        StacLog("[StAC] Same cmdnum reported on %N - %i", Cl, clcmdnum[0][Cl]);
+        if (DEBUG)
+        {
+            StacLog("[StAC] Same cmdnum reported on %N - %i", Cl, clcmdnum[0][Cl]);
+        }
         return Plugin_Handled;
     }
 
