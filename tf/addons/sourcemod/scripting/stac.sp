@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.3.2b"
+#define PLUGIN_VERSION  "4.3.4b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -1578,8 +1578,8 @@ public Action OnPlayerRunCmd
         || buttons & IN_RIGHT
         // make sure client doesn't have 1.5% or more packet loss
         || loss >= 1.5
-        // make sure client doesn't have 80% or more choke
-        || choke >= 80.0
+        // make sure client doesn't have 60% or more choke
+        || choke >= 60.0
         // ignore anyone with more than 600 ping. temp check.
         || ping >= 600.0
         // if a client misses 6 ticks, its safe to assume they're lagging
@@ -1654,7 +1654,7 @@ public Action OnPlayerRunCmd
         {
             StacLog("[StAC] Same cmdnum reported on %N - %i", Cl, clcmdnum[0][Cl]);
         }
-        return Plugin_Handled;
+        return Plugin_Continue;
     }
 
     //if (clcmdnum[1][Cl] > clcmdnum[0][Cl])
@@ -1844,22 +1844,22 @@ public Action OnPlayerRunCmd
             //!MVM
         )
         {
-            float snapsize = 10.0;
+            float snapsize = 12.5;
             float noisesize = 5.0;
 
             int aDiffToUse = -1;
 
+            //if
+            //(
+            //       aDiff[0] > snapsize
+            //    && aDiff[1] < noisesize
+            //    && aDiff[2] < noisesize
+            //    && aDiff[3] < noisesize
+            //)
+            //{
+            //    aDiffToUse = 0;
+            //}
             if
-            (
-                   aDiff[0] > snapsize
-                && aDiff[1] < noisesize
-                && aDiff[2] < noisesize
-                && aDiff[3] < noisesize
-            )
-            {
-                aDiffToUse = 0;
-            }
-            else if
             (
                    aDiff[0] < noisesize
                 && aDiff[1] > snapsize
@@ -1879,16 +1879,16 @@ public Action OnPlayerRunCmd
             {
                 aDiffToUse = 2;
             }
-            else if
-            (
-                   aDiff[0] < noisesize
-                && aDiff[1] < noisesize
-                && aDiff[2] < noisesize
-                && aDiff[3] > snapsize
-            )
-            {
-                aDiffToUse = 3;
-            }
+            //else if
+            //(
+            //       aDiff[0] < noisesize
+            //    && aDiff[1] < noisesize
+            //    && aDiff[2] < noisesize
+            //    && aDiff[3] > snapsize
+            //)
+            //{
+            //    aDiffToUse = 3;
+            //}
             // we got one!
             if (aDiffToUse > -1)
             {
@@ -1928,7 +1928,7 @@ public Action OnPlayerRunCmd
                     );
                     StacLog
                     (
-                        "\nNetwork:\n %f loss\n %f choke\n %f ms ping\nAngles:\n angles0: x %f y %f\n angles1: x %f y %f\n",
+                        "\nNetwork:\n %f loss\n %f choke\n %f ms ping\n",
                         loss,
                         choke,
                         ping,
@@ -1936,6 +1936,20 @@ public Action OnPlayerRunCmd
                         clangles[0][Cl][1],
                         clangles[1][Cl][0],
                         clangles[1][Cl][1]
+                    );
+                    StacLog
+                    (
+                        "\nAngles:\n angles0: x %f y %f\n angles1: x %f y %f\n angles2: x %f y %f\n angles3: x %f y %f\n angles4: x %f y %f\n",
+                        clangles[0][Cl][0],
+                        clangles[0][Cl][1],
+                        clangles[1][Cl][0],
+                        clangles[1][Cl][1],
+                        clangles[2][Cl][0],
+                        clangles[2][Cl][1],
+                        clangles[3][Cl][0],
+                        clangles[3][Cl][1],
+                        clangles[4][Cl][0],
+                        clangles[4][Cl][1]
                     );
                     StacLog
                     (
