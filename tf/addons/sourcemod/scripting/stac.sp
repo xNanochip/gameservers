@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.3.5b"
+#define PLUGIN_VERSION  "4.3.6b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -2074,6 +2074,19 @@ public Action OnPlayerRunCmd
         {
             attack = 2;
         }
+        bool IsClientAimingAtEnemy;
+
+        int aimTarget = GetClientAimTarget(Cl, true);
+        if (aimTarget > 0)
+        {
+            // yeah, theyre a client. what team are they on?
+            int clientTeam  = GetClientTeam(Cl);
+            int targetTeam  = GetClientTeam(aimTarget);
+            if (clientTeam != targetTeam)
+            {
+                IsClientAimingAtEnemy = true;
+            }
+        }
         if
         (
             // only count attack1 if we're (vaguely) looking at someone
@@ -2081,7 +2094,7 @@ public Action OnPlayerRunCmd
             (
                 attack == 1
                 &&
-                GetClientAimTarget(Cl, true) > 0
+                IsClientAimingAtEnemy
             )
             ||
             // count all attack2 single inputs
