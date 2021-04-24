@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.2.7b"
+#define PLUGIN_VERSION  "4.3.1b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -51,7 +51,7 @@ int aimsnapDetects          [TFMAXPLAYERS+1] = -1; // set to -1 to ignore first 
 int pSilentDetects          [TFMAXPLAYERS+1] = -1; // ^
 int bhopDetects             [TFMAXPLAYERS+1] = -1; // set to -1 to ignore single jumps
 int cmdnumSpikeDetects      [TFMAXPLAYERS+1];
-int tbotDetects             [TFMAXPLAYERS+1];
+int tbotDetects             [TFMAXPLAYERS+1] = -1;
 bool isConsecStringOfBhops  [TFMAXPLAYERS+1];
 int bhopConsecDetects       [TFMAXPLAYERS+1];
 int settingsChangesFor      [TFMAXPLAYERS+1];
@@ -107,6 +107,7 @@ ConVar stac_max_psilent_detections;
 ConVar stac_max_bhop_detections;
 ConVar stac_max_fakeang_detections;
 ConVar stac_max_cmdnum_detections;
+ConVar stac_max_tbot_detections;
 ConVar stac_max_settings_changes;
 ConVar stac_settings_changes_window;
 ConVar stac_min_interp_ms;
@@ -122,11 +123,12 @@ float maxAllowedTurnSecs    = -1.0;
 bool banForMiscCheats       = true;
 bool optimizeCvars          = true;
 
-int maxAimsnapDetections    = 25;
+int maxAimsnapDetections    = 20;
 int maxPsilentDetections    = 10;
 int maxFakeAngDetections    = 10;
 int maxBhopDetections       = 10;
 int maxCmdnumDetections     = 25;
+int maxTbotDetections       = 20;
 // this gets set later
 int maxBhopDetectionsScaled;
 
@@ -401,7 +403,6 @@ void initCvars()
     );
     HookConVarChange(stac_max_fakeang_detections, stacVarChanged);
 
-
     // cmdnum spike detections
     IntToString(maxCmdnumDetections, buffer, sizeof(buffer));
     stac_max_cmdnum_detections =
@@ -417,6 +418,22 @@ void initCvars()
         _
     );
     HookConVarChange(stac_max_cmdnum_detections, stacVarChanged);
+
+    // cmdnum spike detections
+    IntToString(maxTbotDetections, buffer, sizeof(buffer));
+    stac_max_tbot_detections =
+    AutoExecConfig_CreateConVar
+    (
+        "stac_max_tbot_detections",
+        buffer,
+        "[StAC] maximum triggerbot detections before banning a client. \n(recommended 20)",
+        FCVAR_NONE,
+        true,
+        -1.0,
+        false,
+        _
+    );
+    HookConVarChange(stac_max_tbot_detections, stacVarChanged);
 
     // userinfo spam changes
     IntToString(maxSettingsChanges, buffer, sizeof(buffer));
@@ -617,6 +634,9 @@ void setStacVars()
     // cmdnum spikes var
     maxCmdnumDetections     = GetConVarInt(stac_max_cmdnum_detections);
 
+    // tbot var
+    maxTbotDetections       = GetConVarInt(stac_max_tbot_detections);
+
     // max settings changes var
     maxSettingsChanges      = GetConVarInt(stac_max_settings_changes);
 
@@ -657,7 +677,7 @@ void GenericCvarChanged(ConVar convar, const char[] oldValue, const char[] newVa
     {
         if (StringToInt(newValue) != 0)
         {
-            SetFailState("[StAC] sv_cheats set to 1! Aborting!");
+            //SetFailState("[StAC] sv_cheats set to 1! Aborting!");
         }
     }
 }
@@ -689,7 +709,7 @@ public Action checkNativesEtc(Handle timer)
     // check sv cheats
     if (GetConVarBool(FindConVar("sv_cheats")))
     {
-        SetFailState("[StAC] sv_cheats set to 1! Aborting!");
+        //SetFailState("[StAC] sv_cheats set to 1! Aborting!");
     }
     // check natives!
     if (GetFeatureStatus(FeatureType_Native, "Steam_IsConnected") == FeatureStatus_Available)
@@ -764,6 +784,7 @@ public Action ShowDetections(int callingCl, int args)
                 || fakeAngDetects[Cl]      >= 1
                 || bhopConsecDetects[Cl]   >= 1
                 || cmdnumSpikeDetects[Cl]  >= 1
+                || tbotDetects[Cl]         >= 1
             )
             {
                 PrintToConsole(callingCl, "Detections for %L", Cl);
@@ -790,6 +811,10 @@ public Action ShowDetections(int callingCl, int args)
                 if (cmdnumSpikeDetects[Cl] >= 1)
                 {
                     PrintToConsole(callingCl, "- %i cmdnum spikes for %N", cmdnumSpikeDetects[Cl], Cl);
+                }
+                if (tbotDetects[Cl] >= 1)
+                {
+                    PrintToConsole(callingCl, "- %i triggerbot detections for %N", tbotDetects[Cl], Cl);
                 }
             }
         }
@@ -1052,7 +1077,7 @@ void ClearClBasedVars(int userid)
     pSilentDetects          [Cl] = -1; // ^
     bhopDetects             [Cl] = -1; // set to -1 to ignore single jumps
     cmdnumSpikeDetects      [Cl] = 0;
-    tbotDetects             [Cl] = 0;
+    tbotDetects             [Cl] = -1;
     isConsecStringOfBhops   [Cl] = false;
     bhopConsecDetects       [Cl] = 0;
     settingsChangesFor      [Cl] = 0;
@@ -1557,7 +1582,7 @@ public Action OnPlayerRunCmd
         || choke >= 80.0
         // ignore anyone with more than 600 ping. temp check.
         || ping >= 600.0
-        // if a client misses 8 ticks, its safe to assume they're lagging
+        // if a client misses 6 ticks, its safe to assume they're lagging
         // so check the difference between the last 10 ticks
         // if a client missed any of the 10 server ticks by 6 ticks of time or more, don't check them
         || (engineTime[0][Cl] - engineTime[1][Cl])  >= (tickinterv*6.0)
@@ -1580,7 +1605,7 @@ public Action OnPlayerRunCmd
     int spikeamt = abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]);
     // 256 is a nice number but this could be raised or lowered, haven't done TOO much testing and so far zero legits have managed to trigger this since we ignore nullcmds.
     // this is for detecting when cheats "skip ahead" their cmdnum so they can (at my best guess) fire a "perfect shot" aka a shot with no spread
-    if (spikeamt >= 256)
+    if (spikeamt >= 999999)
     {
         char heldWeapon[256];
         GetClientWeapon(Cl, heldWeapon, sizeof(heldWeapon));
@@ -1623,25 +1648,22 @@ public Action OnPlayerRunCmd
         }
     }
 
-    //if (clcmdnum[1][Cl] == clcmdnum[0][Cl])
-    //{
-    //    StacLog("[StAC] SAME CMDNUM REPORTED!!!");
-    //    return Plugin_Handled;
-    //}
+    if (clcmdnum[1][Cl] == clcmdnum[0][Cl])
+    {
+        StacLog("[StAC] Same cmdnum reported on %N - %i", Cl, clcmdnum[0][Cl]);
+        return Plugin_Handled;
+    }
+
     //if (clcmdnum[1][Cl] > clcmdnum[0][Cl])
     //{
     //    LogMessage("[StAC] cmdnum DROP of %i!", clcmdnum[1][Cl] - clcmdnum[0][Cl]);
     //    LogMessage("%i , %i", clcmdnum[1][Cl], clcmdnum[0][Cl]);
     //    cmdnum = cmdnum;
-    //    //return Plugin_Handled;
+    //    return Plugin_Handled;
     //}
 
     // we can reuse this for aimsnap as well!
-    float aDiffReal = CalcAngDeg(clangles[0][Cl], clangles[1][Cl]);
-    if (aDiffReal > 180.0)
-    {
-        aDiffReal = FloatAbs(aDiffReal - 360.0);
-    }
+    float aDiffReal = NormalizeAngleDiff(CalcAngDeg(clangles[0][Cl], clangles[1][Cl]));
 
     // is this a fuzzy detect or not
     int fuzzy = -1;
@@ -1755,7 +1777,16 @@ public Action OnPlayerRunCmd
                     engineTime[3][Cl] - engineTime[4][Cl],
                     engineTime[4][Cl] - engineTime[5][Cl]
                 );
-
+                StacLog
+                (
+                    "\nPrevious cmdnums:\n0 %i\n1 %i\n2 %i\n3 %i\n4 %i\n5 %i\n",
+                    clcmdnum[0][Cl],
+                    clcmdnum[1][Cl],
+                    clcmdnum[2][Cl],
+                    clcmdnum[3][Cl],
+                    clcmdnum[4][Cl],
+                    clcmdnum[5][Cl]
+                );
                 if (AIMPLOTTER)
                 {
                     ServerCommand("sm_aimplot #%i on", userid);
@@ -1776,64 +1807,284 @@ public Action OnPlayerRunCmd
     }
 
     /*
-        AIMSNAP DETECTION
-        Now lets be fair here - this also detects silent aim a lot too, but it's more for checking plain snaps.
+        AIMSNAP DETECTION - BETA
+
+        Alright, here's how this works.
+
+        If we try to just detect one frame snaps and nothing else, users can just crank up their sens,
+        and wave their mouse around and get detects. so what we do is this:
+
+        if a user has a snap of more than 10 degrees, and that snap is surrounded on one or both sides by "noise delta" of LESS than 5 degrees
+        ...that counts as an aimsnap. this will catch cheaters, unless they wave their mouse around wildly, making the game miserable to play
+        AND obvious that they're avoiding the anticheat.
+
     */
-    // only check if we actually did dmg with a hitscan weapon within 2(ish) ticks
 
-    aDiffReal = CalcAngDeg(clangles[0][Cl], clangles[4][Cl]);
-    if (aDiffReal > 180.0)
+    if (maxAimsnapDetections != -1)
     {
-        aDiffReal = FloatAbs(aDiffReal - 360.0);
-    }
 
-    if
-    (
-        engineTime[0][Cl] - timeSinceDidHurt[Cl] <= (tickinterv * 2)
-        //&&
-        //!MVM
-    )
-    {
+        float aDiff[4];
+        aDiff[0] = NormalizeAngleDiff(CalcAngDeg(clangles[0][Cl], clangles[1][Cl]));
+        aDiff[1] = NormalizeAngleDiff(CalcAngDeg(clangles[1][Cl], clangles[2][Cl]));
+        aDiff[2] = NormalizeAngleDiff(CalcAngDeg(clangles[2][Cl], clangles[3][Cl]));
+        aDiff[3] = NormalizeAngleDiff(CalcAngDeg(clangles[3][Cl], clangles[4][Cl]));
+
+        // example values of a snap:
+        // 0.000000, 91.355995, 0.000000, 0.000000
+        // 0.018540, 0.000000, 91.355995, 0.000000
+
+        // only check if we actually did dmg with a hitscan weapon within 2(ish) ticks
         if
         (
-            aDiffReal >= 20.0
+            engineTime[0][Cl] - timeSinceDidHurt[Cl] <= (tickinterv)
+            //&&
+            //!MVM
         )
         {
-            // fun fact: we don't actually need to check sens, but it can help with filtering out false detects in logs
-            // so far, i've not seen this get triggered very often though. */
+            float snapsize = 10.0;
+            float noisesize = 5.0;
 
+            int aDiffToUse = -1;
+
+            if
+            (
+                   aDiff[0] > snapsize
+                && aDiff[1] < noisesize
+                && aDiff[2] < noisesize
+                && aDiff[3] < noisesize
+            )
+            {
+                aDiffToUse = 0;
+            }
+            else if
+            (
+                   aDiff[0] < noisesize
+                && aDiff[1] > snapsize
+                && aDiff[2] < noisesize
+                && aDiff[3] < noisesize
+            )
+            {
+                aDiffToUse = 1;
+            }
+            else if
+            (
+                   aDiff[0] < noisesize
+                && aDiff[1] < noisesize
+                && aDiff[2] > snapsize
+                && aDiff[3] < noisesize
+            )
+            {
+                aDiffToUse = 2;
+            }
+            else if
+            (
+                   aDiff[0] < noisesize
+                && aDiff[1] < noisesize
+                && aDiff[2] < noisesize
+                && aDiff[3] > snapsize
+            )
+            {
+                aDiffToUse = 3;
+            }
+            // we got one!
+            if (aDiffToUse > -1)
+            {
+                aDiffReal = aDiff[aDiffToUse];
+                // init vars - weightedx and weightedy
+                int wx;
+                int wy;
+                // TODO: MAKE SURE sensFor IS AS ACC AS POSSIBLE
+                // scale mouse movement to sensitivity
+                if (sensFor[Cl] != 0.0)
+                {
+                    wx = abs(RoundFloat(mouse[0] * ( 1 / sensFor[Cl])));
+                    wy = abs(RoundFloat(mouse[1] * ( 1 / sensFor[Cl])));
+                }
+                // increment aimsnap detects
+                aimsnapDetects[Cl]++;
+                // have this detection expire in 10 minutes
+                CreateTimer(600.0, Timer_decr_aimsnaps, userid, TIMER_FLAG_NO_MAPCHANGE);
+                // first detection is, likely bullshit - this is copied from smac but in my genuine experience it's also true, and i can't really tell you why
+                // because i don't fucking know
+                if (aimsnapDetects[Cl] > 0)
+                {
+                    PrintToImportant
+                    (
+                        "{hotpink}[StAC]{white} Aimsnap detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.",
+                        aDiffReal,
+                        Cl,
+                        aimsnapDetects[Cl]
+                    );
+                    // etc
+                    StacLog
+                    (
+                        "\n==========\n[StAC] Aimsnap detection of %f° on \n%L.\nDetections so far: %i.",
+                        aDiffReal,
+                        Cl,
+                        aimsnapDetects[Cl]
+                    );
+                    StacLog
+                    (
+                        "\nNetwork:\n %f loss\n %f choke\n %f ms ping\nAngles:\n angles0: x %f y %f\n angles1: x %f y %f\n",
+                        loss,
+                        choke,
+                        ping,
+                        clangles[0][Cl][0],
+                        clangles[0][Cl][1],
+                        clangles[1][Cl][0],
+                        clangles[1][Cl][1]
+                    );
+                    StacLog
+                    (
+                        "\nTime between last 5 client ticks (most recent first):\n 1 %f\n 2 %f\n 3 %f\n 4 %f\n 5 %f",
+                        engineTime[0][Cl] - engineTime[1][Cl],
+                        engineTime[1][Cl] - engineTime[2][Cl],
+                        engineTime[2][Cl] - engineTime[3][Cl],
+                        engineTime[3][Cl] - engineTime[4][Cl],
+                        engineTime[4][Cl] - engineTime[5][Cl]
+                    );
+                    StacLog
+                    (
+                        "\nUser Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i\nUser Mouse Movement (unweighted): x: %i, y: %i.",
+                        wx,
+                        wy,
+                        mouse[0],
+                        mouse[1]
+                    );
+                    StacLog
+                    (
+                        "Sens for client: %f\nWeapon used: %s\n==========",
+                        sensFor[Cl],
+                        hurtWeapon[Cl]
+                    );
+                    StacLog
+                    (
+                        "\nPrevious cmdnums:\n0 %i\n1 %i\n2 %i\n3 %i\n4 %i\n5 %i\n",
+                        clcmdnum[0][Cl],
+                        clcmdnum[1][Cl],
+                        clcmdnum[2][Cl],
+                        clcmdnum[3][Cl],
+                        clcmdnum[4][Cl],
+                        clcmdnum[5][Cl]
+                    );
+                    StacLog
+                    (
+                        "\nAngle deltas:\n0 %f\n1 %f\n2 %f\n3 %f\n",
+                        aDiff[0],
+                        aDiff[1],
+                        aDiff[2],
+                        aDiff[3]
+                    );
+
+                    if (AIMPLOTTER)
+                    {
+                        ServerCommand("sm_aimplot #%i on", userid);
+                    }
+
+                    // BAN USER if they trigger too many detections
+                    if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
+                    {
+                        char reason[128];
+                        Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
+                        char pubreason[128];
+                        Format(pubreason, sizeof(pubreason), "%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
+                        BanUser(userid, reason, pubreason);
+                        return Plugin_Handled;
+                    }
+                }
+            }
+        }
+    }
+    /*
+        TRIGGERBOT DETECTION - BETA
+    */
+
+    if (maxTbotDetections != -1)
+    {
+        int attack = 0;
+
+        // grab single tick +attack inputs
+        if
+        (
+            !(
+                clbuttons[2][Cl] & IN_ATTACK
+            )
+            &&
+            (
+                clbuttons[1][Cl] & IN_ATTACK
+            )
+            &&
+            !(
+                clbuttons[0][Cl] & IN_ATTACK
+            )
+        )
+        {
+            attack = 1;
+        }
+        // grab single tick +attack2 inputs - pyro airblast, demo det, etc
+        else if
+        (
+            !(
+                clbuttons[2][Cl] & IN_ATTACK2
+            )
+            &&
+            (
+                clbuttons[1][Cl] & IN_ATTACK2
+            )
+            &&
+            !(
+                clbuttons[0][Cl] & IN_ATTACK2
+            )
+        )
+        {
+            attack = 2;
+        }
+        if
+        (
+            // only count attack1 if we're (vaguely) looking at someone
+            // GetClientAimTarget isn't super accurate (and goes thru walls in tf2) so I might do a TraceRay in the future
+            (
+                attack == 1
+                &&
+                GetClientAimTarget(Cl, true) > 0
+            )
+            ||
+            // count all attack2 single inputs
+            (
+                attack == 2
+            )
+        )
+        {
             // init vars - weightedx and weightedy
             int wx;
             int wy;
             // TODO: MAKE SURE sensFor IS AS ACC AS POSSIBLE
-            // scale mouse movement to sensitivity
+            // scale mouse movement to sensitivity, ignore high sens
             if (sensFor[Cl] != 0.0)
             {
                 wx = abs(RoundFloat(mouse[0] * ( 1 / sensFor[Cl])));
                 wy = abs(RoundFloat(mouse[1] * ( 1 / sensFor[Cl])));
             }
-            // increment aimsnap detects
-            aimsnapDetects[Cl]++;
+
+            tbotDetects[Cl]++;
             // have this detection expire in 10 minutes
-            CreateTimer(600.0, Timer_decr_aimsnaps, userid, TIMER_FLAG_NO_MAPCHANGE);
-            // first detection is, likely bullshit - this is copied from smac but in my genuine experience it's also true, and i can't really tell you why
-            // because i don't fucking know
-            if (aimsnapDetects[Cl] > 0)
+            CreateTimer(600.0, Timer_decr_tbot, userid, TIMER_FLAG_NO_MAPCHANGE);
+
+            if (tbotDetects[Cl] > 0)
             {
                 PrintToImportant
                 (
-                    "{hotpink}[StAC]{white} Aimsnap detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.\n{fullred}THIS IS AN ALPHA CHECK AND MAY NOT INDICATE CHEATING. THIS CHECK DOES NOT AUTOBAN YET.\n",
-                    aDiffReal,
+                    "{hotpink}[StAC]{white} Triggerbot detection on %N.\nDetections so far: {palegreen}%i{white}. Type: +attack{blue}%i",
                     Cl,
-                    aimsnapDetects[Cl]
+                    tbotDetects[Cl],
+                    attack
                 );
-                // etc
                 StacLog
                 (
-                    "\n==========\n[StAC] Aimsnap detection of %f° on \n%L.\nDetections so far: %i.",
-                    aDiffReal,
+                    "[StAC] Triggerbot detection on %N.\nDetections so far: %i{white}. Type: +attack%i\n",
                     Cl,
-                    aimsnapDetects[Cl]
+                    tbotDetects[Cl],
+                    attack
                 );
                 StacLog
                 (
@@ -1875,84 +2126,19 @@ public Action OnPlayerRunCmd
                     ServerCommand("sm_aimplot #%i on", userid);
                 }
 
-                //// BAN USER if they trigger too many detections
-                //if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
-                //{
-                //    char reason[128];
-                //    Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
-                //    char pubreason[128];
-                //    Format(pubreason, sizeof(pubreason), "%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
-                //    BanUser(userid, reason, pubreason);
-                //    return Plugin_Handled;
-                //}
+                // BAN USER if they trigger too many detections
+                if (tbotDetects[Cl] >= maxTbotDetections && maxTbotDetections > 0)
+                {
+                    char reason[128];
+                    Format(reason, sizeof(reason), "%t", "tbotBanMsg", tbotDetects[Cl]);
+                    char pubreason[128];
+                    Format(pubreason, sizeof(pubreason), "%t", "tbotBanAllChat", Cl, tbotDetects[Cl]);
+                    BanUser(userid, reason, pubreason);
+                    return Plugin_Handled;
+                }
             }
         }
     }
-    // grab single tick +attack inputs
-
-    int attack = 0;
-
-    if
-    (
-        !(
-            clbuttons[2][Cl] & IN_ATTACK
-        )
-        &&
-        (
-            clbuttons[1][Cl] & IN_ATTACK
-        )
-        &&
-        !(
-            clbuttons[0][Cl] & IN_ATTACK
-        )
-    )
-    {
-        attack = 1;
-    }
-    else if
-    (
-        !(
-            clbuttons[2][Cl] & IN_ATTACK2
-        )
-        &&
-        (
-            clbuttons[1][Cl] & IN_ATTACK2
-        )
-        &&
-        !(
-            clbuttons[0][Cl] & IN_ATTACK2
-        )
-    )
-    {
-        attack = 2;
-    }
-    if (attack > 0)
-    {
-        if (GetClientAimTarget(Cl, true) > 0)
-        {
-            tbotDetects[Cl]++;
-            PrintToImportant
-            (
-                "{hotpink}[StAC]{white} Player %N may be {mediumpurple}triggerbotting{white}!\nDetections so far: {palegreen}%i{white}. attack = {blue}%i\n{fullred}THIS IS AN ALPHA CHECK AND MAY NOT INDICATE CHEATING. THIS CHECK DOES NOT AUTOBAN YET.\n",
-                Cl,
-                tbotDetects[Cl],
-                attack
-            );
-            StacLog
-            (
-                "[StAC] Player %N may be triggerbotting!\nDetections so far: %i. attack = %i\nTHIS IS AN ALPHA CHECK AND MAY NOT INDICATE CHEATING. THIS CHECK DOES NOT AUTOBAN YET.\n",
-                Cl,
-                tbotDetects[Cl],
-                attack
-            );
-
-            if (AIMPLOTTER)
-            {
-                ServerCommand("sm_aimplot #%i on", userid);
-            }
-        }
-    }
-
     return Plugin_Continue;
 }
 
@@ -1996,6 +2182,25 @@ public Action Timer_decr_pSilent(Handle timer, any userid)
     }
 }
 
+public Action Timer_decr_tbot(Handle timer, any userid)
+{
+    int Cl = GetClientOfUserId(userid);
+
+    if (IsValidClient(Cl))
+    {
+        if (tbotDetects[Cl] > -1)
+        {
+            tbotDetects[Cl]--;
+        }
+        if (tbotDetects[Cl] <= 0)
+        {
+            if (AIMPLOTTER)
+            {
+                ServerCommand("sm_aimplot #%i off", userid);
+            }
+        }
+    }
+}
 
 public Action Timer_decr_settingsChanges(Handle timer, any userid)
 {
@@ -2962,4 +3167,13 @@ int Math_Max(int value, int max)
     }
 
     return value;
+}
+
+float NormalizeAngleDiff(float aDiff)
+{
+    if (aDiff > 180.0)
+    {
+        aDiff = FloatAbs(aDiff - 360.0);
+    }
+    return aDiff;
 }
