@@ -11,7 +11,7 @@ public Plugin myinfo =
     name        = "Rough Sourcemod AimPlotter",
     author      = "MitchDizzle_, steph&nie",
     description = "Show where client is aiming - for spotting cheaters!",
-    version     = "0.0.3",
+    version     = "0.0.4",
     url         = "https://sappho.io"
 }
 
@@ -199,7 +199,15 @@ void SetUpLaser(float start[3], float end[3], int color[4])
         color,      // color
         0           // beam speed
     );
-    TE_SendToAdminsAndSTV();
+    if
+    (
+        !IsNullVector(start)
+        &&
+        !IsNullVector(end)
+    )
+    {
+        TE_SendToAdminsAndSTV();
+    }
 }
 
 // trace 200 units in front of the player, if we hit something before then, trace over top of it
@@ -299,7 +307,11 @@ void TE_SendToAdminsAndSTV()
             IsClientInGame(i)
             &&
             (
-                CheckCommandAccess(i, "sm_ban", ADMFLAG_GENERIC)
+                (
+                    CheckCommandAccess(i, "sm_ban", ADMFLAG_GENERIC)
+                    &&
+                    GetClientTeam(i) < 2
+                )
                 ||
                 stv == i
             )
