@@ -157,10 +157,10 @@ deploy-uspotato1:
     - uspotato1
     <<: *deploy_template
 
-deploy-eupotato1:
-    tags:
-    - eupotato1
-    <<: *deploy_template
+#deploy-eupotato1:
+#    tags:
+#    - eupotato1
+#    <<: *deploy_template
 
 deploy-europe2:
     tags:
