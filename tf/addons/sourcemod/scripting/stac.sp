@@ -20,7 +20,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.4.8b"
+#define PLUGIN_VERSION  "4.4.9b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -2702,14 +2702,11 @@ public void BanUser(int userid, char[] reason, char[] pubreason)
     {
         if (GetDemoName())
         {
-            if (!IsNullString(demoname))
-            {
-                char demoname_plus[256];
-                strcopy(demoname_plus, sizeof(demoname_plus), demoname);
-                Format(demoname_plus, sizeof(demoname_plus), ". Demo file: %s", demoname_plus);
-                StrCat(reason, 256, demoname_plus);
-                StacLog("Reason: %s", reason);
-            }
+            char demoname_plus[256];
+            strcopy(demoname_plus, sizeof(demoname_plus), demoname);
+            Format(demoname_plus, sizeof(demoname_plus), ". Demo file: %s", demoname_plus);
+            StrCat(reason, 256, demoname_plus);
+            StacLog("Reason: %s", reason);
         }
         else
         {
@@ -3528,5 +3525,6 @@ bool GetDemoName()
             }
         }
     }
+    demoname = "N/A";
     return false;
 }
