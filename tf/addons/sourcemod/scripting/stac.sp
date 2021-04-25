@@ -3502,34 +3502,27 @@ void checkStatus()
 
 bool GetDemoName()
 {
-    if ((StrContains(demoname, "N/A", true) != -1) || IsNullString(demoname))
+    char tvStatus[512];
+    ServerCommandEx(tvStatus, sizeof(tvStatus), "tv_status");
+    char demoname_etc[128];
+    if (MatchRegex(demonameRegex, tvStatus) > 0)
     {
-        char tvStatus[512];
-        ServerCommandEx(tvStatus, sizeof(tvStatus), "tv_status");
-        char demoname_etc[128];
-        if (MatchRegex(demonameRegex, tvStatus) > 0)
+        if (GetRegexSubString(demonameRegex, 0, demoname_etc, sizeof(demoname_etc)))
         {
-            if (GetRegexSubString(demonameRegex, 0, demoname_etc, sizeof(demoname_etc)))
+            LogMessage("demoname_etc %s", demoname_etc);
+            TrimString(demoname_etc);
+            if (MatchRegex(demonameRegexFINAL, demoname_etc) > 0)
             {
-                LogMessage("demoname_etc %s", demoname_etc);
-                TrimString(demoname_etc);
-                if (MatchRegex(demonameRegexFINAL, demoname_etc) > 0)
+                if (GetRegexSubString(demonameRegexFINAL, 0, demoname, sizeof(demoname)))
                 {
-                    if (GetRegexSubString(demonameRegexFINAL, 0, demoname, sizeof(demoname)))
-                    {
-                        LogMessage("demoname %s", demoname);
-                        TrimString(demoname);
-                        StripQuotes(demoname);
-                        return true;
-                    }
+                    LogMessage("demoname %s", demoname);
+                    TrimString(demoname);
+                    StripQuotes(demoname);
+                    return true;
                 }
             }
         }
-        demoname = "N/A";
-        return false;
     }
-    else
-    {
-        return true;
-    }
+    demoname = "N/A";
+    return false;
 }
