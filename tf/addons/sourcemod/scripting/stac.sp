@@ -20,7 +20,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.4.2b"
+#define PLUGIN_VERSION  "4.4.3b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -28,7 +28,6 @@
 
 char hostipaddr[16];
 char hostport[6];
-
 
 public Plugin myinfo =
 {
@@ -104,8 +103,6 @@ bool GBANS;
 bool STEAMTOOLS;
 bool STEAMWORKS;
 bool AIMPLOTTER;
-
-
 
 char detectionTemplate[1024] = "{ \"embeds\": [ { \"title\": \"StAC Detection!\", \"color\": 16738740, \"fields\": [ { \"name\": \"Player\", \"value\": \"%N\" } , { \"name\": \"SteamID\", \"value\": \"%s\" }, { \"name\": \"Detection type\", \"value\": \"%s\" }, { \"name\": \"Detection\", \"value\": \"%i\" }, { \"name\": \"Hostname\", \"value\": \"%s\" }, { \"name\": \"IP\", \"value\": \"%s\" } ] } ] }";
 
@@ -1477,6 +1474,7 @@ public Action OnPlayerRunCmd
             }
             else if (turnSec >= maxAllowedTurnSecs)
             {
+                StacGeneralPlayerDiscordNotify(userid, "Client was kicked for turn binds");
                 KickClient(Cl, "%t", "turnbindKickMsg");
                 MC_PrintToChatAll("%t", "turnbindAllChat", Cl);
                 StacLog("%t", "turnbindAllChat", Cl);
@@ -2593,6 +2591,7 @@ public Action OnClientCommand(int Cl, int args)
 {
     if (IsValidClient(Cl))
     {
+        int userid = GetClientUserId(Cl);
         // init var
         char ClientCommandChar[512];
         // gets the first command
@@ -2618,6 +2617,7 @@ public Action OnClientCommand(int Cl, int args)
         // total length CAN NOT be more than 254 char (from my own testing), first arg can't be more than 128 (from my own testing)
         if (strlen(ClientCommandChar) > 254 || len > 128)
         {
+            StacGeneralPlayerDiscordNotify(userid, "Client was kicked for sending too large of a command!");
             StacLog("[StAC] '%L' issued client side command '%s' - '%i' length.", Cl, ClientCommandChar, strlen(ClientCommandChar));
             KickClient(Cl, "%t", "commandTooBig");
             return Plugin_Stop;
@@ -2666,6 +2666,7 @@ public void OnClientSettingsChanged(int Cl)
         );
         if (settingsChangesFor[Cl] >= maxSettingsChanges)
         {
+            StacGeneralPlayerDiscordNotify(userid, "Client was kicked for userinfo change spam");
             MC_PrintToChatAll("%t", "settingsChangesSpamAllChat", Cl, settingsChangesFor[Cl], SettingsChangeWindow);
             StacLog("%t", "settingsChangesSpamAllChat", Cl, settingsChangesFor[Cl], SettingsChangeWindow);
             KickClient(Cl, "%t", "settingsChangesSpamKickMsg");
@@ -2789,6 +2790,7 @@ void NetPropEtcCheck(int userid)
                 lerp > max_interp_ms && max_interp_ms != -1
             )
             {
+                StacGeneralPlayerDiscordNotify(userid, "Client was kicked for attempted interp exploitation");
                 KickClient(Cl, "%t", "interpKickMsg", lerp, min_interp_ms, max_interp_ms);
                 MC_PrintToChatAll("%t", "interpAllChat", Cl, lerp);
                 StacLog("%t", "interpAllChat", Cl, lerp);
