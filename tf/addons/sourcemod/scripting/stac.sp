@@ -20,7 +20,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.4.6b"
+#define PLUGIN_VERSION  "4.4.7b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -102,9 +102,9 @@ bool STEAMWORKS;
 bool AIMPLOTTER;
 bool DISCORD;
 
-char detectionTemplate[1024] = "{ \"embeds\": [ { \"title\": \"StAC Detection!\", \"color\": 16738740, \"fields\": [ { \"name\": \"Player\", \"value\": \"%N\" } , { \"name\": \"SteamID\", \"value\": \"%s\" }, { \"name\": \"Detection type\", \"value\": \"%s\" }, { \"name\": \"Detection\", \"value\": \"%i\" }, { \"name\": \"Hostname\", \"value\": \"%s\" }, { \"name\": \"IP\", \"value\": \"%s\" } ] } ] }";
+char detectionTemplate[1024] = "{ \"embeds\": [ { \"title\": \"StAC Detection!\", \"color\": 16738740, \"fields\": [ { \"name\": \"Player\", \"value\": \"%N\" } , { \"name\": \"SteamID\", \"value\": \"%s\" }, { \"name\": \"Detection type\", \"value\": \"%s\" }, { \"name\": \"Detection\", \"value\": \"%i\" }, { \"name\": \"Hostname\", \"value\": \"%s\" }, { \"name\": \"IP\", \"value\": \"%s\" } , { \"name\": \"Current Demo Recording\", \"value\": \"%s\" } ] } ] }";
 
-char generalTemplate[1024] = "{ \"embeds\": [ { \"title\": \"StAC Message\", \"color\": 16738740, \"fields\": [ { \"name\": \"Player\", \"value\": \"%N\" } , { \"name\": \"SteamID\", \"value\": \"%s\" }, { \"name\": \"Message\", \"value\": \"%s\" }, { \"name\": \"Hostname\", \"value\": \"%s\" }, { \"name\": \"IP\", \"value\": \"%s\" } ] } ] }";
+char generalTemplate[1024] = "{ \"embeds\": [ { \"title\": \"StAC Message\", \"color\": 16738740, \"fields\": [ { \"name\": \"Player\", \"value\": \"%N\" } , { \"name\": \"SteamID\", \"value\": \"%s\" }, { \"name\": \"Message\", \"value\": \"%s\" }, { \"name\": \"Hostname\", \"value\": \"%s\" }, { \"name\": \"IP\", \"value\": \"%s\" } , { \"name\": \"Current Demo Recording\", \"value\": \"%s\" } ] } ] }";
 
 // are we in MVM
 bool MVM;
@@ -166,6 +166,10 @@ bool logtofile              = true;
 // bool that gets set by steamtools/steamworks forwards - used to kick clients that dont auth
 int isSteamAlive            = -1;
 
+// current recording demoname
+char demoname[128];
+
+
 // server tickrate stuff
 float gameEngineTime[2];
 float realTPS[2];
@@ -175,6 +179,7 @@ File StacLogFile;
 
 // REGEX
 Regex demonameRegex;
+Regex demonameRegexFINAL;
 Regex publicIPRegex;
 Regex IPRegex;
 
@@ -213,9 +218,10 @@ public void OnPluginStart()
     ActuallySetRandomSeed();
 
     // setup regex - "Recording to ".*""
-    demonameRegex = CompileRegex("Recording to \".*\"");
-    publicIPRegex  = CompileRegex("public ip: \\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b");
-    IPRegex = CompileRegex("\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b");
+    demonameRegex       = CompileRegex("Recording to \".*\"");
+    demonameRegexFINAL  = CompileRegex("\".*\"");
+    publicIPRegex       = CompileRegex("public ip: \\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b");
+    IPRegex             = CompileRegex("\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b");
 
     // grab round start events for calculating tps
     HookEvent("teamplay_round_start", eRoundStart);
@@ -2694,25 +2700,15 @@ public void BanUser(int userid, char[] reason, char[] pubreason)
 
     if (demonameInBanReason)
     {
-        char tvStatus[512];
-        char demoname[128];
-        ServerCommandEx(tvStatus, sizeof(tvStatus), "tv_status");
-        // if we found a match, there's a demo recording
-        if (MatchRegex(demonameRegex, tvStatus))
+        if (GetDemoName())
         {
-            if (GetRegexSubString(demonameRegex, 0, demoname, sizeof(demoname)))
+            if (!IsNullString(demoname))
             {
-                ReplaceString(demoname, sizeof(demoname), "Recording to ", "");
-                TrimString(demoname);
-                StripQuotes(demoname);
-
-                Format(demoname, sizeof(demoname), ". Demo file: %s", demoname);
-                StrCat(reason, 256, demoname);
+                char demoname_plus[256];
+                strcopy(demoname_plus, sizeof(demoname_plus), demoname);
+                Format(demoname_plus, sizeof(demoname_plus), ". Demo file: %s", demoname_plus);
+                StrCat(reason, 256, demoname_plus);
                 StacLog("Reason: %s", reason);
-            }
-            else
-            {
-                StacLog("[StAC] No STV demo is being recorded, no demo name will be printed to the ban reason!");
             }
         }
         else
@@ -2984,6 +2980,10 @@ void QueryEverythingAllClients()
         }
     }
 }
+
+
+
+
 
 ////////////
 // STONKS //
@@ -3500,4 +3500,29 @@ void checkStatus()
             }
         }
     }
+}
+
+bool GetDemoName()
+{
+    char tvStatus[512];
+    ServerCommandEx(tvStatus, sizeof(tvStatus), "tv_status");
+    char demoname_etc[128];
+    demoname[0] = '\0';
+    if (MatchRegex(demonameRegex, tvStatus) > 0)
+    {
+        if (GetRegexSubString(demonameRegex, 0, demoname_etc, sizeof(demoname_etc)))
+        {
+            LogMessage("demoname_etc %s", demoname_etc);
+            TrimString(demoname_etc);
+            if (MatchRegex(demonameRegexFINAL, demoname_etc) > 0)
+            {
+                if (GetRegexSubString(demonameRegexFINAL, 0, demoname, sizeof(demoname)))
+                {
+                    LogMessage("demoname %s", demoname);
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
