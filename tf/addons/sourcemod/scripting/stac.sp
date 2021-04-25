@@ -20,7 +20,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.4.5b"
+#define PLUGIN_VERSION  "4.4.6b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -92,7 +92,6 @@ bool didBangThisFrame       [TFMAXPLAYERS+1];
 bool didHurtThisFrame       [TFMAXPLAYERS+1];
 
 char hostname[64];
-char hostport[6];
 char hostipandport[24];
 
 // NATIVE BOOLS
@@ -101,6 +100,7 @@ bool GBANS;
 bool STEAMTOOLS;
 bool STEAMWORKS;
 bool AIMPLOTTER;
+bool DISCORD;
 
 char detectionTemplate[1024] = "{ \"embeds\": [ { \"title\": \"StAC Detection!\", \"color\": 16738740, \"fields\": [ { \"name\": \"Player\", \"value\": \"%N\" } , { \"name\": \"SteamID\", \"value\": \"%s\" }, { \"name\": \"Detection type\", \"value\": \"%s\" }, { \"name\": \"Detection\", \"value\": \"%i\" }, { \"name\": \"Hostname\", \"value\": \"%s\" }, { \"name\": \"IP\", \"value\": \"%s\" } ] } ] }";
 
@@ -137,12 +137,13 @@ float maxAllowedTurnSecs    = -1.0;
 bool banForMiscCheats       = true;
 bool optimizeCvars          = true;
 
-int maxAimsnapDetections    = 20;
+int maxAimsnapDetections    = 30;
 int maxPsilentDetections    = 10;
 int maxFakeAngDetections    = 10;
 int maxBhopDetections       = 10;
 int maxCmdnumDetections     = 25;
-int maxTbotDetections       = 20;
+int maxTbotDetections       = 30;
+int maxSpinbotDetections    = 60;
 // this gets set later
 int maxBhopDetectionsScaled;
 
@@ -756,6 +757,11 @@ public Action checkNativesEtc(Handle timer)
         AIMPLOTTER = true;
     }
 
+    if (GetFeatureStatus(FeatureType_Native, "Discord_SendMessage") == FeatureStatus_Available)
+    {
+        DISCORD = true;
+    }
+
     if (GameRules_GetProp("m_bPlayingMannVsMachine") == 1)
     {
         MVM = true;
@@ -971,7 +977,7 @@ Action hOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, i
 public Action Hook_TEFireBullets(const char[] te_name, const int[] players, int numClients, float delay)
 {
     int Cl = TE_ReadNum("m_iPlayer") + 1;
-
+    // this user fired a bullet this frame!
     didBangThisFrame[Cl] = true;
 }
 
@@ -1088,7 +1094,6 @@ public void OnMapEnd()
     DoTPSMath();
     NukeTimers();
     CloseStacLog();
-    GetConVarString(FindConVar("hostname"), hostname, sizeof(hostname));
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -1107,11 +1112,12 @@ void ClearClBasedVars(int userid)
     turnTimes               [Cl] = 0;
     fovDesired              [Cl] = 0;
     fakeAngDetects          [Cl] = 0;
-    aimsnapDetects          [Cl] = -1; // set to -1 to ignore first detections, as theyre most likely junk
-    pSilentDetects          [Cl] = -1; // ^
+    aimsnapDetects          [Cl] = -1; // ignore first detect, it's prolly bunk
+    pSilentDetects          [Cl] = -1; // ignore first detect, it's prolly bunk
     bhopDetects             [Cl] = -1; // set to -1 to ignore single jumps
     cmdnumSpikeDetects      [Cl] = 0;
-    tbotDetects             [Cl] = -1;
+    tbotDetects             [Cl] = -1; // ignore first detect, it's prolly bunk
+    spinbotDetects          [Cl] = 0;
     isConsecStringOfBhops   [Cl] = false;
     bhopConsecDetects       [Cl] = 0;
     settingsChangesFor      [Cl] = 0;
@@ -1216,10 +1222,10 @@ public void OnGameFrame()
     if (smoothedTPS < (tps / 2.0))
     {
         timeSinceLagSpike = GetEngineTime();
+        StacLog("[StAC] Server framerate stuttered. Expected: %f, got %f.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, realTPS[0], stutterWaitLength);
         if (DEBUG)
         {
             PrintToImportant("{hotpink}[StAC]{white} Server framerate stuttered. Expected: {palegreen}%f{white}, got {fullred}%f{white}.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, realTPS[0], stutterWaitLength);
-            StacLog("[StAC] Server framerate stuttered. Expected: %f, got %f.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, realTPS[0], stutterWaitLength);
         }
     }
 }
@@ -1270,7 +1276,7 @@ public Action OnPlayerRunCmd
     {
         if (cmdnum < 0 || tickcount < 0)
         {
-            StacGeneralPlayerDiscordNotify(userid, "Kicked client for having invalid usercmd data????");
+            StacGeneralPlayerDiscordNotify(userid, "Kicked client for having invalid usercmd data");
             KickClient(Cl, "%t", "invalidUsercmdData");
             return Plugin_Handled;
         }
@@ -1293,7 +1299,7 @@ public Action OnPlayerRunCmd
     // convert to ms
     float ping = GetClientAvgLatency(Cl, NetFlow_Both) * 1000.0;
 
-    // grab angles
+    // grab angles - we ignore roll
     // thanks to nosoop from the sm discord for some help with this
     clangles[4][Cl] = clangles[3][Cl];
     clangles[3][Cl] = clangles[2][Cl];
@@ -1504,73 +1510,6 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
-    // spinbot detection - ultra beta
-    if (!(buttons & IN_LEFT || buttons & IN_RIGHT))
-    {
-        float angBuff = FloatAbs(angles[1] - clangles[1][Cl][1]);
-        spinDiff[1][Cl] = spinDiff[0][Cl];
-        spinDiff[0][Cl] = NormalizeAngleDiff(angBuff);
-
-        if (spinDiff[0][Cl] >= 1.0 && spinDiff[0][Cl] == spinDiff[1][Cl])
-        {
-            spinbotDetects[Cl]++;
-            if (spinbotDetects[Cl] >= 10)
-            {
-                PrintToImportant
-                (
-                    "{hotpink}[StAC]{white} Spinbot detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.",
-                    spinDiff[0][Cl],
-                    Cl,
-                    spinbotDetects[Cl]
-                );
-                StacLog
-                (
-                    "[StAC] Spinbot detection of %f° on %N.\nDetections so far: %i.",
-                    spinDiff[0][Cl],
-                    Cl,
-                    spinbotDetects[Cl]
-                );
-                StacLog
-                (
-                    "[StAC] Spinbot detection of %f° on %N.\nDetections so far: %i.",
-                    spinDiff[0][Cl],
-                    Cl,
-                    spinbotDetects[Cl]
-                );
-                StacLog
-                (
-                    "\nAngles:\n angles0: x %f y %f\n angles1: x %f y %f\n angles2: x %f y %f\n angles3: x %f y %f\n angles4: x %f y %f\n",
-                    clangles[0][Cl][0],
-                    clangles[0][Cl][1],
-                    clangles[1][Cl][0],
-                    clangles[1][Cl][1],
-                    clangles[2][Cl][0],
-                    clangles[2][Cl][1],
-                    clangles[3][Cl][0],
-                    clangles[3][Cl][1],
-                    clangles[4][Cl][0],
-                    clangles[4][Cl][1]
-                );
-                if (spinbotDetects[Cl] % 20 == 0)
-                {
-                    StacDetectionDiscordNotify(userid, "spinbot", spinbotDetects[Cl]);
-                }
-                //if (fakeAngDetects[Cl] >= maxFakeAngDetections && maxFakeAngDetections > 0)
-                //{
-                //    char reason[128];
-                //    Format(reason, sizeof(reason), "%t", "fakeangBanMsg", fakeAngDetects[Cl]);
-                //    char pubreason[128];
-                //    Format(pubreason, sizeof(pubreason), "%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
-                //    BanUser(userid, reason, pubreason);
-                //    return Plugin_Handled;
-                //}
-            }
-        }
-        else
-        {
-            spinbotDetects[Cl] = 0;
-        }
-    }
     /*
         EYE ANGLES TEST
         if clients are outside of allowed angles in tf2, which are
@@ -1628,6 +1567,88 @@ public Action OnPlayerRunCmd
             Format(pubreason, sizeof(pubreason), "%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
             BanUser(userid, reason, pubreason);
             return Plugin_Handled;
+        }
+    }
+    /*
+        SPINBOT DETECTION - shoutout to SSAC
+    */
+    // ignore clients using turn binds!
+    if
+    (
+        !(
+            buttons & IN_LEFT
+            ||
+            buttons & IN_RIGHT
+        )
+    )
+    {
+        // get the abs value of the difference between the last two y angles
+        float angBuff = FloatAbs(clangles[0][Cl][1] - clangles[1][Cl][1]);
+        // set up our array
+        spinDiff[1][Cl] = spinDiff[0][Cl];
+        spinDiff[0][Cl] = NormalizeAngleDiff(angBuff);
+        // only count this as a detect if the spin amt ( spinDiff[0][Cl] )
+        // is greater than 1 degree and ALSO matches the last value ( spinDiff[1][Cl] )
+        if (spinDiff[0][Cl] >= 1.0 && spinDiff[0][Cl] == spinDiff[1][Cl])
+        {
+            spinbotDetects[Cl]++;
+            // this can trigger on normal players, only care about if it happens 10 times in a row at least!
+            if (spinbotDetects[Cl] >= 10)
+            {
+                PrintToImportant
+                (
+                    "{hotpink}[StAC]{white} Spinbot detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.",
+                    spinDiff[0][Cl],
+                    Cl,
+                    spinbotDetects[Cl]
+                );
+                StacLog
+                (
+                    "[StAC] Spinbot detection of %f° on %N.\nDetections so far: %i.",
+                    spinDiff[0][Cl],
+                    Cl,
+                    spinbotDetects[Cl]
+                );
+                StacLog
+                (
+                    "[StAC] Spinbot detection of %f° on %N.\nDetections so far: %i.",
+                    spinDiff[0][Cl],
+                    Cl,
+                    spinbotDetects[Cl]
+                );
+                StacLog
+                (
+                    "\nAngles:\n angles0: x %f y %f\n angles1: x %f y %f\n angles2: x %f y %f\n angles3: x %f y %f\n angles4: x %f y %f\n",
+                    clangles[0][Cl][0],
+                    clangles[0][Cl][1],
+                    clangles[1][Cl][0],
+                    clangles[1][Cl][1],
+                    clangles[2][Cl][0],
+                    clangles[2][Cl][1],
+                    clangles[3][Cl][0],
+                    clangles[3][Cl][1],
+                    clangles[4][Cl][0],
+                    clangles[4][Cl][1]
+                );
+                if (spinbotDetects[Cl] % 20 == 0)
+                {
+                    StacDetectionDiscordNotify(userid, "spinbot", spinbotDetects[Cl]);
+                }
+                if (spinbotDetects[Cl] >= maxSpinbotDetections && maxSpinbotDetections > 0)
+                {
+                    char reason[128];
+                    Format(reason, sizeof(reason), "%t", "spinbotBanMsg", fakeAngDetects[Cl]);
+                    char pubreason[128];
+                    Format(pubreason, sizeof(pubreason), "%t", "spinbotBanAllChat", Cl, fakeAngDetects[Cl]);
+                    BanUser(userid, reason, pubreason);
+                    return Plugin_Handled;
+                }
+            }
+        }
+        // reset if we don't get consecutive detects
+        else
+        {
+            spinbotDetects[Cl] = 0;
         }
     }
     /*
@@ -2129,15 +2150,15 @@ public Action OnPlayerRunCmd
                     }
 
                     // BAN USER if they trigger too many detections
-                    //if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
-                    //{
-                    //    char reason[128];
-                    //    Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
-                    //    char pubreason[128];
-                    //    Format(pubreason, sizeof(pubreason), "%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
-                    //    BanUser(userid, reason, pubreason);
-                    //    return Plugin_Handled;
-                    //}
+                    if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
+                    {
+                        char reason[128];
+                        Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
+                        char pubreason[128];
+                        Format(pubreason, sizeof(pubreason), "%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
+                        BanUser(userid, reason, pubreason);
+                        return Plugin_Handled;
+                    }
                 }
             }
         }
@@ -2151,26 +2172,12 @@ public Action OnPlayerRunCmd
         int attack = 0;
         // grab single tick +attack inputs - this checks for the following pattern:
         //                      //-----------
-        //                      //
-        // etc                  //
         // frame before last    //
         // last frame           // IN_ATTACK
         // current frame        //
 
         if
         (
-            !(
-                clbuttons[5][Cl] & IN_ATTACK
-            )
-            &&
-            !(
-                clbuttons[4][Cl] & IN_ATTACK
-            )
-            &&
-            !(
-                clbuttons[3][Cl] & IN_ATTACK
-            )
-            &&
             !(
                 clbuttons[2][Cl] & IN_ATTACK
             )
@@ -2226,7 +2233,7 @@ public Action OnPlayerRunCmd
                 attack == 1
                 &&
                 (
-
+                    // will eventually add checks for if the user hurt and bang'd last frame as well
                     didBangThisFrame[Cl]
                     &&
                     didHurtThisFrame[Cl]
@@ -2313,16 +2320,17 @@ public Action OnPlayerRunCmd
                 {
                     StacDetectionDiscordNotify(userid, "triggerbot", tbotDetects[Cl]);
                 }
+
                 // BAN USER if they trigger too many detections
-                //if (tbotDetects[Cl] >= maxTbotDetections && maxTbotDetections > 0)
-                //{
-                //    char reason[128];
-                //    Format(reason, sizeof(reason), "%t", "tbotBanMsg", tbotDetects[Cl]);
-                //    char pubreason[128];
-                //    Format(pubreason, sizeof(pubreason), "%t", "tbotBanAllChat", Cl, tbotDetects[Cl]);
-                //    BanUser(userid, reason, pubreason);
-                //    return Plugin_Handled;
-                //}
+                if (tbotDetects[Cl] >= maxTbotDetections && maxTbotDetections > 0)
+                {
+                    char reason[128];
+                    Format(reason, sizeof(reason), "%t", "tbotBanMsg", tbotDetects[Cl]);
+                    char pubreason[128];
+                    Format(pubreason, sizeof(pubreason), "%t", "tbotBanAllChat", Cl, tbotDetects[Cl]);
+                    BanUser(userid, reason, pubreason);
+                    return Plugin_Handled;
+                }
             }
         }
     }
@@ -2662,7 +2670,7 @@ public void OnClientSettingsChanged(int Cl)
         );
         if (settingsChangesFor[Cl] >= maxSettingsChanges)
         {
-            StacGeneralPlayerDiscordNotify(userid, "Client was kicked for userinfo change spam");
+            StacGeneralPlayerDiscordNotify(userid, "Client was kicked spamming userinfo changes");
             MC_PrintToChatAll("%t", "settingsChangesSpamAllChat", Cl, settingsChangesFor[Cl], SettingsChangeWindow);
             StacLog("%t", "settingsChangesSpamAllChat", Cl, settingsChangesFor[Cl], SettingsChangeWindow);
             KickClient(Cl, "%t", "settingsChangesSpamKickMsg");
@@ -2786,7 +2794,9 @@ void NetPropEtcCheck(int userid)
                 lerp > max_interp_ms && max_interp_ms != -1
             )
             {
-                StacGeneralPlayerDiscordNotify(userid, "Client was kicked for attempted interp exploitation");
+                char message[256];
+                Format(message, sizeof(message), "Client was kicked for attempted interp exploitation. Their interp: %f", lerp);
+                StacGeneralPlayerDiscordNotify(userid, message);
                 KickClient(Cl, "%t", "interpKickMsg", lerp, min_interp_ms, max_interp_ms);
                 MC_PrintToChatAll("%t", "interpAllChat", Cl, lerp);
                 StacLog("%t", "interpAllChat", Cl, lerp);
@@ -3107,16 +3117,35 @@ bool HasValidAngles(int Cl)
     if
     (
         // ignore weird angle resets in mge / dm, ignore laggy players
-           clangles[0][Cl][0] == 0.0
-        || clangles[0][Cl][1] == 0.0
-        || clangles[1][Cl][0] == 0.0
-        || clangles[1][Cl][1] == 0.0
-        || clangles[2][Cl][0] == 0.0
-        || clangles[2][Cl][1] == 0.0
-        || clangles[3][Cl][0] == 0.0
-        || clangles[3][Cl][1] == 0.0
-        || clangles[4][Cl][0] == 0.0
-        || clangles[4][Cl][1] == 0.0
+        (
+            clangles[0][Cl][0] == 0.0
+            &&
+            clangles[0][Cl][1] == 0.0
+        )
+        ||
+        (
+            clangles[1][Cl][0] == 0.0
+            &&
+            clangles[1][Cl][1] == 0.0
+        )
+        ||
+        (
+            clangles[2][Cl][0] == 0.0
+            &&
+            clangles[2][Cl][1] == 0.0
+        )
+        ||
+        (
+            clangles[3][Cl][0] == 0.0
+            &&
+            clangles[3][Cl][1] == 0.0
+        )
+        ||
+        (
+            clangles[4][Cl][0] == 0.0
+            &&
+            clangles[4][Cl][1] == 0.0
+        )
     )
     {
         return false;
@@ -3382,6 +3411,11 @@ float NormalizeAngleDiff(float aDiff)
 
 void StacDetectionDiscordNotify(int userid, char[] type, int detections)
 {
+    if (!DISCORD)
+    {
+        return;
+    }
+
     char msg[1024];
 
     int Cl = GetClientOfUserId(userid);
@@ -3408,6 +3442,11 @@ void StacDetectionDiscordNotify(int userid, char[] type, int detections)
 
 void StacGeneralPlayerDiscordNotify(int userid, char[] message)
 {
+    if (!DISCORD)
+    {
+        return;
+    }
+
     char msg[1024];
 
     int Cl = GetClientOfUserId(userid);
@@ -3454,6 +3493,7 @@ void checkStatus()
                 {
                     strcopy(hostipandport, sizeof(hostipandport), ip);
                     StrCat(hostipandport, sizeof(hostipandport), ":");
+                    char hostport[6];
                     GetConVarString(FindConVar("hostport"), hostport, sizeof(hostport));
                     StrCat(hostipandport, sizeof(hostipandport), hostport);
                 }
