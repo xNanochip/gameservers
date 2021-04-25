@@ -20,7 +20,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.4.7b"
+#define PLUGIN_VERSION  "4.4.8b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -1643,9 +1643,9 @@ public Action OnPlayerRunCmd
                 if (spinbotDetects[Cl] >= maxSpinbotDetections && maxSpinbotDetections > 0)
                 {
                     char reason[128];
-                    Format(reason, sizeof(reason), "%t", "spinbotBanMsg", fakeAngDetects[Cl]);
+                    Format(reason, sizeof(reason), "%t", "spinbotBanMsg", spinbotDetects[Cl]);
                     char pubreason[128];
-                    Format(pubreason, sizeof(pubreason), "%t", "spinbotBanAllChat", Cl, fakeAngDetects[Cl]);
+                    Format(pubreason, sizeof(pubreason), "%t", "spinbotBanAllChat", Cl, spinbotDetects[Cl]);
                     BanUser(userid, reason, pubreason);
                     return Plugin_Handled;
                 }
@@ -3435,7 +3435,8 @@ void StacDetectionDiscordNotify(int userid, char[] type, int detections)
         type,
         detections,
         hostname,
-        hostipandport
+        hostipandport,
+        demoname
     );
     SendMessageToDiscord(msg);
 }
@@ -3465,7 +3466,8 @@ void StacGeneralPlayerDiscordNotify(int userid, char[] message)
         steamid,
         message,
         hostname,
-        hostipandport
+        hostipandport,
+        demoname
     );
     SendMessageToDiscord(msg);
 }
@@ -3519,6 +3521,8 @@ bool GetDemoName()
                 if (GetRegexSubString(demonameRegexFINAL, 0, demoname, sizeof(demoname)))
                 {
                     LogMessage("demoname %s", demoname);
+                    TrimString(demoname);
+                    StripQuotes(demoname);
                     return true;
                 }
             }
