@@ -257,7 +257,6 @@ public void OnPluginStart()
     timeSinceMapStart = GetEngineTime();
     AddTempEntHook("Fire Bullets", Hook_TEFireBullets);
 
-    //StacGeneralDiscordNotify()
     StacLog("[StAC] Plugin vers. ---- %s ---- loaded", PLUGIN_VERSION);
 }
 
@@ -3419,7 +3418,7 @@ void StacDetectionDiscordNotify(int userid, char[] type, int detections)
     char ClName[64];
     GetClientName(Cl, ClName, sizeof(ClName));
     Discord_EscapeString(ClName, sizeof(ClName));
-
+    GetDemoName();
     char steamid[64];
     GetClientAuthId(Cl, AuthId_SteamID64, steamid, sizeof(steamid));
     Format
@@ -3451,7 +3450,7 @@ void StacGeneralPlayerDiscordNotify(int userid, char[] message)
     char ClName[64];
     GetClientName(Cl, ClName, sizeof(ClName));
     Discord_EscapeString(ClName, sizeof(ClName));
-
+    GetDemoName();
     char steamid[64];
     GetClientAuthId(Cl, AuthId_SteamID64, steamid, sizeof(steamid));
     Format
