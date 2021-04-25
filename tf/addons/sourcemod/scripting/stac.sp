@@ -15,15 +15,20 @@
 #undef REQUIRE_PLUGIN
 #include <updater>
 #include <sourcebanspp>
+#include <discord>
 #undef REQUIRE_EXTENSIONS
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.4.0b"
+#define PLUGIN_VERSION  "4.4.2b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 #pragma newdecls required
+
+char hostipaddr[16];
+char hostport[6];
+
 
 public Plugin myinfo =
 {
@@ -89,12 +94,22 @@ char hurtWeapon             [TFMAXPLAYERS+1][256];
 bool didBangThisFrame       [TFMAXPLAYERS+1];
 bool didHurtThisFrame       [TFMAXPLAYERS+1];
 
+char hostname[64];
+
+char hostipport[24];
+
 // NATIVE BOOLS
 bool SOURCEBANS;
 bool GBANS;
 bool STEAMTOOLS;
 bool STEAMWORKS;
 bool AIMPLOTTER;
+
+
+
+char detectionTemplate[1024] = "{ \"embeds\": [ { \"title\": \"StAC Detection!\", \"color\": 16738740, \"fields\": [ { \"name\": \"Player\", \"value\": \"%N\" } , { \"name\": \"SteamID\", \"value\": \"%s\" }, { \"name\": \"Detection type\", \"value\": \"%s\" }, { \"name\": \"Detection\", \"value\": \"%i\" }, { \"name\": \"Hostname\", \"value\": \"%s\" }, { \"name\": \"IP\", \"value\": \"%s\" } ] } ] }";
+
+char generalTemplate[1024] = "{ \"embeds\": [ { \"title\": \"StAC Message\", \"color\": 16738740, \"fields\": [ { \"name\": \"Player\", \"value\": \"%N\" } , { \"name\": \"SteamID\", \"value\": \"%s\" }, { \"name\": \"Message\", \"value\": \"%s\" }, { \"name\": \"Hostname\", \"value\": \"%s\" }, { \"name\": \"IP\", \"value\": \"%s\" } ] } ] }";
 
 // are we in MVM
 bool MVM;
@@ -118,6 +133,8 @@ ConVar stac_min_randomcheck_secs;
 ConVar stac_max_randomcheck_secs;
 ConVar stac_include_demoname_in_banreason;
 ConVar stac_log_to_file;
+
+//ConVar stac_webhook;
 
 // VARIOUS DETECTION BOUNDS & CVAR VALUES
 bool DEBUG                  = false;
@@ -233,11 +250,14 @@ public void OnPluginStart()
 
     timeSinceMapStart = GetEngineTime();
     AddTempEntHook("Fire Bullets", Hook_TEFireBullets);
+
+    //StacGeneralDiscordNotify()
     StacLog("[StAC] Plugin vers. ---- %s ---- loaded", PLUGIN_VERSION);
 }
 
 void initCvars()
 {
+
     AutoExecConfig_SetFile("stac");
     AutoExecConfig_SetCreateFile(true);
 
@@ -759,6 +779,11 @@ public Action checkNativesEtc(Handle timer)
     }
 }
 
+public void OnAllPluginsLoaded()
+{
+    UpdateIPPort();
+}
+
 public Action checkEveryone(Handle timer)
 {
     QueryEverythingAllClients();
@@ -824,6 +849,7 @@ public Action ShowDetections(int callingCl, int args)
         }
     }
     PrintToConsole(callingCl, "[StAC] == END DETECTIONS == \n");
+    StacGeneralPlayerDiscordNotify(GetClientUserId(callingCl), "Client attempted to check StAC detections");
 }
 
 public void OnPluginEnd()
@@ -1060,6 +1086,7 @@ public void OnMapStart()
     }
     timeSinceMapStart = GetEngineTime();
     CreateTimer(0.1, checkNativesEtc);
+    GetConVarString(FindConVar("hostname"), hostname, sizeof(hostname));
 }
 
 public void OnMapEnd()
@@ -1068,6 +1095,7 @@ public void OnMapEnd()
     DoTPSMath();
     NukeTimers();
     CloseStacLog();
+    GetConVarString(FindConVar("hostname"), hostname, sizeof(hostname));
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -1156,6 +1184,7 @@ Action Timer_checkAuth(Handle timer, int userid)
     int Cl = GetClientOfUserId(userid);
     if (!IsClientAuthorized(Cl) && (isSteamAlive == 1))
     {
+        StacGeneralPlayerDiscordNotify(userid, "Kicked for being unauthorized w/ Steam");
         StacLog("[StAC] Kicking %N for not being authorized with Steam.", Cl);
         KickClient(Cl, "[StAC] Not authorized with Steam Network, please reconnect");
     }
@@ -1240,43 +1269,21 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
-    //float ping = GetClientAvgLatency(Cl, NetFlow_Both) * 1000.0;
-    ////LogMessage("%f", ping);
-    //if (ping >= 600)
-    //{
-    //    if (laggyDetects[Cl] < (tps)*6.0)
-    //    {
-    //        laggyDetects[Cl]++;
-    //    }
-    //}
-    //else
-    //{
-    //    if (laggyDetects[Cl] > 0)
-    //    {
-    //        laggyDetects[Cl]--;
-    //    }
-    //}
-    //if (laggyDetects[Cl] > (tps)*5.0)
-    //{
-    //    SetEntityMoveType(Cl, MOVETYPE_NONE);
-    //    buttons = 0;
-    //    //TeleportEntity(Cl,  NULL_VECTOR, NULL_VECTOR, view_as<float>({0.0, 0.0, 0.0}));
-    //    return Plugin_Handled;
-    //}
+    // need this basically no matter what
+    int userid = GetClientUserId(Cl);
 
     // originally from ssac - block invalid usercmds with invalid data
     if (cmdnum <= 0 || tickcount <= 0)
     {
         if (cmdnum < 0 || tickcount < 0)
         {
+            StacGeneralPlayerDiscordNotify(userid, "Kicked client for having invalid usercmd data????");
             KickClient(Cl, "%t", "invalidUsercmdData");
             return Plugin_Handled;
         }
         return Plugin_Continue;
     }
 
-    // need this basically no matter what
-    int userid = GetClientUserId(Cl);
 
     // set previous tick times to test lagginess (THANK YOU BACKWARDS FOR HELP WITH THIS)
     for (int i = 10; i > 0; --i)
@@ -1503,7 +1510,6 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
-
     // spinbot detection - ultra beta
     if (!(buttons & IN_LEFT || buttons & IN_RIGHT))
     {
@@ -1551,6 +1557,19 @@ public Action OnPlayerRunCmd
                     clangles[4][Cl][0],
                     clangles[4][Cl][1]
                 );
+                if (spinbotDetects[Cl] % 20 == 0)
+                {
+                    StacDetectionDiscordNotify(userid, "spinbot", spinbotDetects[Cl]);
+                }
+                //if (fakeAngDetects[Cl] >= maxFakeAngDetections && maxFakeAngDetections > 0)
+                //{
+                //    char reason[128];
+                //    Format(reason, sizeof(reason), "%t", "fakeangBanMsg", fakeAngDetects[Cl]);
+                //    char pubreason[128];
+                //    Format(pubreason, sizeof(pubreason), "%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
+                //    BanUser(userid, reason, pubreason);
+                //    return Plugin_Handled;
+                //}
             }
         }
         else
@@ -1603,6 +1622,10 @@ public Action OnPlayerRunCmd
             angles[2],
             fakeAngDetects[Cl]
         );
+        if (fakeAngDetects[Cl] % 20 == 0)
+        {
+            StacDetectionDiscordNotify(userid, "fake angles", fakeAngDetects[Cl]);
+        }
         if (fakeAngDetects[Cl] >= maxFakeAngDetections && maxFakeAngDetections > 0)
         {
             char reason[128];
@@ -1705,6 +1728,10 @@ public Action OnPlayerRunCmd
             clcmdnum[4][Cl],
             clcmdnum[5][Cl]
         );
+        if (cmdnumSpikeDetects[Cl] % 5 == 0)
+        {
+            StacDetectionDiscordNotify(userid, "cmdnum spike", cmdnumSpikeDetects[Cl]);
+        }
         // punish if we reach limit set by cvar
         if (cmdnumSpikeDetects[Cl] >= maxCmdnumDetections && maxCmdnumDetections > 0)
         {
@@ -1726,13 +1753,15 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
-    //if (clcmdnum[1][Cl] > clcmdnum[0][Cl])
-    //{
-    //    LogMessage("[StAC] cmdnum DROP of %i!", clcmdnum[1][Cl] - clcmdnum[0][Cl]);
-    //    LogMessage("%i , %i", clcmdnum[1][Cl], clcmdnum[0][Cl]);
-    //    cmdnum = cmdnum;
-    //    return Plugin_Handled;
-    //}
+    if (clcmdnum[1][Cl] > clcmdnum[0][Cl])
+    {
+        StacLog("[StAC] cmdnum DROP of %i!", clcmdnum[1][Cl] - clcmdnum[0][Cl]);
+        StacLog("%i , %i", clcmdnum[1][Cl], clcmdnum[0][Cl]);
+        StacGeneralPlayerDiscordNotify(userid, "CMDNUM DROP ON THIS CLIENT BOTHER STEPH ABOUT THIS");
+
+        //cmdnum = cmdnum;
+        //return Plugin_Handled;
+    }
 
     // we can reuse this for aimsnap as well!
     float aDiffReal = NormalizeAngleDiff(CalcAngDeg(clangles[0][Cl], clangles[1][Cl]));
@@ -1864,6 +1893,10 @@ public Action OnPlayerRunCmd
                     ServerCommand("sm_aimplot #%i on", userid);
                 }
 
+                if (pSilentDetects[Cl] % 5 == 0)
+                {
+                    StacDetectionDiscordNotify(userid, "psilent", pSilentDetects[Cl]);
+                }
                 // BAN USER if they trigger too many detections
                 if (pSilentDetects[Cl] >= maxPsilentDetections && maxPsilentDetections > 0)
                 {
@@ -1883,6 +1916,20 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
+    //if
+    //(!
+    //    (
+    //        clcmdnum[0][Cl] >
+    //        clcmdnum[1][Cl] >
+    //        clcmdnum[2][Cl] >
+    //        clcmdnum[3][Cl] >
+    //        clcmdnum[4][Cl] >
+    //        clcmdnum[5][Cl]
+    //    )
+    //)
+    //{
+    //    return Plugin_Continue;
+    //}
     /*
         AIMSNAP DETECTION - BETA
 
@@ -1911,11 +1958,10 @@ public Action OnPlayerRunCmd
         // 0.018540, 0.000000, 91.355995, 0.000000
 
         // only check if we actually did dmg in the current frame
-        // or if we shot a bullet
         if
         (
-            didBangThisFrame[Cl]
-            ||
+            //didBangThisFrame[Cl]
+            //||
             didHurtThisFrame[Cl]
         )
         {
@@ -2083,6 +2129,11 @@ public Action OnPlayerRunCmd
                         ServerCommand("sm_aimplot #%i on", userid);
                     }
 
+                    if (aimsnapDetects[Cl] % 5 == 0)
+                    {
+                        StacDetectionDiscordNotify(userid, "aimsnap", aimsnapDetects[Cl]);
+                    }
+
                     // BAN USER if they trigger too many detections
                     //if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
                     //{
@@ -2113,7 +2164,7 @@ public Action OnPlayerRunCmd
         // current frame        //
 
         if
-        (   
+        (
             !(
                 clbuttons[5][Cl] & IN_ATTACK
             )
@@ -2181,7 +2232,7 @@ public Action OnPlayerRunCmd
                 attack == 1
                 &&
                 (
-                    
+
                     didBangThisFrame[Cl]
                     &&
                     didHurtThisFrame[Cl]
@@ -2264,7 +2315,10 @@ public Action OnPlayerRunCmd
                 {
                     ServerCommand("sm_aimplot #%i on", userid);
                 }
-
+                if (tbotDetects[Cl] % 5 == 0)
+                {
+                    StacDetectionDiscordNotify(userid, "triggerbot", tbotDetects[Cl]);
+                }
                 // BAN USER if they trigger too many detections
                 //if (tbotDetects[Cl] >= maxTbotDetections && maxTbotDetections > 0)
                 //{
@@ -2278,7 +2332,6 @@ public Action OnPlayerRunCmd
             }
         }
     }
-
 
     if (didBangThisFrame[Cl])
     {
@@ -3326,4 +3379,99 @@ float NormalizeAngleDiff(float aDiff)
         aDiff = FloatAbs(aDiff - 360.0);
     }
     return aDiff;
+}
+
+
+void StacDetectionDiscordNotify(int userid, char[] type, int detections)
+{
+    char msg[1024];
+
+    int Cl = GetClientOfUserId(userid);
+    char ClName[64];
+    GetClientName(Cl, ClName, sizeof(ClName));
+    Discord_EscapeString(ClName, sizeof(ClName));
+
+    char steamid[64];
+    GetClientAuthId(Cl, AuthId_SteamID64, steamid, sizeof(steamid));
+    Format
+    (
+        msg,
+        sizeof(msg),
+        detectionTemplate,
+        Cl,
+        steamid,
+        type,
+        detections,
+        hostname,
+        hostipport
+    );
+    SendMessageToDiscord(msg);
+}
+
+void StacGeneralPlayerDiscordNotify(int userid, char[] message)
+{
+    char msg[1024];
+
+    int Cl = GetClientOfUserId(userid);
+    char ClName[64];
+    GetClientName(Cl, ClName, sizeof(ClName));
+    Discord_EscapeString(ClName, sizeof(ClName));
+
+    char steamid[64];
+    GetClientAuthId(Cl, AuthId_SteamID64, steamid, sizeof(steamid));
+    Format
+    (
+        msg,
+        sizeof(msg),
+        generalTemplate,
+        Cl,
+        steamid,
+        message,
+        hostname,
+        hostipport
+    );
+    SendMessageToDiscord(msg);
+}
+
+void SendMessageToDiscord(char[] message)
+{
+    char webhook[32] = "stac";
+    Discord_SendMessage(webhook, message);
+}
+
+// stolen code
+void UpdateIPPort()
+{
+    GetConVarString(FindConVar("hostport"), hostport, sizeof(hostport));
+
+    int ip[4];
+    if (STEAMTOOLS)
+    {
+        Steam_GetPublicIP(ip);
+    }
+    else if (STEAMWORKS)
+    {
+        SteamWorks_GetPublicIP(ip);
+    }
+
+    Format(hostipaddr, sizeof(hostipaddr), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+    TrimString(hostipaddr);
+
+    if (!StrEqual(hostipaddr, "0.0.0.0"))
+    {
+        strcopy(hostipport, sizeof(hostipport), hostipaddr);
+        StrCat(hostipport, sizeof(hostipport), ":");
+        StrCat(hostipport, sizeof(hostipport), hostport);
+
+        return;
+    }
+
+    if (FindConVar("ip") != null)
+    {
+        GetConVarString(FindConVar("ip"), hostipaddr, sizeof(hostipaddr));
+    }
+
+    strcopy(hostipport, sizeof(hostipport), hostipaddr);
+    StrCat(hostipport, sizeof(hostipport), ":");
+    StrCat(hostipport, sizeof(hostipport), hostport);
 }
