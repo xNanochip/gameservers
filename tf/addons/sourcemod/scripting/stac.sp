@@ -20,14 +20,12 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.4.3b"
+#define PLUGIN_VERSION  "4.4.5b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
 #pragma newdecls required
 
-char hostipaddr[16];
-char hostport[6];
 
 public Plugin myinfo =
 {
@@ -94,8 +92,8 @@ bool didBangThisFrame       [TFMAXPLAYERS+1];
 bool didHurtThisFrame       [TFMAXPLAYERS+1];
 
 char hostname[64];
-
-char hostipport[24];
+char hostport[6];
+char hostipandport[24];
 
 // NATIVE BOOLS
 bool SOURCEBANS;
@@ -176,6 +174,8 @@ File StacLogFile;
 
 // REGEX
 Regex demonameRegex;
+Regex publicIPRegex;
+Regex IPRegex;
 
 float spinDiff[2][TFMAXPLAYERS+1];
 
@@ -212,7 +212,9 @@ public void OnPluginStart()
     ActuallySetRandomSeed();
 
     // setup regex - "Recording to ".*""
-    demonameRegex = new Regex("Recording to \".*\"");
+    demonameRegex = CompileRegex("Recording to \".*\"");
+    publicIPRegex  = CompileRegex("public ip: \\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b");
+    IPRegex = CompileRegex("\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b");
 
     // grab round start events for calculating tps
     HookEvent("teamplay_round_start", eRoundStart);
@@ -776,11 +778,6 @@ public Action checkNativesEtc(Handle timer)
     }
 }
 
-public void OnAllPluginsLoaded()
-{
-    UpdateIPPort();
-}
-
 public Action checkEveryone(Handle timer)
 {
     QueryEverythingAllClients();
@@ -975,9 +972,7 @@ public Action Hook_TEFireBullets(const char[] te_name, const int[] players, int 
 {
     int Cl = TE_ReadNum("m_iPlayer") + 1;
 
-
     didBangThisFrame[Cl] = true;
-    //LogMessage("bang %N %i", Cl, clcmdnum[0][Cl]);
 }
 
 public Action TF2_OnPlayerTeleport(int Cl, int teleporter, bool& result)
@@ -1077,6 +1072,7 @@ public void OnMapStart()
     ActuallySetRandomSeed();
     DoTPSMath();
     ResetTimers();
+    RequestFrame(checkStatus);
     if (optimizeCvars)
     {
         RunOptimizeCvars();
@@ -3405,7 +3401,7 @@ void StacDetectionDiscordNotify(int userid, char[] type, int detections)
         type,
         detections,
         hostname,
-        hostipport
+        hostipandport
     );
     SendMessageToDiscord(msg);
 }
@@ -3430,7 +3426,7 @@ void StacGeneralPlayerDiscordNotify(int userid, char[] message)
         steamid,
         message,
         hostname,
-        hostipport
+        hostipandport
     );
     SendMessageToDiscord(msg);
 }
@@ -3441,54 +3437,27 @@ void SendMessageToDiscord(char[] message)
     Discord_SendMessage(webhook, message);
 }
 
-// stolen code
-void UpdateIPPort()
+void checkStatus()
 {
-    GetConVarString(FindConVar("hostport"), hostport, sizeof(hostport));
-
-    int ip[4];
-    if (STEAMTOOLS)
+    char status[2048];
+    ServerCommandEx(status, sizeof(status), "status");
+    char ipetc[128];
+    char ip[24];
+    if (MatchRegex(publicIPRegex, status) > 0)
     {
-        Steam_GetPublicIP(ip);
+        if (GetRegexSubString(publicIPRegex, 0, ipetc, sizeof(ipetc)))
+        {
+            TrimString(ipetc);
+            if (MatchRegex(IPRegex, ipetc) > 0)
+            {
+                if (GetRegexSubString(IPRegex, 0, ip, sizeof(ip)))
+                {
+                    strcopy(hostipandport, sizeof(hostipandport), ip);
+                    StrCat(hostipandport, sizeof(hostipandport), ":");
+                    GetConVarString(FindConVar("hostport"), hostport, sizeof(hostport));
+                    StrCat(hostipandport, sizeof(hostipandport), hostport);
+                }
+            }
+        }
     }
-    else if (STEAMWORKS)
-    {
-        SteamWorks_GetPublicIP(ip);
-    }
-
-    Format(hostipaddr, sizeof(hostipaddr), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
-    TrimString(hostipaddr);
-
-    if (!StrEqual(hostipaddr, "0.0.0.0"))
-    {
-        strcopy(hostipport, sizeof(hostipport), hostipaddr);
-        StrCat(hostipport, sizeof(hostipport), ":");
-        StrCat(hostipport, sizeof(hostipport), hostport);
-
-        return;
-    }
-
-    if (FindConVar("ip") != null)
-    {
-        GetConVarString(FindConVar("ip"), hostipaddr, sizeof(hostipaddr));
-    }
-
-    if (!StrEqual(hostipaddr, "0.0.0.0"))
-    {
-        strcopy(hostipport, sizeof(hostipport), hostipaddr);
-        StrCat(hostipport, sizeof(hostipport), ":");
-        StrCat(hostipport, sizeof(hostipport), hostport);
-
-        return;
-    }
-
-    if (FindConVar("hostip") != null)
-    {
-        int ip2 = GetConVarInt(FindConVar("hostip"));
-        FormatEx(hostipaddr, sizeof(hostipaddr), "%d.%d.%d.%d", (ip2 >> 24) & 0x000000FF, (ip2 >> 16) & 0x000000FF, (ip2 >> 8) & 0x000000FF, ip2 & 0x000000FF);
-    }
-
-    strcopy(hostipport, sizeof(hostipport), hostipaddr);
-    StrCat(hostipport, sizeof(hostipport), ":");
-    StrCat(hostipport, sizeof(hostipport), hostport);
 }
