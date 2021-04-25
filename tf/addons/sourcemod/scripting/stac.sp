@@ -2787,7 +2787,7 @@ void NetPropEtcCheck(int userid)
             )
             {
                 char message[256];
-                Format(message, sizeof(message), "Client was kicked for attempted interp exploitation. Their interp: %f", lerp);
+                Format(message, sizeof(message), "Client was kicked for attempted interp exploitation. Their interp: %.2f", lerp);
                 StacGeneralPlayerDiscordNotify(userid, message);
                 KickClient(Cl, "%t", "interpKickMsg", lerp, min_interp_ms, max_interp_ms);
                 MC_PrintToChatAll("%t", "interpAllChat", Cl, lerp);
@@ -3502,28 +3502,34 @@ void checkStatus()
 
 bool GetDemoName()
 {
-    char tvStatus[512];
-    ServerCommandEx(tvStatus, sizeof(tvStatus), "tv_status");
-    char demoname_etc[128];
-    demoname[0] = '\0';
-    if (MatchRegex(demonameRegex, tvStatus) > 0)
+    if ((StrContains(demoname, "N/A", true) != -1) || IsNullString(demoname))
     {
-        if (GetRegexSubString(demonameRegex, 0, demoname_etc, sizeof(demoname_etc)))
+        char tvStatus[512];
+        ServerCommandEx(tvStatus, sizeof(tvStatus), "tv_status");
+        char demoname_etc[128];
+        if (MatchRegex(demonameRegex, tvStatus) > 0)
         {
-            LogMessage("demoname_etc %s", demoname_etc);
-            TrimString(demoname_etc);
-            if (MatchRegex(demonameRegexFINAL, demoname_etc) > 0)
+            if (GetRegexSubString(demonameRegex, 0, demoname_etc, sizeof(demoname_etc)))
             {
-                if (GetRegexSubString(demonameRegexFINAL, 0, demoname, sizeof(demoname)))
+                LogMessage("demoname_etc %s", demoname_etc);
+                TrimString(demoname_etc);
+                if (MatchRegex(demonameRegexFINAL, demoname_etc) > 0)
                 {
-                    LogMessage("demoname %s", demoname);
-                    TrimString(demoname);
-                    StripQuotes(demoname);
-                    return true;
+                    if (GetRegexSubString(demonameRegexFINAL, 0, demoname, sizeof(demoname)))
+                    {
+                        LogMessage("demoname %s", demoname);
+                        TrimString(demoname);
+                        StripQuotes(demoname);
+                        return true;
+                    }
                 }
             }
         }
+        demoname = "N/A";
+        return false;
     }
-    demoname = "N/A";
-    return false;
+    else
+    {
+        return true;
+    }
 }
