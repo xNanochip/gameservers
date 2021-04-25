@@ -3473,6 +3473,21 @@ void UpdateIPPort()
         GetConVarString(FindConVar("ip"), hostipaddr, sizeof(hostipaddr));
     }
 
+    if (!StrEqual(hostipaddr, "0.0.0.0"))
+    {
+        strcopy(hostipport, sizeof(hostipport), hostipaddr);
+        StrCat(hostipport, sizeof(hostipport), ":");
+        StrCat(hostipport, sizeof(hostipport), hostport);
+
+        return;
+    }
+
+    if (FindConVar("hostip") != null)
+    {
+        int ip2 = GetConVarInt(FindConVar("hostip"));
+        FormatEx(hostipaddr, sizeof(hostipaddr), "%d.%d.%d.%d", (ip2 >> 24) & 0x000000FF, (ip2 >> 16) & 0x000000FF, (ip2 >> 8) & 0x000000FF, ip2 & 0x000000FF);
+    }
+
     strcopy(hostipport, sizeof(hostipport), hostipaddr);
     StrCat(hostipport, sizeof(hostipport), ":");
     StrCat(hostipport, sizeof(hostipport), hostport);
