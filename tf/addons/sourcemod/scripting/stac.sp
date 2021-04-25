@@ -19,7 +19,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.3.6b"
+#define PLUGIN_VERSION  "4.4.0b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -52,6 +52,7 @@ int pSilentDetects          [TFMAXPLAYERS+1] = -1; // ^
 int bhopDetects             [TFMAXPLAYERS+1] = -1; // set to -1 to ignore single jumps
 int cmdnumSpikeDetects      [TFMAXPLAYERS+1];
 int tbotDetects             [TFMAXPLAYERS+1] = -1;
+int spinbotDetects          [TFMAXPLAYERS+1];
 bool isConsecStringOfBhops  [TFMAXPLAYERS+1];
 int bhopConsecDetects       [TFMAXPLAYERS+1];
 int settingsChangesFor      [TFMAXPLAYERS+1];
@@ -85,7 +86,8 @@ float timeSinceLagSpike;
 // weapon name, gets passed to aimsnap check
 char hurtWeapon             [TFMAXPLAYERS+1][256];
 // time since player did damage, for aimsnap check
-float timeSinceDidHurt      [TFMAXPLAYERS+1];
+bool didBangThisFrame       [TFMAXPLAYERS+1];
+bool didHurtThisFrame       [TFMAXPLAYERS+1];
 
 // NATIVE BOOLS
 bool SOURCEBANS;
@@ -161,6 +163,8 @@ File StacLogFile;
 // REGEX
 Regex demonameRegex;
 
+float spinDiff[2][TFMAXPLAYERS+1];
+
 public void OnPluginStart()
 {
     // check if tf2, unload if not
@@ -228,7 +232,7 @@ public void OnPluginStart()
     }
 
     timeSinceMapStart = GetEngineTime();
-
+    AddTempEntHook("Fire Bullets", Hook_TEFireBullets);
     StacLog("[StAC] Plugin vers. ---- %s ---- loaded", PLUGIN_VERSION);
 }
 
@@ -939,9 +943,18 @@ Action hOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, i
         && distance >= 400.0
     )
     {
-        timeSinceDidHurt[attacker] = GetEngineTime();
+        didHurtThisFrame[attacker] = true;
     }
     return Plugin_Continue;
+}
+
+public Action Hook_TEFireBullets(const char[] te_name, const int[] players, int numClients, float delay)
+{
+    int Cl = TE_ReadNum("m_iPlayer") + 1;
+
+
+    didBangThisFrame[Cl] = true;
+    //LogMessage("bang %N %i", Cl, clcmdnum[0][Cl]);
 }
 
 public Action TF2_OnPlayerTeleport(int Cl, int teleporter, bool& result)
@@ -1095,9 +1108,6 @@ void ClearClBasedVars(int userid)
     // STORED SENS PER CLIENT
     sensFor                 [Cl] = 0.0;
 
-    // time since player did damage, for aimsnap check
-    timeSinceDidHurt        [Cl] = 0.0;
-
     // don't bother clearing arrays
 }
 
@@ -1183,9 +1193,12 @@ public void OnGameFrame()
 
     if (smoothedTPS < (tps / 2.0))
     {
-        //LogMessage("%.2f", smoothedTPS);
-        PrintToImportant("{hotpink}[StAC]{white} Server framerate stuttered. Expected: {palegreen}%f{white}, got {fullred}%f{white}.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, realTPS[0], stutterWaitLength);
-        StacLog("[StAC] Server framerate stuttered. Expected: %f, got %f.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, realTPS[0], stutterWaitLength);
+        timeSinceLagSpike = GetEngineTime();
+        if (DEBUG)
+        {
+            PrintToImportant("{hotpink}[StAC]{white} Server framerate stuttered. Expected: {palegreen}%f{white}, got {fullred}%f{white}.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, realTPS[0], stutterWaitLength);
+            StacLog("[StAC] Server framerate stuttered. Expected: %f, got %f.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, realTPS[0], stutterWaitLength);
+        }
     }
 }
 
@@ -1302,10 +1315,6 @@ public Action OnPlayerRunCmd
         clbuttons[i][Cl] = clbuttons[i-1][Cl];
     }
     clbuttons[0][Cl] = buttons;
-
-    //clbuttons[2][Cl] = clbuttons[1][Cl];
-    //clbuttons[1][Cl] = clbuttons[0][Cl];
-    //clbuttons[0][Cl] = buttons;
 
     // grab position
     clpos[1][Cl] = clpos[0][Cl];
@@ -1439,7 +1448,6 @@ public Action OnPlayerRunCmd
         }
     }
 
-
     /*
         TURN BIND TEST
     */
@@ -1495,6 +1503,61 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
+
+    // spinbot detection - ultra beta
+    if (!(buttons & IN_LEFT || buttons & IN_RIGHT))
+    {
+        float angBuff = FloatAbs(angles[1] - clangles[1][Cl][1]);
+        spinDiff[1][Cl] = spinDiff[0][Cl];
+        spinDiff[0][Cl] = NormalizeAngleDiff(angBuff);
+
+        if (spinDiff[0][Cl] >= 1.0 && spinDiff[0][Cl] == spinDiff[1][Cl])
+        {
+            spinbotDetects[Cl]++;
+            if (spinbotDetects[Cl] >= 10)
+            {
+                PrintToImportant
+                (
+                    "{hotpink}[StAC]{white} Spinbot detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.",
+                    spinDiff[0][Cl],
+                    Cl,
+                    spinbotDetects[Cl]
+                );
+                StacLog
+                (
+                    "[StAC] Spinbot detection of %f° on %N.\nDetections so far: %i.",
+                    spinDiff[0][Cl],
+                    Cl,
+                    spinbotDetects[Cl]
+                );
+                StacLog
+                (
+                    "[StAC] Spinbot detection of %f° on %N.\nDetections so far: %i.",
+                    spinDiff[0][Cl],
+                    Cl,
+                    spinbotDetects[Cl]
+                );
+                StacLog
+                (
+                    "\nAngles:\n angles0: x %f y %f\n angles1: x %f y %f\n angles2: x %f y %f\n angles3: x %f y %f\n angles4: x %f y %f\n",
+                    clangles[0][Cl][0],
+                    clangles[0][Cl][1],
+                    clangles[1][Cl][0],
+                    clangles[1][Cl][1],
+                    clangles[2][Cl][0],
+                    clangles[2][Cl][1],
+                    clangles[3][Cl][0],
+                    clangles[3][Cl][1],
+                    clangles[4][Cl][0],
+                    clangles[4][Cl][1]
+                );
+            }
+        }
+        else
+        {
+            spinbotDetects[Cl] = 0;
+        }
+    }
     /*
         EYE ANGLES TEST
         if clients are outside of allowed angles in tf2, which are
@@ -1586,8 +1649,8 @@ public Action OnPlayerRunCmd
         || loss >= 1.5
         // make sure client doesn't have 60% or more choke
         || choke >= 60.0
-        // ignore anyone with more than 600 ping. temp check.
-        || ping >= 600.0
+        // ignore anyone with more than 900 ping. temp check.
+        || ping >= 900.0
         // if a client misses 6 ticks, its safe to assume they're lagging
         // so check the difference between the last 10 ticks
         // if a client missed any of the 10 server ticks by 6 ticks of time or more, don't check them
@@ -1611,7 +1674,7 @@ public Action OnPlayerRunCmd
     int spikeamt = abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]);
     // 256 is a nice number but this could be raised or lowered, haven't done TOO much testing and so far zero legits have managed to trigger this since we ignore nullcmds.
     // this is for detecting when cheats "skip ahead" their cmdnum so they can (at my best guess) fire a "perfect shot" aka a shot with no spread
-    if (spikeamt >= 999999)
+    if (spikeamt >= 256)
     {
         char heldWeapon[256];
         GetClientWeapon(Cl, heldWeapon, sizeof(heldWeapon));
@@ -1815,6 +1878,11 @@ public Action OnPlayerRunCmd
         }
     }
 
+    if (MVM)
+    {
+        return Plugin_Continue;
+    }
+
     /*
         AIMSNAP DETECTION - BETA
 
@@ -1842,29 +1910,30 @@ public Action OnPlayerRunCmd
         // 0.000000, 91.355995, 0.000000, 0.000000
         // 0.018540, 0.000000, 91.355995, 0.000000
 
-        // only check if we actually did dmg with a hitscan weapon within 2(ish) ticks
+        // only check if we actually did dmg in the current frame
+        // or if we shot a bullet
         if
         (
-            engineTime[0][Cl] - timeSinceDidHurt[Cl] <= (tickinterv)
-            //&&
-            //!MVM
+            didBangThisFrame[Cl]
+            ||
+            didHurtThisFrame[Cl]
         )
         {
-            float snapsize = 12.5;
-            float noisesize = 5.0;
+            float snapsize = 5.0;
+            float noisesize = 1.0;
 
             int aDiffToUse = -1;
 
-            //if
-            //(
-            //       aDiff[0] > snapsize
-            //    && aDiff[1] < noisesize
-            //    && aDiff[2] < noisesize
-            //    && aDiff[3] < noisesize
-            //)
-            //{
-            //    aDiffToUse = 0;
-            //}
+            if
+            (
+                   aDiff[0] > snapsize
+                && aDiff[1] < noisesize
+                && aDiff[2] < noisesize
+                && aDiff[3] < noisesize
+            )
+            {
+                aDiffToUse = 0;
+            }
             if
             (
                    aDiff[0] < noisesize
@@ -1885,16 +1954,16 @@ public Action OnPlayerRunCmd
             {
                 aDiffToUse = 2;
             }
-            //else if
-            //(
-            //       aDiff[0] < noisesize
-            //    && aDiff[1] < noisesize
-            //    && aDiff[2] < noisesize
-            //    && aDiff[3] > snapsize
-            //)
-            //{
-            //    aDiffToUse = 3;
-            //}
+            else if
+            (
+                   aDiff[0] < noisesize
+                && aDiff[1] < noisesize
+                && aDiff[2] < noisesize
+                && aDiff[3] > snapsize
+            )
+            {
+                aDiffToUse = 3;
+            }
             // we got one!
             if (aDiffToUse > -1)
             {
@@ -1994,6 +2063,20 @@ public Action OnPlayerRunCmd
                         aDiff[2],
                         aDiff[3]
                     );
+                    StacLog
+                    (
+                        "\nAngles:\n angles0: x %f y %f\n angles1: x %f y %f\n angles2: x %f y %f\n angles3: x %f y %f\n angles4: x %f y %f\n",
+                        clangles[0][Cl][0],
+                        clangles[0][Cl][1],
+                        clangles[1][Cl][0],
+                        clangles[1][Cl][1],
+                        clangles[2][Cl][0],
+                        clangles[2][Cl][1],
+                        clangles[3][Cl][0],
+                        clangles[3][Cl][1],
+                        clangles[4][Cl][0],
+                        clangles[4][Cl][1]
+                    );
 
                     if (AIMPLOTTER)
                     {
@@ -2001,15 +2084,15 @@ public Action OnPlayerRunCmd
                     }
 
                     // BAN USER if they trigger too many detections
-                    if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
-                    {
-                        char reason[128];
-                        Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
-                        char pubreason[128];
-                        Format(pubreason, sizeof(pubreason), "%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
-                        BanUser(userid, reason, pubreason);
-                        return Plugin_Handled;
-                    }
+                    //if (aimsnapDetects[Cl] >= maxAimsnapDetections && maxAimsnapDetections > 0)
+                    //{
+                    //    char reason[128];
+                    //    Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
+                    //    char pubreason[128];
+                    //    Format(pubreason, sizeof(pubreason), "%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
+                    //    BanUser(userid, reason, pubreason);
+                    //    return Plugin_Handled;
+                    //}
                 }
             }
         }
@@ -2021,10 +2104,20 @@ public Action OnPlayerRunCmd
     if (maxTbotDetections != -1)
     {
         int attack = 0;
+        // grab single tick +attack inputs - this checks for the following pattern:
+        //                      //-----------
+        //                      //
+        // etc                  //
+        // frame before last    //
+        // last frame           // IN_ATTACK
+        // current frame        //
 
-        // grab single tick +attack inputs
         if
-        (
+        (   
+            !(
+                clbuttons[5][Cl] & IN_ATTACK
+            )
+            &&
             !(
                 clbuttons[4][Cl] & IN_ATTACK
             )
@@ -2033,11 +2126,11 @@ public Action OnPlayerRunCmd
                 clbuttons[3][Cl] & IN_ATTACK
             )
             &&
-            (
+            !(
                 clbuttons[2][Cl] & IN_ATTACK
             )
             &&
-            !(
+            (
                 clbuttons[1][Cl] & IN_ATTACK
             )
             &&
@@ -2049,6 +2142,14 @@ public Action OnPlayerRunCmd
             attack = 1;
         }
         // grab single tick +attack2 inputs - pyro airblast, demo det, etc
+        // this checks for the following pattern:
+        //                      //-----------
+        //                      //
+        // etc                  //
+        // frame before last    // IN_ATTACK2
+        // last frame           //
+        // current frame        //
+
         else if
         (
             !(
@@ -2074,32 +2175,22 @@ public Action OnPlayerRunCmd
         {
             attack = 2;
         }
-        bool IsClientAimingAtEnemy;
-
-        int aimTarget = GetClientAimTarget(Cl, true);
-        if (aimTarget > 0)
-        {
-            // yeah, theyre a client. what team are they on?
-            int clientTeam  = GetClientTeam(Cl);
-            int targetTeam  = GetClientTeam(aimTarget);
-            if (clientTeam != targetTeam)
-            {
-                IsClientAimingAtEnemy = true;
-            }
-        }
         if
         (
-            // only count attack1 if we're (vaguely) looking at someone
-            // GetClientAimTarget isn't super accurate (and goes thru walls in tf2) so I might do a TraceRay in the future
             (
                 attack == 1
                 &&
-                IsClientAimingAtEnemy
-            )
-            ||
-            // count all attack2 single inputs
-            (
-                attack == 2
+                (
+                    
+                    didBangThisFrame[Cl]
+                    &&
+                    didHurtThisFrame[Cl]
+                )
+                ||
+                // count all attack2 single inputs
+                (
+                    attack == 2
+                )
             )
         )
         {
@@ -2175,18 +2266,29 @@ public Action OnPlayerRunCmd
                 }
 
                 // BAN USER if they trigger too many detections
-                if (tbotDetects[Cl] >= maxTbotDetections && maxTbotDetections > 0)
-                {
-                    char reason[128];
-                    Format(reason, sizeof(reason), "%t", "tbotBanMsg", tbotDetects[Cl]);
-                    char pubreason[128];
-                    Format(pubreason, sizeof(pubreason), "%t", "tbotBanAllChat", Cl, tbotDetects[Cl]);
-                    BanUser(userid, reason, pubreason);
-                    return Plugin_Handled;
-                }
+                //if (tbotDetects[Cl] >= maxTbotDetections && maxTbotDetections > 0)
+                //{
+                //    char reason[128];
+                //    Format(reason, sizeof(reason), "%t", "tbotBanMsg", tbotDetects[Cl]);
+                //    char pubreason[128];
+                //    Format(pubreason, sizeof(pubreason), "%t", "tbotBanAllChat", Cl, tbotDetects[Cl]);
+                //    BanUser(userid, reason, pubreason);
+                //    return Plugin_Handled;
+                //}
             }
         }
     }
+
+
+    if (didBangThisFrame[Cl])
+    {
+        didBangThisFrame[Cl] = false;
+    }
+    if (didHurtThisFrame[Cl])
+    {
+        didHurtThisFrame[Cl] = false;
+    }
+
     return Plugin_Continue;
 }
 
