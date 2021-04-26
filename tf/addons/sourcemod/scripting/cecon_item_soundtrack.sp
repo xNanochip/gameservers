@@ -266,7 +266,7 @@ public Action OnSoundHook(int[] clients, int &numClients, char[] sample, int &en
 		}
 	}
 
-	if(StrEqual(sample, ")mvm/mvm_tank_explode.wav"))
+	if(StrEqual(sample, "mvm/mvm_tank_explode.wav"))
 	{
 		for (int i = 1; i <= MaxClients; i++)
 		{
