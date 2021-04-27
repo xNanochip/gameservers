@@ -5,7 +5,7 @@ stages:
     stage: deploy
     script:
     - whoami
-    - kill -SIGKILL $(pidof git) &> /dev/null
+    - kill -SIGKILL $(pidof git) || true
     - >
         srv=0;
         vol=0;
