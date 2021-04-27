@@ -20,7 +20,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.4.9b"
+#define PLUGIN_VERSION  "4.4.10"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -59,6 +59,8 @@ bool isConsecStringOfBhops  [TFMAXPLAYERS+1];
 int bhopConsecDetects       [TFMAXPLAYERS+1];
 int settingsChangesFor      [TFMAXPLAYERS+1];
 
+bool waitStatus;
+
 // TIME SINCE LAST ACTION PER CLIENT
 float timeSinceSpawn        [TFMAXPLAYERS+1];
 float timeSinceTaunt        [TFMAXPLAYERS+1];
@@ -69,6 +71,8 @@ float clangles           [5][TFMAXPLAYERS+1][2];
 float clpos              [2][TFMAXPLAYERS+1][3];
 // STORED cmdnum PER CLIENT
 int clcmdnum             [6][TFMAXPLAYERS+1];
+// STORED tickcount PER CLIENT
+int cltickcount          [6][TFMAXPLAYERS+1];
 // STORED BUTTONS PER CLIENT
 int clbuttons            [6][TFMAXPLAYERS+1];
 // STORED GRAVITY STATE PER CLIENT
@@ -79,8 +83,8 @@ int playerInBadCond         [TFMAXPLAYERS+1];
 bool userBanQueued          [TFMAXPLAYERS+1];
 // STORED SENS PER CLIENT
 float sensFor               [TFMAXPLAYERS+1];
-// get last 11 ticks
-float engineTime        [11][TFMAXPLAYERS+1];
+// get last 2 ticks
+float engineTime        [2][TFMAXPLAYERS+1];
 // time since the map started (duh)
 float timeSinceMapStart;
 // time since the last lag spike occurred
@@ -88,8 +92,8 @@ float timeSinceLagSpike;
 // weapon name, gets passed to aimsnap check
 char hurtWeapon             [TFMAXPLAYERS+1][256];
 // time since player did damage, for aimsnap check
-bool didBangThisFrame       [TFMAXPLAYERS+1];
-bool didHurtThisFrame       [TFMAXPLAYERS+1];
+bool didBangOnFrame      [3][TFMAXPLAYERS+1];
+bool didHurtOnFrame      [3][TFMAXPLAYERS+1];
 
 char hostname[64];
 char hostipandport[24];
@@ -233,6 +237,8 @@ public void OnPluginStart()
 
     // hook sv_cheats so we can instantly unload if cheats get turned on
     HookConVarChange(FindConVar("sv_cheats"), GenericCvarChanged);
+
+    HookConVarChange(FindConVar("sv_allow_wait_command"), GenericCvarChanged);
     // Create ConVars for adjusting settings
     initCvars();
     // load translations
@@ -706,7 +712,14 @@ void GenericCvarChanged(ConVar convar, const char[] oldValue, const char[] newVa
     {
         if (StringToInt(newValue) != 0)
         {
-            //SetFailState("[StAC] sv_cheats set to 1! Aborting!");
+            SetFailState("[StAC] sv_cheats set to 1! Aborting!");
+        }
+    }
+    if (convar == FindConVar("sv_allow_wait_command"))
+    {
+        if (StringToInt(newValue) != 0)
+        {
+            waitStatus = true;
         }
     }
 }
@@ -738,7 +751,12 @@ public Action checkNativesEtc(Handle timer)
     // check sv cheats
     if (GetConVarBool(FindConVar("sv_cheats")))
     {
-        //SetFailState("[StAC] sv_cheats set to 1! Aborting!");
+        SetFailState("[StAC] sv_cheats set to 1! Aborting!");
+    }
+    // check sv cheats
+    if (GetConVarBool(FindConVar("sv_allow_wait_command")))
+    {
+        waitStatus = true;
     }
     // check natives!
     if (GetFeatureStatus(FeatureType_Native, "Steam_IsConnected") == FeatureStatus_Available)
@@ -962,19 +980,13 @@ Action hOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, i
     }
 
     GetEntityClassname(weapon, hurtWeapon[attacker], 256);
-    // get distance between attacker and victim
-    float distance = GetVectorDistance(clpos[0][attacker], clpos[0][victim]);
     if
     (
         // player didn't hurt self
            victim != attacker
-        // weapon is hitscan
-        && isWeaponHitscan(hurtWeapon[attacker])
-        // players are at least 400 hu apart
-        && distance >= 400.0
     )
     {
-        didHurtThisFrame[attacker] = true;
+        didHurtOnFrame[0][attacker] = true;
     }
     return Plugin_Continue;
 }
@@ -983,7 +995,7 @@ public Action Hook_TEFireBullets(const char[] te_name, const int[] players, int 
 {
     int Cl = TE_ReadNum("m_iPlayer") + 1;
     // this user fired a bullet this frame!
-    didBangThisFrame[Cl] = true;
+    didBangOnFrame[0][Cl] = true;
 }
 
 public Action TF2_OnPlayerTeleport(int Cl, int teleporter, bool& result)
@@ -1227,7 +1239,7 @@ public void OnGameFrame()
     if (smoothedTPS < (tps / 2.0))
     {
         timeSinceLagSpike = GetEngineTime();
-        StacLog("[StAC] Server framerate stuttered. Expected: %f, got %f.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, realTPS[0], stutterWaitLength);
+        StacLog("[StAC] Server framerate stuttered. Expected: %f, got %f.\nDisabling OnPlayerRunCmd checks for %.2f seconds.", tps, realTPS[0], stutterWaitLength);
         if (DEBUG)
         {
             PrintToImportant("{hotpink}[StAC]{white} Server framerate stuttered. Expected: {palegreen}%f{white}, got {fullred}%f{white}.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, realTPS[0], stutterWaitLength);
@@ -1267,12 +1279,11 @@ public Action OnPlayerRunCmd
         return Plugin_Handled;
     }
 
-    // make sure client is real & not a bot - don't bother checking if so
+    // make sure client is real & not a bot
     if (!IsValidClient(Cl))
     {
         return Plugin_Continue;
     }
-
     // need this basically no matter what
     int userid = GetClientUserId(Cl);
 
@@ -1281,21 +1292,12 @@ public Action OnPlayerRunCmd
     {
         if (cmdnum < 0 || tickcount < 0)
         {
-            StacGeneralPlayerDiscordNotify(userid, "Kicked client for having invalid usercmd data");
+            StacGeneralPlayerDiscordNotify(userid, "Kicked client for having invalid usercmd data!");
             KickClient(Cl, "%t", "invalidUsercmdData");
             return Plugin_Handled;
         }
         return Plugin_Continue;
     }
-
-
-    // set previous tick times to test lagginess (THANK YOU BACKWARDS FOR HELP WITH THIS)
-    for (int i = 10; i > 0; --i)
-    {
-        engineTime[i][Cl] = engineTime[i-1][Cl];
-    }
-    engineTime[0][Cl] = GetEngineTime();
-
 
     // grab current time to compare to time since last spawn/taunt/tele
     // convert to percentages
@@ -1303,6 +1305,10 @@ public Action OnPlayerRunCmd
     float choke = GetClientAvgChoke(Cl, NetFlow_Both) * 100.0;
     // convert to ms
     float ping = GetClientAvgLatency(Cl, NetFlow_Both) * 1000.0;
+
+    // grab engine time
+    engineTime[1][Cl] = engineTime[0][Cl];
+    engineTime[0][Cl] = GetEngineTime();
 
     // grab angles - we ignore roll
     // thanks to nosoop from the sm discord for some help with this
@@ -1319,6 +1325,13 @@ public Action OnPlayerRunCmd
         clcmdnum[i][Cl] = clcmdnum[i-1][Cl];
     }
     clcmdnum[0][Cl] = cmdnum;
+
+    // grab tickccount
+    for (int i = 5; i > 0; --i)
+    {
+        cltickcount[i][Cl] = cltickcount[i-1][Cl];
+    }
+    cltickcount[0][Cl] = tickcount;
 
     // grab buttons
     for (int i = 5; i > 0; --i)
@@ -1451,7 +1464,7 @@ public Action OnPlayerRunCmd
                 {
                     char reason[128];
                     Format(reason, sizeof(reason), "%t", "bhopBanMsg", bhopDetects[Cl]);
-                    char pubreason[128];
+                    char pubreason[256];
                     Format(pubreason, sizeof(pubreason), "%t", "bhopBanAllChat", Cl, bhopDetects[Cl]);
                     return Plugin_Handled;
                 }
@@ -1568,7 +1581,7 @@ public Action OnPlayerRunCmd
         {
             char reason[128];
             Format(reason, sizeof(reason), "%t", "fakeangBanMsg", fakeAngDetects[Cl]);
-            char pubreason[128];
+            char pubreason[256];
             Format(pubreason, sizeof(pubreason), "%t", "fakeangBanAllChat", Cl, fakeAngDetects[Cl]);
             BanUser(userid, reason, pubreason);
             return Plugin_Handled;
@@ -1594,7 +1607,7 @@ public Action OnPlayerRunCmd
         spinDiff[0][Cl] = NormalizeAngleDiff(angBuff);
         // only count this as a detect if the spin amt ( spinDiff[0][Cl] )
         // is greater than 1 degree and ALSO matches the last value ( spinDiff[1][Cl] )
-        if (spinDiff[0][Cl] >= 1.0 && spinDiff[0][Cl] == spinDiff[1][Cl])
+        if (spinDiff[0][Cl] >= 5.0 && spinDiff[0][Cl] == spinDiff[1][Cl])
         {
             spinbotDetects[Cl]++;
             // this can trigger on normal players, only care about if it happens 10 times in a row at least!
@@ -1643,7 +1656,7 @@ public Action OnPlayerRunCmd
                 {
                     char reason[128];
                     Format(reason, sizeof(reason), "%t", "spinbotBanMsg", spinbotDetects[Cl]);
-                    char pubreason[128];
+                    char pubreason[256];
                     Format(pubreason, sizeof(pubreason), "%t", "spinbotBanAllChat", Cl, spinbotDetects[Cl]);
                     BanUser(userid, reason, pubreason);
                     return Plugin_Handled;
@@ -1653,8 +1666,43 @@ public Action OnPlayerRunCmd
         // reset if we don't get consecutive detects
         else
         {
-            spinbotDetects[Cl] = 0;
+            if (spinbotDetects[Cl] > 0)
+            {
+                spinbotDetects[Cl]--;
+            }
         }
+    }
+
+    // check if we're lagging
+    if
+    (!
+        (
+            clcmdnum[0][Cl] >
+            clcmdnum[1][Cl] >
+            clcmdnum[2][Cl] >
+            clcmdnum[3][Cl] >
+            clcmdnum[4][Cl] >
+            clcmdnum[5][Cl]
+        )
+    )
+
+    {
+        return Plugin_Continue;
+    }
+
+    if
+    (!
+        (
+            cltickcount[0][Cl] >=
+            cltickcount[1][Cl] >=
+            cltickcount[2][Cl] >=
+            cltickcount[3][Cl] >=
+            cltickcount[4][Cl] >=
+            cltickcount[5][Cl]
+        )
+    )
+    {
+        return Plugin_Continue;
     }
     /*
         SILENT AIM DETECTION
@@ -1690,23 +1738,8 @@ public Action OnPlayerRunCmd
         || buttons & IN_RIGHT
         // make sure client doesn't have 1.5% or more packet loss
         || loss >= 1.5
-        // make sure client doesn't have 60% or more choke
-        || choke >= 60.0
         // ignore anyone with more than 900 ping. temp check.
         || ping >= 900.0
-        // if a client misses 6 ticks, its safe to assume they're lagging
-        // so check the difference between the last 10 ticks
-        // if a client missed any of the 10 server ticks by 6 ticks of time or more, don't check them
-        || (engineTime[0][Cl] - engineTime[1][Cl])  >= (tickinterv*6.0)
-        || (engineTime[1][Cl] - engineTime[2][Cl])  >= (tickinterv*6.0)
-        || (engineTime[2][Cl] - engineTime[3][Cl])  >= (tickinterv*6.0)
-        || (engineTime[3][Cl] - engineTime[4][Cl])  >= (tickinterv*6.0)
-        || (engineTime[4][Cl] - engineTime[5][Cl])  >= (tickinterv*6.0)
-        || (engineTime[5][Cl] - engineTime[6][Cl])  >= (tickinterv*6.0)
-        || (engineTime[6][Cl] - engineTime[7][Cl])  >= (tickinterv*6.0)
-        || (engineTime[7][Cl] - engineTime[8][Cl])  >= (tickinterv*6.0)
-        || (engineTime[8][Cl] - engineTime[9][Cl])  >= (tickinterv*6.0)
-        || (engineTime[9][Cl] - engineTime[10][Cl]) >= (tickinterv*6.0)
     )
     // if any of these things are true, don't check angles or cmdnum spikes
     {
@@ -1757,7 +1790,7 @@ public Action OnPlayerRunCmd
         {
             char reason[128];
             Format(reason, sizeof(reason), "%t", "cmdnumSpikesBanMsg", cmdnumSpikeDetects[Cl]);
-            char pubreason[128];
+            char pubreason[256];
             Format(pubreason, sizeof(pubreason), "%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
             BanUser(userid, reason, pubreason);
             return Plugin_Handled;
@@ -1783,7 +1816,7 @@ public Action OnPlayerRunCmd
         //return Plugin_Handled;
     }
 
-    // we can reuse this for aimsnap as well!
+    // get difference between angles
     float aDiffReal = NormalizeAngleDiff(CalcAngDeg(clangles[0][Cl], clangles[1][Cl]));
 
     // is this a fuzzy detect or not
@@ -1891,15 +1924,6 @@ public Action OnPlayerRunCmd
                 );
                 StacLog
                 (
-                    "\nTime between last 5 client ticks (most recent first):\n1 %f\n2 %f\n3 %f\n4 %f\n5 %f\n==========",
-                    engineTime[0][Cl] - engineTime[1][Cl],
-                    engineTime[1][Cl] - engineTime[2][Cl],
-                    engineTime[2][Cl] - engineTime[3][Cl],
-                    engineTime[3][Cl] - engineTime[4][Cl],
-                    engineTime[4][Cl] - engineTime[5][Cl]
-                );
-                StacLog
-                (
                     "\nPrevious cmdnums:\n0 %i\n1 %i\n2 %i\n3 %i\n4 %i\n5 %i\n",
                     clcmdnum[0][Cl],
                     clcmdnum[1][Cl],
@@ -1908,6 +1932,17 @@ public Action OnPlayerRunCmd
                     clcmdnum[4][Cl],
                     clcmdnum[5][Cl]
                 );
+                StacLog
+                (
+                    "\nPrevious tickcounts:\n0 %i\n1 %i\n2 %i\n3 %i\n4 %i\n5 %i\n",
+                    cltickcount[0][Cl],
+                    cltickcount[1][Cl],
+                    cltickcount[2][Cl],
+                    cltickcount[3][Cl],
+                    cltickcount[4][Cl],
+                    cltickcount[5][Cl]
+                );
+
                 if (AIMPLOTTER)
                 {
                     ServerCommand("sm_aimplot #%i on", userid);
@@ -1922,7 +1957,7 @@ public Action OnPlayerRunCmd
                 {
                     char reason[128];
                     Format(reason, sizeof(reason), "%t", "pSilentBanMsg", pSilentDetects[Cl]);
-                    char pubreason[128];
+                    char pubreason[256];
                     Format(pubreason, sizeof(pubreason), "%t", "pSilentBanAllChat", Cl, pSilentDetects[Cl]);
                     BanUser(userid, reason, pubreason);
                     return Plugin_Handled;
@@ -1936,20 +1971,6 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
-    //if
-    //(!
-    //    (
-    //        clcmdnum[0][Cl] >
-    //        clcmdnum[1][Cl] >
-    //        clcmdnum[2][Cl] >
-    //        clcmdnum[3][Cl] >
-    //        clcmdnum[4][Cl] >
-    //        clcmdnum[5][Cl]
-    //    )
-    //)
-    //{
-    //    return Plugin_Continue;
-    //}
     /*
         AIMSNAP DETECTION - BETA
 
@@ -1980,9 +2001,12 @@ public Action OnPlayerRunCmd
         // only check if we actually did dmg in the current frame
         if
         (
-            //didBangThisFrame[Cl]
+            //didBangThisFrame[0][Cl]
             //||
-            didHurtThisFrame[Cl]
+            //didHurtOnFrame[0][Cl]
+            //||
+            // give it a frame of buffer
+            didHurtOnFrame[1][Cl]
         )
         {
             float snapsize = 5.0;
@@ -2090,15 +2114,6 @@ public Action OnPlayerRunCmd
                     );
                     StacLog
                     (
-                        "\nTime between last 5 client ticks (most recent first):\n 1 %f\n 2 %f\n 3 %f\n 4 %f\n 5 %f",
-                        engineTime[0][Cl] - engineTime[1][Cl],
-                        engineTime[1][Cl] - engineTime[2][Cl],
-                        engineTime[2][Cl] - engineTime[3][Cl],
-                        engineTime[3][Cl] - engineTime[4][Cl],
-                        engineTime[4][Cl] - engineTime[5][Cl]
-                    );
-                    StacLog
-                    (
                         "\nUser Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i\nUser Mouse Movement (unweighted): x: %i, y: %i.",
                         wx,
                         wy,
@@ -2159,7 +2174,7 @@ public Action OnPlayerRunCmd
                     {
                         char reason[128];
                         Format(reason, sizeof(reason), "%t", "AimsnapBanMsg", aimsnapDetects[Cl]);
-                        char pubreason[128];
+                        char pubreason[256];
                         Format(pubreason, sizeof(pubreason), "%t", "AimsnapBanAllChat", Cl, aimsnapDetects[Cl]);
                         BanUser(userid, reason, pubreason);
                         return Plugin_Handled;
@@ -2171,23 +2186,33 @@ public Action OnPlayerRunCmd
     /*
         TRIGGERBOT DETECTION - BETA
     */
-
-    if (maxTbotDetections != -1)
+    // don't run if cvar is -1 or if wait is enabled on this server
+    if (maxTbotDetections != -1 && !waitStatus)
     {
         int attack = 0;
         // grab single tick +attack inputs - this checks for the following pattern:
         //                      //-----------
-        // frame before last    //
-        // last frame           // IN_ATTACK
+        //                      //
+        // etc                  //
+        // frame before last    // IN_ATTACK
+        // last frame           //
         // current frame        //
 
         if
         (
             !(
-                clbuttons[2][Cl] & IN_ATTACK
+                clbuttons[4][Cl] & IN_ATTACK
+            )
+            &&
+            !(
+                clbuttons[3][Cl] & IN_ATTACK
             )
             &&
             (
+                clbuttons[2][Cl] & IN_ATTACK
+            )
+            &&
+            !(
                 clbuttons[1][Cl] & IN_ATTACK
             )
             &&
@@ -2239,14 +2264,39 @@ public Action OnPlayerRunCmd
                 &&
                 (
                     // will eventually add checks for if the user hurt and bang'd last frame as well
-                    didBangThisFrame[Cl]
-                    &&
-                    didHurtThisFrame[Cl]
+                    (
+                        (
+                            didBangOnFrame[0][Cl]
+                            &&
+                            didHurtOnFrame[0][Cl]
+                        )
+                        ||
+                        (
+                            didBangOnFrame[1][Cl]
+                            &&
+                            didHurtOnFrame[1][Cl]
+                        )
+                        ||
+                        (
+                            didBangOnFrame[2][Cl]
+                            &&
+                            didHurtOnFrame[2][Cl]
+                        )
+                    )
                 )
                 ||
                 // count all attack2 single inputs
                 (
                     attack == 2
+                    &&
+
+                    (
+                        didHurtOnFrame[0][Cl]
+                        ||
+                        didHurtOnFrame[1][Cl]
+                        ||
+                        didHurtOnFrame[2][Cl]
+                    )
                 )
             )
         )
@@ -2295,15 +2345,6 @@ public Action OnPlayerRunCmd
                 );
                 StacLog
                 (
-                    "\nTime between last 5 client ticks (most recent first):\n 1 %f\n 2 %f\n 3 %f\n 4 %f\n 5 %f",
-                    engineTime[0][Cl] - engineTime[1][Cl],
-                    engineTime[1][Cl] - engineTime[2][Cl],
-                    engineTime[2][Cl] - engineTime[3][Cl],
-                    engineTime[3][Cl] - engineTime[4][Cl],
-                    engineTime[4][Cl] - engineTime[5][Cl]
-                );
-                StacLog
-                (
                     "\nUser Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i\nUser Mouse Movement (unweighted): x: %i, y: %i.",
                     wx,
                     wy,
@@ -2331,7 +2372,7 @@ public Action OnPlayerRunCmd
                 {
                     char reason[128];
                     Format(reason, sizeof(reason), "%t", "tbotBanMsg", tbotDetects[Cl]);
-                    char pubreason[128];
+                    char pubreason[256];
                     Format(pubreason, sizeof(pubreason), "%t", "tbotBanAllChat", Cl, tbotDetects[Cl]);
                     BanUser(userid, reason, pubreason);
                     return Plugin_Handled;
@@ -2340,13 +2381,18 @@ public Action OnPlayerRunCmd
         }
     }
 
-    if (didBangThisFrame[Cl])
+    didHurtOnFrame[2][Cl] = didHurtOnFrame[1][Cl];
+    didHurtOnFrame[1][Cl] = didHurtOnFrame[0][Cl];
+    if (didHurtOnFrame[0][Cl])
     {
-        didBangThisFrame[Cl] = false;
+        didHurtOnFrame[0][Cl] = false;
     }
-    if (didHurtThisFrame[Cl])
+
+    didBangOnFrame[2][Cl] = didBangOnFrame[1][Cl];
+    didBangOnFrame[1][Cl] = didBangOnFrame[0][Cl];
+    if (didBangOnFrame[0][Cl])
     {
-        didHurtThisFrame[Cl] = false;
+        didBangOnFrame[0][Cl] = false;
     }
 
     return Plugin_Continue;
@@ -2474,7 +2520,7 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
             {
                 char reason[128];
                 Format(reason, sizeof(reason), "%t", "nolerpBanMsg");
-                char pubreason[128];
+                char pubreason[256];
                 Format(pubreason, sizeof(pubreason), "%t", "nolerpBanAllChat", Cl);
                 // we have to do extra bullshit here so we don't crash when banning clients out of this callback
                 // make a pack
@@ -2515,7 +2561,7 @@ public void ConVarCheck(QueryCookie cookie, int Cl, ConVarQueryResult result, co
             {
                 char reason[128];
                 Format(reason, sizeof(reason), "%t", "fovBanMsg");
-                char pubreason[128];
+                char pubreason[256];
                 Format(pubreason, sizeof(pubreason), "%t", "fovBanAllChat", Cl);
                 // we have to do extra bullshit here so we don't crash when banning clients out of this callback
                 // make a pack
@@ -2547,7 +2593,7 @@ public Action Timer_BanUser(Handle timer, DataPack pack)
     int userid          = ReadPackCell(pack);
     char reason[128];
     ReadPackString(pack, reason, sizeof(reason));
-    char pubreason[128];
+    char pubreason[256];
     ReadPackString(pack, pubreason, sizeof(pubreason));
 
     // get client index out of userid
@@ -2580,7 +2626,7 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
             int userid = GetClientUserId(Cl);
             char reason[128];
             Format(reason, sizeof(reason), "%t", "newlineBanMsg");
-            char pubreason[128];
+            char pubreason[256];
             Format(pubreason, sizeof(pubreason), "%t", "newlineBanAllChat", Cl);
             BanUser(userid, reason, pubreason);
         }
@@ -2675,82 +2721,12 @@ public void OnClientSettingsChanged(int Cl)
         );
         if (settingsChangesFor[Cl] >= maxSettingsChanges)
         {
-            StacGeneralPlayerDiscordNotify(userid, "Client was kicked spamming userinfo changes");
+            StacGeneralPlayerDiscordNotify(userid, "Client was kicked for spamming userinfo changes");
             MC_PrintToChatAll("%t", "settingsChangesSpamAllChat", Cl, settingsChangesFor[Cl], SettingsChangeWindow);
             StacLog("%t", "settingsChangesSpamAllChat", Cl, settingsChangesFor[Cl], SettingsChangeWindow);
             KickClient(Cl, "%t", "settingsChangesSpamKickMsg");
         }
     }
-}
-
-public void BanUser(int userid, char[] reason, char[] pubreason)
-{
-    int Cl = GetClientOfUserId(userid);
-
-    if (userBanQueued[Cl])
-    {
-        return;
-    }
-    // make sure we dont detect on already banned players
-    userBanQueued[Cl] = true;
-
-    // check if client is authed before banning normally
-    bool isAuthed = IsClientAuthorized(Cl);
-
-    if (demonameInBanReason)
-    {
-        if (GetDemoName())
-        {
-            char demoname_plus[256];
-            strcopy(demoname_plus, sizeof(demoname_plus), demoname);
-            Format(demoname_plus, sizeof(demoname_plus), ". Demo file: %s", demoname_plus);
-            StrCat(reason, 256, demoname_plus);
-            StacLog("Reason: %s", reason);
-        }
-        else
-        {
-            StacLog("[StAC] No STV demo is being recorded, no demo name will be printed to the ban reason!");
-        }
-    }
-
-    // ext ban handlers
-    if (SOURCEBANS || GBANS)
-    {
-        if (SOURCEBANS)
-        {
-            SBPP_BanPlayer(0, Cl, 0, reason);
-        }
-        if (GBANS)
-        {
-            ServerCommand("gb_ban %i, 0, %s", userid, reason);
-        }
-        // now lets check if that player was connected to steam
-        if
-        (
-            !isAuthed
-        )
-        {
-            PrintToImportant("{hotpink}[StAC]{white} Client %N is UNAUTHORIZED or STEAM IS DOWN!!! Banning by IP instead...", Cl);
-            StacLog("Client %N is UNAUTHORIZED or STEAM IS DOWN!!! Banning by IP instead...", Cl);
-            if (SOURCEBANS)
-            {
-                char ip[48];
-                GetClientIP(Cl, ip, sizeof(ip));
-                ServerCommand("sm_banip %s 0 %s", ip, reason);
-            }
-            else
-            {
-                BanClient(Cl, 0, BANFLAG_IP, reason, reason, _, _);
-            }
-        }
-    }
-    // default
-    else
-    {
-        BanClient(Cl, 0, BANFLAG_AUTO, reason, reason, _, _);
-    }
-    MC_PrintToChatAll("%s", pubreason);
-    StacLog("%s", pubreason);
 }
 
 // no longer just for netprops!
@@ -2850,7 +2826,7 @@ void NetPropEtcCheck(int userid)
                         {
                             char reason[128];
                             Format(reason, sizeof(reason), "%t", "badItemSchemaBanMsg");
-                            char pubreason[128];
+                            char pubreason[256];
                             Format(pubreason, sizeof(pubreason), "%t", "badItemSchemaBanAllChat", Cl);
                             BanUser(userid, reason, pubreason);
                         }
@@ -2977,13 +2953,79 @@ void QueryEverythingAllClients()
     }
 }
 
-
-
-
-
 ////////////
 // STONKS //
 ////////////
+
+public void BanUser(int userid, char[] reason, char[] pubreason)
+{
+    int Cl = GetClientOfUserId(userid);
+
+    if (userBanQueued[Cl])
+    {
+        return;
+    }
+    // make sure we dont detect on already banned players
+    userBanQueued[Cl] = true;
+
+    // check if client is authed before banning normally
+    bool isAuthed = IsClientAuthorized(Cl);
+
+    if (demonameInBanReason)
+    {
+        if (GetDemoName())
+        {
+            char demoname_plus[256];
+            strcopy(demoname_plus, sizeof(demoname_plus), demoname);
+            Format(demoname_plus, sizeof(demoname_plus), ". Demo file: %s", demoname_plus);
+            StrCat(reason, 256, demoname_plus);
+            StacLog("Reason: %s", reason);
+        }
+        else
+        {
+            StacLog("[StAC] No STV demo is being recorded, no demo name will be printed to the ban reason!");
+        }
+    }
+
+    // ext ban handlers
+    if (SOURCEBANS || GBANS)
+    {
+        if (SOURCEBANS)
+        {
+            SBPP_BanPlayer(0, Cl, 0, reason);
+        }
+        if (GBANS)
+        {
+            ServerCommand("gb_ban %i, 0, %s", userid, reason);
+        }
+        // now lets check if that player was connected to steam
+        if
+        (
+            !isAuthed
+        )
+        {
+            PrintToImportant("{hotpink}[StAC]{white} Client %N is UNAUTHORIZED or STEAM IS DOWN!!! Banning by IP instead...", Cl);
+            StacLog("Client %N is UNAUTHORIZED or STEAM IS DOWN!!! Banning by IP instead...", Cl);
+            if (SOURCEBANS)
+            {
+                char ip[48];
+                GetClientIP(Cl, ip, sizeof(ip));
+                ServerCommand("sm_banip %s 0 %s", ip, reason);
+            }
+            else
+            {
+                BanClient(Cl, 0, BANFLAG_IP, reason, reason, _, _);
+            }
+        }
+    }
+    // default
+    else
+    {
+        BanClient(Cl, 0, BANFLAG_AUTO, reason, reason, _, _);
+    }
+    MC_PrintToChatAll("%s", pubreason);
+    StacLog("%s", pubreason);
+}
 
 // Open log file for StAC
 void OpenStacLog()
@@ -3274,46 +3316,6 @@ any abs(any x)
    return x > 0 ? x : -x;
 }
 
-// check if this weapon is hitscan - yes i manually fucking created this list, shoot me
-bool isWeaponHitscan(char weaponname[256])
-{
-    if
-    (
-    // multiclass shotgun
-        StrContains(weaponname, "tf_weapon_shotgun") != -1
-    // multiclass pistol
-    ||  StrContains(weaponname, "tf_weapon_pistol") != -1
-    // scout
-    ||  StrContains(weaponname, "tf_weapon_scattergun") != -1
-    ||  StrContains(weaponname, "tf_weapon_handgun_scout_primary") != -1
-    ||  StrContains(weaponname, "tf_weapon_soda_popper") != -1
-    ||  StrContains(weaponname, "tf_weapon_pep_brawler_blaster") != -1
-    ||  StrContains(weaponname, "tf_weapon_handgun_scout_secondary") != -1
-    // soldier
-    ||  StrContains(weaponname, "tf_weapon_shotgun_soldier") != -1
-    // pyro
-    ||  StrContains(weaponname, "tf_weapon_shotgun_pyro") != -1
-    // pootis
-    ||  StrContains(weaponname, "tf_weapon_minigun") != -1
-    ||  StrContains(weaponname, "tf_weapon_shotgun_hwg") != -1
-    // engie
-    ||  StrContains(weaponname, "tf_weapon_shotgun_primary") != -1
-    ||  StrContains(weaponname, "tf_weapon_sentry_revenge") != -1
-    // sniper
-    ||  StrContains(weaponname, "tf_weapon_sniperrifle") != -1
-    ||  StrContains(weaponname, "tf_weapon_sniperrifle_decap") != -1
-    ||  StrContains(weaponname, "tf_weapon_sniperrifle_classic") != -1
-    ||  StrContains(weaponname, "tf_weapon_smg") != -1
-    ||  StrContains(weaponname, "tf_weapon_charged_smg") != -1
-    // spy
-    ||  StrContains(weaponname, "tf_weapon_revolver") != -1
-    )
-    {
-        return true;
-    }
-    return false;
-}
-
 
 public void Steam_SteamServersConnected()
 {
@@ -3403,7 +3405,6 @@ float NormalizeAngleDiff(float aDiff)
     }
     return aDiff;
 }
-
 
 void StacDetectionDiscordNotify(int userid, char[] type, int detections)
 {
