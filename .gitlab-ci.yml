@@ -70,9 +70,9 @@ stages:
                         git clean -d -f tf/maps
 
                         # UNCOMMENT THESE LINES TO FORCE CLEANUP OF EXTRA BULLSHIT THAT MIGHT BE ON SERVERS
-                        # echo "git clean"
-                        # git clean -d -f -x tf/addons/sourcemod/plugins/
-                        # git clean -d -f -x tf/addons/sourcemod/plugins/external
+                        echo "git clean"
+                        git clean -d -f -x tf/addons/sourcemod/plugins/
+                        git clean -d -f -x tf/addons/sourcemod/plugins/external
                         # git clean -d -f -x tf/addons/sourcemod/data/
                         # git clean -d -f -x tf/addons/sourcemod/gamedata/
                         # THIS WILL DELETE ALL SOURCEMOD LOGS, INCLUDING STAC AND CHAT LOGS
@@ -94,8 +94,8 @@ stages:
                         python3 ./str0.py ./bin/steamclient.so -c ./str0.ini
 
                         # don't run this often
-                        #echo "garbage collecting"
-                        #git gc --force ;
+                        echo "garbage collecting"
+                        git gc --force ;
 
 
                         echo "building"
