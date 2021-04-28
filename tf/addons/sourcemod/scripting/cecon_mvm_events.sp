@@ -1010,10 +1010,11 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 			}
 
 			// Find vac resist medics
-			if (healer > 0)
+			if (healer > 0 && healer != client)
 			{
 				CEcon_SendEventToClientUnique(healer, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
 			}
+			CEcon_SendEventToClientUnique(client, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
 		}
 
 		if (TF2_IsPlayerInCondition(client, TFCond_DefenseBuffed))
