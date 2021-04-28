@@ -715,7 +715,7 @@ public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool succ
 	{
 
 		LogMessage("Updating wave information failed. Try again in a bit.");
-		CreateTimer(1.0, Timer_SendWaveAgain, hPack);
+		CreateTimer(5.0, Timer_SendWaveAgain, hPack);
 
 		return;
 	}
