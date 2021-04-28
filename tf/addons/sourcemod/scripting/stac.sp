@@ -1998,15 +1998,16 @@ public Action OnPlayerRunCmd
         // 0.000000, 91.355995, 0.000000, 0.000000
         // 0.018540, 0.000000, 91.355995, 0.000000
 
-        // only check if we actually did dmg in the current frame
+        // only check if we actually did hitscan dmg in the current frame
         if
         (
             //didBangThisFrame[0][Cl]
             //||
             //didHurtOnFrame[0][Cl]
             //||
-            // give it a frame of buffer
             didHurtOnFrame[1][Cl]
+            &&
+            didBangThisFrame[1][Cl]
         )
         {
             float snapsize = 5.0;
