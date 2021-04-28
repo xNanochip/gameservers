@@ -2007,7 +2007,7 @@ public Action OnPlayerRunCmd
             //||
             didHurtOnFrame[1][Cl]
             &&
-            didBangThisFrame[1][Cl]
+            didBangOnFrame[1][Cl]
         )
         {
             float snapsize = 5.0;
