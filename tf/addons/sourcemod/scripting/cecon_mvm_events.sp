@@ -79,6 +79,9 @@ StringMap player_data_mission;
 Handle get_condition_provider_handle;
 Handle attrib_float_handle;
 
+int TankDamage[MAXPLAYERS+1] = 0;
+int BlastDamage[MAXPLAYERS+1] = 0;
+
 int bonus_currency_counter = 0;
 
 public void OnPluginStart()
@@ -170,6 +173,7 @@ public void OnMapStart()
 public void OnClientPutInServer(int client)
 {
 	player_data[client].Init(client);
+	ResetDamage(client);
 
 	if (player_data_mission != null)
 	{
@@ -179,6 +183,12 @@ public void OnClientPutInServer(int client)
 
 	SDKHook(client, SDKHook_OnTakeDamageAlivePost, OnPlayerDamagePost);
 	SDKHook(client, SDKHook_OnTakeDamageAlive, OnPlayerDamage);
+}
+
+public void ResetDamage(int client)
+{
+	TankDamage[client] = 0;
+	BlastDamage[client] = 0;
 }
 
 // Update every second events
@@ -265,6 +275,55 @@ public void WidowmakerShootUpdate(int client)
 	}
 }
 
+// BLIMP LOGIC:
+public void OnEntityCreated(int entity, const char[] classname)
+{
+	if (StrEqual(classname, "tank_boss"))
+	{
+		SDKHook(entity, SDKHook_SpawnPost, OnTankSpawn);
+	}
+}
+/*
+	1) Check to see if this is a blimp.
+	2) Rename the targetname to include this.
+*/
+public void OnTankSpawn(int tank)
+{
+	// Blimp check:
+	float vec[3];
+	GetEntPropVector(tank, Prop_Send, "m_vecOrigin", vec);
+	float vecdown[3];
+	vecdown = vec;
+	vecdown[2] -= 40;
+	vec[2] -= 90;
+
+	TR_TraceRay(vec, vecdown, MASK_SOLID_BRUSHONLY, RayType_EndPoint);
+	if (!TR_DidHit())
+	{
+		//PrintToChatAll("IsBlimp!");
+	}
+	
+	//Hook individual tank damage
+	SDKHook(tank, SDKHook_OnTakeDamageAlive, TankTakeDamage);
+	//PrintToChatAll("Tank Spawned");
+}
+
+
+//Track damage from each player on all tanks in a single wave
+public Action TankTakeDamage(int tank, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3])
+{
+	if (IsClientValid(attacker))
+	{
+		TankDamage[attacker] += RoundFloat(damage);
+		if (damagetype & DMG_BLAST) //Track Blast Damage
+		{
+			BlastDamage[attacker] += RoundFloat(damage);
+			//PrintToChat(attacker, "Blast Damage: %i", BlastDamage[attacker]);
+		}
+		//PrintToChat(attacker, "Damage: %i", TankDamage[attacker]);
+	}
+}
+
 public Action player_changeclass(Event hEvent, const char[] name, bool dontBroadcast)
 {
 	//int client = GetClientOfUserId(hEvent.GetInt("userid"));
@@ -314,11 +373,11 @@ public Action mvm_mission_complete(Handle hEvent, const char[] szName, bool bDon
 				CEcon_SendEventToClientFromGameEvent(i, "TF_MVM_MISSION_COMPLETE_ALL_WAVES", 1, hEvent);
 			}
 
-			int damage_tank = GetEntProp(resource, Prop_Send, "m_iDamageBoss", 4, i);
-			if (damage_tank > highest_damage_tank) {
-				highest_damage_tank = damage_tank;
-				highest_damage_tank_player = i;
-			}
+			//int damage_tank = GetEntProp(resource, Prop_Send, "m_iDamageBoss", 4, i);
+			//if (damage_tank > highest_damage_tank) {
+			//	highest_damage_tank = damage_tank;
+			//	highest_damage_tank_player = i;
+			//}
 
 			int damage = GetEntProp(resource, Prop_Send, "m_iDamage", 4, i);
 			if (damage > highest_damage) {
@@ -328,10 +387,10 @@ public Action mvm_mission_complete(Handle hEvent, const char[] szName, bool bDon
 		}
 	}
 
-	if (highest_damage_tank_player > 0)
-	{
-		CEcon_SendEventToClientFromGameEvent(highest_damage_tank_player, "TF_MVM_DAMAGE_TANK_MVP", 1, hEvent);
-	}
+	//if (highest_damage_tank_player > 0)
+	//{
+	//	CEcon_SendEventToClientFromGameEvent(highest_damage_tank_player, "TF_MVM_DAMAGE_TANK_MVP", 1, hEvent);
+	//}
 
 	if (highest_damage_player > 0)
 	{
@@ -710,6 +769,8 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 				data.wave_finished_counter = 0;
 
 				SetPlayerMissionData(i, data, true);
+				
+				ResetDamage(i);
 			}
 		}
 		CEcon_SendEventToAll("TF_MVM_MISSION_BEGIN", 1, GetRandomInt(0, 9999));
@@ -798,14 +859,16 @@ public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBr
 			CEcon_SendEventToAll("TF_MVM_COLLECT_CURRENCY_A", 1, GetRandomInt(0, 9999));
 		}
 	}
-
+	
+	CheckTopDamage(hEvent);
+	/*
 	int iTankDamageMVP = -1;
 	int iDamageDealt = 0;
 	// Award tank MVP for tanks:
 	for (int i; i < TF_MAXPLAYERS, i++;)
 	{
 		// Players only.
-		if (!IsClientValid(i) || IsFakeClient(i))continue;
+		if (!IsClientValid(i))continue;
 		
 		// Has this player dealt the most damage?
 		if (player_data[i].tank_damage_wave > iDamageDealt && player_data[i].tank_damage_wave > 0)
@@ -818,14 +881,74 @@ public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBr
 		player_data[i].tank_damage_wave = 0;
 	}
 	
+	//PrintToChatAll("%d", iTankDamageMVP);
+	
 	// Send event to the MVP if we have one.
 	if (iTankDamageMVP != -1)
 	{
 		CEcon_SendEventToClientFromGameEvent(iTankDamageMVP, "TF_MVM_DAMAGE_TANK_MVP", 1, hEvent);
 	}
+	*/
 
 	return Plugin_Continue;
 }
+
+// Loop through all valid players and find the player with the most damage
+public void CheckTopDamage(Handle tEvent)
+{
+	int top, second, damage, topblast;
+	int topdmg = 0;
+	int seconddmg = 0;
+	char firstname[64], secondname[64];
+	for (int player = 1; player <= MaxClients; player++)
+	{
+		if (IsClientValid(player))
+		{
+			damage = TankDamage[player];
+			if (damage > topdmg)
+			{
+				second = top; //move previous top player down to second
+				top = player;
+				topdmg = damage;
+				
+				//Debug
+				GetClientName(top, firstname, sizeof firstname);
+				//PrintToChatAll("FirstDamage is %s with %i damage", firstname, topdmg);
+			}
+			else if (damage > seconddmg) // Get second most damage to make sure top blast damage is also top damage
+			{
+				second = player;
+				seconddmg = damage;
+				
+				//Debug
+				GetClientName(second, secondname, sizeof secondname);
+				//PrintToChatAll("SecondDamage is %s with %i damage", secondname, seconddmg);
+			}
+		}
+	}
+	if (IsClientValid(top))
+	{
+		//PrintToChatAll("Top Damage is client: %s", firstname);
+		if (HasTopBlastDamage(top, second))
+		{
+			topblast = top;
+			CEcon_SendEventToClientFromGameEvent(topblast, "TF_MVM_DAMAGE_TANK_MVP", 1, tEvent);
+			
+			//Debug
+			//PrintToChatAll("top damage player also has top blast damage");
+		}
+	}
+}
+
+public bool HasTopBlastDamage(int client, int other)
+{
+	if (BlastDamage[client] >= TankDamage[other])
+	{
+		return true;
+	}
+	return false;
+}
+
 public bool FilterTank(int entity, int contentsMosk, int tank)
 {
 	return entity != tank;
@@ -839,15 +962,6 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 	{
 		if (GetEntProp(i, Prop_Data, "m_iHealth") > 0)
 			continue;
-
-		// Blimp check:
-		char sTankModelName[PLATFORM_MAX_PATH];
-		GetEntPropString(i, Prop_Data, "m_ModelName", sTankModelName, sizeof(sTankModelName));
-		
-		if (StrContains(sTankModelName, "boss_blimp", false) != -1)
-		{
-			is_blimp = true;
-		}
 	}
 
 	//if (is_blimp)
@@ -1016,6 +1130,7 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 				}
 
 				dmg_resisted = damage * 0.18;
+				
 			}
 
 			// Find vac resist medics
