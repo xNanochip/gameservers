@@ -1003,7 +1003,7 @@ public bool IsCorrectWeaponItemIndexName(int client, const char[] sWeaponIndexNa
 				if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, xDef))
 				{
 					// Comparing expected name with what definition has.
-					if (StrContains(xDef.m_sName, sWeaponIndexNameRestriction) != -1)
+					if (StrEqual(xDef.m_sName, sWeaponIndexNameRestriction))
 					{
 						// If they match, this check has passed.
 						return true;
@@ -1020,7 +1020,7 @@ public bool IsCorrectWeaponItemIndexName(int client, const char[] sWeaponIndexNa
 			if(TF2Econ_GetItemName(iDefIndex, sName, sizeof(sName)))
 			{
 				// Comparing schema name and expected name.
-				if (StrCompare(sName, sWeaponIndexNameRestriction) != -1)
+				if (StrEqual(sName, sWeaponIndexNameRestriction))
 				{
 					// If match, this check has passed.
 					return true;
