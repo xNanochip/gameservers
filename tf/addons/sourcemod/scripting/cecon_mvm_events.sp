@@ -1033,20 +1033,6 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 			}
 		}
 
-		// If the person hurt was milked, we're going to send a special event
-		// to the person who receives health from the MadMilk and to the person who gave it.
-		if (TF2_IsPlayerInCondition(client, TFCond_Milked))
-		{
-			int m_iMilker = GetConditionProvider(client, TFCond_Milked);
-			int m_fMadMilkHealthReturned = RoundToFloor(damage * 60 / 100);
-			
-			if (m_iMilker != attacker)
-			{
-				CEcon_SendEventToClientFromGameEvent(m_iMilker, "TF_MVM_HEALING_MADMILK", m_fMadMilkHealthReturned, hEvent);
-			}
-			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_HEALING_MADMILK", m_fMadMilkHealthReturned, hEvent);
-		}
-
 		if (minicrit && TF2_IsPlayerInCondition(attacker, TFCond_Buffed))
 		{
 			int buff_provider = GetConditionProvider(attacker, TFCond_Buffed);
@@ -1082,6 +1068,53 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 				CEcon_SendEventToClientFromGameEvent(crits_provider, "TF_MVM_DAMAGE_ASSIST_KRITZKRIEG", damage, hEvent);
 			}
 		}
+		
+		float dmg_resisted = 0.0;
+		int healer = 0;
+		bool has_vac_uber = TF2_IsPlayerInCondition(client, TFCond_UberBulletResist) || TF2_IsPlayerInCondition(client, TFCond_UberBlastResist) || TF2_IsPlayerInCondition(client, TFCond_UberFireResist);
+		bool has_vac_heal = TF2_IsPlayerInCondition(client, TFCond_SmallBulletResist) || TF2_IsPlayerInCondition(client, TFCond_SmallBlastResist) || TF2_IsPlayerInCondition(client, TFCond_SmallFireResist);
+
+		// Assume regular resist rate
+		if (has_vac_uber)
+		{
+			healer = GetConditionProvider(client, TFCond_UberBulletResist);
+			if (!IsClientValid(healer))
+			{
+				healer = GetConditionProvider(client, TFCond_UberBlastResist);
+			}
+			if (!IsClientValid(healer))
+			{
+				healer = GetConditionProvider(client, TFCond_UberFireResist);
+			}
+
+			dmg_resisted = damage * 3.0;
+			if (crit)
+			{
+				dmg_resisted += damage * 4.0 * 2.0;
+			}
+		}
+		else if (has_vac_heal)
+		{
+			healer = GetConditionProvider(client, TFCond_SmallBulletResist);
+			if (!IsClientValid(healer))
+			{
+				healer = GetConditionProvider(client, TFCond_SmallBlastResist);
+			}
+			if (!IsClientValid(healer))
+			{
+				healer = GetConditionProvider(client, TFCond_SmallFireResist);
+			}
+
+			dmg_resisted = damage * 0.18;
+			
+		}
+
+		// Find vac resist medics
+		if (healer > 0 && healer != client)
+		{
+			CEcon_SendEventToClientUnique(healer, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
+		}
+		CEcon_SendEventToClientUnique(client, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
 
 	}
 
@@ -1090,56 +1123,7 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 	// Battalions backup check
 	if (IsClientValid(attacker) && IsFakeClient(attacker) && !IsFakeClient(client))
 	{
-		// Vac resist
-		if (attacker != client && resist_client_last == client && resist_tick_last == GetGameTickCount())
-		{
-			float dmg_resisted = 0.0;
-			int healer = 0;
-			bool has_vac_uber = TF2_IsPlayerInCondition(client, TFCond_UberBulletResist) || TF2_IsPlayerInCondition(client, TFCond_UberBlastResist) || TF2_IsPlayerInCondition(client, TFCond_UberFireResist);
-			bool has_vac_heal = TF2_IsPlayerInCondition(client, TFCond_SmallBulletResist) || TF2_IsPlayerInCondition(client, TFCond_SmallBlastResist) || TF2_IsPlayerInCondition(client, TFCond_SmallFireResist);
-
-			// Assume regular resist rate
-			if (has_vac_uber)
-			{
-				healer = GetConditionProvider(client, TFCond_UberBulletResist);
-				if (!IsClientValid(healer))
-				{
-					healer = GetConditionProvider(client, TFCond_UberBlastResist);
-				}
-				if (!IsClientValid(healer))
-				{
-					healer = GetConditionProvider(client, TFCond_UberFireResist);
-				}
-
-				dmg_resisted = damage * 3.0;
-				if (crit)
-				{
-					dmg_resisted += damage * 4.0 * 2.0;
-				}
-			}
-			else if (has_vac_heal)
-			{
-				healer = GetConditionProvider(client, TFCond_SmallBulletResist);
-				if (!IsClientValid(healer))
-				{
-					healer = GetConditionProvider(client, TFCond_SmallBlastResist);
-				}
-				if (!IsClientValid(healer))
-				{
-					healer = GetConditionProvider(client, TFCond_SmallFireResist);
-				}
-
-				dmg_resisted = damage * 0.18;
-				
-			}
-
-			// Find vac resist medics
-			if (healer > 0 && healer != client)
-			{
-				CEcon_SendEventToClientUnique(healer, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
-			}
-			CEcon_SendEventToClientUnique(client, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
-		}
+		
 
 		if (TF2_IsPlayerInCondition(client, TFCond_DefenseBuffed))
 		{
