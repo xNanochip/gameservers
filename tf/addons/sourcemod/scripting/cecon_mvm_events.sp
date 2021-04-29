@@ -919,9 +919,18 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 			}
 		}
 
+		// If the person hurt was milked, we're going to send a special event
+		// to the person who receives health from the MadMilk and to the person who gave it.
 		if (TF2_IsPlayerInCondition(client, TFCond_Milked))
 		{
-			player_hurt_madmilk_last = GetConditionProvider(client, TFCond_Milked);
+			int m_iMilker = GetConditionProvider(client, TFCond_Milked);
+			int m_fMadMilkHealthReturned = RoundToFloor(damage * 60 / 100);
+			
+			if (m_iMilker != attacker)
+			{
+				CEcon_SendEventToClientFromGameEvent(m_iMilker, "TF_MVM_HEALING_MADMILK", m_fMadMilkHealthReturned, hEvent);
+			}
+			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_HEALING_MADMILK", m_fMadMilkHealthReturned, hEvent);
 		}
 
 		if (minicrit && TF2_IsPlayerInCondition(attacker, TFCond_Buffed))
@@ -1142,11 +1151,6 @@ public Action player_healed(Handle hEvent, const char[] szName, bool bDontBroadc
 
 			if (player_hurt_attacker_last == patient && player_hurt_tick_last == GetGameTickCount())
 			{
-				if ( player_hurt_madmilk_last == healer)
-				{
-					CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_HEALING_MADMILK", amount, hEvent);
-				}
-
 				if (TF2_IsPlayerInCondition(patient, TFCond_RegenBuffed) && GetConditionProvider(patient, TFCond_RegenBuffed) == healer)
 				{
 					CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_HEALING_CONCHEROR", amount, hEvent);
