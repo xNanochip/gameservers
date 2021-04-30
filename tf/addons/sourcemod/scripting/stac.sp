@@ -20,7 +20,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.4.11"
+#define PLUGIN_VERSION  "4.4.12"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -65,6 +65,7 @@ bool waitStatus;
 float timeSinceSpawn        [TFMAXPLAYERS+1];
 float timeSinceTaunt        [TFMAXPLAYERS+1];
 float timeSinceTeled        [TFMAXPLAYERS+1];
+float timeSinceNullCmd      [TFMAXPLAYERS+1];
 // STORED ANGLES PER CLIENT
 float clangles           [5][TFMAXPLAYERS+1][2];
 // STORED POS PER CLIENT
@@ -1143,6 +1144,7 @@ void ClearClBasedVars(int userid)
     timeSinceSpawn          [Cl] = 0.0;
     timeSinceTaunt          [Cl] = 0.0;
     timeSinceTeled          [Cl] = 0.0;
+    timeSinceNullCmd        [Cl] = 0.0;
     // STORED GRAVITY STATE PER CLIENT
     highGrav                [Cl] = false;
     // STORED MISC VARS PER CLIENT
@@ -1296,6 +1298,7 @@ public Action OnPlayerRunCmd
             KickClient(Cl, "%t", "invalidUsercmdData");
             return Plugin_Handled;
         }
+        timeSinceNullCmd[Cl] = GetEngineTime();
         return Plugin_Continue;
     }
 
@@ -1515,6 +1518,10 @@ public Action OnPlayerRunCmd
         || engineTime[0][Cl] - 1.0 < timeSinceTaunt[Cl]
         // ...didn't recently teleport - can cause psilent detects
         || engineTime[0][Cl] - 1.0 < timeSinceTeled[Cl]
+        // don't touch this client if they've recently run a nullcmd, because they're probably lagging
+        // I will tighten this up if cheats decide to try to get around stac by spamming nullcmds.
+        // Do not test me.
+        || engineTime[0][Cl] - 0.5 < timeSinceNullCmd[Cl]
         // don't touch if map or plugin just started - let the server framerate stabilize a bit
         || engineTime[0][Cl] - 1.0 < timeSinceMapStart
         // lets wait a bit if we had a lag spike in the last 5 seconds
@@ -1526,6 +1533,16 @@ public Action OnPlayerRunCmd
     )
     {
         return Plugin_Continue;
+    }
+
+    // init vars for mouse movement - weightedx and weightedy
+    int wx;
+    int wy;
+    // scale mouse movement to sensitivity
+    if (sensFor[Cl] != 0.0)
+    {
+        wx = abs(RoundFloat(mouse[0] * ( 1 / sensFor[Cl])));
+        wy = abs(RoundFloat(mouse[1] * ( 1 / sensFor[Cl])));
     }
 
     /*
@@ -1605,24 +1622,31 @@ public Action OnPlayerRunCmd
         // set up our array
         spinDiff[1][Cl] = spinDiff[0][Cl];
         spinDiff[0][Cl] = NormalizeAngleDiff(angBuff);
+
         // only count this as a detect if the spin amt ( spinDiff[0][Cl] )
-        // is greater than 1 degree and ALSO matches the last value ( spinDiff[1][Cl] )
-        if (spinDiff[0][Cl] >= 5.0 && spinDiff[0][Cl] == spinDiff[1][Cl])
+        // is greater than 5 degrees and ALSO matches the last value ( spinDiff[1][Cl] )
+        // AND it isn't a moronicly high amt of mouse movement / sensitivity
+        if
+        (  
+            mouse[0] < 5000
+            &&
+            mouse[1] < 5000
+            &&
+            (
+                spinDiff[0][Cl] >= 1.0
+                &&
+                (spinDiff[0][Cl] == spinDiff[1][Cl])
+            )
+        )
         {
             spinbotDetects[Cl]++;
+
             // this can trigger on normal players, only care about if it happens 10 times in a row at least!
             if (spinbotDetects[Cl] >= 10)
             {
                 PrintToImportant
                 (
                     "{hotpink}[StAC]{white} Spinbot detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.",
-                    spinDiff[0][Cl],
-                    Cl,
-                    spinbotDetects[Cl]
-                );
-                StacLog
-                (
-                    "[StAC] Spinbot detection of %f° on %N.\nDetections so far: %i.",
                     spinDiff[0][Cl],
                     Cl,
                     spinbotDetects[Cl]
@@ -1647,6 +1671,19 @@ public Action OnPlayerRunCmd
                     clangles[3][Cl][1],
                     clangles[4][Cl][0],
                     clangles[4][Cl][1]
+                );
+                StacLog
+                (
+                    "\nUser Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i\nUser Mouse Movement (unweighted): x: %i, y: %i.",
+                    wx,
+                    wy,
+                    mouse[0],
+                    mouse[1]
+                );
+                StacLog
+                (
+                    "Sens for client: %f\n",
+                    sensFor[Cl]
                 );
                 if (spinbotDetects[Cl] % 20 == 0)
                 {
@@ -2001,10 +2038,6 @@ public Action OnPlayerRunCmd
         // only check if we actually did hitscan dmg in the current frame
         if
         (
-            //didBangThisFrame[0][Cl]
-            //||
-            //didHurtOnFrame[0][Cl]
-            //||
             didHurtOnFrame[1][Cl]
             &&
             didBangOnFrame[1][Cl]
@@ -2059,16 +2092,7 @@ public Action OnPlayerRunCmd
             if (aDiffToUse > -1)
             {
                 aDiffReal = aDiff[aDiffToUse];
-                // init vars - weightedx and weightedy
-                int wx;
-                int wy;
-                // TODO: MAKE SURE sensFor IS AS ACC AS POSSIBLE
-                // scale mouse movement to sensitivity
-                if (sensFor[Cl] != 0.0)
-                {
-                    wx = abs(RoundFloat(mouse[0] * ( 1 / sensFor[Cl])));
-                    wy = abs(RoundFloat(mouse[1] * ( 1 / sensFor[Cl])));
-                }
+
                 // increment aimsnap detects
                 aimsnapDetects[Cl]++;
                 // have this detection expire in 10 minutes
@@ -2302,17 +2326,6 @@ public Action OnPlayerRunCmd
             )
         )
         {
-            // init vars - weightedx and weightedy
-            int wx;
-            int wy;
-            // TODO: MAKE SURE sensFor IS AS ACC AS POSSIBLE
-            // scale mouse movement to sensitivity, ignore high sens
-            if (sensFor[Cl] != 0.0)
-            {
-                wx = abs(RoundFloat(mouse[0] * ( 1 / sensFor[Cl])));
-                wy = abs(RoundFloat(mouse[1] * ( 1 / sensFor[Cl])));
-            }
-
             tbotDetects[Cl]++;
             // have this detection expire in 10 minutes
             CreateTimer(600.0, Timer_decr_tbot, userid, TIMER_FLAG_NO_MAPCHANGE);
