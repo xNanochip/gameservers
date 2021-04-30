@@ -899,27 +899,27 @@ void NukeTimers()
 {
     for (int Cl = 1; Cl <= MaxClients; Cl++)
     {
-        // delete QueryTimer[Cl];
-        if (QueryTimer[Cl] != null)
-        {
-            if (DEBUG)
-            {
-                StacLog("[StAC] Destroying timer for %L", Cl);
-            }
-            CloseHandle(QueryTimer[Cl]);
-            QueryTimer[Cl] = null;
-        }
+        delete QueryTimer[Cl];
+        //if (QueryTimer[Cl] != null)
+        //{
+        //    if (DEBUG)
+        //    {
+        //        StacLog("[StAC] Destroying timer for %L", Cl);
+        //    }
+        //    CloseHandle(QueryTimer[Cl]);
+        //    QueryTimer[Cl] = null;
+        //}
     }
-    // delete TriggerTimedStuffTimer;
-    if (TriggerTimedStuffTimer != null)
-    {
-        if (DEBUG)
-        {
-            StacLog("[StAC] Destroying reseeding timer");
-        }
-        CloseHandle(TriggerTimedStuffTimer);
-        TriggerTimedStuffTimer = null;
-    }
+    delete TriggerTimedStuffTimer;
+    //if (TriggerTimedStuffTimer != null)
+    //{
+    //    if (DEBUG)
+    //    {
+    //        StacLog("[StAC] Destroying reseeding timer");
+    //    }
+    //    CloseHandle(TriggerTimedStuffTimer);
+    //    TriggerTimedStuffTimer = null;
+    //}
 }
 
 // recreate the timers we just nuked
@@ -1211,12 +1211,12 @@ public void OnClientDisconnect(int Cl)
     int userid = GetClientUserId(Cl);
     // clear per client values
     ClearClBasedVars(userid);
-    // delete QueryTimer[Cl];
-    if (QueryTimer[Cl] != null)
-    {
-        CloseHandle(QueryTimer[Cl]);
-        QueryTimer[Cl] = null;
-    }
+    delete QueryTimer[Cl];
+    //if (QueryTimer[Cl] != null)
+    //{
+    //    CloseHandle(QueryTimer[Cl]);
+    //    QueryTimer[Cl] = null;
+    //}
 }
 
 // monitor server tickrate
@@ -2994,16 +2994,16 @@ void OpenStacLog()
 // Close log file for StAC
 void CloseStacLog()
 {
-    // delete StacLogFile;
-    if (StacLogFile != null)
-    {
-        if (DEBUG)
-        {
-            StacLog("[StAC] Closing StAC log file");
-        }
-        CloseHandle(StacLogFile);
-        StacLogFile = null;
-    }
+    delete StacLogFile;
+    //if (StacLogFile != null)
+    //{
+    //    if (DEBUG)
+    //    {
+    //        StacLog("[StAC] Closing StAC log file");
+    //    }
+    //    CloseHandle(StacLogFile);
+    //    StacLogFile = null;
+    //}
 }
 
 // log to StAC log file
