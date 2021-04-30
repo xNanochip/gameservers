@@ -20,7 +20,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.4.10"
+#define PLUGIN_VERSION  "4.4.11"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -2771,75 +2771,6 @@ void NetPropEtcCheck(int userid)
                 StacLog("%t", "interpAllChat", Cl, lerp);
             }
         }
-        if (IsClientPlaying(Cl))
-        {
-            // fix broken equip slots. Note: this was patched by valve but you can still equip invalid items...
-            // ...just without the annoying unequipping other people's items part.
-            // cathook is cringe
-            // maybe one of these days i'll make this non-hardcoded and check for ANY item schema violation
-            // not right now though
-
-            // only check if player has 3 (or more, hello creators.tf) valid hats on
-            if (TF2_GetNumWearables(Cl) >= 3)
-            {
-                int slot1wearable = TF2_GetWearable(Cl, 0);
-                int slot2wearable = TF2_GetWearable(Cl, 1);
-                int slot3wearable = TF2_GetWearable(Cl, 2);
-                // check that the ents are valid and have the correct entprops
-                if
-                (
-                       IsValidEntity(slot1wearable)
-                    && IsValidEntity(slot2wearable)
-                    && IsValidEntity(slot3wearable)
-                    && HasEntProp(slot1wearable, Prop_Send, "m_iItemDefinitionIndex")
-                    && HasEntProp(slot2wearable, Prop_Send, "m_iItemDefinitionIndex")
-                    && HasEntProp(slot3wearable, Prop_Send, "m_iItemDefinitionIndex")
-                )
-                {
-                    int slot1itemdef = GetEntProp(slot1wearable, Prop_Send, "m_iItemDefinitionIndex");
-                    int slot2itemdef = GetEntProp(slot2wearable, Prop_Send, "m_iItemDefinitionIndex");
-                    int slot3itemdef = GetEntProp(slot3wearable, Prop_Send, "m_iItemDefinitionIndex");
-                    if
-                    (
-                        // frontline field recorder
-                        (
-                               slot1itemdef == 302
-                            || slot2itemdef == 302
-                            || slot3itemdef == 302
-                        )
-                        // gibus
-                        &&
-                        (
-                               slot1itemdef == 940
-                            || slot2itemdef == 940
-                            || slot3itemdef == 940
-                        )
-                        &&
-                        // skull topper
-                        (
-                               slot1itemdef == 941
-                            || slot2itemdef == 941
-                            || slot3itemdef == 941
-                        )
-                    )
-                    {
-                        if (banForMiscCheats)
-                        {
-                            char reason[128];
-                            Format(reason, sizeof(reason), "%t", "badItemSchemaBanMsg");
-                            char pubreason[256];
-                            Format(pubreason, sizeof(pubreason), "%t", "badItemSchemaBanAllChat", Cl);
-                            BanUser(userid, reason, pubreason);
-                        }
-                        else
-                        {
-                            PrintToImportant("{hotpink}[StAC]{white} [Detection] Player %L has an illegal item schema!", Cl);
-                            StacLog("[StAC] [Detection] Player %L has an illegal item schema!", Cl);
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -3293,30 +3224,10 @@ void CPrintToSTV(const char[] format, any ...)
     MC_PrintToChat(stv, "%s", buffer);
 }
 
-// get entindx of player wearable, thanks scags
-// https://github.com/Scags/The-Dump/blob/master/scripting/tfwearables.sp#L33-L40
-int TF2_GetWearable(int client, int wearableidx)
-{
-    // 3540 linux
-    // 3520 windows
-    int offset = FindSendPropInfo("CTFPlayer", "m_flMaxspeed") - 20;
-    Address m_hMyWearables = view_as< Address >(LoadFromAddress(GetEntityAddress(client) + view_as< Address >(offset), NumberType_Int32));
-    return LoadFromAddress(m_hMyWearables + view_as< Address >(4 * wearableidx), NumberType_Int32) & 0xFFF;
-}
-
-int TF2_GetNumWearables(int client)
-{
-    // 3552 linux
-    // 3532 windows
-    int offset = FindSendPropInfo("CTFPlayer", "m_flMaxspeed") - 20 + 12;
-    return GetEntData(client, offset);
-}
-
 any abs(any x)
 {
    return x > 0 ? x : -x;
 }
-
 
 public void Steam_SteamServersConnected()
 {
@@ -3422,7 +3333,10 @@ void StacDetectionDiscordNotify(int userid, char[] type, int detections)
     Discord_EscapeString(ClName, sizeof(ClName));
     GetDemoName();
     char steamid[64];
-    GetClientAuthId(Cl, AuthId_SteamID64, steamid, sizeof(steamid));
+    if (!GetClientAuthId(Cl, AuthId_SteamID64, steamid, sizeof(steamid)))
+    {
+        steamid = "N/A";
+    }
     Format
     (
         msg,
@@ -3454,7 +3368,10 @@ void StacGeneralPlayerDiscordNotify(int userid, char[] message)
     Discord_EscapeString(ClName, sizeof(ClName));
     GetDemoName();
     char steamid[64];
-    GetClientAuthId(Cl, AuthId_SteamID64, steamid, sizeof(steamid));
+    if (!GetClientAuthId(Cl, AuthId_SteamID64, steamid, sizeof(steamid)))
+    {
+        steamid = "N/A";
+    }
     Format
     (
         msg,
