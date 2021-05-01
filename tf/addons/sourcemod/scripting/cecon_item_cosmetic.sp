@@ -16,6 +16,8 @@
 #include <tf2_stocks>
 #include <tf_econ_data>
 
+#include <morecolors>
+
 // Why? 
 // The game supports up to 8 concurrent wearables, equipped on a player.
 // This is due to that m_MyWearables array netprop in the player entity 
@@ -63,6 +65,34 @@ enum struct CEItemDefinitionCosmeticStyle
 ArrayList m_hDefinitions;
 ArrayList m_hStyles;
 
+bool m_bHasSeenWarning[MAXPLAYERS + 1];
+Handle m_hWarningTimers[MAXPLAYERS + 1];
+
+//--------------------------------------------------------------------
+// Purpose: When a player gets a warning saying that a base TF2 cosmetic
+// was randomly removed, a check is performed to see if they've
+// recently seen it to prevent spam. Initalize this warning on start
+// and remove it on disconnect.
+//--------------------------------------------------------------------
+public void OnClientConnected(int client)
+{
+	m_bHasSeenWarning[client] = false;
+}
+
+public void OnClientDisconnect(int client)
+{
+	m_bHasSeenWarning[client] = false;
+	delete m_hWarningTimers[client];
+}
+
+//--------------------------------------------------------------------
+// Purpose: Reset the players wearable warning after 5 minutes.
+//--------------------------------------------------------------------
+public Action RemoveWearableWarning(Handle timer, int client)
+{
+	m_hWarningTimers[client] = null;
+}
+
 //--------------------------------------------------------------------
 // Purpose: Precaches all the items of a specific type on plugin
 // startup.
@@ -81,12 +111,31 @@ public void CEcon_OnSchemaUpdated(KeyValues hSchema)
 	ProcessEconSchema(hSchema);
 }
 
+public int EquipOverrideItem(int client, CEItem item, CEItemDefinitionCosmetic hDef)
+{
+	char sModel[512];
+	strcopy(sModel, sizeof(sModel), hDef.m_sWorldModel);
+	ParseCosmeticModel(client, sModel, sizeof(sModel));
+	
+	int iWear = TF2Wear_CreateWearable(client, false, sModel);
+				
+	if (IsValidEntity(iWear))
+	{
+		SetEntProp(iWear, Prop_Send, "m_iItemDefinitionIndex", hDef.m_iBaseIndex);
+		SetEntProp(iWear, Prop_Send, "m_iEntityQuality", item.m_nQuality);
+		SetEntProp(iWear, Prop_Send, "m_bInitialized", 1);
+		return iWear;
+	}
+	return -1;
+}
+
 //--------------------------------------------------------------------
 // Purpose: This is called upon item equipping process.
 //--------------------------------------------------------------------
 public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 {
 	if (!StrEqual(type, "cosmetic"))return -1;
+	bool bShouldRemove = true;
 	
 	CEItemDefinitionCosmetic hDef;
 	if (FindCosmeticDefinitionByIndex(item.m_iItemDefinitionIndex, hDef))
@@ -97,10 +146,6 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 		{
 			return -1;
 		}
-		
-		char sModel[512];
-		strcopy(sModel, sizeof(sModel), hDef.m_sWorldModel);
-		ParseCosmeticModel(client, sModel, sizeof(sModel));
 		
 		// Let's try to remove base TF2 cosmetics with similar equip regions.
 		int next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
@@ -134,12 +179,16 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 				// We found a merging base TF2 cosmetic. Remove it.
 				TF2Wear_RemoveWearable(client, iEdict);
 				AcceptEntityInput(iEdict, "Kill");
+				
+				// Attempt to put on our wearable now.
+				int iWearable = EquipOverrideItem(client, item, hDef);
+				if (iWearable != -1) { return iWearable; }
 			}
 		}
 		
+		// We weren't able to find any items with similar equip regions. We'll now go through all of our wearables
+		// and create new cosmetics.
 		int iAttempts = MAX_COSMETICS;
-		bool bShouldRemove = !CanGetAnotherCosmetic(client);
-		
 		while(iAttempts > 0 && bShouldRemove)
 		{
 			iAttempts--;
@@ -159,18 +208,25 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 				TF2Wear_RemoveWearable(client, iEdict);
 				AcceptEntityInput(iEdict, "Kill");
 				
-				// TODO: Could we add some sort of message here saying "A base TF2 cosmetic that was not occupying the same equip region
-				// as a Creators.TF cosmetic has been removed."?
+				// Attempt to put on our cosmetic.
+				int iWearable = EquipOverrideItem(client, item, hDef);
+				if (iWearable != -1) 
+				{
+					// We've overriden a random base TF2 cosmetic to apply this one, let the user know for the future.
+					if (!m_bHasSeenWarning[client])
+					{
+						m_bHasSeenWarning[client] = true;
+						m_hWarningTimers[client] = CreateTimer(300.0, RemoveWearableWarning, client);
+						MC_PrintToChat(client, "{red}WARNING: {default}Due to TF2's strict wearables limit, a random base TF2 cosmetic has been removed in order to apply a Creators.TF cosmetic. If you don't wish for this to happen, you can remove a C.TF cosmetic from your C.TF loadout.");
+					}
+					
+					return iWearable;
+				}
 			}
 		}
-		
-		int iWear = TF2Wear_CreateWearable(client, false, sModel);
-		SetEntProp(iWear, Prop_Send, "m_iItemDefinitionIndex", hDef.m_iBaseIndex);
-		SetEntProp(iWear, Prop_Send, "m_iEntityQuality", item.m_nQuality);
-		SetEntProp(iWear, Prop_Send, "m_bInitialized", 1);
-		
-		return iWear;
 	}
+	
+	// We either couldn't apply a cosmetic or we have an invalid item :(
 	return -1;
 }
 
@@ -349,10 +405,9 @@ public bool IsWearableCosmetic(int wearable)
 	if (!HasEntProp(wearable, Prop_Send, "m_iItemDefinitionIndex")) return false;
 	int iItemDefIndex = GetEntProp(wearable, Prop_Send, "m_iItemDefinitionIndex");
 	if (iItemDefIndex == 0xFFFF) return false;
-	
 	// And now go through the items that can occupy weapon slots (e.g Gunboats) and that are
 	// tf_wearables. We can use the ItemDefinitionIndex here:
-	/*int m_iListOfWearableWeapons[] =  { 133, 444, 405, 608, 231, 642 };
+	int m_iListOfWearableWeapons[] =  { 133, 444, 405, 608, 231, 642 };
 	
 	for (int i = 0; i < sizeof(m_iListOfWearableWeapons), i++;)
 	{
@@ -361,7 +416,7 @@ public bool IsWearableCosmetic(int wearable)
 			// We're not allowed to override this.
 			return false;
 		}
-	}*/
+	}
 	
 	return true;
 }
