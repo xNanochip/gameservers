@@ -444,7 +444,7 @@ public void LoadSigsegvExtension()
 
 	if (FileExists(sigsegvUpdatePath) && FileSize(sigsegvExtPath) != FileSize(sigsegvUpdatePath)) {
 		checkSigsegvExtNum();
-		RenameFile(sigsegvUpdatePath, sigsegvExtPath);
+		RenameFile(sigsegvExtPath, sigsegvUpdatePath);
 		PrintToServer("Updating sigsegv extension");
 	}
 
