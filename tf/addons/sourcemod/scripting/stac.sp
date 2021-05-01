@@ -20,7 +20,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.4.13"
+#define PLUGIN_VERSION  "4.4.14"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -55,6 +55,8 @@ int bhopDetects             [TFMAXPLAYERS+1] = -1; // set to -1 to ignore single
 int cmdnumSpikeDetects      [TFMAXPLAYERS+1];
 int tbotDetects             [TFMAXPLAYERS+1] = -1;
 int spinbotDetects          [TFMAXPLAYERS+1];
+int fakeChokeDetects        [TFMAXPLAYERS+1];
+
 bool isConsecStringOfBhops  [TFMAXPLAYERS+1];
 int bhopConsecDetects       [TFMAXPLAYERS+1];
 int settingsChangesFor      [TFMAXPLAYERS+1];
@@ -85,7 +87,7 @@ bool userBanQueued          [TFMAXPLAYERS+1];
 // STORED SENS PER CLIENT
 float sensFor               [TFMAXPLAYERS+1];
 // get last 2 ticks
-float engineTime        [2][TFMAXPLAYERS+1];
+float engineTime         [2][TFMAXPLAYERS+1];
 // time since the map started (duh)
 float timeSinceMapStart;
 // time since the last lag spike occurred
@@ -95,6 +97,14 @@ char hurtWeapon             [TFMAXPLAYERS+1][256];
 // time since player did damage, for aimsnap check
 bool didBangOnFrame      [3][TFMAXPLAYERS+1];
 bool didHurtOnFrame      [3][TFMAXPLAYERS+1];
+
+// time since player did damage, for aimsnap check
+bool didBangThisFrame       [TFMAXPLAYERS+1];
+bool didHurtThisFrame       [TFMAXPLAYERS+1];
+
+// for fakechoke
+int lastChokeAmt            [TFMAXPLAYERS+1];
+int lastChokeCmdnum         [TFMAXPLAYERS+1];
 
 char hostname[64];
 char hostipandport[24];
@@ -135,7 +145,8 @@ ConVar stac_max_randomcheck_secs;
 ConVar stac_include_demoname_in_banreason;
 ConVar stac_log_to_file;
 
-//ConVar stac_webhook;
+
+
 
 // VARIOUS DETECTION BOUNDS & CVAR VALUES
 bool DEBUG                  = false;
@@ -1007,7 +1018,7 @@ Action hOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, i
            victim != attacker
     )
     {
-        didHurtOnFrame[0][attacker] = true;
+        didHurtThisFrame[attacker] = true;
     }
     return Plugin_Continue;
 }
@@ -1016,7 +1027,7 @@ public Action Hook_TEFireBullets(const char[] te_name, const int[] players, int 
 {
     int Cl = TE_ReadNum("m_iPlayer") + 1;
     // this user fired a bullet this frame!
-    didBangOnFrame[0][Cl] = true;
+    didBangThisFrame[Cl] = true;
 }
 
 public Action TF2_OnPlayerTeleport(int Cl, int teleporter, bool& result)
@@ -1156,6 +1167,7 @@ void ClearClBasedVars(int userid)
     cmdnumSpikeDetects      [Cl] = 0;
     tbotDetects             [Cl] = -1; // ignore first detect, it's prolly bunk
     spinbotDetects          [Cl] = 0;
+    fakeChokeDetects        [Cl] = 0;
     isConsecStringOfBhops   [Cl] = false;
     bhopConsecDetects       [Cl] = 0;
     settingsChangesFor      [Cl] = 0;
@@ -1264,13 +1276,10 @@ public void OnGameFrame()
         StacLog("[StAC] Server framerate stuttered. Expected: %f, got %f.\nDisabling OnPlayerRunCmd checks for %.2f seconds.", tps, realTPS[0], stutterWaitLength);
         if (DEBUG)
         {
-            PrintToImportant("{hotpink}[StAC]{white} Server framerate stuttered. Expected: {palegreen}%f{white}, got {fullred}%f{white}.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, realTPS[0], stutterWaitLength);
+            PrintToImportant("{hotpink}[StAC]{white} Server framerate stuttered. Expected: {palegreen}%f{white}, got {fullred}%f{white}.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, smoothedTPS, stutterWaitLength);
         }
     }
 }
-
-
-//int laggyDetects[MAXPLAYERS+1];
 
 /*
     in OnPlayerRunCmd, we check for:
@@ -1306,6 +1315,7 @@ public Action OnPlayerRunCmd
     {
         return Plugin_Continue;
     }
+
     // need this basically no matter what
     int userid = GetClientUserId(Cl);
 
@@ -1328,6 +1338,9 @@ public Action OnPlayerRunCmd
     float choke = GetClientAvgChoke(Cl, NetFlow_Both) * 100.0;
     // convert to ms
     float ping = GetClientAvgLatency(Cl, NetFlow_Both) * 1000.0;
+
+    float inchoke  = GetClientAvgChoke(Cl, NetFlow_Incoming) * 100.0;
+    float outchoke = GetClientAvgChoke(Cl, NetFlow_Outgoing) * 100.0;
 
     // grab engine time
     engineTime[1][Cl] = engineTime[0][Cl];
@@ -1367,6 +1380,18 @@ public Action OnPlayerRunCmd
     clpos[1][Cl] = clpos[0][Cl];
     GetClientEyePosition(Cl, clpos[0][Cl]);
 
+    // did we hurt someone in any of the past few frames?
+    didHurtOnFrame[2][Cl] = didHurtOnFrame[1][Cl];
+    didHurtOnFrame[1][Cl] = didHurtOnFrame[0][Cl];
+    didHurtOnFrame[0][Cl] = didHurtThisFrame[Cl];
+    didHurtThisFrame[Cl] = false;
+
+    // did we shoot a bullet in any of the past few frames?
+    didBangOnFrame[2][Cl] = didBangOnFrame[1][Cl];
+    didBangOnFrame[1][Cl] = didBangOnFrame[0][Cl];
+    didBangOnFrame[0][Cl] = didBangThisFrame[Cl];
+    didBangThisFrame[Cl] = false;
+
     // detect trigger teleports
     if (GetVectorDistance(clpos[0][Cl], clpos[1][Cl], false) > 500)
     {
@@ -1383,6 +1408,41 @@ public Action OnPlayerRunCmd
     fuzzyClangles[1][1] = RoundFloat(clangles[1][Cl][1] * 10.0) / 10.0;
     fuzzyClangles[0][0] = RoundFloat(clangles[0][Cl][0] * 10.0) / 10.0;
     fuzzyClangles[0][1] = RoundFloat(clangles[0][Cl][1] * 10.0) / 10.0;
+
+    // detect fakechoke ( BETA )
+    if (engineTime[0][Cl] - engineTime[1][Cl] > tickinterv * 3)
+    {
+        // off by one from what ncc says
+        int amt = cmdnum - lastChokeCmdnum[Cl];
+        if (amt >= 3)
+        {
+            if (amt == lastChokeAmt[Cl])
+            {
+                fakeChokeDetects[Cl]++;
+                if (fakeChokeDetects[Cl] >= 5)
+                {
+                    StacLog("Client %L is repeatedly choking exactly %i ticks - %i detections", Cl, amt, fakeChokeDetects[Cl]);
+                    StacLog
+                    ("\
+                    \nInchoke  : %.2f\
+                    \nOutchoke : %.2f\
+                    \nTOTAL    : %.2f",
+                    inchoke, outchoke, choke
+                    );
+                    if (fakeChokeDetects[Cl] % 20 == 0)
+                    {
+                        StacDetectionDiscordNotify(userid, "fake choke [ BETA ]", fakeChokeDetects[Cl]);
+                    }
+                }
+            }
+            else
+            {
+                fakeChokeDetects[Cl] = 0;
+            }
+        }
+        lastChokeAmt[Cl]    = amt;
+        lastChokeCmdnum[Cl] = cmdnum;
+    }
 
 
     // neither of these tests need fancy checks, so we do them first
@@ -1585,10 +1645,9 @@ public Action OnPlayerRunCmd
         maxFakeAngDetections != -1
         &&
         (
-               angles[0] < -89.01
-            || angles[0] > 89.01
-            || angles[2] < -50.01
-            || angles[2] > 50.01
+            FloatAbs(angles[0]) > 89.00
+            ||
+            FloatAbs(angles[2]) > 50.00
         )
     )
     {
@@ -1650,7 +1709,7 @@ public Action OnPlayerRunCmd
         // is greater than 5 degrees and ALSO matches the last value ( spinDiff[1][Cl] )
         // AND it isn't a moronicly high amt of mouse movement / sensitivity
         if
-        (  
+        (
             mouse[0] < 5000
             &&
             mouse[1] < 5000
@@ -1886,7 +1945,16 @@ public Action OnPlayerRunCmd
     // is this a fuzzy detect or not
     int fuzzy = -1;
     // don't run this check if silent aim cvar is -1
-    if (maxPsilentDetections != -1)
+    if
+    (
+        maxPsilentDetections != -1
+        &&
+        (
+            buttons & IN_ATTACK
+            ||
+            clbuttons[1][Cl] & IN_ATTACK
+        )
+    )
     {
         if
         (
@@ -1939,15 +2007,16 @@ public Action OnPlayerRunCmd
         //  doing this might make it harder to detect legitcheaters but like. legitcheating in a 12 yr old dead game OMEGALUL who fucking cares
         if
         (
-            (
-                // needs to be more than a degree if not fuzzy
-                aDiffReal >= 1.0 && fuzzy == 0
-            )
-            ||
-            (
-                // needs to be more 3 degrees if fuzzy - laggy players can trigger fuzzy detects below 3!
-                aDiffReal >= 3.0 && fuzzy == 1
-            )
+            //(
+            //    // needs to be more than a degree if not fuzzy
+            //    aDiffReal >= 1.0 && fuzzy == 0
+            //)
+            //||
+            //(
+            //    // needs to be more than a degree if fuzzy
+            //    aDiffReal >= 1.0 && fuzzy == 1
+            //)
+            aDiffReal >= 1.0 && fuzzy >= 0
         )
         {
             pSilentDetects[Cl]++;
@@ -2422,20 +2491,6 @@ public Action OnPlayerRunCmd
         }
     }
 
-    didHurtOnFrame[2][Cl] = didHurtOnFrame[1][Cl];
-    didHurtOnFrame[1][Cl] = didHurtOnFrame[0][Cl];
-    if (didHurtOnFrame[0][Cl])
-    {
-        didHurtOnFrame[0][Cl] = false;
-    }
-
-    didBangOnFrame[2][Cl] = didBangOnFrame[1][Cl];
-    didBangOnFrame[1][Cl] = didBangOnFrame[0][Cl];
-    if (didBangOnFrame[0][Cl])
-    {
-        didBangOnFrame[0][Cl] = false;
-    }
-
     return Plugin_Continue;
 }
 
@@ -2726,12 +2781,14 @@ public void OnClientSettingsChanged(int Cl)
 {
     // check for "too many client settings changes" cuz nullcore and lmaobox both spam this
     // although that might be a bug with them interacting with mastercomfig ?
+    // note from future steph : nope ! it's related to "ping reducing" lol
 
     // ignore invalid clients and dead / in spec clients
     if (!IsValidClient(Cl) || !IsClientPlaying(Cl))
     {
         return;
     }
+
     // ignore if cvar says ignore
     if (maxSettingsChanges <= 0 || SettingsChangeWindow <= 0.0)
     {
