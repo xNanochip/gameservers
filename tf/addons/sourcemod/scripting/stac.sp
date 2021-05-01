@@ -1409,41 +1409,6 @@ public Action OnPlayerRunCmd
     fuzzyClangles[0][0] = RoundFloat(clangles[0][Cl][0] * 10.0) / 10.0;
     fuzzyClangles[0][1] = RoundFloat(clangles[0][Cl][1] * 10.0) / 10.0;
 
-    // detect fakechoke ( BETA )
-    if (engineTime[0][Cl] - engineTime[1][Cl] > tickinterv * 3)
-    {
-        // off by one from what ncc says
-        int amt = cmdnum - lastChokeCmdnum[Cl];
-        if (amt >= 3)
-        {
-            if (amt == lastChokeAmt[Cl])
-            {
-                fakeChokeDetects[Cl]++;
-                if (fakeChokeDetects[Cl] >= 5)
-                {
-                    StacLog("Client %L is repeatedly choking exactly %i ticks - %i detections", Cl, amt, fakeChokeDetects[Cl]);
-                    StacLog
-                    ("\
-                    \nInchoke  : %.2f\
-                    \nOutchoke : %.2f\
-                    \nTOTAL    : %.2f",
-                    inchoke, outchoke, choke
-                    );
-                    if (fakeChokeDetects[Cl] % 20 == 0)
-                    {
-                        StacDetectionDiscordNotify(userid, "fake choke [ BETA ]", fakeChokeDetects[Cl]);
-                    }
-                }
-            }
-            else
-            {
-                fakeChokeDetects[Cl] = 0;
-            }
-        }
-        lastChokeAmt[Cl]    = amt;
-        lastChokeCmdnum[Cl] = cmdnum;
-    }
-
 
     // neither of these tests need fancy checks, so we do them first
 
@@ -1615,6 +1580,52 @@ public Action OnPlayerRunCmd
     {
         return Plugin_Continue;
     }
+
+    // detect fakechoke ( BETA )
+    if (engineTime[0][Cl] - engineTime[1][Cl] > tickinterv * 8)
+    {
+        // off by one from what ncc says
+        int amt = cmdnum - lastChokeCmdnum[Cl];
+        if (amt >= 8)
+        {
+            if (amt == lastChokeAmt[Cl])
+            {
+                fakeChokeDetects[Cl]++;
+                if (fakeChokeDetects[Cl] >= 5)
+                {
+                    StacLog("Client %L is repeatedly choking exactly %i ticks - %i detections", Cl, amt, fakeChokeDetects[Cl]);
+                    StacLog
+                    (
+                        "\
+                        \nNetwork:\
+                        \n %.2f loss\
+                        \n %.2f ms ping\
+                        \n %.2f inchoke\
+                        \n %.2f outchoke\
+                        \n %.2f totalchoke\
+                        ",
+                        loss,
+                        ping,
+                        inchoke,
+                        outchoke,
+                        choke
+                    );
+                    if (fakeChokeDetects[Cl] % 20 == 0)
+                    {
+                        StacDetectionDiscordNotify(userid, "fake choke [ BETA ]", fakeChokeDetects[Cl]);
+                    }
+                }
+            }
+            else
+            {
+                fakeChokeDetects[Cl] = 0;
+            }
+        }
+        lastChokeAmt[Cl]    = amt;
+        lastChokeCmdnum[Cl] = cmdnum;
+    }
+
+
 
     // init vars for mouse movement - weightedx and weightedy
     int wx;
