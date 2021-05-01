@@ -158,6 +158,9 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 				
 				TF2Wear_RemoveWearable(client, iEdict);
 				AcceptEntityInput(iEdict, "Kill");
+				
+				// TODO: Could we add some sort of message here saying "A base TF2 cosmetic that was not occupying the same equip region
+				// as a Creators.TF cosmetic has been removed."?
 			}
 		}
 		
@@ -346,6 +349,19 @@ public bool IsWearableCosmetic(int wearable)
 	if (!HasEntProp(wearable, Prop_Send, "m_iItemDefinitionIndex")) return false;
 	int iItemDefIndex = GetEntProp(wearable, Prop_Send, "m_iItemDefinitionIndex");
 	if (iItemDefIndex == 0xFFFF) return false;
+	
+	// And now go through the items that can occupy weapon slots (e.g Gunboats) and that are
+	// tf_wearables. We can use the ItemDefinitionIndex here:
+	/*int m_iListOfWearableWeapons[] =  { 133, 444, 405, 608, 231, 642 };
+	
+	for (int i = 0; i < sizeof(m_iListOfWearableWeapons), i++;)
+	{
+		if (iItemDefIndex == m_iListOfWearableWeapons[i])
+		{
+			// We're not allowed to override this.
+			return false;
+		}
+	}*/
 	
 	return true;
 }
