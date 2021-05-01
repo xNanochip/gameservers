@@ -4122,9 +4122,134 @@
 					type "sym"
 					sym  "_ZN16CObjectSentrygun18MakeScaledBuildingEP9CTFPlayer"
 				}
-				
+				"CParallelProcessor<PackWork_t>::Run"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN18CParallelProcessorI10PackWork_t21CFuncJobItemProcessorIS0_EE3RunEPS0_jiP11IThreadPool"
+				}
+				"CFrameSnapshotManager::GetPreviouslySentPacket"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN21CFrameSnapshotManager23GetPreviouslySentPacketEii"
+				}
+				"CVEngineServer::GetChangeAccessor"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN14CVEngineServer17GetChangeAccessorEPK7edict_t"
+				}
+				"PackWork_t::Process"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN10PackWork_t7ProcessERS_"
+				}
+				"CFrameSnapshotManager::UsePreviouslySentPacket"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN21CFrameSnapshotManager23UsePreviouslySentPacketEP14CFrameSnapshotii"
+				}
+				"CFrameSnapshotManager::CreatePackedEntity"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN21CFrameSnapshotManager18CreatePackedEntityEP14CFrameSnapshoti"
+				}
+				"CBaseEdict::GetChangeAccessor"
+				{
+					type "sym"
+					sym  "_ZN10CBaseEdict17GetChangeAccessorEv"
+				}
+				"CHLTVDemoRecorder::StartRecording"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN17CHLTVDemoRecorder14StartRecordingEPKcb"
+				}
+				"CHLTVDemoRecorder::StopRecording"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN17CHLTVDemoRecorder13StopRecordingEv"
+				}
+				"CClientFrameManager::DeleteClientFrames"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN19CClientFrameManager18DeleteClientFramesEi"
+				}
+				"CClientFrameManager::CountClientFrames"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN19CClientFrameManager17CountClientFramesEv"
+				}
+				"CClientFrameManager::RemoveOldestFrame"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN19CClientFrameManager17RemoveOldestFrameEv"
+				}
+				"CHLTVServer::RestoreTick"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN11CHLTVServer11RestoreTickEi"
+				}
+				"SendTable_Encode"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_Z16SendTable_EncodePK9SendTablePKvP8bf_writeiP10CUtlMemoryI20CSendProxyRecipientsiEb"
+				}
+				"CDatatableStack::Init"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN15CDatatableStack4InitEb"
+				}
+				"CMultiPlayerAnimState::AddToGestureSlot"
+				{
+					type "sym"
+					sym  "_ZN21CMultiPlayerAnimState16AddToGestureSlotEi8Activityb"
+				}
+				"CAnimationLayer::StudioFrameAdvance"
+				{
+					type "sym"
+					sym  "_ZN15CAnimationLayer18StudioFrameAdvanceEfP14CBaseAnimating"
+				}
+				"CBaseAnimatingOverlay::StudioFrameAdvance"
+				{
+					type "sym"
+					sym  "_ZN21CBaseAnimatingOverlay18StudioFrameAdvanceEv"
+				}
+				"AllocChangeFrameList"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_Z20AllocChangeFrameListii"
+				}
+				"CMultiPlayerAnimState::RestartGesture"
+				{
+					type "sym"
+					sym  "_ZN21CMultiPlayerAnimState14RestartGestureEi8Activityb"
+				}
+				"PackEntities_Normal"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_Z19PackEntities_NormaliPP11CGameClientP14CFrameSnapshot"
+				}
+				"CAttributeManager::ClearCache [clone]"
+				{
+					type "sym regex"
+					sym  "_ZN17CAttributeManager10ClearCacheEv\\.part\\..*"
+				}
+				 
 			}
-			
 			"addrs_group"
 			{
 				"[common]"
@@ -4221,6 +4346,22 @@
 				"CTFWeaponBaseGun::ShouldPlayFireAnim"   "_ZN16CTFWeaponBaseGun18ShouldPlayFireAnimEv"
 				"CTFWeaponBaseGun::UpdatePunchAngles"    "_ZN16CTFWeaponBaseGun17UpdatePunchAnglesEP9CTFPlayer"
 				
+			}
+			"addrs_group"
+			{
+				"[common]"
+				{
+					type "sym"
+					lib  "engine"
+				}
+				
+				"Int_CompareDeltas"	"_Z17Int_CompareDeltasPK8SendPropP7bf_readS3_"
+				"Float_CompareDeltas"	"_Z19Float_CompareDeltasPK8SendPropP7bf_readS3_"
+				"VectorXY_CompareDeltas"	"_Z22VectorXY_CompareDeltasPK8SendPropP7bf_readS3_"
+				"Array_CompareDeltas"	"_Z19Array_CompareDeltasPK8SendPropP7bf_readS3_"
+				"Vector_CompareDeltas"	"_Z20Vector_CompareDeltasPK8SendPropP7bf_readS3_"
+				"String_CompareDeltas"	"_Z20String_CompareDeltasPK8SendPropP7bf_readS3_"
+				"Int64_CompareDeltas"	"_Z19Int64_CompareDeltasPK8SendPropP7bf_readS3_"
 			}
 		}
 	}

@@ -20,7 +20,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.4.10"
+#define PLUGIN_VERSION  "4.4.14"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -55,6 +55,8 @@ int bhopDetects             [TFMAXPLAYERS+1] = -1; // set to -1 to ignore single
 int cmdnumSpikeDetects      [TFMAXPLAYERS+1];
 int tbotDetects             [TFMAXPLAYERS+1] = -1;
 int spinbotDetects          [TFMAXPLAYERS+1];
+int fakeChokeDetects        [TFMAXPLAYERS+1];
+
 bool isConsecStringOfBhops  [TFMAXPLAYERS+1];
 int bhopConsecDetects       [TFMAXPLAYERS+1];
 int settingsChangesFor      [TFMAXPLAYERS+1];
@@ -65,6 +67,7 @@ bool waitStatus;
 float timeSinceSpawn        [TFMAXPLAYERS+1];
 float timeSinceTaunt        [TFMAXPLAYERS+1];
 float timeSinceTeled        [TFMAXPLAYERS+1];
+float timeSinceNullCmd      [TFMAXPLAYERS+1];
 // STORED ANGLES PER CLIENT
 float clangles           [5][TFMAXPLAYERS+1][2];
 // STORED POS PER CLIENT
@@ -84,7 +87,7 @@ bool userBanQueued          [TFMAXPLAYERS+1];
 // STORED SENS PER CLIENT
 float sensFor               [TFMAXPLAYERS+1];
 // get last 2 ticks
-float engineTime        [2][TFMAXPLAYERS+1];
+float engineTime         [2][TFMAXPLAYERS+1];
 // time since the map started (duh)
 float timeSinceMapStart;
 // time since the last lag spike occurred
@@ -94,6 +97,14 @@ char hurtWeapon             [TFMAXPLAYERS+1][256];
 // time since player did damage, for aimsnap check
 bool didBangOnFrame      [3][TFMAXPLAYERS+1];
 bool didHurtOnFrame      [3][TFMAXPLAYERS+1];
+
+// time since player did damage, for aimsnap check
+bool didBangThisFrame       [TFMAXPLAYERS+1];
+bool didHurtThisFrame       [TFMAXPLAYERS+1];
+
+// for fakechoke
+int lastChokeAmt            [TFMAXPLAYERS+1];
+int lastChokeCmdnum         [TFMAXPLAYERS+1];
 
 char hostname[64];
 char hostipandport[24];
@@ -124,6 +135,7 @@ ConVar stac_max_bhop_detections;
 ConVar stac_max_fakeang_detections;
 ConVar stac_max_cmdnum_detections;
 ConVar stac_max_tbot_detections;
+ConVar stac_max_spinbot_detections;
 ConVar stac_max_settings_changes;
 ConVar stac_settings_changes_window;
 ConVar stac_min_interp_ms;
@@ -133,7 +145,8 @@ ConVar stac_max_randomcheck_secs;
 ConVar stac_include_demoname_in_banreason;
 ConVar stac_log_to_file;
 
-//ConVar stac_webhook;
+
+
 
 // VARIOUS DETECTION BOUNDS & CVAR VALUES
 bool DEBUG                  = false;
@@ -146,7 +159,7 @@ int maxPsilentDetections    = 10;
 int maxFakeAngDetections    = 10;
 int maxBhopDetections       = 10;
 int maxCmdnumDetections     = 25;
-int maxTbotDetections       = 30;
+int maxTbotDetections       = 0;
 int maxSpinbotDetections    = 60;
 // this gets set later
 int maxBhopDetectionsScaled;
@@ -454,14 +467,30 @@ void initCvars()
     );
     HookConVarChange(stac_max_cmdnum_detections, stacVarChanged);
 
-    // cmdnum spike detections
+    // triggerbot detections
     IntToString(maxTbotDetections, buffer, sizeof(buffer));
     stac_max_tbot_detections =
     AutoExecConfig_CreateConVar
     (
         "stac_max_tbot_detections",
         buffer,
-        "[StAC] maximum triggerbot detections before banning a client. \n(recommended 20)",
+        "[StAC] maximum triggerbot detections before banning a client. \n(I HIGHLY RECOMMEND NOT AUTOBANNING - AKA LEAVING THIS CVAR AT 0 - WITH THIS CHECK!)",
+        FCVAR_NONE,
+        true,
+        -1.0,
+        false,
+        _
+    );
+    HookConVarChange(stac_max_tbot_detections, stacVarChanged);
+
+    // spinbot detections
+    IntToString(maxSpinbotDetections, buffer, sizeof(buffer));
+    stac_max_spinbot_detections =
+    AutoExecConfig_CreateConVar
+    (
+        "stac_max_spinbot_detections",
+        buffer,
+        "[StAC] maximum spinbot detections before banning a client. \n(recommended 60 or higher)",
         FCVAR_NONE,
         true,
         -1.0,
@@ -671,6 +700,9 @@ void setStacVars()
 
     // tbot var
     maxTbotDetections       = GetConVarInt(stac_max_tbot_detections);
+
+    // spinbot var
+    maxSpinbotDetections    = GetConVarInt(stac_max_spinbot_detections);
 
     // max settings changes var
     maxSettingsChanges      = GetConVarInt(stac_max_settings_changes);
@@ -899,27 +931,27 @@ void NukeTimers()
 {
     for (int Cl = 1; Cl <= MaxClients; Cl++)
     {
-        // delete QueryTimer[Cl];
-        if (QueryTimer[Cl] != null)
-        {
-            if (DEBUG)
-            {
-                StacLog("[StAC] Destroying timer for %L", Cl);
-            }
-            CloseHandle(QueryTimer[Cl]);
-            QueryTimer[Cl] = null;
-        }
+        delete QueryTimer[Cl];
+        //if (QueryTimer[Cl] != null)
+        //{
+        //    if (DEBUG)
+        //    {
+        //        StacLog("[StAC] Destroying timer for %L", Cl);
+        //    }
+        //    CloseHandle(QueryTimer[Cl]);
+        //    QueryTimer[Cl] = null;
+        //}
     }
-    // delete TriggerTimedStuffTimer;
-    if (TriggerTimedStuffTimer != null)
-    {
-        if (DEBUG)
-        {
-            StacLog("[StAC] Destroying reseeding timer");
-        }
-        CloseHandle(TriggerTimedStuffTimer);
-        TriggerTimedStuffTimer = null;
-    }
+    delete TriggerTimedStuffTimer;
+    //if (TriggerTimedStuffTimer != null)
+    //{
+    //    if (DEBUG)
+    //    {
+    //        StacLog("[StAC] Destroying reseeding timer");
+    //    }
+    //    CloseHandle(TriggerTimedStuffTimer);
+    //    TriggerTimedStuffTimer = null;
+    //}
 }
 
 // recreate the timers we just nuked
@@ -986,7 +1018,7 @@ Action hOnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, i
            victim != attacker
     )
     {
-        didHurtOnFrame[0][attacker] = true;
+        didHurtThisFrame[attacker] = true;
     }
     return Plugin_Continue;
 }
@@ -995,7 +1027,7 @@ public Action Hook_TEFireBullets(const char[] te_name, const int[] players, int 
 {
     int Cl = TE_ReadNum("m_iPlayer") + 1;
     // this user fired a bullet this frame!
-    didBangOnFrame[0][Cl] = true;
+    didBangThisFrame[Cl] = true;
 }
 
 public Action TF2_OnPlayerTeleport(int Cl, int teleporter, bool& result)
@@ -1135,6 +1167,7 @@ void ClearClBasedVars(int userid)
     cmdnumSpikeDetects      [Cl] = 0;
     tbotDetects             [Cl] = -1; // ignore first detect, it's prolly bunk
     spinbotDetects          [Cl] = 0;
+    fakeChokeDetects        [Cl] = 0;
     isConsecStringOfBhops   [Cl] = false;
     bhopConsecDetects       [Cl] = 0;
     settingsChangesFor      [Cl] = 0;
@@ -1143,6 +1176,7 @@ void ClearClBasedVars(int userid)
     timeSinceSpawn          [Cl] = 0.0;
     timeSinceTaunt          [Cl] = 0.0;
     timeSinceTeled          [Cl] = 0.0;
+    timeSinceNullCmd        [Cl] = 0.0;
     // STORED GRAVITY STATE PER CLIENT
     highGrav                [Cl] = false;
     // STORED MISC VARS PER CLIENT
@@ -1211,12 +1245,12 @@ public void OnClientDisconnect(int Cl)
     int userid = GetClientUserId(Cl);
     // clear per client values
     ClearClBasedVars(userid);
-    // delete QueryTimer[Cl];
-    if (QueryTimer[Cl] != null)
-    {
-        CloseHandle(QueryTimer[Cl]);
-        QueryTimer[Cl] = null;
-    }
+    delete QueryTimer[Cl];
+    //if (QueryTimer[Cl] != null)
+    //{
+    //    CloseHandle(QueryTimer[Cl]);
+    //    QueryTimer[Cl] = null;
+    //}
 }
 
 // monitor server tickrate
@@ -1242,13 +1276,10 @@ public void OnGameFrame()
         StacLog("[StAC] Server framerate stuttered. Expected: %f, got %f.\nDisabling OnPlayerRunCmd checks for %.2f seconds.", tps, realTPS[0], stutterWaitLength);
         if (DEBUG)
         {
-            PrintToImportant("{hotpink}[StAC]{white} Server framerate stuttered. Expected: {palegreen}%f{white}, got {fullred}%f{white}.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, realTPS[0], stutterWaitLength);
+            PrintToImportant("{hotpink}[StAC]{white} Server framerate stuttered. Expected: {palegreen}%f{white}, got {fullred}%f{white}.\nDisabling OnPlayerRunCmd checks for %f seconds.", tps, smoothedTPS, stutterWaitLength);
         }
     }
 }
-
-
-//int laggyDetects[MAXPLAYERS+1];
 
 /*
     in OnPlayerRunCmd, we check for:
@@ -1284,6 +1315,7 @@ public Action OnPlayerRunCmd
     {
         return Plugin_Continue;
     }
+
     // need this basically no matter what
     int userid = GetClientUserId(Cl);
 
@@ -1296,6 +1328,7 @@ public Action OnPlayerRunCmd
             KickClient(Cl, "%t", "invalidUsercmdData");
             return Plugin_Handled;
         }
+        timeSinceNullCmd[Cl] = GetEngineTime();
         return Plugin_Continue;
     }
 
@@ -1305,6 +1338,9 @@ public Action OnPlayerRunCmd
     float choke = GetClientAvgChoke(Cl, NetFlow_Both) * 100.0;
     // convert to ms
     float ping = GetClientAvgLatency(Cl, NetFlow_Both) * 1000.0;
+
+    float inchoke  = GetClientAvgChoke(Cl, NetFlow_Incoming) * 100.0;
+    float outchoke = GetClientAvgChoke(Cl, NetFlow_Outgoing) * 100.0;
 
     // grab engine time
     engineTime[1][Cl] = engineTime[0][Cl];
@@ -1343,6 +1379,18 @@ public Action OnPlayerRunCmd
     // grab position
     clpos[1][Cl] = clpos[0][Cl];
     GetClientEyePosition(Cl, clpos[0][Cl]);
+
+    // did we hurt someone in any of the past few frames?
+    didHurtOnFrame[2][Cl] = didHurtOnFrame[1][Cl];
+    didHurtOnFrame[1][Cl] = didHurtOnFrame[0][Cl];
+    didHurtOnFrame[0][Cl] = didHurtThisFrame[Cl];
+    didHurtThisFrame[Cl] = false;
+
+    // did we shoot a bullet in any of the past few frames?
+    didBangOnFrame[2][Cl] = didBangOnFrame[1][Cl];
+    didBangOnFrame[1][Cl] = didBangOnFrame[0][Cl];
+    didBangOnFrame[0][Cl] = didBangThisFrame[Cl];
+    didBangThisFrame[Cl] = false;
 
     // detect trigger teleports
     if (GetVectorDistance(clpos[0][Cl], clpos[1][Cl], false) > 500)
@@ -1477,28 +1525,29 @@ public Action OnPlayerRunCmd
     */
     if
     (
-        buttons & IN_LEFT
-        ||
-        buttons & IN_RIGHT
+        maxAllowedTurnSecs != -1.0
+        &&
+        (
+            buttons & IN_LEFT
+            ||
+            buttons & IN_RIGHT
+        )
     )
     {
-        if (maxAllowedTurnSecs != -1.0)
-        {
-            turnTimes[Cl]++;
-            float turnSec = turnTimes[Cl] * tickinterv;
-            PrintToImportant("%t", "turnbindAdminMsg", Cl, turnSec);
+        turnTimes[Cl]++;
+        float turnSec = turnTimes[Cl] * tickinterv;
+        PrintToImportant("%t", "turnbindAdminMsg", Cl, turnSec);
 
-            if (turnSec < maxAllowedTurnSecs)
-            {
-                MC_PrintToChat(Cl, "%t", "turnbindWarnPlayer");
-            }
-            else if (turnSec >= maxAllowedTurnSecs)
-            {
-                StacGeneralPlayerDiscordNotify(userid, "Client was kicked for turn binds");
-                KickClient(Cl, "%t", "turnbindKickMsg");
-                MC_PrintToChatAll("%t", "turnbindAllChat", Cl);
-                StacLog("%t", "turnbindAllChat", Cl);
-            }
+        if (turnSec < maxAllowedTurnSecs)
+        {
+            MC_PrintToChat(Cl, "%t", "turnbindWarnPlayer");
+        }
+        else if (turnSec >= maxAllowedTurnSecs)
+        {
+            StacGeneralPlayerDiscordNotify(userid, "Client was kicked for turn binds");
+            KickClient(Cl, "%t", "turnbindKickMsg");
+            MC_PrintToChatAll("%t", "turnbindAllChat", Cl);
+            StacLog("%t", "turnbindAllChat", Cl);
         }
     }
 
@@ -1515,6 +1564,10 @@ public Action OnPlayerRunCmd
         || engineTime[0][Cl] - 1.0 < timeSinceTaunt[Cl]
         // ...didn't recently teleport - can cause psilent detects
         || engineTime[0][Cl] - 1.0 < timeSinceTeled[Cl]
+        // don't touch this client if they've recently run a nullcmd, because they're probably lagging
+        // I will tighten this up if cheats decide to try to get around stac by spamming nullcmds.
+        // Do not test me.
+        || engineTime[0][Cl] - 0.5 < timeSinceNullCmd[Cl]
         // don't touch if map or plugin just started - let the server framerate stabilize a bit
         || engineTime[0][Cl] - 1.0 < timeSinceMapStart
         // lets wait a bit if we had a lag spike in the last 5 seconds
@@ -1526,6 +1579,62 @@ public Action OnPlayerRunCmd
     )
     {
         return Plugin_Continue;
+    }
+
+    // detect fakechoke ( BETA )
+    if (engineTime[0][Cl] - engineTime[1][Cl] > tickinterv * 8)
+    {
+        // off by one from what ncc says
+        int amt = cmdnum - lastChokeCmdnum[Cl];
+        if (amt >= 8)
+        {
+            if (amt == lastChokeAmt[Cl])
+            {
+                fakeChokeDetects[Cl]++;
+                if (fakeChokeDetects[Cl] >= 5)
+                {
+                    StacLog("Client %L is repeatedly choking exactly %i ticks - %i detections", Cl, amt, fakeChokeDetects[Cl]);
+                    StacLog
+                    (
+                        "\
+                        \nNetwork:\
+                        \n %.2f loss\
+                        \n %.2f ms ping\
+                        \n %.2f inchoke\
+                        \n %.2f outchoke\
+                        \n %.2f totalchoke\
+                        ",
+                        loss,
+                        ping,
+                        inchoke,
+                        outchoke,
+                        choke
+                    );
+                    if (fakeChokeDetects[Cl] % 20 == 0)
+                    {
+                        StacDetectionDiscordNotify(userid, "fake choke [ BETA ]", fakeChokeDetects[Cl]);
+                    }
+                }
+            }
+            else
+            {
+                fakeChokeDetects[Cl] = 0;
+            }
+        }
+        lastChokeAmt[Cl]    = amt;
+        lastChokeCmdnum[Cl] = cmdnum;
+    }
+
+
+
+    // init vars for mouse movement - weightedx and weightedy
+    int wx;
+    int wy;
+    // scale mouse movement to sensitivity
+    if (sensFor[Cl] != 0.0)
+    {
+        wx = abs(RoundFloat(mouse[0] * ( 1 / sensFor[Cl])));
+        wy = abs(RoundFloat(mouse[1] * ( 1 / sensFor[Cl])));
     }
 
     /*
@@ -1547,10 +1656,9 @@ public Action OnPlayerRunCmd
         maxFakeAngDetections != -1
         &&
         (
-               angles[0] < -89.01
-            || angles[0] > 89.01
-            || angles[2] < -50.01
-            || angles[2] > 50.01
+            FloatAbs(angles[0]) > 89.00
+            ||
+            FloatAbs(angles[2]) > 50.00
         )
     )
     {
@@ -1593,6 +1701,8 @@ public Action OnPlayerRunCmd
     // ignore clients using turn binds!
     if
     (
+        maxSpinbotDetections != -1
+        &&
         !(
             buttons & IN_LEFT
             ||
@@ -1605,24 +1715,31 @@ public Action OnPlayerRunCmd
         // set up our array
         spinDiff[1][Cl] = spinDiff[0][Cl];
         spinDiff[0][Cl] = NormalizeAngleDiff(angBuff);
+
         // only count this as a detect if the spin amt ( spinDiff[0][Cl] )
-        // is greater than 1 degree and ALSO matches the last value ( spinDiff[1][Cl] )
-        if (spinDiff[0][Cl] >= 5.0 && spinDiff[0][Cl] == spinDiff[1][Cl])
+        // is greater than 5 degrees and ALSO matches the last value ( spinDiff[1][Cl] )
+        // AND it isn't a moronicly high amt of mouse movement / sensitivity
+        if
+        (
+            mouse[0] < 5000
+            &&
+            mouse[1] < 5000
+            &&
+            (
+                spinDiff[0][Cl] >= 1.0
+                &&
+                (spinDiff[0][Cl] == spinDiff[1][Cl])
+            )
+        )
         {
             spinbotDetects[Cl]++;
+
             // this can trigger on normal players, only care about if it happens 10 times in a row at least!
             if (spinbotDetects[Cl] >= 10)
             {
                 PrintToImportant
                 (
                     "{hotpink}[StAC]{white} Spinbot detection of {yellow}%.2f{white}° on %N.\nDetections so far: {palegreen}%i{white}.",
-                    spinDiff[0][Cl],
-                    Cl,
-                    spinbotDetects[Cl]
-                );
-                StacLog
-                (
-                    "[StAC] Spinbot detection of %f° on %N.\nDetections so far: %i.",
                     spinDiff[0][Cl],
                     Cl,
                     spinbotDetects[Cl]
@@ -1647,6 +1764,19 @@ public Action OnPlayerRunCmd
                     clangles[3][Cl][1],
                     clangles[4][Cl][0],
                     clangles[4][Cl][1]
+                );
+                StacLog
+                (
+                    "\nUser Mouse Movement (weighted to sens): abs(x): %i, abs(y): %i\nUser Mouse Movement (unweighted): x: %i, y: %i.",
+                    wx,
+                    wy,
+                    mouse[0],
+                    mouse[1]
+                );
+                StacLog
+                (
+                    "Sens for client: %f\n",
+                    sensFor[Cl]
                 );
                 if (spinbotDetects[Cl] % 20 == 0)
                 {
@@ -1747,53 +1877,57 @@ public Action OnPlayerRunCmd
     }
 
     /* cmdnum test, heavily modified from ssac */
-    int spikeamt = abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]);
-    // 256 is a nice number but this could be raised or lowered, haven't done TOO much testing and so far zero legits have managed to trigger this since we ignore nullcmds.
-    // this is for detecting when cheats "skip ahead" their cmdnum so they can (at my best guess) fire a "perfect shot" aka a shot with no spread
-    if (spikeamt >= 256)
+    if (maxCmdnumDetections != -1)
     {
-        char heldWeapon[256];
-        GetClientWeapon(Cl, heldWeapon, sizeof(heldWeapon));
+        int spikeamt = abs(clcmdnum[1][Cl] - clcmdnum[0][Cl]);
+        // 256 is a nice number but this could be raised or lowered, haven't done TOO much testing and so far zero legits have managed to trigger this since we ignore nullcmds.
+        // this is for detecting when cheats "skip ahead" their cmdnum so they can (at my best guess) fire a "perfect shot" aka a shot with no spread
+        // note from future steph - the above comment is wrong. it's for client side decal nospread only, lol
+        if (spikeamt >= 256)
+        {
+            char heldWeapon[256];
+            GetClientWeapon(Cl, heldWeapon, sizeof(heldWeapon));
 
-        cmdnumSpikeDetects[Cl]++;
-        PrintToImportant
-        (
-            "{hotpink}[StAC]{white} Cmdnum SPIKE of {yellow}%i{white} on %N.\nDetections so far: {palegreen}%i{white}.",
-            spikeamt,
-            Cl,
-            cmdnumSpikeDetects[Cl]
-        );
-        StacLog
-        (
-            "\n[StAC] Cmdnum SPIKE of %i on %L.\nDetections so far: %i. Held weapon: %s",
-            spikeamt,
-            Cl,
-            cmdnumSpikeDetects[Cl],
-            heldWeapon
-        );
-        StacLog
-        (
-            "\nPrevious cmdnums:\n0 %i\n1 %i\n2 %i\n3 %i\n4 %i\n5 %i\n",
-            clcmdnum[0][Cl],
-            clcmdnum[1][Cl],
-            clcmdnum[2][Cl],
-            clcmdnum[3][Cl],
-            clcmdnum[4][Cl],
-            clcmdnum[5][Cl]
-        );
-        if (cmdnumSpikeDetects[Cl] % 5 == 0)
-        {
-            StacDetectionDiscordNotify(userid, "cmdnum spike", cmdnumSpikeDetects[Cl]);
-        }
-        // punish if we reach limit set by cvar
-        if (cmdnumSpikeDetects[Cl] >= maxCmdnumDetections && maxCmdnumDetections > 0)
-        {
-            char reason[128];
-            Format(reason, sizeof(reason), "%t", "cmdnumSpikesBanMsg", cmdnumSpikeDetects[Cl]);
-            char pubreason[256];
-            Format(pubreason, sizeof(pubreason), "%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
-            BanUser(userid, reason, pubreason);
-            return Plugin_Handled;
+            cmdnumSpikeDetects[Cl]++;
+            PrintToImportant
+            (
+                "{hotpink}[StAC]{white} Cmdnum SPIKE of {yellow}%i{white} on %N.\nDetections so far: {palegreen}%i{white}.",
+                spikeamt,
+                Cl,
+                cmdnumSpikeDetects[Cl]
+            );
+            StacLog
+            (
+                "\n[StAC] Cmdnum SPIKE of %i on %L.\nDetections so far: %i. Held weapon: %s",
+                spikeamt,
+                Cl,
+                cmdnumSpikeDetects[Cl],
+                heldWeapon
+            );
+            StacLog
+            (
+                "\nPrevious cmdnums:\n0 %i\n1 %i\n2 %i\n3 %i\n4 %i\n5 %i\n",
+                clcmdnum[0][Cl],
+                clcmdnum[1][Cl],
+                clcmdnum[2][Cl],
+                clcmdnum[3][Cl],
+                clcmdnum[4][Cl],
+                clcmdnum[5][Cl]
+            );
+            if (cmdnumSpikeDetects[Cl] % 5 == 0)
+            {
+                StacDetectionDiscordNotify(userid, "cmdnum spike", cmdnumSpikeDetects[Cl]);
+            }
+            // punish if we reach limit set by cvar
+            if (cmdnumSpikeDetects[Cl] >= maxCmdnumDetections && maxCmdnumDetections > 0)
+            {
+                char reason[128];
+                Format(reason, sizeof(reason), "%t", "cmdnumSpikesBanMsg", cmdnumSpikeDetects[Cl]);
+                char pubreason[256];
+                Format(pubreason, sizeof(pubreason), "%t", "cmdnumSpikesBanAllChat", Cl, cmdnumSpikeDetects[Cl]);
+                BanUser(userid, reason, pubreason);
+                return Plugin_Handled;
+            }
         }
     }
 
@@ -1810,19 +1944,28 @@ public Action OnPlayerRunCmd
     {
         StacLog("[StAC] cmdnum DROP of %i!", clcmdnum[1][Cl] - clcmdnum[0][Cl]);
         StacLog("%i , %i", clcmdnum[1][Cl], clcmdnum[0][Cl]);
-        StacGeneralPlayerDiscordNotify(userid, "CMDNUM DROP ON THIS CLIENT BOTHER STEPH ABOUT THIS");
+        StacGeneralPlayerDiscordNotify(userid, "CMDNUM DROP ON THIS CLIENT BOTHER STEPH ABOUT THIS THIS SHOULD NEVER HAPPEN");
 
         //cmdnum = cmdnum;
         //return Plugin_Handled;
     }
 
-    // get difference between angles
+    // get difference between angles - used for psilent and aimsnap
     float aDiffReal = NormalizeAngleDiff(CalcAngDeg(clangles[0][Cl], clangles[1][Cl]));
 
     // is this a fuzzy detect or not
     int fuzzy = -1;
     // don't run this check if silent aim cvar is -1
-    if (maxPsilentDetections != -1)
+    if
+    (
+        maxPsilentDetections != -1
+        &&
+        (
+            buttons & IN_ATTACK
+            ||
+            clbuttons[1][Cl] & IN_ATTACK
+        )
+    )
     {
         if
         (
@@ -1875,15 +2018,16 @@ public Action OnPlayerRunCmd
         //  doing this might make it harder to detect legitcheaters but like. legitcheating in a 12 yr old dead game OMEGALUL who fucking cares
         if
         (
-            (
-                // needs to be more than a degree if not fuzzy
-                aDiffReal >= 1.0 && fuzzy == 0
-            )
-            ||
-            (
-                // needs to be more 3 degrees if fuzzy - laggy players can trigger fuzzy detects below 3!
-                aDiffReal >= 3.0 && fuzzy == 1
-            )
+            //(
+            //    // needs to be more than a degree if not fuzzy
+            //    aDiffReal >= 1.0 && fuzzy == 0
+            //)
+            //||
+            //(
+            //    // needs to be more than a degree if fuzzy
+            //    aDiffReal >= 1.0 && fuzzy == 1
+            //)
+            aDiffReal >= 1.0 && fuzzy >= 0
         )
         {
             pSilentDetects[Cl]++;
@@ -2001,10 +2145,6 @@ public Action OnPlayerRunCmd
         // only check if we actually did hitscan dmg in the current frame
         if
         (
-            //didBangThisFrame[0][Cl]
-            //||
-            //didHurtOnFrame[0][Cl]
-            //||
             didHurtOnFrame[1][Cl]
             &&
             didBangOnFrame[1][Cl]
@@ -2059,16 +2199,7 @@ public Action OnPlayerRunCmd
             if (aDiffToUse > -1)
             {
                 aDiffReal = aDiff[aDiffToUse];
-                // init vars - weightedx and weightedy
-                int wx;
-                int wy;
-                // TODO: MAKE SURE sensFor IS AS ACC AS POSSIBLE
-                // scale mouse movement to sensitivity
-                if (sensFor[Cl] != 0.0)
-                {
-                    wx = abs(RoundFloat(mouse[0] * ( 1 / sensFor[Cl])));
-                    wy = abs(RoundFloat(mouse[1] * ( 1 / sensFor[Cl])));
-                }
+
                 // increment aimsnap detects
                 aimsnapDetects[Cl]++;
                 // have this detection expire in 10 minutes
@@ -2302,17 +2433,6 @@ public Action OnPlayerRunCmd
             )
         )
         {
-            // init vars - weightedx and weightedy
-            int wx;
-            int wy;
-            // TODO: MAKE SURE sensFor IS AS ACC AS POSSIBLE
-            // scale mouse movement to sensitivity, ignore high sens
-            if (sensFor[Cl] != 0.0)
-            {
-                wx = abs(RoundFloat(mouse[0] * ( 1 / sensFor[Cl])));
-                wy = abs(RoundFloat(mouse[1] * ( 1 / sensFor[Cl])));
-            }
-
             tbotDetects[Cl]++;
             // have this detection expire in 10 minutes
             CreateTimer(600.0, Timer_decr_tbot, userid, TIMER_FLAG_NO_MAPCHANGE);
@@ -2380,20 +2500,6 @@ public Action OnPlayerRunCmd
                 }
             }
         }
-    }
-
-    didHurtOnFrame[2][Cl] = didHurtOnFrame[1][Cl];
-    didHurtOnFrame[1][Cl] = didHurtOnFrame[0][Cl];
-    if (didHurtOnFrame[0][Cl])
-    {
-        didHurtOnFrame[0][Cl] = false;
-    }
-
-    didBangOnFrame[2][Cl] = didBangOnFrame[1][Cl];
-    didBangOnFrame[1][Cl] = didBangOnFrame[0][Cl];
-    if (didBangOnFrame[0][Cl])
-    {
-        didBangOnFrame[0][Cl] = false;
     }
 
     return Plugin_Continue;
@@ -2478,7 +2584,7 @@ char cvarsToCheck[][] =
     "sensitivity",
     // possible cheat vars
     "cl_interpolate",
-    // this is a useless check but we leave it here to set fov randomly to annoy cheaters
+    // this is a useless check but we check it anyway
     "fov_desired",
 };
 
@@ -2686,12 +2792,14 @@ public void OnClientSettingsChanged(int Cl)
 {
     // check for "too many client settings changes" cuz nullcore and lmaobox both spam this
     // although that might be a bug with them interacting with mastercomfig ?
+    // note from future steph : nope ! it's related to "ping reducing" lol
 
     // ignore invalid clients and dead / in spec clients
     if (!IsValidClient(Cl) || !IsClientPlaying(Cl))
     {
         return;
     }
+
     // ignore if cvar says ignore
     if (maxSettingsChanges <= 0 || SettingsChangeWindow <= 0.0)
     {
@@ -2769,75 +2877,6 @@ void NetPropEtcCheck(int userid)
                 KickClient(Cl, "%t", "interpKickMsg", lerp, min_interp_ms, max_interp_ms);
                 MC_PrintToChatAll("%t", "interpAllChat", Cl, lerp);
                 StacLog("%t", "interpAllChat", Cl, lerp);
-            }
-        }
-        if (IsClientPlaying(Cl))
-        {
-            // fix broken equip slots. Note: this was patched by valve but you can still equip invalid items...
-            // ...just without the annoying unequipping other people's items part.
-            // cathook is cringe
-            // maybe one of these days i'll make this non-hardcoded and check for ANY item schema violation
-            // not right now though
-
-            // only check if player has 3 (or more, hello creators.tf) valid hats on
-            if (TF2_GetNumWearables(Cl) >= 3)
-            {
-                int slot1wearable = TF2_GetWearable(Cl, 0);
-                int slot2wearable = TF2_GetWearable(Cl, 1);
-                int slot3wearable = TF2_GetWearable(Cl, 2);
-                // check that the ents are valid and have the correct entprops
-                if
-                (
-                       IsValidEntity(slot1wearable)
-                    && IsValidEntity(slot2wearable)
-                    && IsValidEntity(slot3wearable)
-                    && HasEntProp(slot1wearable, Prop_Send, "m_iItemDefinitionIndex")
-                    && HasEntProp(slot2wearable, Prop_Send, "m_iItemDefinitionIndex")
-                    && HasEntProp(slot3wearable, Prop_Send, "m_iItemDefinitionIndex")
-                )
-                {
-                    int slot1itemdef = GetEntProp(slot1wearable, Prop_Send, "m_iItemDefinitionIndex");
-                    int slot2itemdef = GetEntProp(slot2wearable, Prop_Send, "m_iItemDefinitionIndex");
-                    int slot3itemdef = GetEntProp(slot3wearable, Prop_Send, "m_iItemDefinitionIndex");
-                    if
-                    (
-                        // frontline field recorder
-                        (
-                               slot1itemdef == 302
-                            || slot2itemdef == 302
-                            || slot3itemdef == 302
-                        )
-                        // gibus
-                        &&
-                        (
-                               slot1itemdef == 940
-                            || slot2itemdef == 940
-                            || slot3itemdef == 940
-                        )
-                        &&
-                        // skull topper
-                        (
-                               slot1itemdef == 941
-                            || slot2itemdef == 941
-                            || slot3itemdef == 941
-                        )
-                    )
-                    {
-                        if (banForMiscCheats)
-                        {
-                            char reason[128];
-                            Format(reason, sizeof(reason), "%t", "badItemSchemaBanMsg");
-                            char pubreason[256];
-                            Format(pubreason, sizeof(pubreason), "%t", "badItemSchemaBanAllChat", Cl);
-                            BanUser(userid, reason, pubreason);
-                        }
-                        else
-                        {
-                            PrintToImportant("{hotpink}[StAC]{white} [Detection] Player %L has an illegal item schema!", Cl);
-                            StacLog("[StAC] [Detection] Player %L has an illegal item schema!", Cl);
-                        }
-                    }
-                }
             }
         }
     }
@@ -3063,16 +3102,16 @@ void OpenStacLog()
 // Close log file for StAC
 void CloseStacLog()
 {
-    // delete StacLogFile;
-    if (StacLogFile != null)
-    {
-        if (DEBUG)
-        {
-            StacLog("[StAC] Closing StAC log file");
-        }
-        CloseHandle(StacLogFile);
-        StacLogFile = null;
-    }
+    delete StacLogFile;
+    //if (StacLogFile != null)
+    //{
+    //    if (DEBUG)
+    //    {
+    //        StacLog("[StAC] Closing StAC log file");
+    //    }
+    //    CloseHandle(StacLogFile);
+    //    StacLogFile = null;
+    //}
 }
 
 // log to StAC log file
@@ -3293,30 +3332,10 @@ void CPrintToSTV(const char[] format, any ...)
     MC_PrintToChat(stv, "%s", buffer);
 }
 
-// get entindx of player wearable, thanks scags
-// https://github.com/Scags/The-Dump/blob/master/scripting/tfwearables.sp#L33-L40
-int TF2_GetWearable(int client, int wearableidx)
-{
-    // 3540 linux
-    // 3520 windows
-    int offset = FindSendPropInfo("CTFPlayer", "m_flMaxspeed") - 20;
-    Address m_hMyWearables = view_as< Address >(LoadFromAddress(GetEntityAddress(client) + view_as< Address >(offset), NumberType_Int32));
-    return LoadFromAddress(m_hMyWearables + view_as< Address >(4 * wearableidx), NumberType_Int32) & 0xFFF;
-}
-
-int TF2_GetNumWearables(int client)
-{
-    // 3552 linux
-    // 3532 windows
-    int offset = FindSendPropInfo("CTFPlayer", "m_flMaxspeed") - 20 + 12;
-    return GetEntData(client, offset);
-}
-
 any abs(any x)
 {
    return x > 0 ? x : -x;
 }
-
 
 public void Steam_SteamServersConnected()
 {
@@ -3422,7 +3441,10 @@ void StacDetectionDiscordNotify(int userid, char[] type, int detections)
     Discord_EscapeString(ClName, sizeof(ClName));
     GetDemoName();
     char steamid[64];
-    GetClientAuthId(Cl, AuthId_SteamID64, steamid, sizeof(steamid));
+    if (!GetClientAuthId(Cl, AuthId_SteamID64, steamid, sizeof(steamid)))
+    {
+        steamid = "N/A";
+    }
     Format
     (
         msg,
@@ -3454,7 +3476,10 @@ void StacGeneralPlayerDiscordNotify(int userid, char[] message)
     Discord_EscapeString(ClName, sizeof(ClName));
     GetDemoName();
     char steamid[64];
-    GetClientAuthId(Cl, AuthId_SteamID64, steamid, sizeof(steamid));
+    if (!GetClientAuthId(Cl, AuthId_SteamID64, steamid, sizeof(steamid)))
+    {
+        steamid = "N/A";
+    }
     Format
     (
         msg,
