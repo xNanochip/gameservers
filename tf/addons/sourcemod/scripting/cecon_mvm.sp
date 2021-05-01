@@ -79,6 +79,9 @@ public void OnPluginStart()
 	// SigSegv extension workaround.
 	AddCommandListener(cChangelevel, "changelevel");
 	ce_mvm_restart_on_changelevel_from_mvm = CreateConVar("ce_mvm_restart_on_changelevel_from_mvm", "0");
+	
+	sigRegex  = CompileRegex("\\[\\d+\\] sigsegv MvM");
+	numbersRegex = CompileRegex("\\d+");
 }
 
 public Action cChangelevel(int client, const char[] command, int args)
@@ -390,8 +393,6 @@ public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
 public void OnMapStart()
 {
 	dhooksRegex  = CompileRegex("\\[\\d+\\] DHooks");
-	sigRegex  = CompileRegex("\\[\\d+\\] sigsegv MvM");
-	numbersRegex = CompileRegex("\\d+");
 
 	if (TF2MvM_IsPlayingMvM())
 	{
