@@ -135,7 +135,6 @@ public int EquipOverrideItem(int client, CEItem item, CEItemDefinitionCosmetic h
 public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 {
 	if (!StrEqual(type, "cosmetic"))return -1;
-	bool bShouldRemove = true;
 	
 	CEItemDefinitionCosmetic hDef;
 	if (FindCosmeticDefinitionByIndex(item.m_iItemDefinitionIndex, hDef))
@@ -189,7 +188,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 		// We weren't able to find any items with similar equip regions. We'll now go through all of our wearables
 		// and create new cosmetics.
 		int iAttempts = MAX_COSMETICS;
-		while(iAttempts > 0 && bShouldRemove)
+		while(iAttempts > 0 && !CanGetAnotherCosmetic(client))
 		{
 			iAttempts--;
 			
