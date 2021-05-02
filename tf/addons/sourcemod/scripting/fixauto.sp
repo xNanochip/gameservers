@@ -5,6 +5,7 @@
 #include <sdktools>
 #include <tf2>
 #include <gamemode>
+#include <morecolors>
 
 public Plugin myinfo =
 {
@@ -36,20 +37,23 @@ bool staydisabled;
 // stored gamemode
 TF2_GameMode gamemode;
 
+ConVar cvAuto;
 
 // enable autobalance
 void EnableAuto()
 {
     if (!staydisabled)
     {
-        SetConVarInt(FindConVar("mp_autoteambalance"), 1);
+        cvAuto.SetInt(1);
+        MC_PrintToChatAll("[{creators}Creators.TF{default}] Enabled autobalance.");
     }
 }
 
 // disable autobalance
 void DisableAuto()
 {
-    SetConVarInt(FindConVar("mp_autoteambalance"), 0);
+    cvAuto.SetInt(0);
+    MC_PrintToChatAll("[{creators}Creators.TF{default}] Disabled autobalance due to round almost being over.");
 }
 
 public void OnPluginStart()
@@ -59,6 +63,8 @@ public void OnPluginStart()
     HookEvent("teamplay_point_captured", ControlPointCapped);
     HookEntityOutput("team_round_timer", "On30SecRemain", NearEndOfRound);
     HookEntityOutput("team_round_timer", "On1MinRemain", NearEndOfRound);
+    
+    cvAuto = FindConVar("mp_autoteambalance");
 }
 
 public void OnMapStart()
