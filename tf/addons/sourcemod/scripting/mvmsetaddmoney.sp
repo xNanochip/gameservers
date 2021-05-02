@@ -25,8 +25,6 @@ public OnPluginStart()
 	RegAdminCmd("sm_addmoney", Command_AddMoney, ADMFLAG_SLAY, "Set money of specifed userid");
 	CreateConVar("sm_setaddmoney_version", VERSION, "Version of the Plugin", FCVAR_NOTIFY);
 	
-	HookEvent("player_spawn", Event_Spawn);
-	
 	AutoExecConfig(true);
 	
 	new Handle:topmenu;
