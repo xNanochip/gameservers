@@ -27,8 +27,8 @@ Handle equip_wearable_handle;
 // ***REPLACED SRC PASSWORD***
 bool set_timescale = false;
 char old_password[64];
-int models_given[33];
-int models_given_idwearable[33];
+int models_given[34];
+int models_given_idwearable[34];
 bool set_host_timescale = false;
 
 int g_lsprite;
