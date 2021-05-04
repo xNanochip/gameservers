@@ -52,6 +52,8 @@ stages:
 
                     echo "Comparing branches `git rev-parse --abbrev-ref HEAD` and $CI_COMMIT_REF_NAME."
                     if [ `git rev-parse --abbrev-ref HEAD` == $CI_COMMIT_REF_NAME ]; then
+                        echo "cleaning any old git locks..."
+                        rm .git/index.lock -v
                         echo "setting git config"
                         git config --global user.email "support@creators.tf"
                         git config --global user.name "Creators.TF Production"
