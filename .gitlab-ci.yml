@@ -65,10 +65,13 @@ stages:
                         echo "clearing stash"
                         git stash clear;
 
-                        echo "resetting to old commit"
-                        git reset --hard origin/$COMMIT_OLD
-                        
-                        echo "cleaning cfg folder"
+                        echo "fetching"
+                        git fetch origin $CI_COMMIT_REF_NAME;
+
+                        echo "resetting"
+                        git reset --hard origin/$CI_COMMIT_REF_NAME;
+
+                        echo "cleaning cfg folder" 
                         git clean -d -f -x tf/cfg/
 
                         echo "cleaning maps folder"
@@ -82,12 +85,6 @@ stages:
                         # git clean -d -f -x tf/addons/sourcemod/gamedata/
                         # THIS WILL DELETE ALL SOURCEMOD LOGS, INCLUDING STAC AND CHAT LOGS
                         # git clean -d -f -x tf/addons/sourcemod/logs/
-
-                        echo "fetching"
-                        git fetch origin $CI_COMMIT_REF_NAME;
-
-                        echo "resetting"
-                        git reset --hard origin/$CI_COMMIT_REF_NAME;
 
                         echo "chmodding"
                         chmod 744 build.sh;
