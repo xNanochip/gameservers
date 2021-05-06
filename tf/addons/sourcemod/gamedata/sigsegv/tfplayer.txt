@@ -768,6 +768,11 @@
 					type "sym"
 					sym  "_ZN9CTFPlayer12RemoveObjectEP11CBaseObject"
 				}
+				"CTFPlayer::Spawn"
+				{
+					type "sym"
+					sym  "_ZN9CTFPlayer5SpawnEv"
+				}
 				
 			//	"GetTFConditionName"
 			//	{

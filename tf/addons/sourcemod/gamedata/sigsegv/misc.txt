@@ -4248,6 +4248,24 @@
 					type "sym regex"
 					sym  "_ZN17CAttributeManager10ClearCacheEv\\.part\\..*"
 				}
+				"SV_EnsureInstanceBaseline"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_Z25SV_EnsureInstanceBaselineP11ServerClassiPKvi"
+				}
+				"PackedEntity::GetPropsChangedAfterTick"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN12PackedEntity24GetPropsChangedAfterTickEiPii"
+				}
+				"SendTable_WriteAllDeltaProps"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_Z28SendTable_WriteAllDeltaPropsPK9SendTablePKviS3_iiP8bf_write"
+				}
 				 
 			}
 			"addrs_group"
