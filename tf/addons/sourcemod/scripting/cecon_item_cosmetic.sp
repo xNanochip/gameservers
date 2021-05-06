@@ -146,6 +146,15 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 			return -1;
 		}
 		
+		// If we can get another cosmetic without having to remove anything,
+		// apply it here.
+		if (CanGetAnotherCosmetic(client))
+		{
+			// Attempt to put on our cosmetic.
+			int iWearable = EquipOverrideItem(client, item, hDef);
+			if (iWearable != -1) { return iWearable; }
+		}
+		
 		// Let's try to remove base TF2 cosmetics with similar equip regions.
 		int next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
 		while (next != -1)
@@ -184,42 +193,45 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 				if (iWearable != -1) { return iWearable; }
 			}
 		}
-		
-		// We weren't able to find any items with similar equip regions. We'll now go through all of our wearables
-		// and create new cosmetics.
-		int iAttempts = MAX_COSMETICS;
-		while(iAttempts > 0 && !CanGetAnotherCosmetic(client))
+
+		if (!CanGetAnotherCosmetic(client))
 		{
-			iAttempts--;
-			
-			next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
-			while (next != -1)
+			// We weren't able to find any items with similar equip regions. We'll now go through all of our wearables
+			// and create new cosmetics.
+			int iAttempts = MAX_COSMETICS;
+			while(iAttempts > 0 && !CanGetAnotherCosmetic(client))
 			{
-				int iEdict = next;
-				next = GetEntPropEnt(iEdict, Prop_Data, "m_hMovePeer");
-				char classname[32];
-				GetEntityClassname(iEdict, classname, 32);
-				if (strncmp(classname, "tf_wearable", 11) != 0) continue;
+				iAttempts--;
 				
-				if (!IsWearableCosmetic(iEdict))continue;
-				if (CEconItems_IsEntityCustomEconItem(iEdict))continue;
-				
-				TF2Wear_RemoveWearable(client, iEdict);
-				AcceptEntityInput(iEdict, "Kill");
-				
-				// Attempt to put on our cosmetic.
-				int iWearable = EquipOverrideItem(client, item, hDef);
-				if (iWearable != -1) 
+				next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
+				while (next != -1)
 				{
-					// We've overriden a random base TF2 cosmetic to apply this one, let the user know for the future.
-					if (!m_bHasSeenWarning[client])
-					{
-						m_bHasSeenWarning[client] = true;
-						m_hWarningTimers[client] = CreateTimer(300.0, RemoveWearableWarning, client);
-						MC_PrintToChat(client, "{red}WARNING: {default}Due to TF2's strict wearables limit, a random base TF2 cosmetic has been removed in order to apply a Creators.TF cosmetic. If you don't wish for this to happen, you can remove a C.TF cosmetic from your C.TF loadout.");
-					}
+					int iEdict = next;
+					next = GetEntPropEnt(iEdict, Prop_Data, "m_hMovePeer");
+					char classname[32];
+					GetEntityClassname(iEdict, classname, 32);
+					if (strncmp(classname, "tf_wearable", 11) != 0) continue;
 					
-					return iWearable;
+					if (!IsWearableCosmetic(iEdict))continue;
+					if (CEconItems_IsEntityCustomEconItem(iEdict))continue;
+					
+					TF2Wear_RemoveWearable(client, iEdict);
+					AcceptEntityInput(iEdict, "Kill");
+					
+					// Attempt to put on our cosmetic.
+					int iWearable = EquipOverrideItem(client, item, hDef);
+					if (iWearable != -1) 
+					{
+						// We've overriden a random base TF2 cosmetic to apply this one, let the user know for the future.
+						if (!m_bHasSeenWarning[client])
+						{
+							m_bHasSeenWarning[client] = true;
+							m_hWarningTimers[client] = CreateTimer(300.0, RemoveWearableWarning, client);
+							MC_PrintToChat(client, "{red}WARNING: {default}Due to TF2's strict wearables limit, a random base TF2 cosmetic has been removed in order to apply a Creators.TF cosmetic. If you don't wish for this to happen, you can remove a C.TF cosmetic from your C.TF loadout.");
+						}
+						
+						return iWearable;
+					}
 				}
 			}
 		}
