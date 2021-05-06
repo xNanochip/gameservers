@@ -61,7 +61,7 @@ public OnAdminMenuReady(Handle:topmenu)
 		return;
 	}
  
-	AddToTopMenu(hAdminMenu, "sm_addmoney", TopMenuObject_Item, AdminMenu_AddMoney, player_commands, "sm_addmoney", ADMFLAG_CUSTOM2);
+	AddToTopMenu(hAdminMenu, "sm_addmoney", TopMenuObject_Item, AdminMenu_AddMoney, player_commands, "sm_addmoney", ADMFLAG_SLAY);
 }
 
 public AdminMenu_AddMoney(Handle:topmenu, TopMenuAction:action, TopMenuObject:object_id, param, String:buffer[], maxlength)
@@ -75,8 +75,7 @@ public AdminMenu_AddMoney(Handle:topmenu, TopMenuAction:action, TopMenuObject:ob
 		hPlayerSelectMenu = CreateMenu(Menu_PlayerSelect);
 		SetMenuTitle(hPlayerSelectMenu, "Select Target");
 		
-		new maxClients = GetMaxClients();
-		for (new i=1; i<=maxClients; i++)
+		for (new i=1; i<=MaxClients; i++)
 		{
 			if (!IsClientInGame(i))
 			{
@@ -88,7 +87,7 @@ public AdminMenu_AddMoney(Handle:topmenu, TopMenuAction:action, TopMenuObject:ob
 			}
 			
 			new String:infostr[128];
-			Format(infostr, sizeof(infostr), "%N (%i)", i, getClientCash(i));
+			Format(infostr, sizeof(infostr), "%N (%i)", i, GetClientCash(i));
 			
 			new String:indexstr[32];
 			IntToString(i, indexstr, sizeof(indexstr)); 
@@ -159,7 +158,7 @@ public Menu_AmountSelect(Handle:menu, MenuAction:action, param1, param2)
 			
 			if (IsClientInGame(client))
 			{
-				addClientCash(client, amount);
+				AddClientCash(client, amount);
 			}
 		}
 		else
@@ -168,8 +167,7 @@ public Menu_AmountSelect(Handle:menu, MenuAction:action, param1, param2)
 			{
 				new targetteam = FindTeamByName(target);
 				
-				new maxClients = GetMaxClients();
-				for (new i=1; i<=maxClients; i++)
+				for (new i=1; i <= MaxClients; i++)
 				{
 					if (!IsClientInGame(i))
 					{
@@ -182,14 +180,13 @@ public Menu_AmountSelect(Handle:menu, MenuAction:action, param1, param2)
 					
 					if (GetClientTeam(i) == targetteam)
 					{
-						addClientCash(i, amount);
+						AddClientCash(i, amount);
 					}
 				}
 			}
 			else if (StrEqual(target, "all"))
 			{
-				new maxClients = GetMaxClients();
-				for (new i=1; i<=maxClients; i++)
+				for (new i=1; i<=MaxClients; i++)
 				{
 					if (!IsClientInGame(i))
 					{
@@ -200,7 +197,7 @@ public Menu_AmountSelect(Handle:menu, MenuAction:action, param1, param2)
 						continue;
 					}
 					
-					addClientCash(i, amount);
+					AddClientCash(i, amount);
 				}
 			}
 		}
@@ -226,37 +223,31 @@ public Action:Command_SetMoney(client, args)
 	
 	if (args < 1)
 	{
-		PrintToConsole(client, "Usage: sm_setmoney <name> <amount>");
+		PrintToConsole(client, "[SM] Usage: sm_setmoney <#userid|name> <amount>");
 		return Plugin_Handled;
 	}
 	
-	new String:amount[10];
+	decl String:amount[10], iAmount;
 	GetCmdArg(2, amount, sizeof(amount));
- 
-	new String:name[32], target = -1;
-	GetCmdArg(1, name, sizeof(name));
- 
-	for (new i=1; i<=MaxClients; i++)
+	iAmount = StringToInt(amount);
+
+	char targets[32];
+	GetCmdArg(1, targets, sizeof(targets));
+
+	decl arrTargetList[MAXPLAYERS], iCount;
+	decl String:targetName[MAX_TARGET_LENGTH];
+	decl bool:tn_is_m1;
+
+	if ((iCount = ProcessTargetString( targets, client, arrTargetList, MAXPLAYERS, COMMAND_FILTER_ALIVE, targetName, sizeof(targetName), tn_is_m1)) <= 0)
 	{
-		if (!IsClientConnected(i))
-		{
-			continue;
-		}
-		decl String:other[32];
-		GetClientName(i, other, sizeof(other));
-		if (StrEqual(name, other))
-		{
-			target = i;
-		}
-	}
- 
-	if (target == -1)
-	{
-		PrintToConsole(client, "Could not find any player with the name: \"%s\"", name);
+		ReplyToTargetError(client, iCount);
 		return Plugin_Handled;
 	}
 	
-	setClientCash(target, StringToInt(amount));
+	for (int i = 0; i < iCount; i++)
+	{
+	  SetClientCash(arrTargetList[i], iAmount);
+	}
 	
 	return Plugin_Handled;
 }
@@ -270,38 +261,31 @@ public Action:Command_AddMoney(client, args)
 	
 	if (args < 1)
 	{
-		PrintToConsole(client, "Usage: sm_addmoney <name> <amount>");
+		PrintToConsole(client, "[SM] Usage: sm_addmoney <#userid|name> <amount>");
 		return Plugin_Handled;
 	}
 	
-	new String:amount[10];
+	decl String:amount[10], iAmount;
 	GetCmdArg(2, amount, sizeof(amount));
+	iAmount = StringToInt(amount);
+
+	char targets[32];
+	GetCmdArg(1, targets, sizeof(targets));
  
-	new String:name[32], target = -1;
-	GetCmdArg(1, name, sizeof(name));
- 
-	for (new i=1; i<=MaxClients; i++)
+	decl arrTargetList[MAXPLAYERS], iCount;
+	decl String:targetName[MAX_TARGET_LENGTH];
+	decl bool:tn_is_m1;
+
+	if ((iCount = ProcessTargetString( targets, client, arrTargetList, MAXPLAYERS, COMMAND_FILTER_ALIVE, targetName, sizeof(targetName), tn_is_m1)) <= 0)
 	{
-		if (!IsClientConnected(i))
-		{
-			continue;
-		}
-		decl String:other[32];
-		GetClientName(i, other, sizeof(other));
-		if (StrEqual(name, other))
-		{
-			target = i;
-		}
-	}
- 
-	if (target == -1)
-	{
-		PrintToConsole(client, "Could not find any player with the name: \"%s\"", name);
+		ReplyToTargetError(client, iCount);
 		return Plugin_Handled;
 	}
 	
-	new currentCash = getClientCash(client);
-	setClientCash(client, StringToInt(amount)+currentCash);
+	for (int i = 0; i < iCount; i++)
+	{
+	  AddClientCash(arrTargetList[i], iAmount);
+	}
 	
 	return Plugin_Handled;
 }
@@ -318,22 +302,22 @@ stock hClientCash(amount)
 		
 		if (!IsFakeClient(i))
 		{
-			addClientCash(i, amount);
+			AddClientCash(i, amount);
 		}
 	}
 }
 
-getClientCash(client)
+GetClientCash(iClient)
 {
-	return GetEntProp(client, Prop_Send, "m_nCurrency");
+	return GetEntProp(iClient, Prop_Send, "m_nCurrency");
 }
 
-setClientCash(client, amount)
+SetClientCash(iClient, iAmount)
 {
-	SetEntProp(client, Prop_Send, "m_nCurrency", amount);
+	SetEntProp(iClient, Prop_Send, "m_nCurrency", iAmount);
 }
 
-addClientCash(client, amount)
+AddClientCash(iClient, iAmount)
 {
-	setClientCash(client, amount+getClientCash(client));
+	SetClientCash(iClient, iAmount + GetClientCash(iClient));
 }

@@ -76,7 +76,7 @@ public void OnGameFrame()
         int iBuilding = g_SentryList.Get(i);
 
         if (!IsValidEntity(iBuilding)) {
-            g_SentryList.Remove(i);
+            g_SentryList.Erase(i);
             i--;
             continue;
         }
@@ -85,12 +85,12 @@ public void OnGameFrame()
         GetEntityClassname(iBuilding, classname, sizeof(classname));
         if (!StrEqual(classname, "obj_sentrygun"))
         {
-            g_SentryList.Remove(i);
+            g_SentryList.Erase(i);
             i--;
             continue;
         }
 
-        bool bClientSideAnim = GetEntProp(iBuilding, Prop_Send, "m_bClientSideAnimation");
+        bool bClientSideAnim = !!GetEntProp(iBuilding, Prop_Send, "m_bClientSideAnimation");
         int iState = GetEntProp(iBuilding, Prop_Send, "m_iState");
 
     //  PrintToServer("bClientSideAnim %i iState %i", bClientSideAnim, iState);
