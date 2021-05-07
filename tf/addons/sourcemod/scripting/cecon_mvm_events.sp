@@ -39,6 +39,8 @@ enum struct PlayerData
 	
 	// Use this for MVP check instead.
 	int tank_damage_wave;
+
+	int tank_damage_mission;
 	
 	// Bit mask of every client index who damaged the player
 	int hit_tracker;
@@ -55,6 +57,9 @@ enum struct PlayerData
 	float pick_bomb_time;
 	float leave_spawn_time;
 
+	// Total damage dealt to bots in the mission
+	int damage_dealt_counter;
+
 	void Init(int client)
 	{
 		this.touched_cp_area = -1;
@@ -68,6 +73,7 @@ enum struct PlayerData
 		this.ignited_by = 0;
 		this.pick_bomb_time = 0.0;
 		this.leave_spawn_time = 0.0;
+		this.damage_dealt_counter = 0;
 
 	}
 }
@@ -80,7 +86,7 @@ Handle get_condition_provider_handle;
 Handle attrib_float_handle;
 
 int TankDamage[MAXPLAYERS+1] = 0;
-int BlastDamage[MAXPLAYERS+1] = 0;
+int GrenadeDamage[MAXPLAYERS+1] = 0;
 
 int bonus_currency_counter = 0;
 
@@ -188,7 +194,7 @@ public void OnClientPutInServer(int client)
 public void ResetDamage(int client)
 {
 	TankDamage[client] = 0;
-	BlastDamage[client] = 0;
+	GrenadeDamage[client] = 0;
 }
 
 // Update every second events
@@ -317,8 +323,16 @@ public Action TankTakeDamage(int tank, int &attacker, int &inflictor, float &dam
 		TankDamage[attacker] += RoundFloat(damage);
 		if (damagetype & DMG_BLAST) //Track Blast Damage
 		{
-			BlastDamage[attacker] += RoundFloat(damage);
-			//PrintToChat(attacker, "Blast Damage: %i", BlastDamage[attacker]);
+			if (IsValidEntity(weapon)) 
+			{
+				char classname[32];
+				GetEntityClassname(weapon, classname, sizeof(classname));
+				if (StrEqual(classname, "tf_weapon_grenadelauncher") || StrEqual(classname, "tf_weapon_cannon"))
+				{
+					GrenadeDamage[attacker] += RoundFloat(damage);
+				}
+			}
+			//PrintToChat(attacker, "Blast Damage: %i", GrenadeDamage[attacker]);
 		}
 		//PrintToChat(attacker, "Damage: %i", TankDamage[attacker]);
 	}
@@ -379,13 +393,14 @@ public Action mvm_mission_complete(Handle hEvent, const char[] szName, bool bDon
 			//	highest_damage_tank_player = i;
 			//}
 
-			int damage = GetEntProp(resource, Prop_Send, "m_iDamage", 4, i);
+			int damage = player_data[i].damage_dealt_counter;
 			if (damage > highest_damage) {
 				highest_damage = damage;
 				highest_damage_player = i;
 			}
 		}
 	}
+
 
 	//if (highest_damage_tank_player > 0)
 	//{
@@ -816,6 +831,7 @@ public Action mvm_wave_failed(Handle hEvent, const char[] szName, bool bDontBroa
 			{
 				PlayerDataMission data;
 				SetPlayerMissionData(i, data, true);
+				player_data[i].Init(i);
 			}
 		}
 
@@ -898,41 +914,34 @@ public void CheckTopDamage(Handle tEvent)
 {
 	int top, second, damage, topblast;
 	int topdmg = 0;
-	int seconddmg = 0;
-	char firstname[64], secondname[64];
+	int topgrenadedmg = 0;
+	//char firstname[64], secondname[64];
 	for (int player = 1; player <= MaxClients; player++)
 	{
 		if (IsClientValid(player))
 		{
 			damage = TankDamage[player];
+			int grenadedamage = GrenadeDamage[player];
 			if (damage > topdmg)
 			{
-				second = top; //move previous top player down to second
 				top = player;
 				topdmg = damage;
-				
-				//Debug
-				GetClientName(top, firstname, sizeof firstname);
-				//PrintToChatAll("FirstDamage is %s with %i damage", firstname, topdmg);
 			}
-			else if (damage > seconddmg) // Get second most damage to make sure top blast damage is also top damage
+			if (grenadedamage > topgrenadedmg)
 			{
-				second = player;
-				seconddmg = damage;
-				
-				//Debug
-				GetClientName(second, secondname, sizeof secondname);
-				//PrintToChatAll("SecondDamage is %s with %i damage", secondname, seconddmg);
+				topblast = player;
+				topgrenadedmg = grenadedamage;
 			}
 		}
 	}
 	if (IsClientValid(top))
 	{
+		CEcon_SendEventToClientFromGameEvent(top, "TF_MVM_DAMAGE_TANK_MVP", 1, tEvent);
 		//PrintToChatAll("Top Damage is client: %s", firstname);
-		if (HasTopBlastDamage(top, second))
+		if (HasTopGrenadeDamage(top, topblast))
 		{
 			topblast = top;
-			CEcon_SendEventToClientFromGameEvent(topblast, "TF_MVM_DAMAGE_TANK_MVP", 1, tEvent);
+			CEcon_SendEventToClientFromGameEvent(topblast, "TF_MVM_DAMAGE_TANK_MVP_GRENADE", 1, tEvent);
 			
 			//Debug
 			//PrintToChatAll("top damage player also has top blast damage");
@@ -940,13 +949,9 @@ public void CheckTopDamage(Handle tEvent)
 	}
 }
 
-public bool HasTopBlastDamage(int client, int other)
+public bool HasTopGrenadeDamage(int client, int other)
 {
-	if (BlastDamage[client] >= TankDamage[other])
-	{
-		return true;
-	}
-	return false;
+	return client == other;
 }
 
 public bool FilterTank(int entity, int contentsMosk, int tank)
@@ -1110,12 +1115,15 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 		}
 
 		// Find vac resist medics
-		if (healer > 0 && healer != client)
+		if (dmg_resisted > 0.0)
 		{
-			CEcon_SendEventToClientUnique(healer, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
+			if (healer > 0 && healer != client)
+			{
+				CEcon_SendEventToClientUnique(healer, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
+			}
+			CEcon_SendEventToClientUnique(client, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
 		}
-		CEcon_SendEventToClientUnique(client, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
-
+		player_data[attacker].damage_dealt_counter += damage;
 	}
 
 
@@ -1248,13 +1256,6 @@ public Action player_healed(Handle hEvent, const char[] szName, bool bDontBroadc
 				CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_HEALING_TEAMMATES", amount, hEvent);
 			}
 
-			if (player_hurt_attacker_last == patient && player_hurt_tick_last == GetGameTickCount())
-			{
-				if (TF2_IsPlayerInCondition(patient, TFCond_RegenBuffed) && GetConditionProvider(patient, TFCond_RegenBuffed) == healer)
-				{
-					CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_HEALING_CONCHEROR", amount, hEvent);
-				}
-			}
 		}
 	}
 
@@ -1282,6 +1283,10 @@ public Action player_healonhit(Handle hEvent, const char[] szName, bool bDontBro
 	if (weapon_def_index != 65535 && player_hurt_attacker_last == client && player_hurt_tick_last == GetGameTickCount())
 	{
 		CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_HEALING_ON_HIT", amount, hEvent);
+		if (TF2_IsPlayerInCondition(client, TFCond_RegenBuffed) && IsClientValid(GetConditionProvider(client, TFCond_RegenBuffed)))
+		{
+			CEcon_SendEventToClientFromGameEvent(GetConditionProvider(client, TFCond_RegenBuffed), "TF_MVM_HEALING_CONCHEROR", amount, hEvent);
+		}
 	}
 }
 
