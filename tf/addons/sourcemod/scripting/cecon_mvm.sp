@@ -452,7 +452,8 @@ public void LoadSigsegvExtension()
 	ServerCommand("sm plugins unload external/tf2-comp-fixes.smx");
 	ServerExecute();
 	// do not wait a bit
-	checkDhooksExtNum();
+	//checkDhooksExtNum();
+	LoadSigsegvForReal();
 }
 
 // moronic that sourcemod forces me to do this instead of allowing forcible unloading of extensions by name
