@@ -450,12 +450,13 @@ public void LoadSigsegvExtension()
 
 	// unload comp fixes, the only plugin that uses dhooks - this takes at least a frame
 	ServerCommand("sm plugins unload external/tf2-comp-fixes.smx");
-	// wait a bit
-	CreateTimer(0.1, checkDhooksExtNum);
+	ServerExecute();
+	// do not wait a bit
+	checkDhooksExtNum();
 }
 
 // moronic that sourcemod forces me to do this instead of allowing forcible unloading of extensions by name
-Action checkDhooksExtNum(Handle timer)
+void checkDhooksExtNum()
 {
 	char ExtsPrintOut[2048];
 	// get exts list
@@ -477,11 +478,13 @@ Action checkDhooksExtNum(Handle timer)
 					LogMessage("idid %s", idid);
 					// yep
 					ServerCommand("sm exts unload %s", idid);
-					CreateTimer(0.1, LoadSigsegvForReal);
+					ServerExecute();
+					//CreateTimer(0.1, LoadSigsegvForReal);
 				}
 			}
 		}
 	}
+	LoadSigsegvForReal();
 }
 
 void checkSigsegvExtNum()
@@ -513,7 +516,7 @@ void checkSigsegvExtNum()
 	}
 }
 
-Action LoadSigsegvForReal(Handle timer)
+void LoadSigsegvForReal()
 {
 	ServerCommand("sm exts load sigsegv.ext.2.tf2");
 	ServerExecute();
