@@ -69,7 +69,7 @@ float timeSinceNullCmd      [TFMAXPLAYERS+1];
 // STORED ANGLES PER CLIENT
 float clangles           [5][TFMAXPLAYERS+1][3];
 
-float fuzzyClangles      [3][TFMAXPLAYERS][2];
+float fuzzyClangles      [3][TFMAXPLAYERS+1][2];
 
 // STORED POS PER CLIENT
 float clpos              [2][TFMAXPLAYERS+1][3];
