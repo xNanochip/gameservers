@@ -381,15 +381,6 @@ public void OnMvMGameEnd()
 	UpdateSteamGameName();
 }
 
-public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
-{
-	// Not perfect but simplest way to do at this stage of map loading
-	if (strncmp(mapName, "mvm_", 4) == 0)
-	{
-		LoadSigsegvExtension();
-	}
-}
-
 public void OnMapStart()
 {
 	dhooksRegex  = CompileRegex("\\[\\d+\\] DHooks");
@@ -432,9 +423,28 @@ public Action Timer_BackToPubs(Handle timer, any data)
 	}
 }
 
+Action UpdateSigsegv(Handle timer)
+{
+	char sigsegvUpdatePath[256];
+	char sigsegvExtPath[256];
+	
+	BuildPath(Path_SM, sigsegvUpdatePath, sizeof(sigsegvUpdatePath), "extensions/updatesigsegv.ext.2.tf2.so");
+	BuildPath(Path_SM, sigsegvExtPath, sizeof(sigsegvExtPath), "extensions/sigsegv.ext.2.tf2.so");
+
+	DeleteFile(sigsegvExtPath);
+	RenameFile(sigsegvExtPath, sigsegvUpdatePath);
+	PrintToServer("Updating sigsegv extension");
+	
+	CreateTimer(0.1, checkDhooksExtNum);
+}
+
 public void LoadSigsegvExtension()
 {
 	
+	// unload comp fixes, the only plugin that uses dhooks - this takes at least a frame
+	ServerCommand("sm plugins unload external/tf2-comp-fixes.smx");
+	ServerExecute();
+
 	// Update true sigsegv extension file from update file
 	char sigsegvUpdatePath[256];
 	char sigsegvExtPath[256];
@@ -442,22 +452,23 @@ public void LoadSigsegvExtension()
 	BuildPath(Path_SM, sigsegvUpdatePath, sizeof(sigsegvUpdatePath), "extensions/updatesigsegv.ext.2.tf2.so");
 	BuildPath(Path_SM, sigsegvExtPath, sizeof(sigsegvExtPath), "extensions/sigsegv.ext.2.tf2.so");
 
-	if (FileExists(sigsegvUpdatePath) && FileSize(sigsegvExtPath) != FileSize(sigsegvUpdatePath)) {
+	if (FileExists(sigsegvUpdatePath) && FileSize(sigsegvExtPath) != FileSize(sigsegvUpdatePath))
+	{
 		checkSigsegvExtNum();
-		RenameFile(sigsegvExtPath, sigsegvUpdatePath);
-		PrintToServer("Updating sigsegv extension");
+		CreateTimer(0.1, UpdateSigsegv);
+	}
+	else
+	{
+		//wait a bit
+		CreateTimer(0.1, checkDhooksExtNum);
+		//LoadSigsegvForReal();
 	}
 
-	// unload comp fixes, the only plugin that uses dhooks - this takes at least a frame
-	ServerCommand("sm plugins unload external/tf2-comp-fixes.smx");
-	ServerExecute();
-	// do not wait a bit
-	//checkDhooksExtNum();
-	LoadSigsegvForReal();
+	
 }
 
 // moronic that sourcemod forces me to do this instead of allowing forcible unloading of extensions by name
-void checkDhooksExtNum()
+Action checkDhooksExtNum(Handle timer)
 {
 	char ExtsPrintOut[2048];
 	// get exts list
@@ -480,12 +491,12 @@ void checkDhooksExtNum()
 					// yep
 					ServerCommand("sm exts unload %s", idid);
 					ServerExecute();
-					//CreateTimer(0.1, LoadSigsegvForReal);
+					CreateTimer(0.1, LoadSigsegvForReal);
 				}
 			}
 		}
 	}
-	LoadSigsegvForReal();
+	LoadSigsegvForReal(null);
 }
 
 void checkSigsegvExtNum()
@@ -517,10 +528,9 @@ void checkSigsegvExtNum()
 	}
 }
 
-void LoadSigsegvForReal()
+Action LoadSigsegvForReal(Handle timer)
 {
 	ServerCommand("sm exts load sigsegv.ext.2.tf2");
-	ServerExecute();
 }
 
 public bool TF2MvM_IsPlayingMvM()
