@@ -218,7 +218,6 @@ public Action Command_GetNetInfo(int client, int args)
                 {
                     LogMessage
                     (
-                        Cl,
                         "\nNetwork info for %N:\
                         \n loss:     %.2f{white}%%\
                         \n choke:    %.2f{white}%%\
@@ -233,7 +232,6 @@ public Action Command_GetNetInfo(int client, int args)
                     );
                     LogMessage
                     (
-                        Cl,
                         "MORE network info for %N:\
                         \n avgping: %.2fms\
                         \n ping: %.2fms\
