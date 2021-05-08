@@ -1801,10 +1801,10 @@ void usercmdfloodCheck(int userid)
 {
     int Cl = GetClientOfUserId(userid);
     float timeSince10Usercmd = engineTime[0][Cl] - engineTime[10][Cl];
-    if (timeSince10Usercmd < tickinterv / 3.0)
+    if (timeSince10Usercmd < tickinterv / 3.0 && timeSince10Usercmd > 0.0)
     {
         usercmdFloodDetects[Cl]++;
-        if (usercmdFloodDetects[Cl] % 50 == 0)
+        if (usercmdFloodDetects[Cl] > 0)
         {
             PrintToImportant("{hotpink}[StAC]{white} Client %N is flooding usercmds.\nSent {mediumpurple}10{white} in {palegreen}%.3f{white}ms, expected it to take ~{yellow}%.2f{white}ms!\nDetections so far: {palegreen}%i{white}.", Cl, timeSince10Usercmd * 1000.0, tickinterv * 1000.0, usercmdFloodDetects[Cl]);
             StacLog("Client %N is flooding usercmds. Sent 10 in %.3f ms, expected it to take around %.2f ms!\nDetection threshold: %.2f ms", Cl, timeSince10Usercmd * 1000.0, tickinterv * 1000.0, tickinterv / 3.0 * 1000.0);
