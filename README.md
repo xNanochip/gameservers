@@ -15,7 +15,7 @@ File Structure: `<root install> / servers / tf / addons / sourcemod`
     - ∟ sbpp - Sourcepawn files required for SourceBans++.
 - ∟ **plugins** - Sourcemod plugins which are developed by us are auto recompiled on each server instance. So there is no need to store their compiled versions on the repo. However, if we want to keep some compiled plugins that aren't managed by us and we don't expect them to be updated so often -- we should keep them in the external folder. That folder is not ignored and git tracks all changes that were made in that folder.
 - ∟ **configs** - All of the config files required for our plugins.
-    - ∟ cecon_items - See “Injecting Custom Items”.
+    - ∟ cecon_items - See [Injecting Custom Items](https://gitlab.com/creators_tf/servers/-/wikis/Injecting-Custom-Items).
     - ∟ regextriggers - Config files required for the regex triggers plugin. Do not touch unless you know what you’re doing. 
     - ∟ sourcebans - Config files for SourceBans.
     - ∟ economy_$x.cfg - These config files are loaded in by cecon_core.smx  when it’s loaded so backend HTTP requests can go through. Do not touch these unless you have permission from a Core Developer.
