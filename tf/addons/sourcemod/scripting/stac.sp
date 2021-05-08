@@ -1439,7 +1439,6 @@ public Action OnPlayerRunCmd
 
     fakeangCheck(userid);
     cmdnumspikeCheck(userid);
-    usercmdfloodCheck(userid);
 
     // check if we're lagging.
     // cmdnums need to be sequential and not repeated
@@ -1482,6 +1481,7 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
+    usercmdfloodCheck(userid);
     fakechokeCheck(userid);
     spinbotCheck(userid, mouse);
     psilentCheck(userid, mouse);
@@ -1660,7 +1660,6 @@ void fakechokeCheck(int userid)
                 if (fakeChokeDetects[Cl] >= 5)
                 {
                     PrintToImportant("{hotpink}[StAC]{white} Player %N is repeatedly choking {mediumpurple}%i{white} ticks.\nThey may be fake-choking. Bother steph!\nDetections so far: {palegreen}%i" , Cl, amt, fakeChokeDetects[Cl]);
-
                     StacLog("Player %L is repeatedly choking exactly %i ticks - %i detections", Cl, amt, fakeChokeDetects[Cl]);
                     StacLogNetData(userid);
                     StacLogCmdnums(userid);
