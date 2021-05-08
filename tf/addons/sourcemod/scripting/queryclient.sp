@@ -219,10 +219,10 @@ public Action Command_GetNetInfo(int client, int args)
                     LogMessage
                     (
                         "\nNetwork info for %N:\
-                        \n loss:     %.2f{white}%%\
-                        \n choke:    %.2f{white}%%\
-                        \n inchoke:  %.2f{white}%%\
-                        \n outchoke: %.2f{white}%%\
+                        \n loss:     %.2f%%\
+                        \n choke:    %.2f%%\
+                        \n inchoke:  %.2f%%\
+                        \n outchoke: %.2f%%\
                         ",
                         Cl,
                         loss,

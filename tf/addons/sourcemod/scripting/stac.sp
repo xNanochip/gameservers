@@ -1484,7 +1484,7 @@ public Action OnPlayerRunCmd
         return Plugin_Continue;
     }
 
-    usercmdfloodCheck(userid);
+    //usercmdfloodCheck(userid);
     fakechokeCheck(userid);
     spinbotCheck(userid, mouse);
     psilentCheck(userid, mouse);
