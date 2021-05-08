@@ -434,7 +434,7 @@ Action UpdateSigsegv(Handle timer)
 	DeleteFile(sigsegvExtPath);
 	RenameFile(sigsegvExtPath, sigsegvUpdatePath);
 	PrintToServer("Updating sigsegv extension");
-	
+
 	CreateTimer(0.1, checkDhooksExtNum);
 }
 
@@ -492,11 +492,13 @@ Action checkDhooksExtNum(Handle timer)
 					ServerCommand("sm exts unload %s", idid);
 					ServerExecute();
 					CreateTimer(0.1, LoadSigsegvForReal);
+					return Plugin_Continue;
 				}
 			}
 		}
 	}
 	LoadSigsegvForReal(null);
+	return Plugin_Continue;
 }
 
 void checkSigsegvExtNum()
