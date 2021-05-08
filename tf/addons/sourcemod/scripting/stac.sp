@@ -1432,6 +1432,9 @@ public Action OnPlayerRunCmd
         || IsClientTimingOut(Cl)
         // this is just for halloween shit - plenty of halloween effects can and will mess up all of these checks
         || playerInBadCond[Cl] != 0
+        // exp lag check
+        || engineTime[0][Cl] - engineTime[10][Cl] == 0.0
+
     )
     {
         return Plugin_Continue;
