@@ -4290,6 +4290,12 @@
 					lib  "engine"
 					sym  "_Z30SendTable_CullPropsFromProxiesPK9SendTablePKiiiPK20CSendProxyRecipientsiS6_iPii"
 				}
+				"CCommandBuffer::AddText"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN14CCommandBuffer7AddTextEPKci"
+				}
 				
 			}
 			"addrs_group"
