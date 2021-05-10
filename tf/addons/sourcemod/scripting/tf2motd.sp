@@ -170,7 +170,10 @@ public Action cOpenWiki(int client, int args)
 	ReplaceString(missionName, sizeof missionName, "mvm_", "");
 	PrintToServer("3 %s", missionName);
 	
-	SplitString(missionName, "adv", missionName, sizeof missionName);
+	char toRemove[128];
+	SplitString(missionName, "adv", toRemove, sizeof toRemove);
+	ReplaceString(missionName, sizeof missionName, toRemove, "");
+	
 	PrintToServer("4  %s", missionName);
 	
 	/*char buffers[10][64];
