@@ -172,6 +172,7 @@ public Action cOpenWiki(int client, int args)
 	
 	char toRemove[128];
 	SplitString(missionName, "adv", toRemove, sizeof toRemove);
+	Format(toRemove, sizeof toRemove, "%sadv_", toRemove);
 	ReplaceString(missionName, sizeof missionName, toRemove, "");
 	
 	PrintToServer("4  %s", missionName);
