@@ -177,8 +177,16 @@ public Action cOpenWiki(int client, int args)
 	
 	PrintToServer("4 %s", missionName);
 	
-	missionName[0] = CharToUpper(missionName[0]);
-	missionName[FindCharInString(missionName, '_')+1] = CharToUpper(missionName[FindCharInString(missionName, '_')+1]);
+	bool upper = false;
+	for (int i = 0; i < strlen(missionName); i++)
+	{
+		if (i == 0 || upper)
+		{
+			missionName[i] = CharToUpper(missionName[i]);
+			upper = false;
+		}
+		if (missionName[i] == '_') upper = true;
+	}
 	
 	PrintToServer("5 %s", missionName);
 	
