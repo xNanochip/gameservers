@@ -532,6 +532,8 @@ Action LoadSigsegvForReal(Handle timer)
 {
 	ServerCommand("sm exts load sigsegv.ext.2.tf2");
 	ServerExecute();
+	ServerCommand("exec sigsegv_mvm_convars");
+	ServerExecute();
 }
 
 public bool TF2MvM_IsPlayingMvM()
