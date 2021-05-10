@@ -188,26 +188,23 @@ public void OnClientPutInServer(int client)
 	SetGameDescription();
 }
 
-public bool OnClientConnect (int client, char[] rejectmsg, int maxlen)
+public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 {
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if (IsClientConnected(i) && IsClientSourceTV(i))
-		{
-			SetEntityFlags(i, GetEntityFlags(i) | FL_FAKECLIENT);
-			CreateTimer(0.0,ResetSourceTVFakeClient, i);
-			break;
-		}
-	}
-	return true;
+    if (IsClientConnected(client) && IsClientSourceTV(client))
+    {
+        SetEntityFlags(client, GetEntityFlags(client) | FL_FAKECLIENT);
+        CreateTimer(1.0, ResetSourceTVFakeClient, client);
+    }
+    
+    return true;
 }
 
 public Action ResetSourceTVFakeClient(Handle timer, int data)
 {
-	if (IsClientSourceTV(data))
-	{
-		SetEntityFlags(data, GetEntityFlags(data) &~ FL_FAKECLIENT);
-	}
+    if (IsClientConnected(data) && IsClientSourceTV(data))
+    {
+            SetEntityFlags(data, GetEntityFlags(data) &~ FL_FAKECLIENT);
+    }
 }
 
 void ResetCustomUpgrades(int data)
