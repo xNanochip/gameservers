@@ -435,15 +435,15 @@ Action UpdateSigsegv(Handle timer)
 	RenameFile(sigsegvExtPath, sigsegvUpdatePath);
 	PrintToServer("Updating sigsegv extension");
 
-	CreateTimer(0.1, checkDhooksExtNum);
+	CreateTimer(0.1, LoadSigsegvForReal);
 }
 
 public void LoadSigsegvExtension()
 {
 	
 	// unload comp fixes, the only plugin that uses dhooks - this takes at least a frame
-	ServerCommand("sm plugins unload external/tf2-comp-fixes.smx");
-	ServerExecute();
+	//ServerCommand("sm plugins unload external/tf2-comp-fixes.smx");
+	//ServerExecute();
 
 	// Update true sigsegv extension file from update file
 	char sigsegvUpdatePath[256];
@@ -460,7 +460,7 @@ public void LoadSigsegvExtension()
 	else
 	{
 		//wait a bit
-		CreateTimer(0.1, checkDhooksExtNum);
+		//CreateTimer(0.1, checkDhooksExtNum);
 		//LoadSigsegvForReal();
 	}
 
@@ -491,13 +491,11 @@ Action checkDhooksExtNum(Handle timer)
 					// yep
 					ServerCommand("sm exts unload %s", idid);
 					ServerExecute();
-					CreateTimer(0.1, LoadSigsegvForReal);
 					return Plugin_Continue;
 				}
 			}
 		}
 	}
-	LoadSigsegvForReal(null);
 	return Plugin_Continue;
 }
 
@@ -533,6 +531,7 @@ void checkSigsegvExtNum()
 Action LoadSigsegvForReal(Handle timer)
 {
 	ServerCommand("sm exts load sigsegv.ext.2.tf2");
+	ServerExecute();
 }
 
 public bool TF2MvM_IsPlayingMvM()
