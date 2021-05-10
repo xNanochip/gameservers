@@ -188,9 +188,11 @@ public Action cOpenWiki(int client, int args)
 		if (missionName[i] == '_') upper = true;
 	}
 	
+	ReplaceString(missionName, sizeof missionName, "To", "to"); // this is stupid...
+	
 	PrintToServer("5 %s", missionName);
 	
-	Format(url, sizeof(url), "https://wiki.teamfortress.com/wiki/%s_(mission)#Notes", missionName);
+	Format(url, sizeof(url), "https://wiki.teamfortress.com/wiki/%s_(mission)", missionName);
 	
 	PrintToServer("6 %s", url);
 
