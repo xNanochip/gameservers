@@ -20,7 +20,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.5.1b"
+#define PLUGIN_VERSION  "4.5.2b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -210,7 +210,7 @@ Regex demonameRegexFINAL;
 Regex publicIPRegex;
 Regex IPRegex;
 
-float spinDiff[2][TFMAXPLAYERS+1];
+float spinDiff[TFMAXPLAYERS+1][2];
 
 public void OnPluginStart()
 {
@@ -2905,9 +2905,9 @@ public void OnClientSettingsChanged(int Cl)
         if (cmdrateSpamDetects[Cl] >= maxCmdrateSpamDetects && maxCmdrateSpamDetects > 0)
         {
             char reason[128];
-            Format(reason, sizeof(reason), "%t", "CmdrateSpamBanMsg", cmdrateSpamDetects[Cl]);
+            Format(reason, sizeof(reason), "%t", "cmdrateSpamBanMsg", cmdrateSpamDetects[Cl]);
             char pubreason[256];
-            Format(pubreason, sizeof(pubreason), "%t", "CmdrateSpamBanAllChat", Cl, cmdrateSpamDetects[Cl]);
+            Format(pubreason, sizeof(pubreason), "%t", "cmdrateSpamBanAllChat", Cl, cmdrateSpamDetects[Cl]);
             BanUser(userid, reason, pubreason);
             return;
         }
