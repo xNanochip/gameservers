@@ -163,19 +163,14 @@ public Action cOpenWiki(int client, int args)
 	char missionPath[PLATFORM_MAX_PATH], missionName[256];
 	int resource = FindEntityByClassname(-1, "tf_objective_resource");
 	GetEntPropString(resource, Prop_Send,"m_iszMvMPopfileName", missionPath, sizeof missionPath);
-	PrintToServer("1 %s", missionName);
 	Format(missionName, sizeof missionName, "%s", missionPath[FindCharInString(missionPath,'/',true)+1]);
-	PrintToServer("2 %s", missionName);
 	ReplaceString(missionName, sizeof missionName, ".pop", "");
 	ReplaceString(missionName, sizeof missionName, "mvm_", "");
-	PrintToServer("3 %s", missionName);
 	
 	char toRemove[128];
 	SplitString(missionName, "adv", toRemove, sizeof toRemove);
 	Format(toRemove, sizeof toRemove, "%sadv_", toRemove);
 	ReplaceString(missionName, sizeof missionName, toRemove, "");
-	
-	PrintToServer("4 %s", missionName);
 	
 	bool upper = false;
 	for (int i = 0; i < strlen(missionName); i++)
@@ -190,11 +185,7 @@ public Action cOpenWiki(int client, int args)
 	
 	ReplaceString(missionName, sizeof missionName, "To", "to"); // this is stupid...
 	
-	PrintToServer("5 %s", missionName);
-	
 	Format(url, sizeof(url), "https://wiki.teamfortress.com/wiki/%s_(mission)", missionName);
-	
-	PrintToServer("6 %s", url);
 
  	TF2Motd_OpenURL(client, url, DISABLEDHTTP_MESSAGE);
 	return Plugin_Handled;
