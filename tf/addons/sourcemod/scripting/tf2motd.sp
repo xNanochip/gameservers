@@ -45,6 +45,8 @@ public void OnPluginStart()
 
 	RegConsoleCmd("sm_profile", cOpenProfile, "Opens your Creators.TF Profile");
 	RegConsoleCmd("sm_p", cOpenProfile, "Opens your Creators.TF Profile");
+	
+	RegConsoleCmd("sm_wiki", cOpenWiki, "Opens the Wikipedia page of the current MvM Mission you're playing on.");
 }
 
 // Native and Forward creation.
@@ -139,9 +141,50 @@ public Action cOpenProfile(int client, int args)
 	char sSteamID[64];
 	char url[PLATFORM_MAX_PATH];
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-	Format(url, sizeof(url), "http://creators.tf/profiles/%s", sSteamID);
+	Format(url, sizeof(url), "https://creators.tf/profiles/%s", sSteamID);
 
  	TF2Motd_OpenURL(client, url, DISABLEDHTTP_MESSAGE);
+	return Plugin_Handled;
+}
+
+public Action cOpenWiki(int client, int args)
+{
+	if (!TF2MvM_IsPlayingMvM())
+	{
+		MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] This command currently only works while playing Mann Vs. Machine.");
+		return Plugin_Handled;
+	}
+	
+	char sSteamID[64];
+	char url[PLATFORM_MAX_PATH];
+	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
+	
+	char missionPath[PLATFORM_MAX_PATH], char missionNameRaw[256];
+	GetEntPropString(resource, Prop_Send,"m_iszMvMPopfileName", missionPath, sizeof missionPath);
+	PrintToServer("1 %s", missionName);
+	Format(missionName, sizeof missionName, "%s", missionPath[FindCharInString(missionPath,'/',true)+1]);
+	PrintToServer("2 %s", missionName);
+	ReplaceString(missionName, sizeof missionName, ".pop", "");
+	ReplaceString(missionName, sizeof missionName, "mvm_", "");
+	PrintToServer("3 %s", missionName);
+	
+	SplitString(missionName, "adv", missionName, sizeof missionName);
+	PrintToServer("4  %s", missionName);
+	
+	/*char buffers[10][64];
+	ExplodeString(missionName, "_", sizeof buffers, sizeof buffers[]);
+	for (int i = 0; i < sizeof buffers; i++)
+	{
+		if (StrEqual(buffers[i][0], "\0")) break;
+		Format(buffers[i], sizeof buffers[], "%s", ""); // i need to make the first character uppercase so it's Bionic instead of bionic.
+	}
+	
+	ReplyToCommand(client, "Current mission %s", missionPath[FindCharInString(missionPath,'/',true)+1]);
+
+	
+	Format(url, sizeof(url), "https://wiki.teamfortress.com/wiki/%s_(mission)#Notes", mission);
+
+ 	TF2Motd_OpenURL(client, url, DISABLEDHTTP_MESSAGE);*/
 	return Plugin_Handled;
 }
 
@@ -248,4 +291,9 @@ public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult r
 			m_bIsMOTDOpen[client] = true;
 		}
 	}
+}
+
+stock bool TF2MvM_IsPlayingMvM()
+{
+	return (GameRules_GetProp("m_bPlayingMannVsMachine") != 0);
 }
