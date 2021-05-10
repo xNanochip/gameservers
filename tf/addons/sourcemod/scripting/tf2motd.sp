@@ -190,20 +190,11 @@ public Action cOpenWiki(int client, int args)
 	
 	PrintToServer("5 %s", missionName);
 	
-	/*char buffers[10][64];
-	ExplodeString(missionName, "_", sizeof buffers, sizeof buffers[]);
-	for (int i = 0; i < sizeof buffers; i++)
-	{
-		if (StrEqual(buffers[i][0], "\0")) break;
-		Format(buffers[i], sizeof buffers[], "%s", ""); // i need to make the first character uppercase so it's Bionic instead of bionic.
-	}
+	Format(url, sizeof(url), "https://wiki.teamfortress.com/wiki/%s_(mission)#Notes", missionName);
 	
-	ReplyToCommand(client, "Current mission %s", missionPath[FindCharInString(missionPath,'/',true)+1]);
+	PrintToServer("6 %s", url);
 
-	
-	Format(url, sizeof(url), "https://wiki.teamfortress.com/wiki/%s_(mission)#Notes", mission);
-
- 	TF2Motd_OpenURL(client, url, DISABLEDHTTP_MESSAGE);*/
+ 	TF2Motd_OpenURL(client, url, DISABLEDHTTP_MESSAGE);
 	return Plugin_Handled;
 }
 
