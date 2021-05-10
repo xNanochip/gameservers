@@ -180,6 +180,8 @@ public Action cOpenWiki(int client, int args)
 	missionName[0] = CharToUpper(missionName[0]);
 	missionName[FindCharInString(missionName, '_')+1] = CharToUpper(missionName[FindCharInString(missionName, '_')+1]);
 	
+	PrintToServer("5 %s", missionName);
+	
 	/*char buffers[10][64];
 	ExplodeString(missionName, "_", sizeof buffers, sizeof buffers[]);
 	for (int i = 0; i < sizeof buffers; i++)
