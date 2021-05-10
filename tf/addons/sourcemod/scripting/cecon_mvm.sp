@@ -442,8 +442,8 @@ public void LoadSigsegvExtension()
 {
 	
 	// unload comp fixes, the only plugin that uses dhooks - this takes at least a frame
-	ServerCommand("sm plugins unload external/tf2-comp-fixes.smx");
-	ServerExecute();
+	//ServerCommand("sm plugins unload external/tf2-comp-fixes.smx");
+	//ServerExecute();
 
 	// Update true sigsegv extension file from update file
 	char sigsegvUpdatePath[256];
