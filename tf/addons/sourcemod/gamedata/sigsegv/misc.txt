@@ -4296,7 +4296,11 @@
 					lib  "engine"
 					sym  "_ZN14CCommandBuffer7AddTextEPKci"
 				}
-				
+				"CBasePlayer::PhysicsSimulate"
+				{
+					type "sym"
+					sym  "_ZN11CBasePlayer15PhysicsSimulateEv"
+				}
 			}
 			"addrs_group"
 			{
