@@ -81,7 +81,7 @@ int clcmdnum                [TFMAXPLAYERS+1][6];
 int cltickcount             [TFMAXPLAYERS+1][6];
 
 // MAX tickcount PER CLIENT [ for backtracking ]
-int maxTickCountFor[TFMAXPLAYERS+1];
+//int maxTickCountFor[TFMAXPLAYERS+1];
 
 // STORED BUTTONS PER CLIENT
 int clbuttons               [TFMAXPLAYERS+1][6];
@@ -796,7 +796,7 @@ void RunOptimizeCvars()
     if (jay_backtrack_enable != null && jay_backtrack_tolerance != null)
     {
         // DISABLE jaypatch
-        SetConVarInt(jay_backtrack_enable, 0);
+        SetConVarInt(jay_backtrack_enable, 1);
         // clamp jaypatch to sane values
         SetConVarInt(jay_backtrack_tolerance, Math_Clamp(GetConVarInt(jay_backtrack_tolerance), 0, 1));
     }
@@ -1419,7 +1419,7 @@ public Action OnPlayerRunCmd
     float loss = GetClientAvgLoss(Cl, NetFlow_Both) * 100.0;
     //float ping = GetClientAvgLatency(Cl, NetFlow_Both) * 1000.0;
 
-
+    /*
     // backtrack shennanigans
     maxTickCountFor[Cl] = Math_Min(maxTickCountFor[Cl], tickcount);
     if
@@ -1458,6 +1458,7 @@ public Action OnPlayerRunCmd
         // correct it anyway
         tickcount = maxTickCountFor[Cl];
     }
+    */
 
     // neither of these tests need fancy checks, so we do them first
     bhopCheck(userid);
