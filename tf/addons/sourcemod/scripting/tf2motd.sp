@@ -4,6 +4,7 @@
 #include <tf2>
 #include <tf2_stocks>
 #include <tf2motd>
+#include <morecolors>
 
 bool m_bIsMOTDOpen[MAXPLAYERS + 1];
 bool m_bWaitForNoInput[MAXPLAYERS + 1];
@@ -159,7 +160,8 @@ public Action cOpenWiki(int client, int args)
 	char url[PLATFORM_MAX_PATH];
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
 	
-	char missionPath[PLATFORM_MAX_PATH], char missionNameRaw[256];
+	char missionPath[PLATFORM_MAX_PATH], missionName[256];
+	int resource = FindEntityByClassname(-1, "tf_objective_resource");
 	GetEntPropString(resource, Prop_Send,"m_iszMvMPopfileName", missionPath, sizeof missionPath);
 	PrintToServer("1 %s", missionName);
 	Format(missionName, sizeof missionName, "%s", missionPath[FindCharInString(missionPath,'/',true)+1]);
