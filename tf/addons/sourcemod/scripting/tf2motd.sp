@@ -175,7 +175,10 @@ public Action cOpenWiki(int client, int args)
 	Format(toRemove, sizeof toRemove, "%sadv_", toRemove);
 	ReplaceString(missionName, sizeof missionName, toRemove, "");
 	
-	PrintToServer("4  %s", missionName);
+	PrintToServer("4 %s", missionName);
+	
+	missionName[0] = CharToUpper(missionName[0]);
+	missionName[FindCharInString(missionName, '_')+1] = CharToUpper(missionName[FindCharInString(missionName, '_')+1]);
 	
 	/*char buffers[10][64];
 	ExplodeString(missionName, "_", sizeof buffers, sizeof buffers[]);
