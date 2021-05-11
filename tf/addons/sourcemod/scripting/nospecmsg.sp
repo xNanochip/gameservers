@@ -23,10 +23,25 @@ public Action ePlayerTeam (Event event, const char[] name, bool dontBroadcast)
     int Cl      = GetClientOfUserId(GetEventInt(event, "userid"));
     if (team == 1 || oldteam == 1)
     {
-        if (IsClientInGame(Cl) && CheckCommandAccess(Cl, "sm_ban", ADMFLAG_ROOT))
-        {
-            SetEventBroadcast(event, true);
+        if (IsValidClient(Cl))
+	{
+	    if (CheckCommandAccess(Cl, "sm_ban", ADMFLAG_ROOT))
+            {
+                SetEventBroadcast(event, true);
+            }
         }
     }
+}
+
+// IsValidClient stock
+bool IsValidClient(int client)
+{
+    return
+    (
+        (0 < client <= MaxClients)
+        && IsClientInGame(client)
+        && !IsClientInKickQueue(client)
+        && !IsFakeClient(client)
+    );
 }
 
