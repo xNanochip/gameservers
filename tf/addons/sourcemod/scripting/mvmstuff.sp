@@ -180,14 +180,6 @@ public void OnClientPutInServer(int client)
 	SetGameDescription();
 }
 
-public Action ResetSourceTVFakeClient(Handle timer, int data)
-{
-    if (IsClientConnected(data) && IsClientSourceTV(data))
-    {
-            SetEntityFlags(data, GetEntityFlags(data) &~ FL_FAKECLIENT);
-    }
-}
-
 void ResetCustomUpgrades(int data)
 {
 	SetConVarString(FindConVar("sig_mvm_custom_upgrades_file"),"");
