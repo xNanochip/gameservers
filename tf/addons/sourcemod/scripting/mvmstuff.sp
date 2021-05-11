@@ -177,26 +177,7 @@ public void OnClientPutInServer(int client)
 		SDKHook(client, SDKHook_PreThink, OnPlayerThink);
 	}
 	
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if (IsClientConnected(i) && IsClientSourceTV(i))
-		{
-			SetEntityFlags(i, GetEntityFlags(i) &~ FL_FAKECLIENT);
-		}
-	}
-	
 	SetGameDescription();
-}
-
-public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
-{
-    if (IsClientConnected(client) && IsClientSourceTV(client))
-    {
-        SetEntityFlags(client, GetEntityFlags(client) | FL_FAKECLIENT);
-        CreateTimer(1.0, ResetSourceTVFakeClient, client);
-    }
-    
-    return true;
 }
 
 public Action ResetSourceTVFakeClient(Handle timer, int data)

@@ -114,6 +114,10 @@ public ExecuteMapSpecificConfigs() {
 				if (strncmp(currentMap, explode[0], strlen(explode[0]), false) == 0) {
 					PushArrayString(adt_configs, configFile);
 				}
+				// Config execution in case the map does not begin with prefix
+				else if (explode[0][0] == '!' && strncmp(currentMap, explode[0][1], strlen(explode[0]) - 1, false) != 0) {
+					PushArrayString(adt_configs, configFile);
+				}
 			}
 		}
 	}

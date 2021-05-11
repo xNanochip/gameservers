@@ -44,6 +44,8 @@ int m_iWaveTime;
 bool m_bWaitForGameRestart;
 bool m_bWeJustFailed;
 
+bool m_bUpdatingSigsegv;
+
 char m_sLastTourLootHash[128];
 
 Regex dhooksRegex;
@@ -381,6 +383,15 @@ public void OnMvMGameEnd()
 	UpdateSteamGameName();
 }
 
+public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
+{
+	// Not perfect but simplest way to do at this stage of map loading
+	if (strncmp(mapName, "mvm_", 4) == 0)
+	{
+		LoadSigsegvExtension();
+	}
+}
+
 public void OnMapStart()
 {
 	dhooksRegex  = CompileRegex("\\[\\d+\\] DHooks");
@@ -452,13 +463,15 @@ public void LoadSigsegvExtension()
 	BuildPath(Path_SM, sigsegvUpdatePath, sizeof(sigsegvUpdatePath), "extensions/updatesigsegv.ext.2.tf2.so");
 	BuildPath(Path_SM, sigsegvExtPath, sizeof(sigsegvExtPath), "extensions/sigsegv.ext.2.tf2.so");
 
-	if (FileExists(sigsegvUpdatePath) && FileSize(sigsegvExtPath) != FileSize(sigsegvUpdatePath))
+	if (!m_bUpdatingSigsegv && FileExists(sigsegvUpdatePath) && FileSize(sigsegvExtPath) != FileSize(sigsegvUpdatePath))
 	{
+		m_bUpdatingSigsegv = true;
 		checkSigsegvExtNum();
 		CreateTimer(0.1, UpdateSigsegv);
 	}
 	else
 	{
+		LoadSigsegvForReal(null);
 		//wait a bit
 		//CreateTimer(0.1, checkDhooksExtNum);
 		//LoadSigsegvForReal();
@@ -534,6 +547,7 @@ Action LoadSigsegvForReal(Handle timer)
 	ServerExecute();
 	ServerCommand("exec sigsegv_mvm_convars");
 	ServerExecute();
+	m_bUpdatingSigsegv = false;
 }
 
 public bool TF2MvM_IsPlayingMvM()
