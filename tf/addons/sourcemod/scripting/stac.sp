@@ -1204,7 +1204,7 @@ public void OnClientAuthorized(int Cl, const char[] auth)
     strcopy(SteamAuthFor[Cl], 64, auth);
 }
 
-//(!IsClientAuthorized(Cl) && (
+// this will return false for 300 seconds after server start. just a heads up.
 bool isSteamStable()
 {
     if (GetEngineTime() - 300.0 < steamLastOnlineTime)
@@ -3522,12 +3522,9 @@ public void SteamWorks_SteamServersDisconnected()
 
 void setSteamOnline()
 {
-    if (isSteamAlive > -1)
-    {
-        steamLastOnlineTime = GetEngineTime();
-        isSteamAlive = 1;
-        StacLog("enginetime when steam is online: %f", GetEngineTime());
-    }
+    steamLastOnlineTime = GetEngineTime();
+    isSteamAlive = 1;
+    StacLog("enginetime when steam is online: %f", GetEngineTime());
 }
 
 bool IsHalloweenCond(TFCond condition)
