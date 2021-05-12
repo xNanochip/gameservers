@@ -45,7 +45,7 @@ void EnableAuto()
     if (!staydisabled)
     {
         cvAuto.SetInt(1);
-        MC_PrintToChatAll("[{creators}Creators.TF{default}] Enabled autobalance.");
+        //MC_PrintToChatAll("[{creators}Creators.TF{default}] Enabled autobalance.");
     }
 }
 
@@ -53,7 +53,7 @@ void EnableAuto()
 void DisableAuto()
 {
     cvAuto.SetInt(0);
-    MC_PrintToChatAll("[{creators}Creators.TF{default}] Disabled autobalance due to round almost being over.");
+    //MC_PrintToChatAll("[{creators}Creators.TF{default}] Disabled autobalance due to round almost being over.");
 }
 
 public void OnPluginStart()
