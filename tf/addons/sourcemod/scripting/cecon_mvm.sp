@@ -388,7 +388,7 @@ public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
 	// Not perfect but simplest way to do at this stage of map loading
 	if (strncmp(mapName, "mvm_", 4) == 0)
 	{
-		//LoadSigsegvExtension();
+		LoadSigsegvExtension();
 	}
 }
 
@@ -434,21 +434,6 @@ public Action Timer_BackToPubs(Handle timer, any data)
 	}
 }
 
-Action UpdateSigsegv(Handle timer)
-{
-	char sigsegvUpdatePath[256];
-	char sigsegvExtPath[256];
-	
-	BuildPath(Path_SM, sigsegvUpdatePath, sizeof(sigsegvUpdatePath), "extensions/updatesigsegv.ext.2.tf2.so");
-	BuildPath(Path_SM, sigsegvExtPath, sizeof(sigsegvExtPath), "extensions/sigsegv.ext.2.tf2.so");
-
-	DeleteFile(sigsegvExtPath);
-	RenameFile(sigsegvExtPath, sigsegvUpdatePath);
-	PrintToServer("Updating sigsegv extension");
-
-	CreateTimer(0.4, LoadSigsegvForReal);
-}
-
 public void LoadSigsegvExtension()
 {
 	
@@ -457,27 +442,7 @@ public void LoadSigsegvExtension()
 	//ServerExecute();
 
 	// Update true sigsegv extension file from update file
-	char sigsegvUpdatePath[256];
-	char sigsegvExtPath[256];
-	
-	BuildPath(Path_SM, sigsegvUpdatePath, sizeof(sigsegvUpdatePath), "extensions/updatesigsegv.ext.2.tf2.so");
-	BuildPath(Path_SM, sigsegvExtPath, sizeof(sigsegvExtPath), "extensions/sigsegv.ext.2.tf2.so");
-
-	if (!m_bUpdatingSigsegv && FileExists(sigsegvUpdatePath) && FileSize(sigsegvExtPath) != FileSize(sigsegvUpdatePath))
-	{
-		m_bUpdatingSigsegv = true;
-		checkSigsegvExtNum();
-		CreateTimer(0.1, UpdateSigsegv);
-	}
-	else
-	{
-		LoadSigsegvForReal(null);
-		//wait a bit
-		//CreateTimer(0.1, checkDhooksExtNum);
-		//LoadSigsegvForReal();
-	}
-
-	
+	LoadSigsegvForReal(null);
 }
 
 // moronic that sourcemod forces me to do this instead of allowing forcible unloading of extensions by name
