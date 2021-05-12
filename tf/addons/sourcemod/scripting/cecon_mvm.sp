@@ -388,7 +388,7 @@ public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
 	// Not perfect but simplest way to do at this stage of map loading
 	if (strncmp(mapName, "mvm_", 4) == 0)
 	{
-		LoadSigsegvExtension();
+		//LoadSigsegvExtension();
 	}
 }
 
@@ -446,7 +446,7 @@ Action UpdateSigsegv(Handle timer)
 	RenameFile(sigsegvExtPath, sigsegvUpdatePath);
 	PrintToServer("Updating sigsegv extension");
 
-	CreateTimer(0.1, LoadSigsegvForReal);
+	CreateTimer(0.4, LoadSigsegvForReal);
 }
 
 public void LoadSigsegvExtension()
