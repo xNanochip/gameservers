@@ -17,6 +17,7 @@
 #include <tf_econ_data>
 
 #include <morecolors>
+#include <clientprefs>
 
 // Why? 
 // The game supports up to 8 concurrent wearables, equipped on a player.
@@ -68,6 +69,20 @@ ArrayList m_hStyles;
 bool m_bHasSeenWarning[MAXPLAYERS + 1];
 Handle m_hWarningTimers[MAXPLAYERS + 1];
 
+Handle g_WarningCookie;
+
+public void OnPluginStart()
+{
+	g_WarningCookie = RegClientCookie("cecon_cosmetic_warning_message_cookie", "Shows a warning message if a default tf2 wearable was replaced with a CreatorsTF wearable.", CookieAccess_Public);
+	SetCookiePrefabMenu(g_WarningCookie, CookieMenu_OnOff_Int, "Cosmetic Wearable Replacement Warning Chat Message");
+	
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		m_bHasSeenWarning[i] = false;
+		if (AreClientCookiesCached(i)) OnClientCookiesCached(i);
+	}
+}
+
 //--------------------------------------------------------------------
 // Purpose: When a player gets a warning saying that a base TF2 cosmetic
 // was randomly removed, a check is performed to see if they've
@@ -77,6 +92,13 @@ Handle m_hWarningTimers[MAXPLAYERS + 1];
 public void OnClientConnected(int client)
 {
 	m_bHasSeenWarning[client] = false;
+}
+
+public void OnClientCookiesCached(int client)
+{
+	char val[8];
+	GetClientCookie(client, g_WarningCookie, val, sizeof val);
+	if (StrEqual(val, "0")) m_bHasSeenWarning[client] = true;
 }
 
 public void OnClientDisconnect(int client)
