@@ -27,7 +27,7 @@ ConVar vote_em_enabled;
 ConVar vote_10mvm_enabled;
 ConVar super_shotgun_enabled;
 ConVar radius_sleeper_enabled;
-ConVar old_panic_attack_enabled;
+//ConVar old_panic_attack_enabled;
 ConVar write_wave_time_enabled;
 
 float wave_times[64];
@@ -61,7 +61,7 @@ public void OnPluginStart()
 	vote_10mvm_enabled = CreateConVar("sm_vote_10mvm", "1", "enable vote for 10 max players");
 	super_shotgun_enabled = CreateConVar("sm_super_shotgun", "1", "fan super shotgun");
 	radius_sleeper_enabled = CreateConVar("sm_radius_sleeper", "1", "radius sydney sleeper jarate");
-	old_panic_attack_enabled = CreateConVar("sm_old_panic_attack", "1", "old panic attack");
+	//old_panic_attack_enabled = CreateConVar("sm_old_panic_attack", "1", "old panic attack");
 	write_wave_time_enabled = CreateConVar("sm_write_wave_time", "1", "write wave time in client chat");
 
 
@@ -767,7 +767,7 @@ public void OnEnergyBallSpawn(int entity)
 int last_stickbomb_victim = 0;
 public Action OnAnyDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3], int damagecustom)
 {
-	if (attacker != 0 && attacker <= MaxClients && IsClientInGame(attacker) && weapon != 0 && IsValidEntity(weapon)){
+	if (attacker > 0 && attacker <= MaxClients && IsClientInGame(attacker) && weapon != 0 && IsValidEntity(weapon)){
 		if (!IsFakeClient(attacker) /*GetEntProp(victim, Prop_Send, "m_iTeamNum") == 3*/) {
 			char classname[32];
 			GetEntityClassname(weapon,classname,32);
@@ -825,7 +825,7 @@ public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& d
 		RequestFrame(ResetCaberSingle, weapon);
 	}
 
-	if (attacker != 0 && attacker != victim && attacker <= MaxClients && IsClientInGame(attacker) ){
+	if (attacker > 0 && attacker != victim && attacker <= MaxClients && IsClientInGame(attacker) ){
 
 		if (weapon > 0 && IsValidEntity(weapon) && GetClientTeam(victim) != GetClientTeam(attacker)) {
 			if( /*GetClientTeam(victim) == 3 */ /*blue*/ !vanilla_mode && !IsFakeClient(attacker)) {
@@ -1085,3 +1085,15 @@ public int BurnClient(int client, int inflictor, int weapon, float duration)
 	return entity;
 	
 }
+
+// IsValidClient stocks
+//bool IsValidClient(int client)
+//{
+//    return
+//    (
+//        (0 < client <= MaxClients)
+//        && IsClientInGame(client)
+//        && !IsClientInKickQueue(client)
+//    );
+//}
+
