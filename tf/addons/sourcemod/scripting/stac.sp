@@ -20,7 +20,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.5.3b"
+#define PLUGIN_VERSION  "4.5.4b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -1451,7 +1451,7 @@ public Action OnPlayerRunCmd
         // this is just for halloween shit - plenty of halloween effects can and will mess up all of these checks
         || playerInBadCond[Cl] != 0
         // exp lag check
-        || engineTime[Cl][0] - engineTime[Cl][10] < (tickinterv / 3.0)
+        || engineTime[Cl][0] - engineTime[Cl][10] < (tickinterv)
     )
     {
         return Plugin_Continue;
@@ -2081,16 +2081,16 @@ void aimsnapCheck(int userid)
 
             int aDiffToUse = -1;
 
-            if
-            (
-                   aDiff[0] > snapsize
-                && aDiff[1] < noisesize
-                && aDiff[2] < noisesize
-                && aDiff[3] < noisesize
-            )
-            {
-                aDiffToUse = 0;
-            }
+            //if
+            //(
+            //       aDiff[0] > snapsize
+            //    && aDiff[1] < noisesize
+            //    && aDiff[2] < noisesize
+            //    && aDiff[3] < noisesize
+            //)
+            //{
+            //    aDiffToUse = 0;
+            //}
             if
             (
                    aDiff[0] < noisesize
@@ -2101,7 +2101,7 @@ void aimsnapCheck(int userid)
             {
                 aDiffToUse = 1;
             }
-            else if
+            if
             (
                    aDiff[0] < noisesize
                 && aDiff[1] < noisesize
@@ -2111,16 +2111,16 @@ void aimsnapCheck(int userid)
             {
                 aDiffToUse = 2;
             }
-            else if
-            (
-                   aDiff[0] < noisesize
-                && aDiff[1] < noisesize
-                && aDiff[2] < noisesize
-                && aDiff[3] > snapsize
-            )
-            {
-                aDiffToUse = 3;
-            }
+            //else if
+            //(
+            //       aDiff[0] < noisesize
+            //    && aDiff[1] < noisesize
+            //    && aDiff[2] < noisesize
+            //    && aDiff[3] > snapsize
+            //)
+            //{
+            //    aDiffToUse = 3;
+            //}
             // we got one!
             if (aDiffToUse > -1)
             {
@@ -2385,6 +2385,7 @@ void StacLogNetData(userid)
         outchoke,
         choke
     );
+    StacLog("Time since last 10 ticks: %f", engineTime[Cl][0] - engineTime[Cl][10]);
 }
 
 void StacLogMouse(int userid)
