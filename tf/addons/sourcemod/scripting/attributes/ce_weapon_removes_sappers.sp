@@ -28,7 +28,7 @@ public Action OnEntitySpawned(int entity)
 
 public Action SapperDamage(int building, int &attacker, int &inflictor, float &damage, int &damagetype)
 {
-	if(IsPlayerAlive(attacker))
+	if (IsClientValid(attacker) && IsPlayerAlive(attacker))
 	{
 		int iWeapon = GetEntPropEnt(attacker, Prop_Send, "m_hActiveWeapon");
 		if (IsValidEntity(iWeapon))
@@ -56,4 +56,13 @@ public Action SapperDamage(int building, int &attacker, int &inflictor, float &d
 		}
 	}
 	return Plugin_Changed;
+}
+
+
+public bool IsClientValid(int client)
+{
+	if (client <= 0 || client > MaxClients)return false;
+	if (!IsClientInGame(client))return false;
+	if (!IsClientAuthorized(client))return false;
+	return true;
 }
