@@ -905,7 +905,7 @@ public bool IsCorrectClass(int client, TFClassType tfClass)
 {
 	//------------------------------------------------
 	// TF2 Player Class restriction.
-	if(tfClass != TFClass_Unknown)
+	if (tfClass != TFClass_Unknown)
 	{
 		if(TF2_GetPlayerClass(client) == tfClass)
 		{
@@ -1065,6 +1065,7 @@ public bool IsCorrectWeaponClassname(int client, const char[] sWeaponClassname)
 
 public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 {
+	if (!IsClientValid(client)) return false;
 	if (!IsQuestActive(xQuest)) return false;
 	if (!IsCorrectClass(client, xQuest.m_nRestrictedToClass)) return false;
 	if (!IsCorrectWeaponSlot(client, xQuest.m_sRestrictedToWeaponSlot))return false;
