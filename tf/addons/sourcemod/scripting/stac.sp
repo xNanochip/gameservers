@@ -20,7 +20,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.5.4b"
+#define PLUGIN_VERSION  "4.5.5b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -54,7 +54,7 @@ int tbotDetects             [TFMAXPLAYERS+1] = -1;
 int spinbotDetects          [TFMAXPLAYERS+1];
 int fakeChokeDetects        [TFMAXPLAYERS+1];
 int cmdrateSpamDetects      [TFMAXPLAYERS+1];
-//int backtrackDetects        [TFMAXPLAYERS+1];
+//int backtrackDetects      [TFMAXPLAYERS+1];
 
 bool waitStatus;
 
@@ -136,7 +136,7 @@ char detectionTemplate[1024] = "{ \"embeds\": [ { \"title\": \"StAC Detection!\"
 char generalTemplate[1024] = "{ \"embeds\": [ { \"title\": \"StAC Message\", \"color\": 16738740, \"fields\": [ { \"name\": \"Player\", \"value\": \"%N\" } , { \"name\": \"SteamID\", \"value\": \"%s\" }, { \"name\": \"Message\", \"value\": \"%s\" }, { \"name\": \"Hostname\", \"value\": \"%s\" }, { \"name\": \"IP\", \"value\": \"%s\" } , { \"name\": \"Current Demo Recording\", \"value\": \"%s\" } ] } ] }";
 
 // are we in MVM
-//bool MVM;
+bool MVM;
 // CVARS
 ConVar stac_enabled;
 ConVar stac_verbose_info;
@@ -274,19 +274,9 @@ public void OnPluginStart()
     // reset all client based vars on plugin reload
     for (int Cl = 1; Cl <= MaxClients; Cl++)
     {
-        if (IsValidClient(Cl))
-        {
-            int userid = GetClientUserId(Cl);
-            ClearClBasedVars(userid);
-            OnClientSettingsChanged(Cl);
-            if (!GetClientAuthId(Cl, AuthId_Steam2, SteamAuthFor[Cl], 64))
-            {
-                SteamAuthFor[Cl][0] = '\0';
-            }
-        }
         if (IsValidClientOrBot(Cl))
         {
-            SDKHook(Cl, SDKHook_OnTakeDamage, hOnTakeDamage);
+            OnClientPutInServer(Cl);
         }
     }
 
@@ -838,14 +828,16 @@ public Action checkNativesEtc(Handle timer)
         DISCORD = true;
     }
 
-    //if (GameRules_GetProp("m_bPlayingMannVsMachine") == 1)
-    //{
-    //    MVM = true;
-    //}
-    //else
-    //{
-    //    MVM = false;
-    //}
+    if (GameRules_GetProp("m_bPlayingMannVsMachine") == 1)
+    {
+        MVM = true;
+    }
+    else
+    {
+        MVM = false;
+    }
+
+    checkSteam();
 
     if (DEBUG)
     {
@@ -1098,7 +1090,7 @@ public void OnMapStart()
         RunOptimizeCvars();
     }
     timeSinceMapStart = GetEngineTime();
-    CreateTimer(0.1, checkNativesEtc);
+    CreateTimer(0.5, checkNativesEtc);
     GetConVarString(FindConVar("hostname"), hostname, sizeof(hostname));
 }
 
@@ -1173,11 +1165,11 @@ public void OnClientPutInServer(int Cl)
         }
         QueryTimer[Cl] = CreateTimer(0.1, Timer_CheckClientConVars, userid);
         //CheckAndFixCmdrate(Cl);
-        //CreateTimer(2.5, CheckAuthOn, userid);
+        CreateTimer(2.5, CheckAuthOn, userid);
     }
 }
 
-/*Action CheckAuthOn(Handle timer, int userid)
+Action CheckAuthOn(Handle timer, int userid)
 {
     int Cl = GetClientOfUserId(userid);
 
@@ -1187,33 +1179,37 @@ public void OnClientPutInServer(int Cl)
         if
         (
             !IsClientAuthorized(Cl)
-            && isSteamAlive == 1
-            && isSteamStable()
+            &&
+            shouldCheckAuth()
         )
         {
-            StacGeneralPlayerDiscordNotify(userid, "Kicked for being unauthorized w/ Steam");
+            StacLog("[StAC] enginetime %f", GetEngineTime());
+            StacGeneralPlayerDiscordNotify(userid, "Kicked for being unauthorized w/ Steam [not actually kicking STEPH CHECK THIS]");
             StacLog("[StAC] Kicking %N for not being authorized with Steam.", Cl);
-            KickClient(Cl, "[StAC] Not authorized with Steam Network, please authorize and reconnect");
+            //KickClient(Cl, "[StAC] Not authorized with Steam Network, please authorize and reconnect");
+        }
+        else
+        {
+            if (GetClientAuthId(Cl, AuthId_Steam2, SteamAuthFor[Cl], 64))
+            {
+                // sanity check?
+                if (StrEqual("BOT", SteamAuthFor[Cl]))
+                {
+                    StacGeneralPlayerDiscordNotify(userid, "client is somehow a bot???????");
+                    SteamAuthFor[Cl][0] = '\0';
+                    StacLog("Client %N is somehow a bot????", Cl);
+                }
+                LogMessage("Cl %i - %s", Cl, SteamAuthFor[Cl]);
+                return;
+            }
+            else
+            {
+                StacLog("we should never get here! auth: %s on Cl %N", SteamAuthFor[Cl], Cl);
+                StacGeneralPlayerDiscordNotify(userid, "client is somehow unauthorized and authorized at the same time?????");
+                SteamAuthFor[Cl][0] = '\0';
+            }
         }
     }
-}*/
-
-// cache this! we don't need to clear this because it gets overwritten when a new client connects with the same index
-public void OnClientAuthorized(int Cl, const char[] auth)
-{
-    strcopy(SteamAuthFor[Cl], 64, auth);
-}
-
-// this will return false for 300 seconds after server start. just a heads up.
-bool isSteamStable()
-{
-    if (GetEngineTime() - 300.0 < steamLastOnlineTime)
-    {
-        StacLog("steam went down too recently");
-        return false;
-    }
-    StacLog("steam stable! %f", steamLastOnlineTime);
-    return true;
 }
 
 public void OnClientDisconnect(int Cl)
@@ -2056,7 +2052,7 @@ void psilentCheck(int userid)
 void aimsnapCheck(int userid)
 {
     int Cl = GetClientOfUserId(userid);
-    if (maxAimsnapDetections != -1)
+    if (maxAimsnapDetections != -1 && !MVM)
     {
         float aDiff[4];
         aDiff[0] = NormalizeAngleDiff(CalcAngDeg(clangles[Cl][0], clangles[Cl][1]));
@@ -2778,7 +2774,26 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
         }
         return Plugin_Stop;
     }
+    /*
+    // MEGA DEBUG
+    if (StrContains(sArgs, "steamdown", false) != -1)
+    {
+        Steam_SteamServersDisconnected();
+        SteamWorks_SteamServersDisconnected(view_as<EResult>(1));
+        LogMessage("steamdown!");
+    }
+    if (StrContains(sArgs, "steamup", false) != -1)
+    {
+        Steam_SteamServersConnected();
+        SteamWorks_SteamServersConnected();
+        LogMessage("steamup!");
+    }
 
+    if (StrContains(sArgs, "checksteam", false) != -1)
+    {
+        LogMessage("%i", shouldCheckAuth());
+    }
+    */
     return Plugin_Continue;
 }
 
@@ -3488,13 +3503,19 @@ void CPrintToSTV(const char[] format, any ...)
 
 any abs(any x)
 {
-   return x > 0 ? x : -x;
+    return x > 0 ? x : -x;
 }
 
 public void Steam_SteamServersDisconnected()
 {
     isSteamAlive = 0;
     StacLog("[Steamtools] Steam disconnected.");
+}
+
+public void SteamWorks_SteamServersDisconnected(EResult result)
+{
+    isSteamAlive = 0;
+    StacLog("[SteamWorks] Steam disconnected.");
 }
 
 public void Steam_SteamServersConnected()
@@ -3505,27 +3526,74 @@ public void Steam_SteamServersConnected()
 
 public void SteamWorks_SteamServersConnected()
 {
+    setSteamOnline();
     StacLog("[SteamWorks] Steam connected.");
-    if (!STEAMTOOLS)
-    {
-        setSteamOnline();
-    }
-}
-
-public void SteamWorks_SteamServersDisconnected()
-{
-    StacLog("[SteamWorks] Steam disconnected.");
-    if (!STEAMTOOLS)
-    {
-        isSteamAlive = 0;
-    }
 }
 
 void setSteamOnline()
 {
-    steamLastOnlineTime = GetEngineTime();
     isSteamAlive = 1;
-    StacLog("enginetime when steam is online: %f", GetEngineTime());
+    steamLastOnlineTime = GetEngineTime();
+}
+
+// this will return false for 300 seconds after server start. just a heads up.
+bool isSteamStable()
+{
+    if (steamLastOnlineTime == 0.0 || isSteamAlive == -1)
+    {
+        checkSteam();
+        return false;
+    }
+
+    StacLog("[StAC] DEBUG: GetEngineTime() %f - 30.0 = %f >? %f", GetEngineTime(), GetEngineTime() - 30.0, steamLastOnlineTime);
+
+    if (GetEngineTime() - 30.0 > steamLastOnlineTime)
+    {
+        StacLog("steam stable!");
+        return true;
+    }
+    StacLog("steam went down too recently");
+    return false;
+}
+
+bool checkSteam()
+{
+    if (STEAMTOOLS)
+    {
+        if (Steam_IsConnected())
+        {
+            steamLastOnlineTime = GetEngineTime();
+            isSteamAlive = 1;
+            return true;
+        }
+        isSteamAlive = 0;
+    }
+    if (STEAMWORKS)
+    {
+        if (SteamWorks_IsConnected())
+        {
+            steamLastOnlineTime = GetEngineTime();
+            isSteamAlive = 1;
+            return true;
+        }
+        isSteamAlive = 0;
+    }
+    isSteamAlive = -1;
+    return false;
+}
+
+bool shouldCheckAuth()
+{
+    if
+    (
+        isSteamAlive == 1
+        &&
+        isSteamStable()
+    )
+    {
+        return true;
+    }
+    return false;
 }
 
 bool IsHalloweenCond(TFCond condition)
@@ -3738,13 +3806,11 @@ bool GetDemoName()
     {
         if (GetRegexSubString(demonameRegex, 0, demoname_etc, sizeof(demoname_etc)))
         {
-            LogMessage("demoname_etc %s", demoname_etc);
             TrimString(demoname_etc);
             if (MatchRegex(demonameRegexFINAL, demoname_etc) > 0)
             {
                 if (GetRegexSubString(demonameRegexFINAL, 0, demoname, sizeof(demoname)))
                 {
-                    LogMessage("demoname %s", demoname);
                     TrimString(demoname);
                     StripQuotes(demoname);
                     return true;
