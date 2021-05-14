@@ -1179,37 +1179,23 @@ Action CheckAuthOn(Handle timer, int userid)
         if
         (
             !IsClientAuthorized(Cl)
-            &&
-            shouldCheckAuth()
         )
         {
-            StacLog("[StAC] enginetime %f", GetEngineTime());
-            StacGeneralPlayerDiscordNotify(userid, "Kicked for being unauthorized w/ Steam [not actually kicking STEPH CHECK THIS]");
-            StacLog("[StAC] Kicking %N for not being authorized with Steam.", Cl);
-            //KickClient(Cl, "[StAC] Not authorized with Steam Network, please authorize and reconnect");
-        }
-        else
-        {
-            if (GetClientAuthId(Cl, AuthId_Steam2, SteamAuthFor[Cl], 64))
+            if (shouldCheckAuth())
             {
-                // sanity check?
-                if (StrEqual("BOT", SteamAuthFor[Cl]))
-                {
-                    StacGeneralPlayerDiscordNotify(userid, "client is somehow a bot???????");
-                    SteamAuthFor[Cl][0] = '\0';
-                    StacLog("Client %N is somehow a bot????", Cl);
-                }
-                LogMessage("Cl %i - %s", Cl, SteamAuthFor[Cl]);
-                return;
-            }
-            else
-            {
-                StacLog("we should never get here! auth: %s on Cl %N", SteamAuthFor[Cl], Cl);
-                StacGeneralPlayerDiscordNotify(userid, "client is somehow unauthorized and authorized at the same time?????");
-                SteamAuthFor[Cl][0] = '\0';
+                ("[StAC] enginetime %f", GetEngineTime());
+                StacGeneralPlayerDiscordNotify(userid, "Kicked for being unauthorized w/ Steam [not actually kicking STEPH CHECK THIS]");
+                StacLog("[StAC] Kicking %N for not being authorized with Steam.", Cl);
+                //KickClient(Cl, "[StAC] Not authorized with Steam Network, please authorize and reconnect");
             }
         }
     }
+}
+
+// cache this! we don't need to clear this because it gets overwritten when a new client connects with the same index
+public void OnClientAuthorized(int Cl, const char[] auth)
+{
+    strcopy(SteamAuthFor[Cl], sizeof(SteamAuthFor[]), auth);
 }
 
 public void OnClientDisconnect(int Cl)
@@ -3545,9 +3531,9 @@ bool isSteamStable()
         return false;
     }
 
-    StacLog("[StAC] DEBUG: GetEngineTime() %f - 30.0 = %f >? %f", GetEngineTime(), GetEngineTime() - 30.0, steamLastOnlineTime);
+    StacLog("[StAC] DEBUG: GetEngineTime() %f - 300.0 = %f >? %f", GetEngineTime(), GetEngineTime() - 300.0, steamLastOnlineTime);
 
-    if (GetEngineTime() - 30.0 > steamLastOnlineTime)
+    if (GetEngineTime() - 300.0 > steamLastOnlineTime)
     {
         StacLog("steam stable!");
         return true;
