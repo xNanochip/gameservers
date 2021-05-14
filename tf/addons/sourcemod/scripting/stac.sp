@@ -20,7 +20,7 @@
 #include <steamtools>
 #include <SteamWorks>
 
-#define PLUGIN_VERSION  "4.5.5b"
+#define PLUGIN_VERSION  "4.5.6b"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -220,6 +220,8 @@ public void OnPluginStart()
         SetFailState("[StAC] This plugin (and TF2 in general) does not support more than 33 players (32 + 1 for STV). Aborting!");
     }
 
+    LoadTranslations("common.phrases");
+
     // updater
     if (LibraryExists("updater"))
     {
@@ -232,6 +234,7 @@ public void OnPluginStart()
     // TODO: make these invisible for non admins
     RegAdminCmd("sm_stac_checkall", ForceCheckAll,    ADMFLAG_GENERIC, "Force check all client convars (ALL CLIENTS) for anticheat stuff");
     RegAdminCmd("sm_stac_detections", ShowDetections, ADMFLAG_GENERIC, "Show all current detections on all connected clients");
+    RegAdminCmd("sm_stac_getauth", GetAuth,           ADMFLAG_GENERIC, "Print StAC's cached auth for a client");
     //RegAdminCmd("sm_stac_shutup", ShutTheHellUpBitch, ADMFLAG_GENERIC, "Make StAC be quiet for whoever runs this command!");
 
     // get tick interval - some modded tf2 servers run at >66.7 tick!
@@ -857,9 +860,59 @@ public Action checkEveryone(Handle timer)
     QueryEverythingAllClients();
 }
 
-public Action ForceCheckAll(int client, int args)
+public Action ForceCheckAll(int callingCl, int args)
 {
     QueryEverythingAllClients();
+}
+
+public Action GetAuth(int callingCl, int args)
+{
+    if (args != 1)
+    {
+        ReplyToCommand(callingCl, "Usage: sm_stac_getauth <client>");
+    }
+    else
+    {
+        char arg1[32];
+        GetCmdArg(1, arg1, sizeof(arg1));
+
+        char target_name[MAX_TARGET_LENGTH];
+        int target_list[MAXPLAYERS];
+        int target_count;
+        bool tn_is_ml;
+
+        if
+        (
+            (
+                target_count = ProcessTargetString
+                (
+                    arg1,
+                    callingCl,
+                    target_list,
+                    MAXPLAYERS,
+                    COMMAND_FILTER_NO_BOTS,
+                    target_name,
+                    sizeof(target_name),
+                    tn_is_ml
+                )
+            )
+            <= 0
+        )
+        {
+            ReplyToTargetError(callingCl, target_count);
+            return Plugin_Handled;
+        }
+
+        for (int i = 0; i < target_count; i++)
+        {
+            int Cl = target_list[i];
+            if (IsValidClient(Cl))
+            {
+                ReplyToCommand(callingCl, "[StAC] Auth for \"%N\" - %s", Cl, SteamAuthFor[Cl]);
+            }
+        }
+    }
+    return Plugin_Handled;
 }
 
 public Action ShowDetections(int callingCl, int args)
@@ -1164,7 +1217,7 @@ public void OnClientPutInServer(int Cl)
             StacLog("[StAC] %N joined. Checking cvars", Cl);
         }
         QueryTimer[Cl] = CreateTimer(0.1, Timer_CheckClientConVars, userid);
-        //CheckAndFixCmdrate(Cl);
+
         CreateTimer(2.5, CheckAuthOn, userid);
     }
 }
@@ -1176,10 +1229,7 @@ Action CheckAuthOn(Handle timer, int userid)
     if (IsValidClient(Cl))
     {
         // don't bother checking if already authed and DEFINITELY don't check if steam is down or there's no way to do so thru an ext
-        if
-        (
-            !IsClientAuthorized(Cl)
-        )
+        if (!IsClientAuthorized(Cl))
         {
             if (shouldCheckAuth())
             {
@@ -1187,6 +1237,17 @@ Action CheckAuthOn(Handle timer, int userid)
                 StacGeneralPlayerDiscordNotify(userid, "Kicked for being unauthorized w/ Steam [not actually kicking STEPH CHECK THIS]");
                 StacLog("[StAC] Kicking %N for not being authorized with Steam.", Cl);
                 //KickClient(Cl, "[StAC] Not authorized with Steam Network, please authorize and reconnect");
+            }
+        }
+        else
+        {
+            char steamid[64];
+
+            // let's try to get their auth anyway
+            if (GetClientAuthId(Cl, AuthId_Steam2, steamid, sizeof(steamid)))
+            {
+                // if we get it, copy to our global list
+                strcopy(SteamAuthFor[Cl], sizeof(SteamAuthFor[]), steamid);
             }
         }
     }
@@ -2806,7 +2867,7 @@ public Action OnClientCommand(int Cl, int args)
             GetCmdArgString(ClientCommandChar[len++], sizeof(ClientCommandChar));
         }
 
-        strcopy(lastCommandFor[Cl], 256, ClientCommandChar);
+        strcopy(lastCommandFor[Cl], sizeof(lastCommandFor[]), ClientCommandChar);
         timeSinceLastCommand[Cl] = engineTime[Cl][0];
 
 
@@ -3657,7 +3718,7 @@ void StacDetectionDiscordNotify(int userid, char[] type, int detections)
     GetClientName(Cl, ClName, sizeof(ClName));
     Discord_EscapeString(ClName, sizeof(ClName));
     GetDemoName();
-    char steamid[96];
+    char steamid[64];
     // ok we store these on client connet & auth, this shouldn't be null
     if (!IsNullString(SteamAuthFor[Cl]))
     {
@@ -3712,7 +3773,7 @@ void StacGeneralPlayerDiscordNotify(int userid, char[] message)
     GetClientName(Cl, ClName, sizeof(ClName));
     Discord_EscapeString(ClName, sizeof(ClName));
     GetDemoName();
-    char steamid[96];
+    char steamid[64];
     // ok we store these on client connet & auth, this shouldn't be null
     if (!IsNullString(SteamAuthFor[Cl]))
     {
