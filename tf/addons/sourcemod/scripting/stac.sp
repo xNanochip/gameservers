@@ -1173,11 +1173,11 @@ public void OnClientPutInServer(int Cl)
         }
         QueryTimer[Cl] = CreateTimer(0.1, Timer_CheckClientConVars, userid);
         //CheckAndFixCmdrate(Cl);
-        CreateTimer(2.5, CheckAuthOn, userid);
+        //CreateTimer(2.5, CheckAuthOn, userid);
     }
 }
 
-Action CheckAuthOn(Handle timer, int userid)
+/*Action CheckAuthOn(Handle timer, int userid)
 {
     int Cl = GetClientOfUserId(userid);
 
@@ -1196,7 +1196,7 @@ Action CheckAuthOn(Handle timer, int userid)
             KickClient(Cl, "[StAC] Not authorized with Steam Network, please authorize and reconnect");
         }
     }
-}
+}*/
 
 // cache this! we don't need to clear this because it gets overwritten when a new client connects with the same index
 public void OnClientAuthorized(int Cl, const char[] auth)
