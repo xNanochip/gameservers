@@ -763,6 +763,17 @@
 					type "sym"
 					sym  "_ZN9CTFPlayer17InputIgnitePlayerER11inputdata_t"
 				}
+				"CTFPlayer::RemoveObject"
+				{
+					type "sym"
+					sym  "_ZN9CTFPlayer12RemoveObjectEP11CBaseObject"
+				}
+				"CTFPlayer::Spawn"
+				{
+					type "sym"
+					sym  "_ZN9CTFPlayer5SpawnEv"
+				}
+				
 			//	"GetTFConditionName"
 			//	{
 			//		type "sym"

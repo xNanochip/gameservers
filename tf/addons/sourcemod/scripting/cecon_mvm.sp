@@ -44,9 +44,12 @@ int m_iWaveTime;
 bool m_bWaitForGameRestart;
 bool m_bWeJustFailed;
 
+bool m_bUpdatingSigsegv;
+
 char m_sLastTourLootHash[128];
 
 Regex dhooksRegex;
+Regex sigRegex;
 Regex numbersRegex;
 
 enum struct CEItemBaseIndex
@@ -78,6 +81,9 @@ public void OnPluginStart()
 	// SigSegv extension workaround.
 	AddCommandListener(cChangelevel, "changelevel");
 	ce_mvm_restart_on_changelevel_from_mvm = CreateConVar("ce_mvm_restart_on_changelevel_from_mvm", "0");
+	
+	sigRegex  = CompileRegex("\\[\\d+\\] sigsegv MvM");
+	numbersRegex = CompileRegex("\\d+");
 }
 
 public Action cChangelevel(int client, const char[] command, int args)
@@ -389,7 +395,6 @@ public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
 public void OnMapStart()
 {
 	dhooksRegex  = CompileRegex("\\[\\d+\\] DHooks");
-	numbersRegex = CompileRegex("\\d+");
 
 	if (TF2MvM_IsPlayingMvM())
 	{
@@ -431,10 +436,13 @@ public Action Timer_BackToPubs(Handle timer, any data)
 
 public void LoadSigsegvExtension()
 {
+	
 	// unload comp fixes, the only plugin that uses dhooks - this takes at least a frame
-	ServerCommand("sm plugins unload external/tf2-comp-fixes.smx");
-	// wait a bit
-	CreateTimer(0.1, checkDhooksExtNum);
+	//ServerCommand("sm plugins unload external/tf2-comp-fixes.smx");
+	//ServerExecute();
+
+	// Update true sigsegv extension file from update file
+	LoadSigsegvForReal(null);
 }
 
 // moronic that sourcemod forces me to do this instead of allowing forcible unloading of extensions by name
@@ -460,7 +468,38 @@ Action checkDhooksExtNum(Handle timer)
 					LogMessage("idid %s", idid);
 					// yep
 					ServerCommand("sm exts unload %s", idid);
-					CreateTimer(0.1, LoadSigsegvForReal);
+					ServerExecute();
+					return Plugin_Continue;
+				}
+			}
+		}
+	}
+	return Plugin_Continue;
+}
+
+void checkSigsegvExtNum()
+{
+	char ExtsPrintOut[2048];
+	// get exts list
+	ServerCommandEx(ExtsPrintOut, sizeof(ExtsPrintOut), "sm exts list");
+	char sigid[32];
+	char idid[16];
+	if (MatchRegex(sigRegex, ExtsPrintOut) > 0)
+	{
+		// dhooks found
+		if (GetRegexSubString(sigRegex, 0, sigid, sizeof(sigid)))
+		{
+			// id [still includes the "DHooks" at the front]
+			LogMessage("sigid %s", sigid);
+			TrimString(sigid);
+			if (MatchRegex(numbersRegex, sigid) > 0)
+			{
+				if (GetRegexSubString(numbersRegex, 0, idid, sizeof(idid)))
+				{
+					LogMessage("idid %s", idid);
+					// yep
+					ServerCommand("sm exts unload %s", idid);
+					ServerExecute();
 				}
 			}
 		}
@@ -471,6 +510,9 @@ Action LoadSigsegvForReal(Handle timer)
 {
 	ServerCommand("sm exts load sigsegv.ext.2.tf2");
 	ServerExecute();
+	ServerCommand("exec sigsegv_mvm_convars");
+	ServerExecute();
+	m_bUpdatingSigsegv = false;
 }
 
 public bool TF2MvM_IsPlayingMvM()
@@ -715,7 +757,7 @@ public void SendWaveCompletionTime_Callback(HTTPRequestHandle request, bool succ
 	{
 
 		LogMessage("Updating wave information failed. Try again in a bit.");
-		CreateTimer(1.0, Timer_SendWaveAgain, hPack);
+		CreateTimer(5.0, Timer_SendWaveAgain, hPack);
 
 		return;
 	}

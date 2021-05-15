@@ -180,7 +180,7 @@ public void RequestClientSlotItems_Callback(HTTPRequestHandle request, bool succ
 			menu.AddItem("", "No items are available to equip for this slot.", ITEMDRAW_DISABLED);
 		}
 		
-		menu.ExitButton = bNoItems;
+		menu.ExitButton = true;
 		menu.Display(client, 20);
 	}
 	

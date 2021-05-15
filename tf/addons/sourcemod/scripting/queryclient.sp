@@ -12,7 +12,7 @@ public Plugin myinfo =
     name        = "Client Info Grabber",
     author      = "lugui, steph&nie",
     description = "Allows admins to query cvars and GeoIP data on clients",
-    version     = "3.0.0",
+    version     = "2.0",
 };
 
 public void OnPluginStart()
@@ -174,6 +174,8 @@ public Action Command_GetNetInfo(int client, int args)
                 // percentages
                 float loss      = GetClientAvgLoss   (Cl, NetFlow_Both) * 100.0;
                 float choke     = GetClientAvgChoke  (Cl, NetFlow_Both) * 100.0;
+                float inchoke   = GetClientAvgChoke  (Cl, NetFlow_Incoming) * 100.0;
+                float outchoke  = GetClientAvgChoke  (Cl, NetFlow_Outgoing) * 100.0;
                 // ms
                 float avgping   = GetClientAvgLatency(Cl, NetFlow_Both) * 1000.0;
                 float ping      = GetClientLatency   (Cl, NetFlow_Both) * 1000.0;
@@ -181,23 +183,66 @@ public Action Command_GetNetInfo(int client, int args)
                 // bytes/sec
                 float avgdata   = GetClientAvgData   (Cl, NetFlow_Both);
 
-                MC_PrintToChatEx
-                (
-                    user,
-                    Cl,
-                    "\n{white}Network info for {teamcolor}%N{white}:\
-                    \nloss: {springgreen}%.2f{white}%%\
-                    \nchoke: {springgreen}%.2f{white}%%\
-                    \navgping: {springgreen}%.2f{white}ms\
-                    \nping: {springgreen}%.2f{white}ms\
-                    \navgdata rate: {springgreen}%.2f{white} Bytes/sec",
-                    Cl,
-                    loss,
-                    choke,
-                    avgping,
-                    ping,
-                    avgdata
-                );
+                if (user != 0)
+                {
+                    MC_PrintToChatEx
+                    (
+                        user,
+                        Cl,
+                        "\n{white}Network info for {teamcolor}%N{white}:\
+                        \nloss: {springgreen}%.2f{white}%%\
+                        \nchoke: {springgreen}%.2f{white}%%\
+                        \ninchoke: {springgreen}%.2f{white}%%\
+                        \noutchoke: {springgreen}%.2f{white}%%",
+                        Cl,
+                        loss,
+                        choke,
+                        inchoke,
+                        outchoke
+                    );
+                    MC_PrintToChatEx
+                    (
+                        user,
+                        Cl,
+                        "{white}MORE network info for {teamcolor}%N{white}:\
+                        \navgping: {springgreen}%.2f{white}ms\
+                        \nping: {springgreen}%.2f{white}ms\
+                        \navgdata rate: {springgreen}%.2f{white} Bytes/sec",
+                        Cl,
+                        avgping,
+                        ping,
+                        avgdata
+                    );
+                }
+                else
+                {
+                    LogMessage
+                    (
+                        "\nNetwork info for %N:\
+                        \n loss:     %.2f%%\
+                        \n choke:    %.2f%%\
+                        \n inchoke:  %.2f%%\
+                        \n outchoke: %.2f%%\
+                        ",
+                        Cl,
+                        loss,
+                        choke,
+                        inchoke,
+                        outchoke
+                    );
+                    LogMessage
+                    (
+                        "MORE network info for %N:\
+                        \n avgping: %.2fms\
+                        \n ping: %.2fms\
+                        \n avgdata rate: %.2f Bytes/sec\
+                        ",
+                        Cl,
+                        avgping,
+                        ping,
+                        avgdata
+                    );
+                }
             }
         }
     }

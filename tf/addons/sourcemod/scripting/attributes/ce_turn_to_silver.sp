@@ -49,10 +49,14 @@ public void RemoveBody(any ent)
 {
 	if (IsValidEntity(ent))
 	{
+		if (!HasEntProp(ent, Prop_Send, "m_iPlayerIndex"))
+		{
+			return;
+		}
 		int client = GetEntProp(ent, Prop_Send, "m_iPlayerIndex");
 		if (IsValidClient(client) && g_bShouldBeSilver[client])
 		{
-			AcceptEntityInput(ent, "kill");
+			RemoveEntity(ent);
 			CreateSilverBody(client);
 		}
 	}

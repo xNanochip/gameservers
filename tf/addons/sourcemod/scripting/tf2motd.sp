@@ -4,6 +4,7 @@
 #include <tf2>
 #include <tf2_stocks>
 #include <tf2motd>
+#include <morecolors>
 
 bool m_bIsMOTDOpen[MAXPLAYERS + 1];
 bool m_bWaitForNoInput[MAXPLAYERS + 1];
@@ -45,6 +46,8 @@ public void OnPluginStart()
 
 	RegConsoleCmd("sm_profile", cOpenProfile, "Opens your Creators.TF Profile");
 	RegConsoleCmd("sm_p", cOpenProfile, "Opens your Creators.TF Profile");
+	
+	RegConsoleCmd("sm_wiki", cOpenWiki, "Opens the Wikipedia page of the current MvM Mission you're playing on.");
 }
 
 // Native and Forward creation.
@@ -139,7 +142,50 @@ public Action cOpenProfile(int client, int args)
 	char sSteamID[64];
 	char url[PLATFORM_MAX_PATH];
 	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
-	Format(url, sizeof(url), "http://creators.tf/profiles/%s", sSteamID);
+	Format(url, sizeof(url), "https://creators.tf/profiles/%s", sSteamID);
+
+ 	TF2Motd_OpenURL(client, url, DISABLEDHTTP_MESSAGE);
+	return Plugin_Handled;
+}
+
+public Action cOpenWiki(int client, int args)
+{
+	if (!TF2MvM_IsPlayingMvM())
+	{
+		MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] This command currently only works while playing Mann Vs. Machine.");
+		return Plugin_Handled;
+	}
+	
+	char sSteamID[64];
+	char url[PLATFORM_MAX_PATH];
+	GetClientAuthId(client, AuthId_SteamID64, sSteamID, sizeof(sSteamID));
+	
+	char missionPath[PLATFORM_MAX_PATH], missionName[256];
+	int resource = FindEntityByClassname(-1, "tf_objective_resource");
+	GetEntPropString(resource, Prop_Send,"m_iszMvMPopfileName", missionPath, sizeof missionPath);
+	Format(missionName, sizeof missionName, "%s", missionPath[FindCharInString(missionPath,'/',true)+1]);
+	ReplaceString(missionName, sizeof missionName, ".pop", "");
+	ReplaceString(missionName, sizeof missionName, "mvm_", "");
+	
+	char toRemove[128];
+	SplitString(missionName, "adv", toRemove, sizeof toRemove);
+	Format(toRemove, sizeof toRemove, "%sadv_", toRemove);
+	ReplaceString(missionName, sizeof missionName, toRemove, "");
+	
+	bool upper = false;
+	for (int i = 0; i < strlen(missionName); i++)
+	{
+		if (i == 0 || upper)
+		{
+			missionName[i] = CharToUpper(missionName[i]);
+			upper = false;
+		}
+		if (missionName[i] == '_') upper = true;
+	}
+	
+	ReplaceString(missionName, sizeof missionName, "To", "to"); // this is stupid...
+	
+	Format(url, sizeof(url), "https://wiki.teamfortress.com/wiki/%s_(mission)", missionName);
 
  	TF2Motd_OpenURL(client, url, DISABLEDHTTP_MESSAGE);
 	return Plugin_Handled;
@@ -248,4 +294,9 @@ public void QueryConVar_Motd(QueryCookie cookie, int client, ConVarQueryResult r
 			m_bIsMOTDOpen[client] = true;
 		}
 	}
+}
+
+stock bool TF2MvM_IsPlayingMvM()
+{
+	return (GameRules_GetProp("m_bPlayingMannVsMachine") != 0);
 }
