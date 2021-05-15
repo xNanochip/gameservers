@@ -253,6 +253,8 @@ public void OnPluginStart()
     // grab player spawns
     HookEvent("player_spawn", ePlayerSpawned);
 
+    HookEvent("player_disconnect", ePlayerDisconnect);
+
     // check EVERYONE's cvars on plugin reload
     CreateTimer(0.5, checkEveryone);
 
@@ -840,7 +842,10 @@ public Action checkNativesEtc(Handle timer)
         MVM = false;
     }
 
-    checkSteam();
+    if (isSteamAlive == -1)
+    {
+        checkSteam();
+    }
 
     if (DEBUG)
     {
@@ -1143,7 +1148,7 @@ public void OnMapStart()
         RunOptimizeCvars();
     }
     timeSinceMapStart = GetEngineTime();
-    CreateTimer(0.5, checkNativesEtc);
+    CreateTimer(0.1, checkNativesEtc);
     GetConVarString(FindConVar("hostname"), hostname, sizeof(hostname));
 }
 
@@ -1192,8 +1197,6 @@ void ClearClBasedVars(int userid)
     userBanQueued           [Cl] = false;
     // STORED SENS PER CLIENT
     sensFor                 [Cl] = 0.0;
-    // i don't think we need to clear this actually lol
-    //SteamAuthFor            [Cl][0] = '\0';
     // don't bother clearing arrays
 }
 
@@ -1233,10 +1236,9 @@ Action CheckAuthOn(Handle timer, int userid)
         {
             if (shouldCheckAuth())
             {
-                ("[StAC] enginetime %f", GetEngineTime());
-                StacGeneralPlayerDiscordNotify(userid, "Kicked for being unauthorized w/ Steam [not actually kicking STEPH CHECK THIS]");
+                StacGeneralPlayerDiscordNotify(userid, "Kicked for being unauthorized w/ Steam");
                 StacLog("[StAC] Kicking %N for not being authorized with Steam.", Cl);
-                //KickClient(Cl, "[StAC] Not authorized with Steam Network, please authorize and reconnect");
+                KickClient(Cl, "[StAC] Not authorized with Steam Network, please authorize and reconnect");
             }
         }
         else
@@ -1256,7 +1258,11 @@ Action CheckAuthOn(Handle timer, int userid)
 // cache this! we don't need to clear this because it gets overwritten when a new client connects with the same index
 public void OnClientAuthorized(int Cl, const char[] auth)
 {
-    strcopy(SteamAuthFor[Cl], sizeof(SteamAuthFor[]), auth);
+    if (IsValidClient(Cl))
+    {
+        strcopy(SteamAuthFor[Cl], sizeof(SteamAuthFor[]), auth);
+        LogMessage("auth %s for Cl %N", auth, Cl);
+    }
 }
 
 public void OnClientDisconnect(int Cl)
@@ -1265,6 +1271,14 @@ public void OnClientDisconnect(int Cl)
     // clear per client values
     ClearClBasedVars(userid);
     delete QueryTimer[Cl];
+}
+
+// player is OUT of the server
+public void ePlayerDisconnect(Handle event, const char[] name, bool dontBroadcast)
+{
+    int Cl = GetClientOfUserId(GetEventInt(event, "userid"));
+    SteamAuthFor[Cl][0] = '\0';
+
 }
 
 // monitor server tickrate
@@ -2899,7 +2913,7 @@ public void OnClientSettingsChanged(int Cl)
 
 void CheckAndFixCmdrate(int Cl)
 {
-        // ignore invalid clients and dead / in spec clients
+    // ignore invalid clients and dead / in spec clients
     if (!IsValidClient(Cl) || !IsClientPlaying(Cl) || !fixpingmasking)
     {
         return;
@@ -3271,7 +3285,7 @@ public void BanUser(int userid, char[] reason, char[] pubreason)
     // if we got here steam is being fussy or the client is not auth'd in some way, or the stock tf2 ban failed somehow.
     StacLog("Client %N is not authorized, steam is down, or the ban failed for some other reason. Attempting to ban with cached SteamID...", Cl);
     // if this returns true, we can still ban the client with their steamid in a roundabout and annoying way.
-    if (!IsNullString(SteamAuthFor[Cl]))
+    if (!IsActuallyNullString(SteamAuthFor[Cl]))
     {
         ServerCommand("sm_addban 0 \"%s\" %s", SteamAuthFor[Cl], reason);
         KickClient(Cl, "%s", reason);
@@ -3592,9 +3606,10 @@ bool isSteamStable()
         return false;
     }
 
-    StacLog("[StAC] DEBUG: GetEngineTime() %f - 300.0 = %f >? %f", GetEngineTime(), GetEngineTime() - 300.0, steamLastOnlineTime);
+    StacLog("[StAC] GetEngineTime() - steamLastOnlineTime = %f >? 300.0", GetEngineTime() - steamLastOnlineTime);
 
-    if (GetEngineTime() - 300.0 > steamLastOnlineTime)
+    // time since steam last came online must be greater than 300
+    if (GetEngineTime() - steamLastOnlineTime >= 300.0)
     {
         StacLog("steam stable!");
         return true;
@@ -3718,9 +3733,10 @@ void StacDetectionDiscordNotify(int userid, char[] type, int detections)
     GetClientName(Cl, ClName, sizeof(ClName));
     Discord_EscapeString(ClName, sizeof(ClName));
     GetDemoName();
-    char steamid[64];
-    // ok we store these on client connet & auth, this shouldn't be null
-    if (!IsNullString(SteamAuthFor[Cl]))
+    // we technically store the url in this so it has to be bigger
+    char steamid[96];
+    // ok we store these on client connect & auth, this shouldn't be null
+    if (!IsActuallyNullString(SteamAuthFor[Cl]))
     {
         // make this a clickable link in discord
         Format(steamid, sizeof(steamid), "[%s](https://steamid.io/lookup/%s)", SteamAuthFor[Cl], SteamAuthFor[Cl]);
@@ -3728,19 +3744,7 @@ void StacDetectionDiscordNotify(int userid, char[] type, int detections)
     // if it is, that means the plugin reloaded or steam is being fussy.
     else
     {
-        // let's try to get it again
-        if (GetClientAuthId(Cl, AuthId_Steam2, steamid, sizeof(steamid)))
-        {
-            // if we get it, copy to our global list
-            strcopy(SteamAuthFor[Cl], 64, steamid);
-            // format it just the same as the normal way
-            Format(steamid, sizeof(steamid), "[%s](https://steamid.io/lookup/%s)", steamid, steamid);
-        }
-        // shrug emoji
-        else
-        {
-            steamid = "N/A";
-        }
+        steamid = "N/A";
     }
 
     Format
@@ -3773,9 +3777,10 @@ void StacGeneralPlayerDiscordNotify(int userid, char[] message)
     GetClientName(Cl, ClName, sizeof(ClName));
     Discord_EscapeString(ClName, sizeof(ClName));
     GetDemoName();
-    char steamid[64];
-    // ok we store these on client connet & auth, this shouldn't be null
-    if (!IsNullString(SteamAuthFor[Cl]))
+    // we technically store the url in this so it has to be bigger
+    char steamid[96];
+    // ok we store these on client connect & auth, this shouldn't be null
+    if (!IsActuallyNullString(SteamAuthFor[Cl]))
     {
         // make this a clickable link in discord
         Format(steamid, sizeof(steamid), "[%s](https://steamid.io/lookup/%s)", SteamAuthFor[Cl], SteamAuthFor[Cl]);
@@ -3783,19 +3788,7 @@ void StacGeneralPlayerDiscordNotify(int userid, char[] message)
     // if it is, that means the plugin reloaded or steam is being fussy.
     else
     {
-        // let's try to get it again
-        if (GetClientAuthId(Cl, AuthId_Steam2, steamid, sizeof(steamid)))
-        {
-            // if we get it, copy to our global list
-            strcopy(SteamAuthFor[Cl], 64, steamid);
-            // format it just the same as the normal way
-            Format(steamid, sizeof(steamid), "[%s](https://steamid.io/lookup/%s)", steamid, steamid);
-        }
-        // shrug emoji
-        else
-        {
-            steamid = "N/A";
-        }
+        steamid = "N/A";
     }
     Format
     (
@@ -3911,4 +3904,14 @@ bool isTickcountInOrder(userid)
         return true;
     }
     return false;
+}
+
+// sourcemod is fucking ridiculous, "IsNullString" only checks for a specific definition of nullstring
+bool IsActuallyNullString(char[] somestring)
+{
+    if (somestring[0] != '\0')
+    {
+        return false;
+    }
+    return true;
 }
