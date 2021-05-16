@@ -52,7 +52,7 @@ comment these 2 lines if you want to compile without them.
 #endif
 #define REQUIRE_PLUGIN
 
-#define VERSION "3.0.34b"
+#define VERSION "3.0.35b"
 #define TEAM_RED 2
 #define TEAM_BLUE 3
 #define SCRAMBLE_SOUND  "vo/announcer_am_teamscramble03.mp3"
@@ -1932,7 +1932,7 @@ public Action:cmd_Scramble_Now(client, args)
 
     if (args)
     {
-        decl String:arg1[5];
+        char arg1[5];
         GetCmdArg(1, arg1, sizeof(arg1));
 
         if((fDelay = StringToFloat(arg1)) == 0.0)
@@ -1943,7 +1943,7 @@ public Action:cmd_Scramble_Now(client, args)
 
         if (args > 1)
         {
-            decl String:arg2[2];
+            char arg2[2];
             GetCmdArg(2, arg2, sizeof(arg2));
             if (!StringToInt(arg2))
                 respawn = false;
@@ -1953,13 +1953,14 @@ public Action:cmd_Scramble_Now(client, args)
         {
             char arg3[5];
             GetCmdArg(3, arg3, sizeof(arg3));
+            LogMessage("arg3 = %s", arg3);
             if (StrEqual(arg3, "-1"))
-			{
-				mode = view_as<e_ScrambleModes>(GetConVarInt(cvar_SortMode));
-				LogMessage("SCRAMBLING NOW with mode %i", view_as<int>(mode));
-				PerformScrambleNow(client, fDelay, respawn, mode);
-				return Plugin_Handled;
-			}
+            {
+                mode = view_as<e_ScrambleModes>(GetConVarInt(cvar_SortMode));
+                LogMessage("SCRAMBLING NOW with mode %i", view_as<int>(mode));
+                PerformScrambleNow(client, fDelay, respawn, mode);
+                return Plugin_Handled;
+            }
             if ((mode = e_ScrambleModes:StringToInt(arg3)) > randomSort)
             {
                 ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "NowCommandReply");
