@@ -263,7 +263,10 @@ public void Event_RoundEnd(Handle event, const char[] name, bool dontBroadcast)
 
 public Action Timer_Scramble(Handle timer)
 {
-	ServerCommand("mp_scrambleteams");
+	// scramble teams with default valve scramble
+	//ServerCommand("mp_scrambleteams");
+	// scramble teams with gscramble
+	ServerCommand("sm_scramble 0.1 1 -1");
 	int timeleft;
 	GetMapTimeLeft(timeleft);
 	int mins, secs;
