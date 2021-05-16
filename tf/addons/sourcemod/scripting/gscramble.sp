@@ -1951,8 +1951,9 @@ public Action:cmd_Scramble_Now(client, args)
 
 		if (args > 2)
 		{
-			char arg3[2];
+			char arg3[5];
 			GetCmdArg(3, arg3, sizeof(arg3));
+			LogMessage("arg3 %s", arg3);
 			if (StrEqual(arg3, "-1"))
 			{
 				mode = view_as<e_ScrambleModes>(GetConVarInt(cvar_SortMode));
