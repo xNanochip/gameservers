@@ -21,14 +21,14 @@ along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 *************************************************************************
 *************************************************************************
 File Information
-$Id: gscramble_autoscramble.sp 163 2012-08-20 09:08:31Z brutalgoergectf@gmail.com $
-$Author: brutalgoergectf@gmail.com $
-$Revision: 163 $
-$Date: 2012-08-20 03:08:31 -0600 (Mon, 20 Aug 2012) $
-$LastChangedBy: brutalgoergectf@gmail.com $
-$LastChangedDate: 2012-08-20 03:08:31 -0600 (Mon, 20 Aug 2012) $
-$URL: https://tf2tmng.googlecode.com/svn/trunk/gscramble/addons/sourcemod/scripting/gscramble/gscramble_autoscramble.sp $
-$Copyright: (c) Tf2Tmng 2009-2011$
+$Id$
+$Author$
+$Revision$
+$Date$
+$LastChangedBy$
+$LastChangedDate$
+$URL$
+$Copyright: (c) Tf2Tmng 2009-2015$
 *************************************************************************
 *************************************************************************
 */
@@ -92,7 +92,8 @@ stock bool:WinStreakCheck(winningTeam)
 	
 	if (GetConVarBool(cvar_AutoScrambleRoundCount) && g_iRoundTrigger == g_iCompleteRounds)
 	{
-		PrintToChatAll("\x01\x04[SM]\x01 %t", "RoundMessage");
+		if (!g_bSilent)
+			PrintToChatAll("\x01\x04[SM]\x01 %t", "RoundMessage");
 		LogAction(0, -1, "Rount limit reached");
 		return true;
 	}
@@ -113,7 +114,8 @@ stock bool:WinStreakCheck(winningTeam)
 		
 		if (g_aTeams[iRedWins] >= GetConVarInt(cvar_AutoScrambleWinStreak))
 		{
-			PrintToChatAll("\x01\x04[SM]\x01 %t", "RedStreak");
+			if (!g_bSilent)
+				PrintToChatAll("\x01\x04[SM]\x01 %t", "RedStreak");
 			LogAction(0, -1, "Red win limit reached");
 			return true;
 		}
@@ -130,7 +132,8 @@ stock bool:WinStreakCheck(winningTeam)
 		
 		if (g_aTeams[iBluWins] >= GetConVarInt(cvar_AutoScrambleWinStreak))
 		{
-			PrintToChatAll("\x01\x04[SM]\x01 %t", "BluStreak");
+			if (!g_bSilent)
+				PrintToChatAll("\x01\x04[SM]\x01 %t", "BluStreak");
 			LogAction(0, -1, "Blu win limit reached");
 			return true;
 		}
@@ -254,7 +257,8 @@ bool:AutoScrambleCheck(winningTeam)
 		{
 			decl String:team[3];
 			g_bRedCapped ? (team = "BLU") : (team = "RED");
-			PrintToChatAll("\x01\x04[SM]\x01 %t", "NoCapMessage", team);
+			if (!g_bSilent)
+				PrintToChatAll("\x01\x04[SM]\x01 %t", "NoCapMessage", team);
 			LogAction(0, -1, "%s did not cap a point on KOTH", team);
 			return true;
 		}
@@ -274,7 +278,8 @@ bool:AutoScrambleCheck(winningTeam)
 			if (teamDominationDiff >= dominationDiffVar)
 			{
 				LogAction(0, -1, "domination difference detected");
-				PrintToChatAll("\x01\x04[SM]\x01 %t", "DominationMessage");
+				if (!g_bSilent)
+					PrintToChatAll("\x01\x04[SM]\x01 %t", "DominationMessage");
 				return true;
 			}	
 		}
@@ -284,7 +289,8 @@ bool:AutoScrambleCheck(winningTeam)
 	if (totalFrags > 20 && iDiffVar > 0.0 && GetAvgScoreDifference(winningTeam) >= iDiffVar)
 	{
 		LogAction(0, -1, "Average score diff detected");
-		PrintToChatAll("\x01\x04[SM]\x01 %t", "RatioMessage");
+		if (!g_bSilent)
+			PrintToChatAll("\x01\x04[SM]\x01 %t", "RatioMessage");
 		return true;
 	}
 	
@@ -298,7 +304,8 @@ bool:AutoScrambleCheck(winningTeam)
 	{
 		new minutes = iSteamRollVar / 60;
 		new seconds = iSteamRollVar % 60;
-		PrintToChatAll("\x01\x04[SM]\x01 %t", "WinTime", minutes, seconds);
+		if (!g_bSilent)
+			PrintToChatAll("\x01\x04[SM]\x01 %t", "WinTime", minutes, seconds);
 		LogAction(0, -1, "steam roll detected");
 		return true;		
 	}
@@ -309,7 +316,8 @@ bool:AutoScrambleCheck(winningTeam)
 	{		
 		if (ratio >= iFragRatioVar)
 		{
-			PrintToChatAll("\x01\x04[SM]\x01 %t", "FragDetection");
+			if (!g_bSilent)
+				PrintToChatAll("\x01\x04[SM]\x01 %t", "FragDetection");
 			LogAction(0, -1, "Frag ratio detected");
 			return true;			
 		}
@@ -398,14 +406,15 @@ public Action:timer_ScrambleDelay(Handle:timer, any:data)  // scramble logic
 	}
 	
 	CreateTimer(0.1, timer_AfterScramble, spawn, TIMER_FLAG_NO_MAPCHANGE);	
-	if (g_bPreGameScramble)
+	if (g_bPreGameScramble && !g_bSilent)
 	{
 		PrintToChatAll("\x01\x04[SM]\x01 %t", "PregameScrambled");
 		g_bPreGameScramble = false;
 	}
 	else
 	{
-		PrintToChatAll("\x01\x04[SM]\x01 %t", "Scrambled");		
+		if (!g_bSilent)
+			PrintToChatAll("\x01\x04[SM]\x01 %t", "Scrambled");		
 	}
 	
 	if (g_bIsTimer && g_RoundState == setup && GetConVarBool(cvar_SetupRestore))
@@ -413,8 +422,19 @@ public Action:timer_ScrambleDelay(Handle:timer, any:data)  // scramble logic
 		TF2_ResetSetup();
 	}
 	
+	// Fire le event
+	FireScrambleEvent();
 	return Plugin_Handled;
 }
+
+FireScrambleEvent()
+{
+
+	new Handle:event = CreateEvent("teamplay_alert");
+	SetEventInt(event, "alert_type", 0);
+	FireEvent(event);
+}
+	
 
 stock PerformTopSwap()
 {
@@ -426,7 +446,8 @@ stock PerformTopSwap()
 		iArray2[MaxClients][2],
 		iCount1,
 		iCount2;
-		
+		//bool:bDisableImmunity = DisableScrambleImmunityCheck();
+
 	if (iSwaps > iTeam1 || iSwaps > iTeam2)
 	{
 		if (iTeam1 > iTeam2)
@@ -440,7 +461,7 @@ stock PerformTopSwap()
 	}
 	for (new i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientInGame(i) && IsValidTarget(i, scramble))
+		if (IsClientInGame(i) && IsValidTarget(i))
 		{
 			if (GetClientTeam(i) == TEAM_RED)
 			{
@@ -490,6 +511,8 @@ stock PerformTopSwap()
 
 stock DoRandomSort(array[], count)
 {
+	if (!count)
+		return;
 	new iRedSelections,
 		iBluSelections,
 		iRedValidCount,
@@ -520,8 +543,11 @@ stock DoRandomSort(array[], count)
 			iBluValidCount++;
 		}
 	}
-	iRedSelections = RoundToFloor(FloatDiv(FloatMul(fSelections, (float(iRedCount) + float(iBluCount))), 2.0));
+	iRedSelections = RoundToCeil(FloatMul(fSelections, (float(iRedCount) + float(iBluCount))));
 	iBluSelections = iRedSelections;
+	iBluSelections /= 2;
+	iRedSelections /= 2;
+
 	
 	if ((iTeamDiff = RoundFloat(FloatAbs(FloatSub(float(iRedCount),float(iBluCount))))) >= 2)
 	{
@@ -601,7 +627,7 @@ stock DoRandomSort(array[], count)
 stock SelectRandom(arr[][], size, numSelectsToMake) 
 { 
 	new temp[size], deselected;	 
-	while(numSelectsToMake-- > 0) 
+	while(--numSelectsToMake > 0) 
 	{ 
 		deselected = 0; 
 		for(new i = 0; i < size; i++)
@@ -671,7 +697,7 @@ Float:GetClientScrambleScore(client, e_ScrambleModes:mode)
 		case score:
 		{
 			#if defined DEBUG
-			LogToFile("gscramble.debug.txt", "GRABBING TOTAL SCORE");
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "GRABBING TOTAL SCORE");
 			#endif		
 			
 			return float(Totalscore);
@@ -755,6 +781,7 @@ stock ScramblePlayers(e_ScrambleModes:scrambleMode)
 	new i, iCount, iRedImmune, iBluImmune, iSwaps, iTempTeam,
 		bool:bToRed, iImmuneTeam, iImmuneDiff, client;
 	new iValidPlayers[GetClientCount()];
+		//bool:bDisableCheck = DisableScrambleImmunityCheck();
 	
 	/**
 	Start of by getting a list of the valid players and finding out who are immune
@@ -763,7 +790,7 @@ stock ScramblePlayers(e_ScrambleModes:scrambleMode)
 	{
 		if (IsClientInGame(i) && (IsValidTeam(i) || IsValidSpectator(i)))
 		{
-			if (IsValidTarget(i, scramble))
+			if (IsValidTarget(i))
 			{
 				iValidPlayers[iCount] = i;
 				iCount++;
@@ -771,7 +798,7 @@ stock ScramblePlayers(e_ScrambleModes:scrambleMode)
 			else
 			{
 				#if defined DEBUG
-				LogToFile("gscramble.debug.txt", "Found a scramble immune person");
+				LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Found a scramble immune person");
 				#endif
 				if (GetClientTeam(i) == TEAM_RED)
 				{
@@ -826,9 +853,9 @@ stock ScramblePlayers(e_ScrambleModes:scrambleMode)
 		// print the array bore and after sorting
 		for (i = 0; i < iCount; i++)
 		{
-			LogToFile("gscramble.debug.txt", "%f %f", scoreArray[i][0], scoreArray[i][1]);
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "%f %f", scoreArray[i][0], scoreArray[i][1]);
 		}
-		LogToFile("gscramble.debug.txt", "---------------------------");
+		LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "---------------------------");
 		#endif
 		
 		/** 
@@ -841,9 +868,9 @@ stock ScramblePlayers(e_ScrambleModes:scrambleMode)
 		// print the array bore and after sorting
 		for (i = 0; i < iCount; i++)
 		{
-			LogToFile("gscramble.debug.txt", "%f %f", scoreArray[i][0], scoreArray[i][1]);
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "%f %f", scoreArray[i][0], scoreArray[i][1]);
 		}
-		LogToFile("gscramble.debug.txt", "---------------------------\nEND\n");
+		LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "---------------------------\nEND\n");
 		#endif
 		
 		for (i = 0; i < iCount; i++)
@@ -860,7 +887,7 @@ stock ScramblePlayers(e_ScrambleModes:scrambleMode)
 		{
 			if (IsClientInGame(i) && IsValidTeam(i))
 			{
-				if (IsValidTarget(i, scramble))
+				if (IsValidTarget(i))
 				{
 					iValidPlayers[iCount] = i;
 					iCount++;
@@ -923,3 +950,34 @@ PrintScrambleStats(swaps)
 		PrintToChatAll("\x01\x04[SM]\x01 %t", "StatsMessage", swaps, GetClientCount(true), sPercent);	
 	}
 }
+
+/***
+stock bool DisableScrambleImmunityCheck()
+{
+	if (!GetConVarBool(cvar_ScrambleImmuneMode))
+		return true;
+	new Float:fPercent = GetConVarFloat(cvar_ScrambleCheckImmune);
+	if (!fPercent)
+		return false;
+
+	new iImmuneTotal,
+		iValidTotal;
+	for (new i = 0; i < MAXPLAYERS; i++)
+	{
+		if (IsClientInGame(i))
+		{
+			if (IsValidTarget(i))
+				iValidTotal++;
+			else
+				iImmuneTotal++;
+		}
+	}
+	if (!iImmuneTotal)
+		return false;
+	new iTotal = iImmuneTotal + iValidTotal;
+	if (!iTotal)
+		return false;
+	if(FloatDiv(float(iImmuneTotal), float(iTotal)) >= fPercent)
+		return true;
+	return false;
+}***/

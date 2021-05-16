@@ -21,14 +21,14 @@ along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 *************************************************************************
 *************************************************************************
 File Information
-$Id: gscramble_menu_settings.sp 163 2012-08-20 09:08:31Z brutalgoergectf@gmail.com $
-$Author: brutalgoergectf@gmail.com $
-$Revision: 163 $
-$Date: 2012-08-20 03:08:31 -0600 (Mon, 20 Aug 2012) $
-$LastChangedBy: brutalgoergectf@gmail.com $
-$LastChangedDate: 2012-08-20 03:08:31 -0600 (Mon, 20 Aug 2012) $
-$URL: https://tf2tmng.googlecode.com/svn/trunk/gscramble/addons/sourcemod/scripting/gscramble/gscramble_menu_settings.sp $
-$Copyright: (c) Tf2Tmng 2009-2011$
+$Id$
+$Author$
+$Revision$
+$Date$
+$LastChangedBy$
+$LastChangedDate$
+$URL$
+$Copyright: (c) Tf2Tmng 2009-2015$
 *************************************************************************
 *************************************************************************
 */

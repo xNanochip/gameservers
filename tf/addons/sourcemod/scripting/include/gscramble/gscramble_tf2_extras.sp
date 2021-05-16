@@ -21,31 +21,106 @@ along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 *************************************************************************
 *************************************************************************
 File Information
-$Id: gscramble_tf2_extras.sp 163 2012-08-20 09:08:31Z brutalgoergectf@gmail.com $
-$Author: brutalgoergectf@gmail.com $
-$Revision: 163 $
-$Date: 2012-08-20 03:08:31 -0600 (Mon, 20 Aug 2012) $
-$LastChangedBy: brutalgoergectf@gmail.com $
-$LastChangedDate: 2012-08-20 03:08:31 -0600 (Mon, 20 Aug 2012) $
-$URL: https://tf2tmng.googlecode.com/svn/trunk/gscramble/addons/sourcemod/scripting/gscramble/gscramble_tf2_extras.sp $
-$Copyright: (c) Tf2Tmng 2009-2011$
+$Id$
+$Author$
+$Revision$
+$Date$
+$LastChangedBy$
+$LastChangedDate$
+$URL$
+$Copyright: (c) Tf2Tmng 2009-2015$
 *************************************************************************
 *************************************************************************
 */
+stock GetRoundTimerInformation(bool delay = false)
+{
+	if (delay)
+	{
+		CreateTimer(0.5, TimerRoundTimer);
+		return;
+	}
+	#if defined DEBUG
+	LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "calling Round Timer Function");
+	#endif
+	new round_timer = -1;
+	new Float:best_end_time = 1000000000000.0;    //a very large "time"
+	new Float:timer_end_time;
+	new bool:found_valid_timer = false;
+	new bool:timer_is_disabled = true;
+	new bool:timer_is_paused = true;
+
+	while ( (round_timer = FindEntityByClassname(round_timer, "team_round_timer")) != -1) {
+		//Make sure this timer is enabled
+		timer_is_paused = bool:GetEntProp(round_timer, Prop_Send, "m_bTimerPaused");
+		timer_is_disabled = bool:GetEntProp(round_timer, Prop_Send, "m_bIsDisabled");
+		/** dont think i need this anymore
+		if (timer_is_disabled || timer_is_paused)
+		{
+			#if defined DEBUG
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "paused or disabled timer ent");
+			#endif
+			continue;
+		}*/
+		//End time is what we're interested in... fortunately, it works
+		// (getting the current time remaining does NOT work as of late November 2010)
+		timer_end_time = GetEntPropFloat(round_timer, Prop_Send, "m_flTimerEndTime");
+		#if defined DEBUG
+		LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "TIME %i", RoundFloat(timer_end_time));
+		#endif
+		
+		if (!timer_is_paused && !timer_is_disabled && (timer_end_time <= best_end_time || !found_valid_timer)) {
+			best_end_time = timer_end_time;
+			found_valid_timer = true;
+		}
+	}
+	if (found_valid_timer) {
+		g_fRoundEndTime = best_end_time;
+		g_bRoundIsTimed = true;
+	} else {
+		#if defined DEBUG
+		LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "no timer ent found?");
+		#endif
+		g_RoundState = normal;
+		g_bRoundIsTimed = false;
+	}
+}
+
+public Action:TimerRoundTimer(Handle:timer)
+{
+	GetRoundTimerInformation();
+}
+
+
+/*
 public TF2_GetRoundTimeLeft(Handle:plugin, numparams)
 {
-	if (g_RoundState == normal)
+	if (g_RoundState == normal && g_bRoundIsTimed)
 	{
-		return g_iRoundTimer;
+		return RoundFloat(GetGameTime() - g_fRoundEndTime);
 	}
 	else return 0;
-}
+}*/
 
 stock bool:TF2_HasBuilding(client)
 {
 	if (TF2_ClientBuilding(client, "obj_*"))
 	{
 		return true;
+	}
+	
+	return false;
+}
+
+stock bool:TF2_ClientBuilding(client, const String:building[])
+{
+	new iEnt = -1;
+	
+	while ((iEnt = FindEntityByClassname(iEnt, building)) != -1)
+	{
+		if (GetEntDataEnt2(iEnt, FindSendPropInfo("CBaseObject", "m_hBuilder")) == client)
+		{
+			return true;
+		}
 	}
 	
 	return false;
@@ -78,7 +153,7 @@ stock bool:TF2_IsClientUberCharged(client)
 			if (StrEqual(sClass, "CWeaponMedigun", true))
 			{
 				new Float:chargeLevel = GetEntPropFloat(iIdx, Prop_Send, "m_flChargeLevel");
-				if (chargeLevel >= 0.55)	
+				if (chargeLevel >= GetConVarFloat(cvar_BalanceChargeLevel))
 				{
 					return true;
 				}
@@ -90,25 +165,17 @@ stock bool:TF2_IsClientUberCharged(client)
 
 stock bool:TF2_IsClientUbered(client)
 {
-	
-	if (TF2_IsPlayerInCondition(client, TFCond_Ubercharged) || TF2_IsPlayerInCondition(client, TFCond_Kritzkrieged) || TF2_IsPlayerInCondition(client, TFCond_UberchargeFading))
+	if (TF2_IsPlayerInCondition(client, TFCond_Ubercharged) 
+		|| TF2_IsPlayerInCondition(client, TFCond_Kritzkrieged) 
+		|| TF2_IsPlayerInCondition(client, TFCond_UberchargeFading)
+		|| TF2_IsPlayerInCondition(client, TFCond_UberBulletResist)
+		|| TF2_IsPlayerInCondition(client, TFCond_UberBlastResist)
+		|| TF2_IsPlayerInCondition(client, TFCond_UberFireResist))
 	{
+		#if defined DEBUG
+		LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Found Ubercond player");
+		#endif
 		return true;
-	}
-	
-	return false;
-}
-
-stock bool:TF2_ClientBuilding(client, const String:building[])
-{
-	new iEnt = -1;
-	
-	while ((iEnt = FindEntityByClassname(iEnt, building)) != -1)
-	{
-		if (GetEntDataEnt2(iEnt, FindSendPropInfo("CBaseObject", "m_hBuilder")) == client)
-		{
-			return true;
-		}
 	}
 	
 	return false;
@@ -185,4 +252,46 @@ stock TF2_RemoveRagdolls()
 	{
 		AcceptEntityInput(iEnt, "Kill");
 	}
+}
+
+stock Float:GetCartProgress()
+{
+	new iEnt = -1,
+		Float:fTotalProgress_1,
+		Float:fTotalProgress_2,
+		bool:bFoundCart = false; 
+		
+	while((iEnt = FindEntityByClassname(iEnt, "team_train_watcher")) != -1 )
+	{
+		if (IsValidEntity(iEnt))
+		{
+			if (GetEntProp(iEnt, Prop_Data, "m_bDisabled"))
+				continue;
+			if (!bFoundCart)
+			{
+				fTotalProgress_1 = GetEntPropFloat(iEnt, Prop_Send, "m_flTotalProgress");
+				bFoundCart = true;
+				continue;
+			}
+			fTotalProgress_2 = GetEntPropFloat(iEnt, Prop_Send, "m_flTotalProgress");
+			break;
+		}
+	}
+	if (fTotalProgress_1 > fTotalProgress_2)
+		return fTotalProgress_1;
+	return fTotalProgress_2;
+}
+
+stock bool:DoesClientHaveIntel(client)
+{
+	new iEnt = -1;
+	while ((iEnt = FindEntityByClassname(iEnt, "item_teamflag")) != -1) 
+	{
+		if (IsValidEntity(iEnt))
+		{
+			if (GetEntPropEnt(iEnt, Prop_Data, "m_hMoveParent") == client)
+				return true;
+		}
+	}
+	return false;
 }

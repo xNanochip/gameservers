@@ -21,17 +21,19 @@ along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 *************************************************************************
 *************************************************************************
 File Information
-$Id: gscramble_autobalance.sp 163 2012-08-20 09:08:31Z brutalgoergectf@gmail.com $
-$Author: brutalgoergectf@gmail.com $
-$Revision: 163 $
-$Date: 2012-08-20 03:08:31 -0600 (Mon, 20 Aug 2012) $
-$LastChangedBy: brutalgoergectf@gmail.com $
-$LastChangedDate: 2012-08-20 03:08:31 -0600 (Mon, 20 Aug 2012) $
-$URL: https://tf2tmng.googlecode.com/svn/trunk/gscramble/addons/sourcemod/scripting/gscramble/gscramble_autobalance.sp $
-$Copyright: (c) Tf2Tmng 2009-2011$
+$Id$
+$Author$
+$Revision$
+$Date$
+$LastChangedBy$
+$LastChangedDate$
+$URL$
+$Copyright: (c) Tf2Tmng 2009-2015$
 *************************************************************************
 *************************************************************************
 */
+
+new g_iImmunityDisabledWarningTime;
 
 stock GetLargerTeam()
 {
@@ -69,7 +71,7 @@ bool:BalancePlayer(client)
 	team = big == TEAM_RED?TEAM_BLUE:TEAM_RED;
 	
 	/**
-	checks for preferences to override the client so 
+	checks for preferences to override the client. will grab any client that stated a prefence regardless of status.
 	*/
 	if (GetConVarBool(cvar_Preference))
 	{
@@ -86,7 +88,7 @@ bool:BalancePlayer(client)
 	
 	if (!overrider)
 	{
-		if (!IsValidTarget(client, balance) || GetPlayerPriority(client) < 0)
+		if (!IsClientValidBalanceTarget(client) /*|| GetPlayerPriority(client) < 0*/)
 		{
 			return false;	
 		}
@@ -114,7 +116,8 @@ bool:BalancePlayer(client)
 	}
 	
 	LogAction(client, -1, "\"%L\" has been auto-balanced to %s.", client, sTeam);
-	PrintToChatAll("\x01\x04[SM]\x01 %t", "TeamChangedAll", sName, sTeam);
+	if (!g_bSilent)
+		PrintToChatAll("\x01\x04[SM]\x01 %t", "TeamChangedAll", sName, sTeam);
 	g_aTeams[bImbalanced]=false;
 	
 	return true;
@@ -152,6 +155,8 @@ public Action:Timer_ForceBalance(Handle:timer)
 	
 	if (TeamsUnbalanced(false))
 	{
+		if (!g_bSilent)
+			PrintToChatAll("\x01\x04[SM]\x01 %t", "ForceMessage");
 		BalanceTeams(true);
 	}
 	
@@ -164,27 +169,45 @@ CheckBalance(bool:post=false)
 {
 	if (!g_bHooked)
 	{
+		#if defined DEBUG
+		LogToFile("addons/sourcemod/logs/gscramble.debug_spammy.txt", "Ending checkbalance because not hooked");
+		#endif
 		return;
 	}
 	
 	if (g_hCheckTimer != INVALID_HANDLE)
 	{
+		#if defined DEBUG
+		LogToFile("addons/sourcemod/logs/gscramble.debug_spammy.txt", "Ending checkbalance because checktimer running");
+		#endif
 		return;
 	}
 	
 	if (!g_bAutoBalance)
 	{
+		#if defined DEBUG
+		LogToFile("addons/sourcemod/logs/gscramble.debug_spammy.txt", "Ending checkbalance because ab flag set false");
+		#endif
 		return;
 	}
 	
 	if (g_bBlockDeath)
 	{
+		#if defined DEBUG
+		LogToFile("addons/sourcemod/logs/gscramble.debug_spammy.txt", "Ending checkbalance because scramble block death running");
+		#endif
 		return;
 	}
 		
 	if (post)
 	{
-		g_hCheckTimer = CreateTimer(0.1, timer_CheckBalance);
+		if (g_hCheckTimer == INVALID_HANDLE)
+		{
+			g_hCheckTimer = CreateTimer(0.5, timer_CheckBalance);
+		}
+		#if defined DEBUG
+		LogToFile("addons/sourcemod/logs/gscramble.debug_spammy.txt", "running checkbalance timer");
+		#endif
 		return;
 	}
 	if (TeamsUnbalanced())
@@ -210,6 +233,11 @@ CheckBalance(bool:post=false)
 	}
 	else
 	{
+		if (g_hForceBalanceTimer != INVALID_HANDLE)
+		{
+			KillTimer(g_hForceBalanceTimer);
+			g_hForceBalanceTimer = INVALID_HANDLE;
+		}
 		g_aTeams[bImbalanced] = false;
 		if (g_hBalanceFlagTimer != INVALID_HANDLE)
 		{
@@ -301,19 +329,20 @@ stock BalanceTeams(bool:respawn=true)
 		}
 		else if (GetClientTeam(i) == team) 
 		{
+			// player wants to be on the other team, give him preference 
 			if (GetConVarBool(cvar_Preference) && g_aPlayers[i][iTeamPreference] == smallTeam && !TF2_IsClientUbered(i))
 			{
-				iFatTeam[counter][1] = 3;
-			}
-			else if (IsValidTarget(i, balance))
-			{
-				iFatTeam[counter][1] = GetPlayerPriority(i);
+				iFatTeam[counter][1] = 100;
 			}
 			else
-			{
-				iFatTeam[counter][1] = -5;
-			}
-			
+				iFatTeam[counter][1] = GetPlayerPriority(i);
+			//else if (IsClientValidBalanceTarget(i))
+			//{
+			//}
+			//else
+			//{
+				//iFatTeam[counter][1] = -5;
+			//}
 			iFatTeam[counter][0] = i;
 			counter++;
 		}
@@ -352,7 +381,9 @@ stock BalanceTeams(bool:respawn=true)
 				TF2_SetPlayerClass(iFatTeam[i][0], TFClass_Scout);
 			}
 			
-			PrintToChatAll("\x01\x04[SM]\x01 %t", "TeamChangedAll", clientName, sTeam);
+			if (!g_bSilent)
+				PrintToChatAll("\x01\x04[SM]\x01 %t", "TeamChangedAll", clientName, sTeam);
+			
 			SetupTeamSwapBlock(iFatTeam[i][0]);
 			LogAction(iFatTeam[i][0], -1, "\"%L\" has been force-balanced to %s.", iFatTeam[i][0], sTeam);			
 			
@@ -382,12 +413,27 @@ stock bool:IsOkToBalance()
 	{
 		new iBalanceTimeLimit = GetConVarInt(cvar_BalanceTimeLimit);
 		
-		if (iBalanceTimeLimit && g_iRoundTimer)
+		if (iBalanceTimeLimit && g_bRoundIsTimed)
 		{
-			if (g_iRoundTimer < iBalanceTimeLimit)
+			if ((g_fRoundEndTime - GetGameTime()) < float(iBalanceTimeLimit))
 			{
+			#if defined DEBUG
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "disabling due to balance time");
+			#endif
 				return false;
 			}
+		}
+		
+		new Float:fProgress = GetConVarFloat(cvar_ProgressDisable);
+		#if defined DEBUG
+		LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Progress = %f", GetCartProgress());
+		#endif
+		if (fProgress > 0.0 && GetCartProgress() >= fProgress)
+		{
+			#if defined DEBUG
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "disabling due to cart progress");
+			#endif
+			return false;
 		}
 		
 		return true;
@@ -396,21 +442,33 @@ stock bool:IsOkToBalance()
 	{
 		case suddenDeath:
 		{
+			#if defined DEBUG
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "disabling due to roundstate suddendeath");
+			#endif
 			return false;
 		}
 		
 		case preGame:
 		{
+			#if defined DEBUG
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "disabling due to roundstate pregame");
+			#endif
 			return false;
 		}
 		
 		case setup:
 		{
+			#if defined DEBUG
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "disabling due to roundstate setup");
+			#endif
 			return false;
 		}
 		
 		case bonusRound:
 		{
+			#if defined DEBUG
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "disabling due to roundstate bonusround");
+			#endif
 			return false;
 		}
 	}
@@ -431,3 +489,280 @@ public Action:Timer_BalanceSpawn(Handle:timer, any:id)
 	
 	return Plugin_Handled;
 }
+
+bool IsClientValidBalanceTarget(client, bool CalledFromPrio = false)
+{
+	if (IsClientInGame(client) && IsValidTeam(client))
+	{
+		if (IsFakeClient(client))
+		{
+			if (GetConVarBool(cvar_AbHumanOnly) && !TF2_IsClientOnlyMedic(client))
+			{
+				return false;
+			}
+			#if defined DEBUG
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Is valid target for reason: bot, player: %N", client);
+			#endif
+			return true;
+		}
+
+	// allow client's team prefence to override balance check
+		if (GetConVarBool(cvar_Preference))
+		{
+			new big = GetLargerTeam(),
+				pref = g_aPlayers[client][iTeamPreference];
+			if (pref && pref != big)
+			{
+				#if defined DEBUG
+				LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Is valid target for reason: player preference, player: %N", client);
+				#endif
+				return true;
+			}
+		}
+		
+		if (g_aPlayers[client][iBalanceTime] > GetTime())
+		{
+			#if defined DEBUG
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Is INVALID target for reason: swapped recently, player: %N", client);
+			#endif
+			return false;
+		}
+		
+		if (GetConVarBool(cvar_TeamworkProtect) && g_aPlayers[client][iTeamworkTime] >= GetTime())
+		{
+			#if defined DEBUG
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Is INVALID target for reason: teamwork protection, player: %N", client);
+			#endif
+			return false;
+		}
+		
+		// hard coded protections no one wants to be swapped carrying objective or while ubered
+		if (TF2_IsClientUberCharged(client) || TF2_IsClientUbered(client) || DoesClientHaveIntel(client))
+			return false;
+
+		if (GetConVarInt(cvar_TopProtect) && !IsNotTopPlayer(client, GetClientTeam(client)))
+		{
+			#if defined DEBUG
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Flagging immune top protect");
+			#endif
+			return false;
+		}
+		
+		if (GetConVarBool(cvar_ProtectOnlyMedic) && TF2_IsClientOnlyMedic(client))
+		{
+			#if defined DEBUG
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Flagging immune only medic");
+			#endif
+			return false;
+		}
+		
+		new iImmunity = e_Protection:GetConVarInt(cvar_BalanceImmunity),
+			bool:bAdmin = false,
+			bool:bEngie = false;
+		switch (iImmunity)
+		{
+			case admin:
+			{
+				#if defined DEBUG
+				LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Balance var read: admin");
+				#endif
+				bAdmin = true;
+			}
+			case uberAndBuildings:
+			{
+				#if defined DEBUG
+				LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Balance var read: engie with buildings");
+				#endif
+				bEngie = true;
+			}
+			case both:
+			{
+				#if defined DEBUG
+				LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Balance var read: Both engie + admin");
+				#endif
+				bAdmin = true;
+				bEngie = true;
+			}
+		}
+
+		if (bEngie)
+		{
+			if (TF2_HasBuilding(client))
+			{
+			#if defined DEBUG
+			LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Is INVALID target for reason: engineer building, player: %N", client);
+			#endif
+				return false;
+			}
+		}
+
+		if (!CalledFromPrio && bAdmin)
+		{
+			char flags[32];
+			new bool:bSkip = false;
+			
+			GetConVarString(cvar_BalanceAdmFlags, flags, sizeof(flags));
+			bSkip = SkipBalanceCheck();	
+			if (!bSkip && IsAdmin(client, flags))
+			{
+				#if defined DEBUG
+				LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Is INVALID target for reason: admin, player: %N", client);
+				#endif
+				return false;
+			}
+		}
+
+		switch (CheckBuddySystem(client))
+		{
+			case 1:
+			{
+				#if defined DEBUG
+				LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Is INVALID target for reason: buddy system, player: %N", client);
+				#endif
+				return false;
+			}
+			case 2:
+			{
+				#if defined DEBUG
+				LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Is valid target for reason: buddy system, player: %N", client);
+				#endif
+				return true;
+			}
+		}
+		
+		if (GetConVarBool(cvar_BalanceDuelImmunity) && TF2_IsPlayerInDuel(client))
+			return false;
+		#if defined DEBUG
+		LogToFile("addons/sourcemod/logs/gscramble.debug.txt", "Is valid target for reason: passed all checks, player: %N", client);
+		#endif
+		return true;
+	}
+	return false;
+}
+
+CheckBuddySystem(client)
+{
+	if (g_bUseBuddySystem)
+	{
+		new buddy;
+		
+		if ((buddy = g_aPlayers[client][iBuddy]))
+		{
+			if (GetClientTeam(buddy) == GetClientTeam(client))
+			{
+				LogAction(-1, 0, "Flagging client %L invalid because of buddy preference", client);
+				return 1;
+			}
+			else if (IsValidTeam(g_aPlayers[client][iBuddy]))
+			{
+				LogAction(-1, 0, "Flagging client %L valid because of buddy preference", client);
+				return 2;
+			}
+		}		
+		if (IsClientBuddy(client))
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+bool SkipBalanceCheck()
+{
+	if (GetConVarFloat(cvar_BalanceImmunityCheck) > 0.0)
+	{
+		new	iTargets,
+			iImmune,
+			iTotal;
+		char flags[32];
+		GetConVarString(cvar_BalanceAdmFlags, flags, sizeof(flags));
+		for (new i = 1; i <= MaxClients; i++)
+		{
+			if (IsClientInGame(i) && IsValidTeam(i))
+			{
+				if (IsAdmin(i, flags))
+				{
+					iImmune++;
+				}
+				else
+				{
+					iTargets++;
+				}
+			}
+		}
+		if (iImmune)
+		{
+			float fPercent;
+			iTotal = iImmune + iTargets;
+			fPercent = FloatDiv(float(iImmune), float(iTotal));
+			if (fPercent >= GetConVarFloat(cvar_BalanceImmunityCheck))
+			{
+				if (!g_bSilent && (GetTime() - g_iImmunityDisabledWarningTime) > 300)
+				{
+					PrintToChatAll("\x01\x04[SM]\x01 %t", "ImmunityDisabled", RoundFloat(fPercent));
+					g_iImmunityDisabledWarningTime = GetTime();
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+/**
+* Prioritize people based on active buildings, ubercharge, living/dead, or connection time
+* used for the force-balance function
+*/
+GetPlayerPriority(client)
+{
+	if (IsFakeClient(client))
+	{
+		return 50;
+	}
+	new iPriority;
+	if (!IsClientValidBalanceTarget(client, false))
+		iPriority -=50;
+	if (!IsPlayerAlive(client))
+	{
+		iPriority += 5;
+	}
+	
+	
+	if (GetConVarInt(cvar_BalanceImmunity) == 1 || GetConVarInt(cvar_BalanceImmunity) == 3)
+	{
+		char sFlags[32];
+		GetConVarString(cvar_BalanceAdmFlags, sFlags, sizeof(sFlags));
+		if (IsAdmin(client, sFlags))
+			iPriority -=100;
+	}
+	if (g_aPlayers[client][iBalanceTime] > GetTime())
+	{
+		iPriority -=20;
+	}
+	if (GetClientTime(client) < 180)
+	{
+		iPriority += 5;	
+	}
+	
+	switch (CheckBuddySystem(client))
+	{
+		case 1:
+			iPriority -=20;
+		case 2:
+			iPriority +=100;
+	}
+	
+	return iPriority;
+}
+
+bool:IsValidTeam(client)
+{
+	new team = GetClientTeam(client);
+	
+	if (team == TEAM_RED || team == TEAM_BLUE)
+	{
+		return true;
+	}
+	
+	return false;
+}	
