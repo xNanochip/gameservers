@@ -169,10 +169,6 @@ deploy-europe2:
     - eu2
     <<: *deploy_template
 
-deploy-europe3:
-    tags:
-    - eu3
-    <<: *deploy_template
 deploy-fastdl:
     stage: deploy
     script:
