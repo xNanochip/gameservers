@@ -1458,4 +1458,14 @@
         "hidden"	"0"
         "effect_type"	"positive"
     }
+    //Cannot be teleported
+    "4461"
+    {
+        "name"	"cannot be teleported"
+        "attribute_class"	"cannot_be_teleported"
+        "description_string"	"melee cleave attack"
+        "description_format"	"value_is_additive"
+        "hidden"	"0"
+        "effect_type"	"positive"
+    }
 }
