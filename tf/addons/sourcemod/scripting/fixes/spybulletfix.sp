@@ -17,7 +17,7 @@ public Plugin myinfo =
 public void OnEntityCreated(int entity, const char[] classname)
 {
     // Optimize
-    if (strncmp(classname, "tf_weapon_", 10) == 0)
+    if (StrContains(classname, "tf_weapon_", != -1))
     {
         // wait a frame so ownerid is valid
         RequestFrame(waitFrame, entity);
