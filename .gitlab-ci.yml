@@ -164,6 +164,11 @@ deploy-eupotato1:
     - eupotato1
     <<: *deploy_template
 
+deploy-eupotato2:
+    tags:
+    - eupotato2
+    <<: *deploy_template
+
 deploy-europe2:
     tags:
     - eu2
