@@ -966,12 +966,12 @@ public void MvM_JumpToWave(int wave)
 	SetCommandFlags("tf_mvm_jump_to_wave", iOldFlags & ~FCVAR_CHEAT);
 	ServerCommand("tf_mvm_jump_to_wave %d", wave);
 	CreateTimer(0.25, Timer_ResetJumpToWaveCmdFlags, iOldFlags, 0);
-}*/
+}
 
 public Action Timer_ResetJumpToWaveCmdFlags(Handle timer, any flags)
 {
 	SetCommandFlags("tf_mvm_jump_to_wave", flags);
-}
+}*/
 
 public Action Timer_RestartMvMGame(Handle timer, any data)
 {
