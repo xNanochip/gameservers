@@ -73,17 +73,28 @@ public Action unkill(int Cl, int args)
     }
 }
 
-public void OnMapEnd()
+void RestartNow() 
+{
+    ServerCommand("sm_kick @humans This server is restarting. Please rejoin in about 30 seconds");
+    ServerCommand("_restart");
+}
+
+void KillNow() 
+{
+    ServerCommand("sm_kick @humans This server is closing");
+    ServerCommand("killserver");
+}
+
+// Need to use RequestFrame or otherwise it may not always work
+public void OnMapStart()
 {
     if (b_kill)
     {
-        ServerCommand("sm_kick @humans This server is closing")
-        ServerCommand("killserver");
+        RequestFrame(KillNow);
     }
 
     if (b_restart)
     {
-        ServerCommand("sm_kick @humans This server is restarting. Please rejoin in about 30 seconds")
-        ServerCommand("_restart");
+        RequestFrame(RestartNow);
     }
 }
