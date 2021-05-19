@@ -629,15 +629,34 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 					}
 
 					// Half-zatoichi detection
-					int active_weapon = GetEntPropEnt(client, Prop_Data, "m_hActiveWeapon");
+					int active_weapon_robot = GetEntPropEnt(client, Prop_Data, "m_hActiveWeapon");
 
-					if (active_weapon != -1)
+					if (active_weapon_robot != -1)
 					{
+
 						char classname[32];
-						GetEntityClassname(active_weapon, classname, 32);
-						if (strcmp(classname, "tf_weapon_katana") == 0)
+						GetEntityClassname(active_weapon_robot, classname, 32);
+						if (StrEqual(classname, "tf_weapon_katana"))
 						{
 							CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_ZATOICHI", 1, hEvent);
+						}
+					}
+
+					int active_weapon_attacker = GetEntPropEnt(attacker, Prop_Data, "m_hActiveWeapon");
+
+					if (active_weapon_attacker != -1)
+					{
+						int defid = GetEntProp(active_weapon_attacker, Prop_Send, "m_iItemDefinitionIndex");
+						if (defid == weapon_def) {
+							CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_ACTIVE_WEAPON", 1, hEvent);
+							
+							char classname[32];
+							GetEntityClassname(active_weapon_attacker, classname, 32);
+							
+							if (StrEqual(classname, "tf_weapon_katana") || StrEqual(classname, "tf_weapon_sword"))
+							{
+								CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SWORD", 1, hEvent);
+							}
 						}
 					}
 
@@ -985,6 +1004,7 @@ int player_hurt_client_last;
 int player_hurt_attacker_last;
 int player_hurt_tick_last;
 int player_hurt_madmilk_last;
+int player_hurt_weapon_id_last;
 int inflictor_last;
 public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
@@ -999,6 +1019,7 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 
 	player_hurt_client_last = client;
 	player_hurt_attacker_last = attacker;
+	player_hurt_weapon_id_last = weaponid;
 	player_hurt_tick_last = GetGameTickCount();
 
 	if (IsClientValid(attacker) && attacker != client && IsFakeClient(client))
@@ -1027,6 +1048,11 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 			{
 				CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_SENTRY", damage, hEvent);
 			}
+		}
+
+		if (weaponid == 64) // Sword weapon id
+		{
+			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_SWORD", damage, hEvent);
 		}
 
 		if (custom == 45) // Boot / Jetpack Stomp
@@ -1351,7 +1377,6 @@ public Action medic_death(Handle hEvent, const char[] szName, bool bDontBroadcas
 	bool charged_uber = charged && GetAttributeValue(healer, "set_charge_type", 0.0) == 0.0;
 	
 	
-	
 	if (charged_uber && IsClientValid(healer) && IsFakeClient(healer))
 	{
 		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_UBER_MEDIC", 1, hEvent);
@@ -1359,6 +1384,10 @@ public Action medic_death(Handle hEvent, const char[] szName, bool bDontBroadcas
 		if (IsGiant(healer))
 			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_GIANT_UBER_MEDIC", 1, hEvent);
 
+		if (player_hurt_weapon_id_last == 64) // Sword weapon id
+		{
+			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_UBER_MEDIC_SWORD", 1, hEvent);
+		}
 	}
 
 	return Plugin_Continue;
