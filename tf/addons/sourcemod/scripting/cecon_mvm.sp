@@ -944,12 +944,12 @@ public void RF_UpdateSteamGameName(any data)
 	}
 }
 
-public Action MvM_RestartWave()
+/*public Action MvM_RestartWave()
 {
 	int iResource = FindEntityByClassname(-1, "tf_objective_resource");
 	int iCurrentWave = GetEntProp(iResource, Prop_Send, "m_nMannVsMachineWaveCount");
 	MvM_JumpToWave(iCurrentWave);
-}
+}*/
 
 public Action MvM_RestartGame()
 {
@@ -959,13 +959,14 @@ public Action MvM_RestartGame()
 	ServerCommand("tf_mvm_popfile %s", sPopFile);
 }
 
+/* Please don't use this awful way of jumping to a wave. Instead do: https://gitlab.com/creators_tf/servers/-/blob/master/tf/addons/sourcemod/scripting/mvmadmin.sp#L621
 public void MvM_JumpToWave(int wave)
 {
 	int iOldFlags = GetCommandFlags("tf_mvm_jump_to_wave");
 	SetCommandFlags("tf_mvm_jump_to_wave", iOldFlags & ~FCVAR_CHEAT);
 	ServerCommand("tf_mvm_jump_to_wave %d", wave);
 	CreateTimer(0.25, Timer_ResetJumpToWaveCmdFlags, iOldFlags, 0);
-}
+}*/
 
 public Action Timer_ResetJumpToWaveCmdFlags(Handle timer, any flags)
 {

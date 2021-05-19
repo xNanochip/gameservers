@@ -107,7 +107,6 @@ public void OnPluginStart()
 
 	//HookUserMessage(GetUserMessageId("VoteSetup"),UserMsg_CallVote,false,ntf);
 
-	PrintToServer("Command");
 	AutoExecConfig();
 
 	HookEvent("player_spawn", EventPlayerSpawn);
