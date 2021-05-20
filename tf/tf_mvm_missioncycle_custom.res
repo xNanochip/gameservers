@@ -67,13 +67,13 @@
 		}
 		"13"
 		{
-			"map" 		"mvm_goldpit_rc1"
-			"popfile" 	"mvm_goldpit_rc1_adv_equal_opposites"
+			"map" 		"mvm_goldpit_rc2"
+			"popfile" 	"mvm_goldpit_rc2_adv_equal_opposites"
 		}
 		"14"
 		{
-			"map" 		"mvm_goldpit_rc1"
-			"popfile" 	"mvm_goldpit_rc1_adv_gilded_mainframe"
+			"map" 		"mvm_goldpit_rc2"
+			"popfile" 	"mvm_goldpit_rc2_adv_gilded_mainframe"
 		}
 		"15"
 		{
