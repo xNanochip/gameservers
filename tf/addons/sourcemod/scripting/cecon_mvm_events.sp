@@ -987,6 +987,42 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 	return Plugin_Continue;
 }
 
+void CountVacType(int client, int damage, int crit, TFCond vac_heal_cond, TFCond vac_uber_cond)
+{
+	float dmg_resisted = 0.0;
+	int healer = 0;
+	bool has_vac_uber = TF2_IsPlayerInCondition(client, vac_uber_cond);
+	bool has_vac_heal = TF2_IsPlayerInCondition(client, vac_heal_cond);
+
+	// Assume regular resist rate
+	if (has_vac_uber)
+	{
+		healer = GetConditionProvider(client, vac_uber_cond);
+
+		dmg_resisted = damage * 3.0;
+		if (crit)
+		{
+			dmg_resisted += damage * 4.0 * 2.0;
+		}
+	}
+	else if (has_vac_heal)
+	{
+		healer = GetConditionProvider(client, vac_heal_cond);
+
+		dmg_resisted = damage * 0.18;
+		
+	}
+	// Find vac resist medics
+	if (dmg_resisted > 0.0)
+	{
+		if (healer > 0 && healer != client)
+		{
+			CEcon_SendEventToClientUnique(healer, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
+		}
+		CEcon_SendEventToClientUnique(client, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
+	}
+}
+
 int resist_client_last;
 int resist_tick_last;
 
@@ -995,6 +1031,7 @@ int player_hurt_attacker_last;
 int player_hurt_tick_last;
 int player_hurt_madmilk_last;
 int player_hurt_weapon_id_last;
+int damage_type_last;
 int inflictor_last;
 public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
@@ -1012,135 +1049,104 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 	player_hurt_weapon_id_last = weaponid;
 	player_hurt_tick_last = GetGameTickCount();
 
-	if (IsClientValid(attacker) && attacker != client && IsFakeClient(client) && !IsFakeClient(attacker))
+	if (IsClientValid(attacker) && attacker != client)
 	{
-		player_hurt_attacker_decap_last = GetEntProp(attacker, Prop_Send, "m_iDecapitations");
-
-		// Add to hit tracker;
-		player_data[client].hit_tracker |= 1 << (attacker - 1);
-
-		// Don't include overkill damage
-		if (GetEntProp(client, Prop_Data, "m_iHealth") < 0)
-			damage += GetEntProp(client, Prop_Data, "m_iHealth");
-
-		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT", damage, hEvent);
-
-		if (custom == 30) // Sentry wrangler damage
+		if (IsFakeClient(client) && !IsFakeClient(attacker))
 		{
-			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_SENTRY_WRANGLER", damage, hEvent);
-		}
+			player_hurt_attacker_decap_last = GetEntProp(attacker, Prop_Send, "m_iDecapitations");
 
-		if (inflictor_last > 0 && inflictor_last != attacker && IsValidEntity(inflictor_last))
-		{
-			char classname[32];
-			GetEntityClassname(inflictor_last, classname, sizeof(classname));
-			if (strcmp(classname, "obj_sentrygun") == 0 || strcmp(classname, "tf_projectile_sentryrocket") == 0)
+			// Add to hit tracker;
+			player_data[client].hit_tracker |= 1 << (attacker - 1);
+
+			// Don't include overkill damage
+			if (GetEntProp(client, Prop_Data, "m_iHealth") < 0)
+				damage += GetEntProp(client, Prop_Data, "m_iHealth");
+
+			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT", damage, hEvent);
+
+			if (custom == 30) // Sentry wrangler damage
 			{
-				CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_SENTRY", damage, hEvent);
+				CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_SENTRY_WRANGLER", damage, hEvent);
 			}
-		}
 
-		int active_weapon_attacker = GetEntPropEnt(attacker, Prop_Data, "m_hActiveWeapon");
-		if (active_weapon_attacker != -1 && weapon_damage_last == active_weapon_attacker)
-		{
-			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_ACTIVE_WEAPON", damage, hEvent);
-		}
-
-		if (custom == 45) // Boot / Jetpack Stomp
-		{
-			if (IsGiantNotBuster(client))
+			if (inflictor_last > 0 && inflictor_last != attacker && IsValidEntity(inflictor_last))
 			{
-				CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_STOMP_ROBOT_GIANT", 1, hEvent);
-				CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_STOMP_ROBOT_GIANT_DAMAGE", damage, hEvent);
+				char classname[32];
+				GetEntityClassname(inflictor_last, classname, sizeof(classname));
+				if (strcmp(classname, "obj_sentrygun") == 0 || strcmp(classname, "tf_projectile_sentryrocket") == 0)
+				{
+					CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_SENTRY", damage, hEvent);
+				}
 			}
-		}
 
-		if (minicrit && TF2_IsPlayerInCondition(attacker, TFCond_Buffed))
-		{
-			int buff_provider = GetConditionProvider(attacker, TFCond_Buffed);
-			if (IsClientValid(buff_provider))
+			int active_weapon_attacker = GetEntPropEnt(attacker, Prop_Data, "m_hActiveWeapon");
+			if (active_weapon_attacker != -1 && weapon_damage_last == active_weapon_attacker)
 			{
-				CEcon_SendEventToClientFromGameEvent(buff_provider, "TF_MVM_DAMAGE_ASSIST_BUFF", damage, hEvent);
+				CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_ACTIVE_WEAPON", damage, hEvent);
 			}
-		}
 
-		if (crit)
-		{
-			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_CRIT_FULL", damage, hEvent);
-		}
-		else if(minicrit)
-		{
-			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_CRIT_MINI", damage, hEvent);
-		}
-		else
-		{
-			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_CRIT_NONE", damage, hEvent);
-		}
-
-		if (bonuseffect == 2) // Double donk
-		{
-			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_DOUBLE_DONK", 1, hEvent);
-		}
-
-		if (TF2_IsPlayerInCondition(attacker, TFCond_Kritzkrieged))
-		{
-			int crits_provider = GetConditionProvider(attacker, TFCond_Kritzkrieged);
-			if (IsClientValid(crits_provider))
+			if (custom == 45) // Boot / Jetpack Stomp
 			{
-				CEcon_SendEventToClientFromGameEvent(crits_provider, "TF_MVM_DAMAGE_ASSIST_KRITZKRIEG", damage, hEvent);
+				if (IsGiantNotBuster(client))
+				{
+					CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_STOMP_ROBOT_GIANT", 1, hEvent);
+					CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_STOMP_ROBOT_GIANT_DAMAGE", damage, hEvent);
+				}
+			}
+
+			if (minicrit && TF2_IsPlayerInCondition(attacker, TFCond_Buffed))
+			{
+				int buff_provider = GetConditionProvider(attacker, TFCond_Buffed);
+				if (IsClientValid(buff_provider))
+				{
+					CEcon_SendEventToClientFromGameEvent(buff_provider, "TF_MVM_DAMAGE_ASSIST_BUFF", damage, hEvent);
+				}
+			}
+
+			if (crit)
+			{
+				CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_CRIT_FULL", damage, hEvent);
+			}
+			else if(minicrit)
+			{
+				CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_CRIT_MINI", damage, hEvent);
+			}
+			else
+			{
+				CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_CRIT_NONE", damage, hEvent);
+			}
+
+			if (bonuseffect == 2) // Double donk
+			{
+				CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_DOUBLE_DONK", 1, hEvent);
+			}
+
+			if (TF2_IsPlayerInCondition(attacker, TFCond_Kritzkrieged))
+			{
+				int crits_provider = GetConditionProvider(attacker, TFCond_Kritzkrieged);
+				if (IsClientValid(crits_provider))
+				{
+					CEcon_SendEventToClientFromGameEvent(crits_provider, "TF_MVM_DAMAGE_ASSIST_KRITZKRIEG", damage, hEvent);
+				}
+			}
+			player_data[attacker].damage_dealt_counter += damage;
+		}
+		else if (IsFakeClient(attacker))
+		{
+			if (damage_type_last & (DMG_BURN | DMG_IGNITE)) 
+			{
+				CountVacType(client, damage, crit, TFCond_SmallFireResist, TFCond_UberFireResist);
+			}
+			if (damage_type_last & (DMG_BLAST)) 
+			{
+				CountVacType(client, damage, crit, TFCond_SmallBlastResist, TFCond_UberBlastResist);
+			}
+			if (damage_type_last & (DMG_BULLET | DMG_BUCKSHOT)) 
+			{
+				CountVacType(client, damage, crit, TFCond_SmallBulletResist, TFCond_UberBulletResist);
 			}
 		}
 		
-		float dmg_resisted = 0.0;
-		int healer = 0;
-		bool has_vac_uber = TF2_IsPlayerInCondition(client, TFCond_UberBulletResist) || TF2_IsPlayerInCondition(client, TFCond_UberBlastResist) || TF2_IsPlayerInCondition(client, TFCond_UberFireResist);
-		bool has_vac_heal = TF2_IsPlayerInCondition(client, TFCond_SmallBulletResist) || TF2_IsPlayerInCondition(client, TFCond_SmallBlastResist) || TF2_IsPlayerInCondition(client, TFCond_SmallFireResist);
-
-		// Assume regular resist rate
-		if (has_vac_uber)
-		{
-			healer = GetConditionProvider(client, TFCond_UberBulletResist);
-			if (!IsClientValid(healer))
-			{
-				healer = GetConditionProvider(client, TFCond_UberBlastResist);
-			}
-			if (!IsClientValid(healer))
-			{
-				healer = GetConditionProvider(client, TFCond_UberFireResist);
-			}
-
-			dmg_resisted = damage * 3.0;
-			if (crit)
-			{
-				dmg_resisted += damage * 4.0 * 2.0;
-			}
-		}
-		else if (has_vac_heal)
-		{
-			healer = GetConditionProvider(client, TFCond_SmallBulletResist);
-			if (!IsClientValid(healer))
-			{
-				healer = GetConditionProvider(client, TFCond_SmallBlastResist);
-			}
-			if (!IsClientValid(healer))
-			{
-				healer = GetConditionProvider(client, TFCond_SmallFireResist);
-			}
-
-			dmg_resisted = damage * 0.18;
-			
-		}
-
-		// Find vac resist medics
-		if (dmg_resisted > 0.0)
-		{
-			if (healer > 0 && healer != client)
-			{
-				CEcon_SendEventToClientUnique(healer, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
-			}
-			CEcon_SendEventToClientUnique(client, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
-		}
-		player_data[attacker].damage_dealt_counter += damage;
 	}
 
 
@@ -1178,6 +1184,7 @@ public Action damage_resisted(Handle hEvent, const char[] szName, bool bDontBroa
 int damagecustom_last;
 public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3], int damagecustom)
 {
+	damage_type_last = damagetype;
 	weapon_damage_last = weapon;
 	damagecustom_last = damagecustom;
 	inflictor_last = inflictor;
