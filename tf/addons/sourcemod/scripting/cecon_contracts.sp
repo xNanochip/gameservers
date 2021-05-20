@@ -1477,7 +1477,7 @@ public void TriggerClientObjectiveHook(int client, int quest_defid, int objectiv
 		{
 			// We only update values if we're really sure that something
 			// has changed.
-			if(xProgress.m_iVariable[objective] > 0)
+			if(xProgress.m_iVariable[objective] != 0)
 			{
 				xProgress.m_iVariable[objective] = 0;
 				UpdateClientQuestProgress(client, xProgress);
