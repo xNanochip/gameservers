@@ -192,6 +192,43 @@ public void CEcon_OnSchemaUpdated(KeyValues hSchema)
 	ParseEconomyConfig(hSchema);
 }
 
+int GetWeaponSlotFromName(const char [] slot)
+{
+	if (StrEqual(slot, "primary"))
+	{
+		return TFWeaponSlot_Primary;
+	}
+	
+	else if (StrEqual(slot, "secondary"))
+	{
+		return TFWeaponSlot_Secondary;
+	}
+	
+	else if (StrEqual(slot, "melee"))
+	{
+		return TFWeaponSlot_Melee;
+	}
+	
+	else if (StrEqual(slot, "grenade"))
+	{
+		return TFWeaponSlot_Grenade;
+	}
+	
+	else if (StrEqual(slot, "building"))
+	{
+		return TFWeaponSlot_Building;
+	}
+	
+	else if (StrEqual(slot, "pda"))
+	{
+		return TFWeaponSlot_PDA;
+	}
+
+	else {
+		return -1;
+	}
+}
+
 public void ParseEconomyConfig(KeyValues kv)
 {
 	FlushQuestDefinitions();
@@ -235,7 +272,9 @@ public void ParseEconomyConfig(KeyValues kv)
 				kv.GetString("restrictions/weapon_classname", xQuest.m_sRestrictedToClassname, sizeof(xQuest.m_sRestrictedToClassname));
 
 				// Weapon Slot Restriction
-				kv.GetString("restrictions/weapon_slot", xQuest.m_sRestrictedToWeaponSlot, sizeof(xQuest.m_sRestrictedToWeaponSlot));
+				char sRestrictedToWeaponSlot[64];
+				kv.GetString("restrictions/weapon_slot", sRestrictedToWeaponSlot, sizeof(sRestrictedToWeaponSlot));
+				xQuest.m_nRestrictedToWeaponSlot = GetWeaponSlotFromName(sRestrictedToWeaponSlot);
 
 				// Item Classname Restriction
 				kv.GetString("restrictions/item_classname", xQuest.m_sRestrictedToItemClassname, sizeof(xQuest.m_sRestrictedToItemClassname));
@@ -271,7 +310,8 @@ public void ParseEconomyConfig(KeyValues kv)
 							kv.GetString("restrictions/weapon_classname", xObjective.m_sRestrictedToClassname, sizeof(xObjective.m_sRestrictedToClassname));
 
 							// Weapon Slot Restriction
-							kv.GetString("restrictions/weapon_slot", xObjective.m_sRestrictedToWeaponSlot, sizeof(xObjective.m_sRestrictedToWeaponSlot));
+							kv.GetString("restrictions/weapon_slot", sRestrictedToWeaponSlot, sizeof(sRestrictedToWeaponSlot));
+							xObjective.m_nRestrictedToWeaponSlot = GetWeaponSlotFromName(sRestrictedToWeaponSlot);
 
 							// Item Restriction
 							kv.GetString("restrictions/item_classname", xObjective.m_sRestrictedToItemClassname, sizeof(xObjective.m_sRestrictedToItemClassname));
@@ -343,14 +383,24 @@ public void ParseEconomyConfig(KeyValues kv)
 public Action cDump(int args)
 {
 	LogMessage("Dumping precached data");
-	for (int i = 0; i < 1; i++)
+
+	char name[128];
+	
+	GetCmdArg(1, name, 128);
+
+	for (int i = 0; i < m_hQuestDefinitions.Length; i++)
 	{
+
 		CEQuestDefinition xQuest;
 		GetQuestByIndex(i, xQuest);
+		
+		if (!StrEqual(xQuest.m_sName, name))
+			continue;
 
 		LogMessage("CEQuestDefinition");
 		LogMessage("{");
 		LogMessage("  m_iIndex = %d", xQuest.m_iIndex);
+		LogMessage("  m_sName = %d", xQuest.m_sName);
 		LogMessage("  m_bBackground = %d", xQuest.m_bBackground);
 		LogMessage("  m_iObjectivesCount = %d", xQuest.m_iObjectivesCount);
 		LogMessage("  m_sRestrictedToMap = \"%s\"", xQuest.m_sRestrictedToMap);
@@ -359,7 +409,8 @@ public Action cDump(int args)
 		LogMessage("  m_nRestrictedToClass = %d", xQuest.m_nRestrictedToClass);
 		LogMessage("  m_sRestrictedToItemName = \"%s\"", xQuest.m_sRestrictedToItemName);
 		LogMessage("  m_sRestrictedToClassname = \"%s\"", xQuest.m_sRestrictedToClassname);
-		LogMessage("  m_sRestrictedToWeaponSlot = \"%s\"", xQuest.m_sRestrictedToWeaponSlot);
+		LogMessage("  m_nRestrictedToWeaponSlot = \"%d\"", xQuest.m_nRestrictedToWeaponSlot);
+		LogMessage("  m_sRestrictedToItemClassname = \"%s\"", xQuest.m_sRestrictedToItemClassname);
 		LogMessage("  m_Objectives =");
 		LogMessage("  [");
 
@@ -379,7 +430,8 @@ public Action cDump(int args)
 				LogMessage("      m_iHooksCount = %d", xObjective.m_iHooksCount);
 				LogMessage("      m_sRestrictedToItemName = \"%s\"", xObjective.m_sRestrictedToItemName);
 				LogMessage("      m_sRestrictedToClassname = \"%s\"", xObjective.m_sRestrictedToClassname);
-				LogMessage("      m_sRestrictedToWeaponSlot = \"%s\"", xObjective.m_sRestrictedToWeaponSlot);
+				LogMessage("      m_nRestrictedToWeaponSlot = \"%d\"", xObjective.m_nRestrictedToWeaponSlot);
+				LogMessage("      m_sRestrictedToItemClassname = \"%s\"", xObjective.m_sRestrictedToItemClassname);
 				LogMessage("      m_Hooks =");
 				LogMessage("      [");
 
@@ -931,51 +983,20 @@ public bool IsCorrectClass(int client, TFClassType tfClass)
 	
 }
 
-public bool IsCorrectWeaponSlot(int client, const char[] sWeaponSlotRestriction)
+public bool IsCorrectWeaponSlot(int client, int nWeaponSlotRestriction)
 {
 	int iLastWeapon = CEcon_GetLastUsedWeapon(client);
 
 	//------------------------------------------------
 	// Checking wepaon slot.
 	// This quest is restricted to a certain weapon slot.
-	if(!StrEqual(sWeaponSlotRestriction, ""))
+	if(nWeaponSlotRestriction != -1)
 	{
 		// If entity does not exist, return false.
 		if (!IsValidEntity(iLastWeapon))return false;
-		
-		/*
-			Using if-statements like this REALLY ugly for me and a big YandereDev moment, but I'm not going to 
-			spend another day trying to use for loops because then I will have a mental breakdown. -ZoNiCaL.
-		*/
-		
-		if (StrEqual(sWeaponSlotRestriction, "primary"))
-		{
-			if (GetPlayerWeaponSlot(client, TFWeaponSlot_Primary) == iLastWeapon) return true;
-		}
-		
-		else if (StrEqual(sWeaponSlotRestriction, "secondary"))
-		{
-			if (GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary) == iLastWeapon) return true;
-		}
-		
-		else if (StrEqual(sWeaponSlotRestriction, "melee"))
-		{
-			if (GetPlayerWeaponSlot(client, TFWeaponSlot_Melee) == iLastWeapon) return true;
-		}
-		
-		else if (StrEqual(sWeaponSlotRestriction, "grenade"))
-		{
-			if (GetPlayerWeaponSlot(client, TFWeaponSlot_Grenade) == iLastWeapon) return true;
-		}
-		
-		else if (StrEqual(sWeaponSlotRestriction, "building"))
-		{
-			if (GetPlayerWeaponSlot(client, TFWeaponSlot_Building) == iLastWeapon) return true;
-		}
-		
-		else if (StrEqual(sWeaponSlotRestriction, "pda"))
-		{
-			if (GetPlayerWeaponSlot(client, TFWeaponSlot_PDA) == iLastWeapon) return true;
+
+		if (GetPlayerWeaponSlot(client, nWeaponSlotRestriction) == iLastWeapon) {
+			return true;
 		}
 		return false;
 	}
@@ -1093,8 +1114,9 @@ public bool IsCorrectItemClassname(int client, const char[] sItemClassname)
 				return true;
 			}
 		}
+		return false;
 	}
-	return false;
+	return true;
 }
 
 public bool IsCorrectItemItemIndexName(int client, const char[] sItemIndexNameRestriction)
@@ -1146,8 +1168,9 @@ public bool IsCorrectItemItemIndexName(int client, const char[] sItemIndexNameRe
 				}
 			}
 		}
+		return false;
 	}
-	return false;
+	return true;
 }
 
 public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
@@ -1155,7 +1178,7 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 	if (!IsClientValid(client)) return false;
 	if (!IsQuestActive(xQuest)) return false;
 	if (!IsCorrectClass(client, xQuest.m_nRestrictedToClass)) return false;
-	if (!IsCorrectWeaponSlot(client, xQuest.m_sRestrictedToWeaponSlot))return false;
+	if (!IsCorrectWeaponSlot(client, xQuest.m_nRestrictedToWeaponSlot))return false;
 	if (!IsCorrectWeaponItemIndexName(client, xQuest.m_sRestrictedToItemName))return false;
 	if (!IsCorrectWeaponClassname(client, xQuest.m_sRestrictedToClassname))return false;
 	if (!IsCorrectItemClassname(client, xQuest.m_sRestrictedToItemClassname))return false;
@@ -1165,7 +1188,7 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 
 public bool CanClientTriggerObjective(int client, CEQuestObjectiveDefinition xObjective)
 {
-	if (!IsCorrectWeaponSlot(client, xObjective.m_sRestrictedToWeaponSlot))return false;
+	if (!IsCorrectWeaponSlot(client, xObjective.m_nRestrictedToWeaponSlot))return false;
 	if (!IsCorrectWeaponItemIndexName(client, xObjective.m_sRestrictedToItemName))return false;
 	if (!IsCorrectWeaponClassname(client, xObjective.m_sRestrictedToClassname))return false;
 	if (!IsCorrectItemClassname(client, xObjective.m_sRestrictedToItemClassname))return false;
