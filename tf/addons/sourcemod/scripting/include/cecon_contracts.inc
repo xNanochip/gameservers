@@ -34,6 +34,10 @@ enum struct CEQuestDefinition
 	char m_sRestrictedToItemName[64];
 	char m_sRestrictedToClassname[64];
 	char m_sRestrictedToWeaponSlot[64];
+
+	// Item Restriction
+	char m_sRestrictedToItemClassname[64];
+	char m_sRestrictedToItemItemName[64];
 	
 	// Used for optimization purposes.
 	// Allows to check if we need to run a specific event 
@@ -59,6 +63,10 @@ enum struct CEQuestObjectiveDefinition
 	char m_sRestrictedToItemName[64];
 	char m_sRestrictedToClassname[64];
 	char m_sRestrictedToWeaponSlot[64];
+	
+	// Item Restriction
+	char m_sRestrictedToItemClassname[64];
+	char m_sRestrictedToItemItemName[64];
 }
 
 enum struct CEQuestObjectiveHookDefinition

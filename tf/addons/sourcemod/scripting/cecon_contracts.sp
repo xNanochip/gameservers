@@ -237,6 +237,10 @@ public void ParseEconomyConfig(KeyValues kv)
 				// Weapon Slot Restriction
 				kv.GetString("restrictions/weapon_slot", xQuest.m_sRestrictedToWeaponSlot, sizeof(xQuest.m_sRestrictedToWeaponSlot));
 
+				// Item Classname Restriction
+				kv.GetString("restrictions/item_classname", xQuest.m_sRestrictedToItemClassname, sizeof(xQuest.m_sRestrictedToItemClassname));
+				kv.GetString("restrictions/item", xQuest.m_sRestrictedToItemItemName, sizeof(xQuest.m_sRestrictedToItemItemName));
+
 				// TF2 Class Restriction
 				char sTFClassName[64];
 				kv.GetString("restrictions/class", sTFClassName, sizeof(sTFClassName));
@@ -268,6 +272,10 @@ public void ParseEconomyConfig(KeyValues kv)
 
 							// Weapon Slot Restriction
 							kv.GetString("restrictions/weapon_slot", xObjective.m_sRestrictedToWeaponSlot, sizeof(xObjective.m_sRestrictedToWeaponSlot));
+
+							// Item Restriction
+							kv.GetString("restrictions/item_classname", xObjective.m_sRestrictedToItemClassname, sizeof(xObjective.m_sRestrictedToItemClassname));
+							kv.GetString("restrictions/item", xQuest.m_sRestrictedToItemItemName, sizeof(xQuest.m_sRestrictedToItemItemName));
 
 							if(kv.JumpToKey("hooks", false))
 							{
@@ -1063,6 +1071,85 @@ public bool IsCorrectWeaponClassname(int client, const char[] sWeaponClassname)
 	}
 }
 
+public bool IsCorrectItemClassname(int client, const char[] sItemClassname)
+{
+	//------------------------------------------------
+	// Checking entity classname.
+
+	// This quest is restricted to a specific class name.
+	if(!StrEqual(sItemClassname, ""))
+	{
+		int next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
+		while (next != -1)
+		{
+			int iEdict = next;
+			next = GetEntPropEnt(iEdict, Prop_Data, "m_hMovePeer");
+
+			char sClassname[64];
+			GetEntityClassname(iEdict, sClassname, sizeof(sClassname));
+
+			if(StrEqual(sClassname, sItemClassname))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+public bool IsCorrectItemItemIndexName(int client, const char[] sItemIndexNameRestriction)
+{
+	//------------------------------------------------
+	// Item Name restriction.
+	// This quest is restricted to a specific item, check by name.
+	if(!StrEqual(sItemIndexNameRestriction, ""))
+	{
+		int next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
+		while (next != -1)
+		{
+			int iEdict = next;
+			next = GetEntPropEnt(iEdict, Prop_Data, "m_hMovePeer");
+			// Check if this entity was created by custom economy.
+			if (CEconItems_IsEntityCustomEconItem(iEdict))
+			{
+				// Getting entity item struct.
+				CEItem xItem;
+				if(CEconItems_GetEntityItemStruct(iEdict, xItem))
+				{
+					// Getting item definition of this item.
+					CEItemDefinition xDef;
+					if(CEconItems_GetItemDefinitionByIndex(xItem.m_iItemDefinitionIndex, xDef))
+					{
+						// Comparing expected name with what definition has.
+						if (StrEqual(xDef.m_sName, sItemIndexNameRestriction))
+						{
+							// If they match, this check has passed.
+							return true;
+						}
+					}
+					continue;
+				}
+			} else {
+				// If this is not a custom econ item, check native TF2 item name.
+				int iDefIndex = GetEntProp(iEdict, Prop_Send, "m_iItemDefinitionIndex");
+
+				// Getting item schema name.
+				char sName[64];
+				if(TF2Econ_GetItemName(iDefIndex, sName, sizeof(sName)))
+				{
+					// Comparing schema name and expected name.
+					if (StrEqual(sName, sItemIndexNameRestriction))
+					{
+						// If match, this check has passed.
+						return true;
+					}
+				}
+			}
+		}
+	}
+	return false;
+}
+
 public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 {
 	if (!IsClientValid(client)) return false;
@@ -1071,6 +1158,8 @@ public bool CanClientTriggerQuest(int client, CEQuestDefinition xQuest)
 	if (!IsCorrectWeaponSlot(client, xQuest.m_sRestrictedToWeaponSlot))return false;
 	if (!IsCorrectWeaponItemIndexName(client, xQuest.m_sRestrictedToItemName))return false;
 	if (!IsCorrectWeaponClassname(client, xQuest.m_sRestrictedToClassname))return false;
+	if (!IsCorrectItemClassname(client, xQuest.m_sRestrictedToItemClassname))return false;
+	if (!IsCorrectItemItemIndexName(client, xQuest.m_sRestrictedToItemItemName))return false;
 	return true;
 }
 
@@ -1079,6 +1168,8 @@ public bool CanClientTriggerObjective(int client, CEQuestObjectiveDefinition xOb
 	if (!IsCorrectWeaponSlot(client, xObjective.m_sRestrictedToWeaponSlot))return false;
 	if (!IsCorrectWeaponItemIndexName(client, xObjective.m_sRestrictedToItemName))return false;
 	if (!IsCorrectWeaponClassname(client, xObjective.m_sRestrictedToClassname))return false;
+	if (!IsCorrectItemClassname(client, xObjective.m_sRestrictedToItemClassname))return false;
+	if (!IsCorrectItemItemIndexName(client, xObjective.m_sRestrictedToItemItemName))return false;
 	return true;
 }
 

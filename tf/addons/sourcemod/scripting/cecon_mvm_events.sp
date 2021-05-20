@@ -1022,7 +1022,7 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 	player_hurt_weapon_id_last = weaponid;
 	player_hurt_tick_last = GetGameTickCount();
 
-	if (IsClientValid(attacker) && attacker != client && IsFakeClient(client))
+	if (IsClientValid(attacker) && attacker != client && IsFakeClient(client) && !IsFakeClient(attacker))
 	{
 		player_hurt_attacker_decap_last = GetEntProp(attacker, Prop_Send, "m_iDecapitations");
 
