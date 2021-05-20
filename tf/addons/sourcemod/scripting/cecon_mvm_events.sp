@@ -431,6 +431,7 @@ int player_death_damage_custom_last;
 int player_death_tick_last;
 
 int player_hurt_attacker_decap_last;
+int weapon_damage_last;
 public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
@@ -644,20 +645,9 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 
 					int active_weapon_attacker = GetEntPropEnt(attacker, Prop_Data, "m_hActiveWeapon");
 
-					if (active_weapon_attacker != -1)
+					if (active_weapon_attacker != -1 && weapon_damage_last == active_weapon_attacker)
 					{
-						int defid = GetEntProp(active_weapon_attacker, Prop_Send, "m_iItemDefinitionIndex");
-						if (defid == weapon_def) {
-							CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_ACTIVE_WEAPON", 1, hEvent);
-							
-							char classname[32];
-							GetEntityClassname(active_weapon_attacker, classname, 32);
-							
-							if (StrEqual(classname, "tf_weapon_katana") || StrEqual(classname, "tf_weapon_sword"))
-							{
-								CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_SWORD", 1, hEvent);
-							}
-						}
+						CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_ROBOT_ACTIVE_WEAPON", 1, hEvent);
 					}
 
 					if (TF2_IsPlayerInCondition(attacker, TFCond_CritCola))
@@ -1050,9 +1040,10 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 			}
 		}
 
-		if (weaponid == 64) // Sword weapon id
+		int active_weapon_attacker = GetEntPropEnt(attacker, Prop_Data, "m_hActiveWeapon");
+		if (active_weapon_attacker != -1 && weapon_damage_last == active_weapon_attacker)
 		{
-			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_SWORD", damage, hEvent);
+			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_DAMAGE_ROBOT_ACTIVE_WEAPON", damage, hEvent);
 		}
 
 		if (custom == 45) // Boot / Jetpack Stomp
@@ -1187,6 +1178,7 @@ public Action damage_resisted(Handle hEvent, const char[] szName, bool bDontBroa
 int damagecustom_last;
 public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3], int damagecustom)
 {
+	weapon_damage_last = weapon;
 	damagecustom_last = damagecustom;
 	inflictor_last = inflictor;
 }
@@ -1384,9 +1376,10 @@ public Action medic_death(Handle hEvent, const char[] szName, bool bDontBroadcas
 		if (IsGiant(healer))
 			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_GIANT_UBER_MEDIC", 1, hEvent);
 
-		if (player_hurt_weapon_id_last == 64) // Sword weapon id
+		int active_weapon_attacker = GetEntPropEnt(attacker, Prop_Data, "m_hActiveWeapon");
+		if (active_weapon_attacker != -1 && weapon_damage_last == active_weapon_attacker)
 		{
-			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_UBER_MEDIC_SWORD", 1, hEvent);
+			CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_UBER_MEDIC_ACTIVE_WEAPON", 1, hEvent);
 		}
 	}
 

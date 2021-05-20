@@ -32,7 +32,7 @@ enum struct CEQuestDefinition
 
 	// Active weapon restriction.
 	char m_sRestrictedToItemName[64];
-	char m_sRestrictedToClassname[48];
+	char m_sRestrictedToClassname[64];
 	int m_nRestrictedToWeaponSlot;
 
 	// Item Restriction
@@ -61,7 +61,7 @@ enum struct CEQuestObjectiveDefinition
 
 	// Active weapon restriction.
 	char m_sRestrictedToItemName[64];
-	char m_sRestrictedToClassname[48];
+	char m_sRestrictedToClassname[64];
 	int m_nRestrictedToWeaponSlot;
 	
 	// Item Restriction

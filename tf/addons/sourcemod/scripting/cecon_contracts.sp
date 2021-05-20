@@ -1077,12 +1077,18 @@ public bool IsCorrectWeaponClassname(int client, const char[] sWeaponClassname)
 		// If entity does not exist, return false.
 		if (!IsValidEntity(iLastWeapon))return false;
 
+		// Allow up to 4 classnames delimeted by commas
+		char buffers[4][64];
+		ExplodeString(sWeaponClassname, ",", buffers, 4, 64);
+		
 		char sClassname[64];
 		GetEntityClassname(iLastWeapon, sClassname, sizeof(sClassname));
 
-		if(StrEqual(sClassname, sWeaponClassname))
-		{
-			return true;
+		for (int i = 0; i < 4; i++) {
+			if(StrEqual(sClassname, buffers[i]))
+			{
+				return true;
+			}
 		}
 		return false;
 	}
