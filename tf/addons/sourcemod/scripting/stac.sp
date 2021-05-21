@@ -23,7 +23,7 @@
 
 #pragma newdecls required
 
-#define PLUGIN_VERSION  "5.0.1a"
+#define PLUGIN_VERSION  "5.0.2a"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -323,7 +323,7 @@ public void OnPluginStart()
         delete QueryTimer[Cl];
     }
 
-    CreateTimer(0.5, timer_GetNetInfo, _, TIMER_REPEAT);
+    CreateTimer(0.33, timer_GetNetInfo, _, TIMER_REPEAT);
 
     timeSinceMapStart = GetEngineTime();
     AddTempEntHook("Fire Bullets", Hook_TEFireBullets);
@@ -1288,11 +1288,12 @@ public Action timer_GetNetInfo(Handle timer)
             inchokeFor[Cl]   = GetClientAvgChoke(Cl, NetFlow_Incoming) * 100.0;
             outchokeFor[Cl]  = GetClientAvgChoke(Cl, NetFlow_Outgoing) * 100.0;
             // convert to ms
-            pingFor[Cl]      = GetClientAvgLatency(Cl, NetFlow_Both) * 1000.0;
+            pingFor[Cl]      = GetClientLatency(Cl, NetFlow_Both) * 1000.0;
             rateFor[Cl]      = GetClientAvgData(Cl, NetFlow_Both) / 125.0;
             if (LiveFeedOn[Cl])
             {
                 LiveFeed_NetInfo(GetClientUserId(Cl));
+                CreateTimer(0.1, LiveFeed_GeneralInfo, GetClientUserId(Cl));
             }
         }
     }
@@ -1315,7 +1316,7 @@ void LiveFeed_NetInfo(int userid)
                 // x&y
                 0.85, 0.33,
                 // time to hold
-                1.5,
+                2.0,
                 // rgba
                 255, 255, 255, 255,
                 // effects
@@ -1340,6 +1341,52 @@ void LiveFeed_NetInfo(int userid)
                 outchokeFor[Cl],
                 chokeFor[Cl],
                 rateFor[Cl]
+            );
+        }
+    }
+}
+
+public Action LiveFeed_GeneralInfo(Handle timer, int userid)
+{
+    int Cl = GetClientOfUserId(userid);
+    if (!IsValidClient(Cl))
+    {
+        return;
+    }
+    for (int LiveFeedViewer = 1; LiveFeedViewer <= MaxClients; LiveFeedViewer++)
+    {
+        if (IsValidAdmin(LiveFeedViewer) || IsValidSrcTV(LiveFeedViewer))
+        {
+            // GENERAL
+            SetHudTextParams
+            (
+                // x&y
+                0.375, 0.01,
+                // time to hold
+                2.0,
+                // rgba
+                255, 255, 255, 255,
+                // effects
+                0, 0.0, 0.0, 0.0
+            );
+            ShowSyncHudText
+            (
+                LiveFeedViewer,
+                HudSyncGeneral,
+                "\
+                \nClient: %N\
+                \nIndex: %i\
+                \nUserid: %i\
+                \nStatus: %s\
+                \nConnected for: %.0f seconds\
+                \nAFK = %s\
+                ",
+                Cl,
+                Cl,
+                userid,
+                IsPlayerAlive(Cl) ? "alive" : "dead",
+                GetClientTime(Cl),
+                isClientAFK(Cl) ? "yes" : "no"
             );
         }
     }
@@ -1419,7 +1466,6 @@ void ClearClBasedVars(int userid)
     sensFor                 [Cl] = 0.0;
     // don't bother clearing arrays
     lastForceSnapFor        [Cl] = 0.0;
-    LiveFeedOn              [Cl] = false;
 }
 
 public void OnClientPutInServer(int Cl)
@@ -1679,6 +1725,7 @@ public Action OnPlayerRunCmd
     fuzzyClangles[Cl][1][1] = RoundToPlace(clangles[Cl][1][1], 1);
     fuzzyClangles[Cl][0][0] = RoundToPlace(clangles[Cl][0][0], 1);
     fuzzyClangles[Cl][0][1] = RoundToPlace(clangles[Cl][0][1], 1);
+
 
     /*
     // backtrack shennanigans - you can't have the same tickcount twice
@@ -2818,46 +2865,15 @@ void LiveFeed_PlayerCmd(int userid)
     {
         if (IsValidAdmin(LiveFeedViewer) || IsValidSrcTV(LiveFeedViewer))
         {
-            // GENERAL
-            SetHudTextParams
-            (
-                // x&y
-                0.375, 0.01,
-                // time to hold
-                0.15,
-                // rgba
-                255, 255, 255, 128,
-                // effects
-                0, 0.0, 0.0, 0.0
-            );
-            ShowSyncHudText
-            (
-                LiveFeedViewer,
-                HudSyncGeneral,
-                "\
-                \nClient: %N\
-                \nIndex: %i\
-                \nUserid: %i\
-                \nStatus: %s\
-                \nConnected for: %.2f seconds\
-                \nAFK = %s\
-                ",
-                Cl,
-                Cl,
-                userid,
-                IsPlayerAlive(Cl) ? "alive" : "dead",
-                GetClientTime(Cl),
-                isClientAFK(Cl) ? "yes" : "no"
-            );
             // ONPLAYERRUNCMD
             SetHudTextParams
             (
                 // x&y
-                0.01, 0.1,
+                0.01, 0.00,
                 // time to hold
-                0.15,
+                0.1,
                 // rgba
-                255, 255, 255, 128,
+                255, 255, 255, 255,
                 // effects
                 0, 0.0, 0.0, 0.0
             );
@@ -2883,12 +2899,6 @@ void LiveFeed_PlayerCmd(int userid)
                 \n  x %.2f\
                 \n  y %.2f\
                 \n  z %.2f\
-                \nOther Misc Info:\
-                \n 10 tick time : %.2f\
-                \n Triggering exp lag check? %s\
-                \n HasValidAngles? %s\
-                \n isCmdnumSequential? %s\
-                \n isTickcountInOrder? %s\
                 ",
                 clcmdnum[Cl],
                 cltickcount[Cl],
@@ -2898,7 +2908,35 @@ void LiveFeed_PlayerCmd(int userid)
                 IsActuallyNullString(strButtons) ? "N/A" : strButtons,
                 buttons,
                 clmouse[Cl][0], clmouse[Cl][1],
-                clangles[Cl][0][0], clangles[Cl][0][1], clangles[Cl][0][2],
+                clangles[Cl][0][0], clangles[Cl][0][1], clangles[Cl][0][2]
+            );
+
+            // OTHER STUFF
+            SetHudTextParams
+            (
+                // x&y
+                0.01, 0.65,
+                // time to hold
+                0.1,
+                // rgba
+                255, 255, 255, 255,
+                // effects
+                0, 0.0, 0.0, 0.0
+            );
+            ShowSyncHudText
+            (
+                LiveFeedViewer,
+                HudSyncRunCmdMisc,
+                "\
+                \nMisc Info:\
+                \n Calculated cmdrate: ≈%.2f/s\
+                \n 10 tick time : %.2f\
+                \n Triggering exp lag check? %s\
+                \n HasValidAngles? %s\
+                \n isCmdnumSequential? %s\
+                \n isTickcountInOrder? %s\
+                ",
+                10.0 * Pow((engineTime[Cl][0] - engineTime[Cl][10]), -1.0),
                 engineTime[Cl][0] - engineTime[Cl][10],
                 engineTime[Cl][0] - engineTime[Cl][10] < (tickinterv) ? "yes" : "no",
                 HasValidAngles(Cl) ? "yes" : "no",
