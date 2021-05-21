@@ -392,6 +392,13 @@ public Action OnLevelInit(const char[] mapName, char mapEntities[2097152])
 	}
 }
 
+Action LoadFirstMission(Handle handle)
+{
+	int popmgr = FindEntityByClassname(-1, "info_populator");
+	DispatchSpawn(popmgr);
+	UpdateSteamGameName();
+}
+
 public void OnMapStart()
 {
 	dhooksRegex  = CompileRegex("\\[\\d+\\] DHooks");
@@ -403,6 +410,7 @@ public void OnMapStart()
 
 		ScheduleServerRestart();
 		UpdateSteamGameName();
+		CreateTimer(1.0, LoadFirstMission);
 	}
 }
 
