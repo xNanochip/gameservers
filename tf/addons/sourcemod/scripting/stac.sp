@@ -23,7 +23,7 @@
 
 #pragma newdecls required
 
-#define PLUGIN_VERSION  "5.0.0a"
+#define PLUGIN_VERSION  "5.0.1a"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -2836,11 +2836,15 @@ void LiveFeed_PlayerCmd(int userid)
                 HudSyncGeneral,
                 "\
                 \nClient: %N\
+                \nIndex: %i\
+                \nUserid: %i\
                 \nStatus: %s\
                 \nConnected for: %.2f seconds\
                 \nAFK = %s\
                 ",
                 Cl,
+                Cl,
+                userid,
                 IsPlayerAlive(Cl) ? "alive" : "dead",
                 GetClientTime(Cl),
                 isClientAFK(Cl) ? "yes" : "no"
@@ -2879,6 +2883,12 @@ void LiveFeed_PlayerCmd(int userid)
                 \n  x %.2f\
                 \n  y %.2f\
                 \n  z %.2f\
+                \nOther Misc Info:\
+                \n 10 tick time : %.2f\
+                \n Triggering exp lag check? %s\
+                \n HasValidAngles? %s\
+                \n isCmdnumSequential? %s\
+                \n isTickcountInOrder? %s\
                 ",
                 clcmdnum[Cl],
                 cltickcount[Cl],
@@ -2888,32 +2898,7 @@ void LiveFeed_PlayerCmd(int userid)
                 IsActuallyNullString(strButtons) ? "N/A" : strButtons,
                 buttons,
                 clmouse[Cl][0], clmouse[Cl][1],
-                clangles[Cl][0][0], clangles[Cl][0][1], clangles[Cl][0][2]
-            );
-            // OTHER STUFF
-            SetHudTextParams
-            (
-                // x&y
-                0.1, 0.9,
-                // time to hold
-                0.15,
-                // rgba
-                255, 255, 255, 128,
-                // effects
-                0, 0.0, 0.0, 0.0
-            );
-            ShowSyncHudText
-            (
-                LiveFeedViewer,
-                HudSyncRunCmdMisc,
-                "\
-                \nMisc Info:\
-                \n 10 tick time : %.2f\
-                \n Triggers exp lag check? %s\
-                \n HasValidAngles? %s\
-                \n isCmdnumSequential? %s\
-                \n isTickcountInOrder? %s\
-                ",
+                clangles[Cl][0][0], clangles[Cl][0][1], clangles[Cl][0][2],
                 engineTime[Cl][0] - engineTime[Cl][10],
                 engineTime[Cl][0] - engineTime[Cl][10] < (tickinterv) ? "yes" : "no",
                 HasValidAngles(Cl) ? "yes" : "no",
