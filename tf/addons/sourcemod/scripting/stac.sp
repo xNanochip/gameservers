@@ -1058,7 +1058,7 @@ public Action LiveFeed(int callingCl, int args)
             int Cl = target_list[i];
             if (IsValidClient(Cl))
             {
-                LiveFeedOn[Cl] = true;
+                LiveFeedOn[Cl] = !LiveFeedOn[Cl];
             }
         }
     }
@@ -1419,6 +1419,7 @@ void ClearClBasedVars(int userid)
     sensFor                 [Cl] = 0.0;
     // don't bother clearing arrays
     lastForceSnapFor        [Cl] = 0.0;
+    LiveFeedOn              [Cl] = false;
 }
 
 public void OnClientPutInServer(int Cl)
