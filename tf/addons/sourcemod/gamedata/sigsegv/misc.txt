@@ -4340,6 +4340,16 @@
 					type "sym"
 					sym  "_ZL27SendProxy_SendPredictableIdPK8SendPropPKvS3_P20CSendProxyRecipientsi_0"
 				}
+				"CObjectTeleporter::TeleporterTouch"
+				{
+					type "sym"
+					sym  "_ZN17CObjectTeleporter15TeleporterTouchEP11CBaseEntity"
+				}
+				"CWeaponMedigun::GetTargetRange"
+				{
+					type "sym"
+					sym  "_ZN14CWeaponMedigun14GetTargetRangeEv"
+				}
 				
 			}
 			"addrs_group"
