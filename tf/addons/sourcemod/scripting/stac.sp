@@ -23,7 +23,7 @@
 
 #pragma newdecls required
 
-#define PLUGIN_VERSION  "5.0.4a"
+#define PLUGIN_VERSION  "5.0.5a"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -698,7 +698,7 @@ void initCvars()
     HookConVarChange(stac_max_cmdrate_spam_detections, stacVarChanged);
 
 
-    // fixpingmasking
+    // kick unauthed clients
     if (kickUnauth)
     {
         buffer = "1";
@@ -813,7 +813,7 @@ void setStacVars()
     // properly fix pingmasking
     fixpingmasking          = GetConVarBool(stac_fixpingmasking_enabled);
 
-    // properly fix pingmasking
+    // kick unauthed clients
     kickUnauth              = GetConVarBool(stac_kick_unauthed_clients);
 
 }
