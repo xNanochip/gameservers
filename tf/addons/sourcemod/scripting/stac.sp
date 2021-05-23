@@ -23,7 +23,7 @@
 
 #pragma newdecls required
 
-#define PLUGIN_VERSION  "5.0.2a"
+#define PLUGIN_VERSION  "5.0.4a"
 
 #define UPDATE_URL      "https://raw.githubusercontent.com/sapphonie/StAC-tf2/master/updatefile.txt"
 
@@ -43,12 +43,11 @@ Handle QueryTimer           [TFMAXPLAYERS+1];
 Handle TriggerTimedStuffTimer;
 
 // hud sync handles
-Handle HudSyncGeneral;
 Handle HudSyncRunCmd;
 Handle HudSyncRunCmdMisc;
 Handle HudSyncNetwork;
 
-bool LiveFeedOn               [TFMAXPLAYERS+1];
+bool LiveFeedOn             [TFMAXPLAYERS+1];
 
 float steamLastOnlineTime;
 // TPS INFO
@@ -88,9 +87,6 @@ int clcmdnum                [TFMAXPLAYERS+1][6];
 // STORED tickcount PER CLIENT
 int cltickcount             [TFMAXPLAYERS+1][6];
 
-// STORED tickcount PER CLIENT
-int climpulse               [TFMAXPLAYERS+1];
-
 // MAX tickcount PER CLIENT [ for backtracking ]
 //int maxTickCountFor[TFMAXPLAYERS+1];
 
@@ -98,6 +94,8 @@ int climpulse               [TFMAXPLAYERS+1];
 int clbuttons               [TFMAXPLAYERS+1][6];
 // STORED MOUSE PER CLIENT
 int clmouse                 [TFMAXPLAYERS+1][2];
+
+float calcCmdrateFor        [TFMAXPLAYERS+1];
 // STORED GRAVITY STATE PER CLIENT
 bool highGrav               [TFMAXPLAYERS+1];
 // STORED MISC VARS PER CLIENT
@@ -117,23 +115,16 @@ char hurtWeapon             [TFMAXPLAYERS+1][256];
 // time since player did damage, for aimsnap check
 bool didBangOnFrame         [TFMAXPLAYERS+1][3];
 bool didHurtOnFrame         [TFMAXPLAYERS+1][3];
-bool didSnapTestOnFrame     [TFMAXPLAYERS+1][8];
 
 char SteamAuthFor           [TFMAXPLAYERS+1][64];
 
 // time since player did damage, for aimsnap check
 bool didBangThisFrame       [TFMAXPLAYERS+1];
 bool didHurtThisFrame       [TFMAXPLAYERS+1];
-bool didSnapTestThisFrame   [TFMAXPLAYERS+1];
 
 // for fakechoke
 int lastChokeAmt            [TFMAXPLAYERS+1];
 int lastChokeCmdnum         [TFMAXPLAYERS+1];
-
-
-// for snaptest
-float lastForceSnapFor      [TFMAXPLAYERS+1];
-bool snapOnNextSpawn        [TFMAXPLAYERS+1];
 
 // network info
 
@@ -143,6 +134,7 @@ float inchokeFor            [TFMAXPLAYERS+1];
 float outchokeFor           [TFMAXPLAYERS+1];
 float pingFor               [TFMAXPLAYERS+1];
 float rateFor               [TFMAXPLAYERS+1];
+float ppsFor                [TFMAXPLAYERS+1];
 
 char hostname[64];
 char hostipandport[24];
@@ -188,6 +180,7 @@ ConVar stac_max_randomcheck_secs;
 ConVar stac_include_demoname_in_banreason;
 ConVar stac_log_to_file;
 ConVar stac_fixpingmasking_enabled;
+ConVar stac_kick_unauthed_clients;
 
 // VARIOUS DETECTION BOUNDS & CVAR VALUES
 bool DEBUG                  = false;
@@ -200,7 +193,7 @@ int maxPsilentDetections    = 10;
 int maxFakeAngDetections    = 10;
 int maxBhopDetections       = 10;
 int maxCmdnumDetections     = 20;
-int maxTbotDetections       = 20;
+int maxTbotDetections       = 0;
 int maxSpinbotDetections    = 50;
 int maxCmdrateSpamDetects   = 25;
 
@@ -218,6 +211,7 @@ bool logtofile              = true;
 bool fixpingmasking         = true;
 // bool that gets set by steamtools/steamworks forwards - used to kick clients that dont auth
 int isSteamAlive            = -1;
+bool kickUnauth             = true;
 
 // current recording demoname
 char demoname[128];
@@ -225,6 +219,7 @@ char demoname[128];
 // server tickrate stuff
 float gameEngineTime[2];
 float realTPS[2];
+float smoothedTPS;
 
 // Log file
 File StacLogFile;
@@ -265,10 +260,8 @@ public void OnPluginStart()
     RegAdminCmd("sm_stac_checkall", ForceCheckAll,    ADMFLAG_GENERIC, "Force check all client convars (ALL CLIENTS) for anticheat stuff");
     RegAdminCmd("sm_stac_detections", ShowDetections, ADMFLAG_GENERIC, "Show all current detections on all connected clients");
     RegAdminCmd("sm_stac_getauth", GetAuth,           ADMFLAG_GENERIC, "Print StAC's cached auth for a client");
-    RegAdminCmd("sm_stac_snaptest", SnapTest,         ADMFLAG_GENERIC, "Snap a client's viewangles by an imperceptable amount.");
-    RegAdminCmd("sm_stac_livefeed", LiveFeed,         ADMFLAG_GENERIC, "Show live feed (debug info etc) for a client.");
-    RegAdminCmd("sm_livefeed",      LiveFeed,         ADMFLAG_GENERIC, "Show live feed (debug info etc) for a client.");
-    //RegAdminCmd("sm_stac_shutup", ShutTheHellUpBitch, ADMFLAG_GENERIC, "Make StAC be quiet for whoever runs this command!");
+    RegAdminCmd("sm_stac_livefeed", LiveFeed,         ADMFLAG_GENERIC, "Show live feed (debug info etc) for a client. This gets printed to SourceTV if available.");
+    RegAdminCmd("sm_livefeed",      LiveFeed,         ADMFLAG_GENERIC, "Show live feed (debug info etc) for a client. This gets printed to SourceTV if available.");
 
     // get tick interval - some modded tf2 servers run at >66.7 tick!
     tickinterv = GetTickInterval();
@@ -323,12 +316,11 @@ public void OnPluginStart()
         delete QueryTimer[Cl];
     }
 
-    CreateTimer(0.33, timer_GetNetInfo, _, TIMER_REPEAT);
+    CreateTimer(0.5, timer_GetNetInfo, _, TIMER_REPEAT);
 
     timeSinceMapStart = GetEngineTime();
     AddTempEntHook("Fire Bullets", Hook_TEFireBullets);
 
-    HudSyncGeneral = CreateHudSynchronizer();
     HudSyncRunCmd = CreateHudSynchronizer();
     HudSyncRunCmdMisc = CreateHudSynchronizer();
     HudSyncNetwork = CreateHudSynchronizer();
@@ -531,7 +523,7 @@ void initCvars()
     (
         "stac_max_tbot_detections",
         buffer,
-        "[StAC] maximum triggerbot detections before banning a client.\n(recommended 20+)",
+        "[StAC] maximum triggerbot detections before banning a client. This can, has, and will pick up clients using macro software as well as run of the mill cheaters. This check also DOES NOT RUN if the wait command is enabled on your server, as wait allows in-game macroing, making this a nonsensical check in that case.\n(defaults 0 - aka, it never bans, only logs. recommended 20+ if you are comfortable permabanning macroing users)",
         FCVAR_NONE,
         true,
         -1.0,
@@ -705,6 +697,30 @@ void initCvars()
     );
     HookConVarChange(stac_max_cmdrate_spam_detections, stacVarChanged);
 
+
+    // fixpingmasking
+    if (kickUnauth)
+    {
+        buffer = "1";
+    }
+    else
+    {
+        buffer = "0";
+    }
+    stac_kick_unauthed_clients =
+    AutoExecConfig_CreateConVar
+    (
+        "stac_kick_unauthed_clients",
+        buffer,
+        "[StAC] kick clients unauthorized with steam? This only checks if steam has been stable and online for at least the past 300 seconds or more.\n(recommended 1)",
+        FCVAR_NONE,
+        true,
+        0.0,
+        true,
+        1.0
+    );
+    HookConVarChange(stac_kick_unauthed_clients, stacVarChanged);
+
     // actually exec the cfg after initing cvars lol
     AutoExecConfig_ExecuteFile();
     AutoExecConfig_CleanFile();
@@ -796,6 +812,10 @@ void setStacVars()
 
     // properly fix pingmasking
     fixpingmasking          = GetConVarBool(stac_fixpingmasking_enabled);
+
+    // properly fix pingmasking
+    kickUnauth              = GetConVarBool(stac_kick_unauthed_clients);
+
 }
 
 void GenericCvarChanged(ConVar convar, const char[] oldValue, const char[] newValue)
@@ -805,7 +825,7 @@ void GenericCvarChanged(ConVar convar, const char[] oldValue, const char[] newVa
     {
         if (StringToInt(newValue) != 0)
         {
-            //SetFailState("[StAC] sv_cheats set to 1! Aborting!");
+            SetFailState("[StAC] sv_cheats set to 1! Aborting!");
         }
     }
     if (convar == FindConVar("sv_allow_wait_command"))
@@ -829,7 +849,7 @@ void RunOptimizeCvars()
     ConVar jay_backtrack_tolerance  = FindConVar("jay_backtrack_tolerance");
     if (jay_backtrack_enable != null && jay_backtrack_tolerance != null)
     {
-        // DISABLE jaypatch
+        // enable jaypatch
         SetConVarInt(jay_backtrack_enable, 1);
         // clamp jaypatch to sane values
         SetConVarInt(jay_backtrack_tolerance, Math_Clamp(GetConVarInt(jay_backtrack_tolerance), 0, 1));
@@ -844,7 +864,7 @@ public Action checkNativesEtc(Handle timer)
     // check sv cheats
     if (GetConVarBool(FindConVar("sv_cheats")))
     {
-        //SetFailState("[StAC] sv_cheats set to 1! Aborting!");
+        SetFailState("[StAC] sv_cheats set to 1! Aborting!");
     }
     // check wait command
     if (GetConVarBool(FindConVar("sv_allow_wait_command")))
@@ -962,56 +982,7 @@ public Action GetAuth(int callingCl, int args)
             }
         }
     }
-    return Plugin_Handled;
-}
-
-public Action SnapTest(int callingCl, int args)
-{
-    if (args != 1)
-    {
-        ReplyToCommand(callingCl, "Usage: sm_stac_snaptest <client>");
-    }
-    else
-    {
-        char arg1[32];
-        GetCmdArg(1, arg1, sizeof(arg1));
-
-        char target_name[MAX_TARGET_LENGTH];
-        int target_list[MAXPLAYERS];
-        int target_count;
-        bool tn_is_ml;
-
-        if
-        (
-            (
-                target_count = ProcessTargetString
-                (
-                    arg1,
-                    callingCl,
-                    target_list,
-                    MAXPLAYERS,
-                    COMMAND_FILTER_NO_BOTS,
-                    target_name,
-                    sizeof(target_name),
-                    tn_is_ml
-                )
-            )
-            <= 0
-        )
-        {
-            ReplyToTargetError(callingCl, target_count);
-            return Plugin_Handled;
-        }
-
-        for (int i = 0; i < target_count; i++)
-        {
-            int Cl = target_list[i];
-            if (IsValidClient(Cl))
-            {
-                CreateTimer(0.1, SnapClientAngles, GetClientUserId(callingCl));
-            }
-        }
-    }
+    StacGeneralPlayerDiscordNotify(GetClientUserId(callingCl), "Client attempted to use StAC getauth");
     return Plugin_Handled;
 }
 
@@ -1060,8 +1031,16 @@ public Action LiveFeed(int callingCl, int args)
             {
                 LiveFeedOn[Cl] = !LiveFeedOn[Cl];
             }
+            for (int j = 1; j <= MaxClients; j++)
+            {
+                if (j != Cl)
+                {
+                    LiveFeedOn[j] = false;
+                }
+            }
         }
     }
+    StacGeneralPlayerDiscordNotify(GetClientUserId(callingCl), "Client attempted to use StAC Livefeed");
     return Plugin_Handled;
 }
 
@@ -1190,13 +1169,13 @@ public Action eRoundStart(Handle event, char[] name, bool dontBroadcast)
 public Action ePlayerSpawned(Handle event, char[] name, bool dontBroadcast)
 {
     int Cl = GetClientOfUserId(GetEventInt(event, "userid"));
-    int userid = GetEventInt(event, "userid");
+    //int userid = GetEventInt(event, "userid");
     if (IsValidClient(Cl))
     {
-        if (snapOnNextSpawn[Cl])
-        {
-            CreateTimer(2.0, SnapClientAngles, userid);
-        }
+        //if (snapOnNextSpawn[Cl])
+        //{
+        //    CreateTimer(2.0, SnapClientAngles, userid);
+        //}
         timeSinceSpawn[Cl] = GetEngineTime();
     }
 }
@@ -1290,10 +1269,10 @@ public Action timer_GetNetInfo(Handle timer)
             // convert to ms
             pingFor[Cl]      = GetClientLatency(Cl, NetFlow_Both) * 1000.0;
             rateFor[Cl]      = GetClientAvgData(Cl, NetFlow_Both) / 125.0;
+            ppsFor[Cl]       =GetClientAvgPackets(Cl, NetFlow_Both);
             if (LiveFeedOn[Cl])
             {
                 LiveFeed_NetInfo(GetClientUserId(Cl));
-                CreateTimer(0.1, LiveFeed_GeneralInfo, GetClientUserId(Cl));
             }
         }
     }
@@ -1310,13 +1289,13 @@ void LiveFeed_NetInfo(int userid)
     {
         if (IsValidAdmin(LiveFeedViewer) || IsValidSrcTV(LiveFeedViewer))
         {
-            // Network info Sync Text
+            // NETINFO
             SetHudTextParams
             (
                 // x&y
-                0.85, 0.33,
+                0.85, 0.40,
                 // time to hold
-                2.0,
+                4.0,
                 // rgba
                 255, 255, 255, 255,
                 // effects
@@ -1327,66 +1306,33 @@ void LiveFeed_NetInfo(int userid)
                 LiveFeedViewer,
                 HudSyncNetwork,
                 "\
+                \nClient: %N\
+                \n Index: %i\
+                \n Userid: %i\
+                \n Status: %s\
+                \n Connected for: %.0fs\
+                \n\
                 \nNetwork:\
-                \n %.2f%% loss\
                 \n %.2f ms ping\
-                \n %.2f%% inchoke\
-                \n %.2f%% outchoke\
-                \n %.2f%% totalchoke\
+                \n %.2f loss\
+                \n %.2f inchoke\
+                \n %.2f outchoke\
+                \n %.2f totalchoke\
                 \n %.2f kbps rate\
+                \n %.2f pps rate\
                 ",
-                lossFor[Cl],
+                Cl,
+                Cl,
+                GetClientUserId(Cl),
+                IsPlayerAlive(Cl) ? "alive" : "dead",
+                GetClientTime(Cl),
                 pingFor[Cl],
+                lossFor[Cl],
                 inchokeFor[Cl],
                 outchokeFor[Cl],
                 chokeFor[Cl],
-                rateFor[Cl]
-            );
-        }
-    }
-}
-
-public Action LiveFeed_GeneralInfo(Handle timer, int userid)
-{
-    int Cl = GetClientOfUserId(userid);
-    if (!IsValidClient(Cl))
-    {
-        return;
-    }
-    for (int LiveFeedViewer = 1; LiveFeedViewer <= MaxClients; LiveFeedViewer++)
-    {
-        if (IsValidAdmin(LiveFeedViewer) || IsValidSrcTV(LiveFeedViewer))
-        {
-            // GENERAL
-            SetHudTextParams
-            (
-                // x&y
-                0.375, 0.01,
-                // time to hold
-                2.0,
-                // rgba
-                255, 255, 255, 255,
-                // effects
-                0, 0.0, 0.0, 0.0
-            );
-            ShowSyncHudText
-            (
-                LiveFeedViewer,
-                HudSyncGeneral,
-                "\
-                \nClient: %N\
-                \nIndex: %i\
-                \nUserid: %i\
-                \nStatus: %s\
-                \nConnected for: %.0f seconds\
-                \nAFK = %s\
-                ",
-                Cl,
-                Cl,
-                userid,
-                IsPlayerAlive(Cl) ? "alive" : "dead",
-                GetClientTime(Cl),
-                isClientAFK(Cl) ? "yes" : "no"
+                rateFor[Cl],
+                ppsFor[Cl]
             );
         }
     }
@@ -1465,7 +1411,7 @@ void ClearClBasedVars(int userid)
     // STORED SENS PER CLIENT
     sensFor                 [Cl] = 0.0;
     // don't bother clearing arrays
-    lastForceSnapFor        [Cl] = 0.0;
+    LiveFeedOn              [Cl] = false;
 }
 
 public void OnClientPutInServer(int Cl)
@@ -1505,9 +1451,17 @@ Action CheckAuthOn(Handle timer, int userid)
             if (shouldCheckAuth())
             {
                 SteamAuthFor[Cl][0] = '\0';
-                StacGeneralPlayerDiscordNotify(userid, "Kicked for being unauthorized w/ Steam");
-                StacLog("[StAC] Kicking %N for not being authorized with Steam.", Cl);
-                KickClient(Cl, "[StAC] Not authorized with Steam Network, please authorize and reconnect");
+                if (kickUnauth)
+                {
+                    StacGeneralPlayerDiscordNotify(userid, "Kicked for being unauthorized w/ Steam");
+                    StacLog("[StAC] Kicking %N for not being authorized with Steam.", Cl);
+                    KickClient(Cl, "[StAC] Not authorized with Steam Network, please authorize and reconnect");
+                }
+                else
+                {
+                    StacGeneralPlayerDiscordNotify(userid, "Client failed to authorize w/ Steam in a timely manner");
+                    StacLog("[StAC] Client %N failed to authorize w/ Steam in a timely manner.", Cl);
+                }
             }
         }
         else
@@ -1553,26 +1507,36 @@ public void ePlayerDisconnect(Handle event, const char[] name, bool dontBroadcas
     SteamAuthFor[Cl][0] = '\0';
 
 }
-
-// monitor server tickrate
 float stutterWaitLength = 5.0;
+// monitor server tickrate
 public void OnGameFrame()
 {
+    for (int Cl = 1; Cl <= MaxClients; Cl++)
+    {
+        if (IsValidClient(Cl))
+        {
+            if (LiveFeedOn[Cl])
+            {
+                LiveFeed_PlayerCmd(GetClientUserId(Cl));
+            }
+        }
+    }
+
+    gameEngineTime[1] = gameEngineTime[0];
+    gameEngineTime[0] = GetEngineTime();
+
+    realTPS[1] = realTPS[0];
+    realTPS[0] = 1/(gameEngineTime[0] - gameEngineTime[1]);
+
+    smoothedTPS = ((realTPS[0] + realTPS[1]) / 2);
+
+    if (GetEngineTime() - 30.0 < timeSinceMapStart)
+    {
+        return;
+    }
+
     if (isDefaultTickrate())
     {
-        gameEngineTime[1] = gameEngineTime[0];
-        gameEngineTime[0] = GetEngineTime();
-
-        realTPS[1] = realTPS[0];
-        realTPS[0] = 1/(gameEngineTime[0] - gameEngineTime[1]);
-
-        float smoothedTPS = ((realTPS[0] + realTPS[1]) / 2);
-
-        if (GetEngineTime() - 30.0 < timeSinceMapStart)
-        {
-            return;
-        }
-
         if (smoothedTPS < (tps / 2.0))
         {
             timeSinceLagSpike = GetEngineTime();
@@ -1623,19 +1587,13 @@ public Action OnPlayerRunCmd
     // need this basically no matter what
     int userid = GetClientUserId(Cl);
 
-    if (LiveFeedOn[Cl])
-    {
-        LiveFeed_PlayerCmd(userid);
-    }
-
     // originally from ssac - block invalid usercmds with invalid data
     if (cmdnum <= 0 || tickcount <= 0)
     {
         if (cmdnum < 0 || tickcount < 0)
         {
             StacLog("[StAC] cmdnum %i, tickcount %i", cmdnum, tickcount);
-            StacGeneralPlayerDiscordNotify(userid, "Kicked client for having invalid usercmd data!");
-            KickClient(Cl, "%t", "invalidUsercmdData");
+            StacGeneralPlayerDiscordNotify(userid, "Client has invalid usercmd data!");
             return Plugin_Handled;
         }
         timeSinceNullCmd[Cl] = GetEngineTime();
@@ -1680,9 +1638,8 @@ public Action OnPlayerRunCmd
     }
     clbuttons[Cl][0] = buttons;
 
+    // grab mouse
     clmouse[Cl] = mouse;
-
-    climpulse[Cl] = impulse;
 
     // grab position
     clpos[Cl][1] = clpos[Cl][0];
@@ -1700,16 +1657,6 @@ public Action OnPlayerRunCmd
     didBangOnFrame[Cl][0] = didBangThisFrame[Cl];
     didBangThisFrame[Cl] = false;
 
-    // did we shoot a bullet in any of the past few frames?
-    // grab buttons
-    for (int i = 5; i > 0; --i)
-    {
-        didSnapTestOnFrame[Cl][i] = didSnapTestOnFrame[Cl][i-1];
-    }
-    didSnapTestOnFrame[Cl][0] = didSnapTestThisFrame[Cl];
-
-    didSnapTestThisFrame[Cl] = false;
-
     // detect trigger teleports
     if (GetVectorDistance(clpos[Cl][0], clpos[Cl][1], false) > 500)
     {
@@ -1726,6 +1673,8 @@ public Action OnPlayerRunCmd
     fuzzyClangles[Cl][0][0] = RoundToPlace(clangles[Cl][0][0], 1);
     fuzzyClangles[Cl][0][1] = RoundToPlace(clangles[Cl][0][1], 1);
 
+    // avg'd over 10 ticks
+    calcCmdrateFor[Cl] = 10.0 * Pow((engineTime[Cl][0] - engineTime[Cl][10]), -1.0),
 
     /*
     // backtrack shennanigans - you can't have the same tickcount twice
@@ -1844,7 +1793,8 @@ public Action OnPlayerRunCmd
     //{
     //    LogMessage("AFK");
     //}
-    //else{
+    //else
+    //{
     //    LogMessage("NOTAFK");
     //}
 
@@ -2418,6 +2368,7 @@ void psilentCheck(int userid)
 void aimsnapCheck(int userid)
 {
     int Cl = GetClientOfUserId(userid);
+    // for some reason this just does not behave well in mvm
     if (maxAimsnapDetections != -1 && !MVM)
     {
         float aDiff[4];
@@ -2561,28 +2512,17 @@ void triggerbotCheck(int userid)
     {
         int attack = 0;
         // grab single tick +attack inputs - this checks for the following pattern:
-        //                      //-----------
-        //                      //
-        // etc                  //
-        // frame before last    // IN_ATTACK
-        // last frame           //
+        // frame before last    //
+        // last frame           // IN_ATTACK
         // current frame        //
 
         if
         (
             !(
-                clbuttons[Cl][4] & IN_ATTACK
-            )
-            &&
-            !(
-                clbuttons[Cl][3] & IN_ATTACK
-            )
-            &&
-            (
                 clbuttons[Cl][2] & IN_ATTACK
             )
             &&
-            !(
+            (
                 clbuttons[Cl][1] & IN_ATTACK
             )
             &&
@@ -2596,27 +2536,17 @@ void triggerbotCheck(int userid)
         // grab single tick +attack2 inputs - pyro airblast, demo det, etc
         // this checks for the following pattern:
         //                      //-----------
-        //                      //
-        // etc                  //
-        // frame before last    // IN_ATTACK2
-        // last frame           //
+        // frame before last    //
+        // last frame           // IN_ATTACK2
         // current frame        //
 
         else if
         (
             !(
-                clbuttons[Cl][4] & IN_ATTACK2
-            )
-            &&
-            !(
-                clbuttons[Cl][3] & IN_ATTACK2
-            )
-            &&
-            (
                 clbuttons[Cl][2] & IN_ATTACK2
             )
             &&
-            !(
+            (
                 clbuttons[Cl][1] & IN_ATTACK2
             )
             &&
@@ -2720,69 +2650,40 @@ void triggerbotCheck(int userid)
     }
 }
 
-//void snapanglesCheck(int userid)
-//{
-//    int Cl = GetClientOfUserId(userid);
-
-//    float aDiff[4];
-//    aDiff[0] = RoundToPlace(NormalizeAngleDiff(CalcAngDeg(clangles[Cl][0], clangles[Cl][1])), 1);
-//    aDiff[1] = RoundToPlace(NormalizeAngleDiff(CalcAngDeg(clangles[Cl][1], clangles[Cl][2])), 1);
-//    aDiff[2] = RoundToPlace(NormalizeAngleDiff(CalcAngDeg(clangles[Cl][2], clangles[Cl][3])), 1);
-//    aDiff[3] = RoundToPlace(NormalizeAngleDiff(CalcAngDeg(clangles[Cl][3], clangles[Cl][4])), 1);
-
-//    if (didSnapTestOnFrame[Cl][5])
-//    {
-//        LogMessage("%f - %f %f %f %f", lastForceSnapFor[Cl], aDiff[0], aDiff[1], aDiff[2], aDiff[3]);
-//        if
-//        (
-//               aDiff[0] == lastForceSnapFor[Cl]
-//            || aDiff[1] == lastForceSnapFor[Cl]
-//            || aDiff[2] == lastForceSnapFor[Cl]
-//            || aDiff[3] == lastForceSnapFor[Cl]
-//        )
-//        {
-//            LogMessage("client responded to snap");
-//        }
-//        else
-//        {
-//            LogMessage("client DID NOT RESPOND TO SNAP IN TIME");
-//        }
-//    }
-//}
-
-char RareButtonsnames[][] =
-{
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "CANCEL",
-    "LEFT",
-    "RIGHT",
-    "",
-    "",
-    "",
-    "RUN",
-    "",
-    "ALT1",
-    "ALT2",
-    "SCORE",
-    "SPEED",
-    "WALK",
-    "ZOOM",
-    "WEAPON1",
-    "WEAPON2",
-    "BULLRUSH",
-    "GRENADE1",
-    "GRENADE2",
-    ""
-};
-
 void LiveFeed_PlayerCmd(int userid)
 {
     int Cl = GetClientOfUserId(userid);
+
+    static char RareButtonNames[][] =
+    {
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "CANCEL",
+        "LEFT",
+        "RIGHT",
+        "",
+        "",
+        "",
+        "RUN",
+        "",
+        "ALT1",
+        "ALT2",
+        "SCORE",
+        "SPEED",
+        "WALK",
+        "ZOOM",
+        "WEAPON1",
+        "WEAPON2",
+        "BULLRUSH",
+        "GRENADE1",
+        "GRENADE2",
+        ""
+    };
+
 
     int buttons = clbuttons[Cl][0];
 
@@ -2852,11 +2753,11 @@ void LiveFeed_PlayerCmd(int userid)
     }
 
     char strButtons[512];
-    for (int i = 0; i < sizeof(RareButtonsnames); i++)
+    for (int i = 0; i < sizeof(RareButtonNames); i++)
     {
         if (buttons & (1 << i))
         {
-            Format(strButtons, sizeof(strButtons), "%s %s", strButtons, RareButtonsnames[i]);
+            Format(strButtons, sizeof(strButtons), "%s %s", strButtons, RareButtonNames[i]);
         }
     }
     TrimString(strButtons);
@@ -2869,9 +2770,9 @@ void LiveFeed_PlayerCmd(int userid)
             SetHudTextParams
             (
                 // x&y
-                0.01, 0.00,
+                0.0, 0.0,
                 // time to hold
-                0.1,
+                0.15,
                 // rgba
                 255, 255, 255, 255,
                 // effects
@@ -2891,14 +2792,15 @@ void LiveFeed_PlayerCmd(int userid)
                 \n  %s    %s\
                 \n other buttons:\
                 \n  %s\
-                \n button bitstring\
+                \n buttons int\
                 \n  %i\
                 \n mouse\
-                \n  x %i y %i\
+                \n x %i\
+                \n y %i\
                 \n angles\
-                \n  x %.2f\
-                \n  y %.2f\
-                \n  z %.2f\
+                \n x %.2f \
+                \n y %.2f \
+                \n z %.2f \
                 ",
                 clcmdnum[Cl],
                 cltickcount[Cl],
@@ -2915,9 +2817,9 @@ void LiveFeed_PlayerCmd(int userid)
             SetHudTextParams
             (
                 // x&y
-                0.01, 0.65,
+                0.0, 0.75,
                 // time to hold
-                0.1,
+                0.15,
                 // rgba
                 255, 255, 255, 255,
                 // effects
@@ -2929,14 +2831,16 @@ void LiveFeed_PlayerCmd(int userid)
                 HudSyncRunCmdMisc,
                 "\
                 \nMisc Info:\
-                \n Calculated cmdrate: ≈%.2f/s\
-                \n 10 tick time : %.2f\
-                \n Triggering exp lag check? %s\
+                \n Approx client cmdrate: ≈%.2f cmd/sec\
+                \n Approx server tickrate: ≈%.2f tick/sec\
+                \n 10 tick time : %.4f\
+                \n Failing lag check? %s\
                 \n HasValidAngles? %s\
-                \n isCmdnumSequential? %s\
-                \n isTickcountInOrder? %s\
+                \n SequentialCmdnum? %s\
+                \n OrderedTickcount? %s\
                 ",
-                10.0 * Pow((engineTime[Cl][0] - engineTime[Cl][10]), -1.0),
+                calcCmdrateFor[Cl],
+                smoothedTPS,
                 engineTime[Cl][0] - engineTime[Cl][10],
                 engineTime[Cl][0] - engineTime[Cl][10] < (tickinterv) ? "yes" : "no",
                 HasValidAngles(Cl) ? "yes" : "no",
@@ -3427,9 +3331,8 @@ public Action OnClientCommand(int Cl, int args)
         }
         if (strlen(ClientCommandChar) > 255 || len > 255)
         {
-            StacGeneralPlayerDiscordNotify(userid, "Client was kicked for sending too large of a command!");
+            StacGeneralPlayerDiscordNotify(userid, "Client sent a very large command to the server!");
             StacLog("%s", ClientCommandChar);
-            KickClient(Cl, "%t", "commandTooBig");
             return Plugin_Stop;
         }
     }
@@ -3625,6 +3528,7 @@ void NetPropEtcCheck(int userid)
                 }
                 else
                 {
+                    StacGeneralPlayerDiscordNotify(userid, "Client sent a very large command to the server!");
                     PrintToImportant("{hotpink}[StAC]{white} [Detection] Player %L is using NoLerp!", Cl);
                     StacLog("[StAC] [Detection] Player %L is using NoLerp!", Cl);
                 }
@@ -3712,8 +3616,6 @@ void QueryCvarsEtc(int userid, int i)
         // we checked all the cvars!
         else
         {
-            LogMessage("checking snap on %N next time they spawn", Cl);
-            snapOnNextSpawn[Cl] = true;
             // now lets check some AC related netprops and other misc stuff
             NetPropEtcCheck(userid);
         }
@@ -3833,7 +3735,7 @@ public void BanUser(int userid, char[] reason, char[] pubreason)
         StacLog("[StAC] No cached SteamID for %N! Banning with IP %s...", Cl, ip);
         ServerCommand("sm_banip %s 0 %s", ip, reason);
         // this kick client might not be needed - you get kicked by "being added to ban list"
-        KickClient(Cl, "%s", reason);
+        // KickClient(Cl, "%s", reason);
     }
 
     MC_PrintToChatAll("%s", pubreason);
@@ -4175,7 +4077,6 @@ float NormalizeAngleDiff(float aDiff)
 
 void StacDetectionDiscordNotify(int userid, char[] type, int detections)
 {
-
     if (!DISCORD)
     {
         return;
@@ -4377,79 +4278,61 @@ float RoundToPlace(float input, int decimalPlaces)
     return RoundToNearest(input * poweroften) / (poweroften);
 }
 
-public Action SnapClientAngles(Handle timer, int userid)
-{
-    int Cl = GetClientOfUserId(userid);
-    float newangles[3];
-    newangles[0] = clangles[Cl][0][0] + 1.0;
-    newangles[1] = clangles[Cl][0][1] + 1.0;
-    newangles[2] = 0.0;
-    NormalizeAngleVector(newangles);
-    LogMessage("snapping to %f, %f", newangles[0], newangles[1]);
-    float aDiff;
-    aDiff = NormalizeAngleDiff(CalcAngDeg(clangles[Cl][0], newangles));
-    LogMessage("snapping %f", aDiff);
-    lastForceSnapFor[Cl] = RoundToPlace(aDiff, 1);
-    TeleportEntity(Cl, NULL_VECTOR, newangles, NULL_VECTOR);
-    didSnapTestThisFrame[Cl] = true;
-}
+//float NormalizeAngleVector(float angles[3])
+//{
+//    if (angles[0] > 89.0)
+//    {
+//        angles[0] = 89.0;
+//    }
+//    if (angles[0] < -89.0)
+//    {
+//        angles[0] = -89.0;
+//    }
+//
+//    while (angles[1] > 180.0)
+//    {
+//        angles[1] -= 360.0;
+//    }
+//    while (angles[1] < -180.0)
+//    {
+//        angles[1] += 360.0;
+//    }
+//    if (angles[2] != 0.0)
+//    {
+//        angles[2] = 0.0;
+//    }
+//    return angles;
+//}
 
-float NormalizeAngleVector(float angles[3])
-{
-    if (angles[0] > 89.0)
-    {
-        angles[0] = 89.0;
-    }
-    if (angles[0] < -89.0)
-    {
-        angles[0] = -89.0;
-    }
-
-    while (angles[1] > 180.0)
-    {
-        angles[1] -= 360.0;
-    }
-    while (angles[1] < -180.0)
-    {
-        angles[1] += 360.0;
-    }
-    if (angles[2] != 0.0)
-    {
-        angles[2] = 0.0;
-    }
-    return angles;
-}
-
-
-bool isClientAFK(int Cl)
-{
-    if
-    (
-           clmouse[Cl][0] == 0
-        && clmouse[Cl][1] == 0
-        && AreVectorsEqual(clpos[Cl][0], clpos[Cl][1])
-        && clbuttons[Cl][0] == 0
-        && clbuttons[Cl][1] == 0
-        && clbuttons[Cl][2] == 0
-        && clbuttons[Cl][3] == 0
-        && clbuttons[Cl][4] == 0
-        && clbuttons[Cl][5] == 0
-        && AreVectorsEqual(clangles[Cl][0], clangles[Cl][1])
-        && AreVectorsEqual(clangles[Cl][1], clangles[Cl][2])
-        && AreVectorsEqual(clangles[Cl][2], clangles[Cl][3])
-        && AreVectorsEqual(clangles[Cl][3], clangles[Cl][4])
-    )
-    {
-        return true;
-    }
-
-    return false;
-}
-
-bool AreVectorsEqual(float vector1[3], float vector2[3])
-{
-    return (vector1[0] == vector2[0] && vector1[1] == vector2[1] && vector1[2] == vector2[2]);
-}
+//bool isClientAFK(int Cl)
+//{
+//    if
+//    (
+//           clmouse[Cl][0] == 0
+//        && clmouse[Cl][1] == 0
+//        && AreVectorsEqual(clpos[Cl][0], clpos[Cl][1])
+//        && clbuttons[Cl][0] == 0
+//        && clbuttons[Cl][1] == 0
+//        && clbuttons[Cl][2] == 0
+//        && clbuttons[Cl][3] == 0
+//        && clbuttons[Cl][4] == 0
+//        && clbuttons[Cl][5] == 0
+//        && AreVectorsEqual(clangles[Cl][0], clangles[Cl][1])
+//        && AreVectorsEqual(clangles[Cl][1], clangles[Cl][2])
+//        && AreVectorsEqual(clangles[Cl][2], clangles[Cl][3])
+//        && AreVectorsEqual(clangles[Cl][3], clangles[Cl][4])
+//    )
+//    {
+//        return true;
+//    }
+//
+//    return false;
+//}
+//
+//bool AreVectorsEqual(float vector1[3], float vector2[3])
+//{
+//    return (vector1[0] == vector2[0] && vector1[1] == vector2[1] && vector1[2] == vector2[2]);
+//}
 
 bool IsValidAdmin(int Cl)
 {
@@ -4472,3 +4355,26 @@ bool IsValidSrcTV(int client)
         && IsClientSourceTV(client)
     );
 }
+
+// stolen from ssac
+//void SendPanelMessage(int Cl, const char[] format, any ...)
+//{
+//    /* Bascially is the same thing as sm_msay. Thanks to " ferret " https://forums.alliedmods.net/member.php?u=14068 */
+//    /* Ied much rather use this due to the fact it give us more freedom to change values over the stock "menu" handler. */
+//
+//    char sBuffer[512];
+//    VFormat(sBuffer, sizeof(sBuffer), format, 3);
+//    Panel LiveFeedPanel = new Panel();
+//    LiveFeedPanel.SetTitle("");
+//    LiveFeedPanel.DrawText(sBuffer);
+//    LiveFeedPanel.DrawItem("", ITEMDRAW_SPACER);
+//    LiveFeedPanel.CurrentKey = 10;
+//    LiveFeedPanel.DrawItem("Exit", ITEMDRAW_CONTROL);
+//    LiveFeedPanel.Send(Cl, Handler_DoNothing, 1);
+//    delete LiveFeedPanel;
+//}
+//
+//public int Handler_DoNothing(Menu menu, MenuAction action, int param1, int param2)
+//{
+//    /* Do nothing */
+//}
