@@ -187,8 +187,8 @@ public void OnClientPutInServer(int client)
 		SetPlayerMissionData(client, player_data_mission_inst, false);
 	}
 
-	SDKHook(client, SDKHook_OnTakeDamageAlivePost, OnPlayerDamagePost);
-	SDKHook(client, SDKHook_OnTakeDamageAlive, OnPlayerDamage);
+	SDKHook(client, SDKHook_OnTakeDamagePost, OnPlayerDamagePost);
+	SDKHook(client, SDKHook_OnTakeDamage, OnPlayerDamage);
 }
 
 public void ResetDamage(int client)
@@ -1033,6 +1033,8 @@ int player_hurt_madmilk_last;
 int player_hurt_weapon_id_last;
 int damage_type_last;
 int inflictor_last;
+int health_attacker_last;
+int victim_last;
 public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
 	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
@@ -1150,7 +1152,6 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 	}
 
 
-
 	// Battalions backup check
 	if (IsClientValid(attacker) && IsFakeClient(attacker) && !IsFakeClient(client))
 	{
@@ -1184,6 +1185,10 @@ public Action damage_resisted(Handle hEvent, const char[] szName, bool bDontBroa
 int damagecustom_last;
 public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3], int damagecustom)
 {
+	victim_last = victim;
+	if (IsClientValid(attacker))
+		health_attacker_last = GetEntProp(attacker, Prop_Data, "m_iHealth");
+	
 	damage_type_last = damagetype;
 	weapon_damage_last = weapon;
 	damagecustom_last = damagecustom;
@@ -1192,6 +1197,8 @@ public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& d
 
 public void OnPlayerDamagePost(int victim, int attacker, int inflictor, float damage, int damagetype)
 {
+	health_attacker_last = 0;
+	victim_last = -1;
 	if (IsClientValid(attacker) && attacker != victim && GetClientTeam(attacker) != GetClientTeam(victim) )
 	{
 		if (TF2_IsPlayerInCondition(victim, TFCond_Ubercharged) && damagecustom_last != 2) // backstab
@@ -1273,6 +1280,14 @@ public Action player_healed(Handle hEvent, const char[] szName, bool bDontBroadc
 			}
 			else
 			{
+				if (health_attacker_last != 0 && TF2_IsPlayerInCondition(victim_last, TFCond_Milked)) {
+					if (amount > GetEntProp(patient, Prop_Data, "m_iMaxHealth") - GetEntProp(patient, Prop_Data, "m_iHealth"))
+					{
+						amount = GetEntProp(patient, Prop_Data, "m_iMaxHealth") - GetEntProp(patient, Prop_Data, "m_iHealth");
+					}
+					CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_HEALING_MADMILK", amount, hEvent);
+				}
+
 				// Is the patient being overhealed?
 				if (!(GetClientHealth(patient) > TF2_GetMaxHealth(patient)))
 				{
@@ -1307,11 +1322,14 @@ public Action player_healonhit(Handle hEvent, const char[] szName, bool bDontBro
 
 	if (weapon_def_index != 65535 && player_hurt_attacker_last == client && player_hurt_tick_last == GetGameTickCount())
 	{
-		CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_HEALING_ON_HIT", amount, hEvent);
 		if (TF2_IsPlayerInCondition(client, TFCond_RegenBuffed) && IsClientValid(GetConditionProvider(client, TFCond_RegenBuffed)))
 		{
+			if (health_attacker_last != 0 && amount > GetEntProp(client, Prop_Data, "m_iHealth") - health_attacker_last) {
+				amount = GetEntProp(client, Prop_Data, "m_iHealth") - health_attacker_last;
+			}
 			CEcon_SendEventToClientFromGameEvent(GetConditionProvider(client, TFCond_RegenBuffed), "TF_MVM_HEALING_CONCHEROR", amount, hEvent);
 		}
+		CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_HEALING_ON_HIT", amount, hEvent);
 	}
 }
 
@@ -1487,7 +1505,7 @@ public Action player_stunned(Handle hEvent, const char[] szName, bool bDontBroad
 		GetEntPropVector(victim, Prop_Send, "m_vecOrigin", vecvictim);
 
 		// Search for rocket pack pyros nearbly
-		for (int i = 1; i < MaxClients; i++)
+		for (int i = 1; i <= MaxClients; i++)
 		{
 			if (IsClientValid(i) && !IsFakeClient(i) && GetClientTeam(i) != GetClientTeam(victim) && TF2_IsPlayerInCondition(i, TFCond_RocketPack))
 			{
