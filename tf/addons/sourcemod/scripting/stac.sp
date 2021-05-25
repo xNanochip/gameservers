@@ -1020,7 +1020,7 @@ Action StacTargetCommand(int callingCl, int args)
                         LiveFeedOn[j] = false;
                     }
                 }
-                ReplyToCommand(callingCl, "[StAC] Toggled livefeed for \"%N\".", SteamAuthFor[Cl]);
+                ReplyToCommand(callingCl, "[StAC] Toggled livefeed for \"%N\".", Cl);
             }
         }
     }
