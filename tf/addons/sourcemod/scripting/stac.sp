@@ -875,12 +875,13 @@ void RunOptimizeCvars()
 // sm_stac_checkall
 Action ForceCheckAll(int callingCl, int args)
 {
+    ReplyToCommand(callingCl, "[StAC] Checking cvars on all clients.");
+
     if (callingCl != 0)
     {
         StacGeneralPlayerDiscordNotify(GetClientUserId(callingCl), "Client attempted to force-check all cvars");
     }
     QueryEverythingAllClients();
-
 }
 
 // sm_stac_detections
@@ -894,6 +895,7 @@ Action ShowAllDetections(int callingCl, int args)
     char arg1[32];
     GetCmdArg(1, arg1, sizeof(arg1));
 
+    ReplyToCommand(callingCl, "[StAC] === Printing current detections ===");
     for (int Cl = 1; Cl <= MaxClients; Cl++)
     {
         if (IsValidClient(Cl))
@@ -935,6 +937,8 @@ Action ShowAllDetections(int callingCl, int args)
             }
         }
     }
+    ReplyToCommand(callingCl, "[StAC] === End detections ===");
+
     if (callingCl != 0)
     {
         StacGeneralPlayerDiscordNotify(GetClientUserId(callingCl), "Client attempted to check StAC detections");
