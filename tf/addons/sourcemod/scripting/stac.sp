@@ -859,7 +859,9 @@ void RunOptimizeCvars()
     if (jay_backtrack_enable != null && jay_backtrack_tolerance != null)
     {
         // enable jaypatch
-        SetConVarInt(jay_backtrack_enable, 1);
+        //SetConVarInt(jay_backtrack_enable, 1);
+        // disable jaypatch for now
+        SetConVarInt(jay_backtrack_enable, 0);
         // clamp jaypatch to sane values
         SetConVarInt(jay_backtrack_tolerance, Math_Clamp(GetConVarInt(jay_backtrack_tolerance), 0, 1));
     }
