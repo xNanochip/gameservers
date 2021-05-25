@@ -875,7 +875,12 @@ void RunOptimizeCvars()
 // sm_stac_checkall
 Action ForceCheckAll(int callingCl, int args)
 {
+    if (callingCl != 0)
+    {
+        StacGeneralPlayerDiscordNotify(GetClientUserId(callingCl), "Client attempted to force-check all cvars");
+    }
     QueryEverythingAllClients();
+
 }
 
 // sm_stac_detections
@@ -930,7 +935,10 @@ Action ShowAllDetections(int callingCl, int args)
             }
         }
     }
-    StacGeneralPlayerDiscordNotify(GetClientUserId(callingCl), "Client attempted to check StAC detections");
+    if (callingCl != 0)
+    {
+        StacGeneralPlayerDiscordNotify(GetClientUserId(callingCl), "Client attempted to check StAC detections");
+    }
 }
 
 // sm_stac_getauth  <client/s>
@@ -1015,6 +1023,11 @@ Action StacTargetCommand(int callingCl, int args)
                 ReplyToCommand(callingCl, "[StAC] Toggled livefeed for \"%N\".", SteamAuthFor[Cl]);
             }
         }
+    }
+
+    if (callingCl == 0)
+    {
+        return Plugin_Handled;
     }
 
     if (getauth)
@@ -2810,11 +2823,6 @@ void StacLogNetData(int userid)
         \n %.2f kbps rate\
         \n %.2f pps rate\
         ",
-        Cl,
-        Cl,
-        GetClientUserId(Cl),
-        IsPlayerAlive(Cl) ? "alive" : "dead",
-        GetClientTime(Cl),
         pingFor[Cl],
         lossFor[Cl],
         inchokeFor[Cl],
