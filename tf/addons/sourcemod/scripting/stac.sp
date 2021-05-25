@@ -901,14 +901,14 @@ Action ShowAllDetections(int callingCl, int args)
             // we don't check everything because some checks are "in the moment" and can expire very quickly
             if
             (
-                   turnTimes               [Cl] <= 1
-                || fakeAngDetects          [Cl] <= 1
-                || aimsnapDetects          [Cl] <= 1
-                || pSilentDetects          [Cl] <= 1
-                || cmdnumSpikeDetects      [Cl] <= 1
-                || tbotDetects             [Cl] <= 1
-                || cmdrateSpamDetects      [Cl] <= 1
-                || backtrackDetects        [Cl] <= 1
+                   turnTimes               [Cl] > 0
+                || fakeAngDetects          [Cl] > 0
+                || aimsnapDetects          [Cl] > 0
+                || pSilentDetects          [Cl] > 0
+                || cmdnumSpikeDetects      [Cl] > 0
+                || tbotDetects             [Cl] > 0
+                || cmdrateSpamDetects      [Cl] > 0
+                || backtrackDetects        [Cl] > 0
             )
             {
                 PrintToConsole
