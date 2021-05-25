@@ -1699,7 +1699,6 @@ public Action OnPlayerRunCmd
         tickcount = maxTickCountFor[Cl];
     }
 
-
     // not really lag dependant check
     fakeangCheck(userid);
 
@@ -2606,9 +2605,16 @@ int backtrackFix(int userid, int tolerance = 1)
 {
     int Cl = GetClientOfUserId(userid);
     maxTickCountFor[Cl] = Math_Max(cltickcount[Cl][0], maxTickCountFor[Cl]);
-    if (!IsValidTickcount(Cl, tolerance))
+
+    if (cltickcount[Cl][0] == 0)
     {
-        if (isCmdnumSequential(userid) && clbuttons[Cl][0] & IN_ATTACK)
+        return maxTickCountFor[Cl];
+    }
+
+    int spikeamt = cltickcount[Cl][0] - cltickcount[Cl][1];
+    if (spikeamt < -tolerance && isCmdnumSequential(Cl))
+    {
+        if (clbuttons[Cl][0] & IN_ATTACK)
         {
             backtrackDetects[Cl]++;
             PrintToImportant("\
@@ -2620,10 +2626,12 @@ int backtrackFix(int userid, int tolerance = 1)
             StacLog("\
                 [StAC] Player %N {mediumpurple}tried to backtrack another client!\
                 \nDetections so far: %i\
+                \nSpike amt: %i\
                 \nTickcount: %i\
                 \nPrevious maximum tickcount: %i",
                 Cl,
                 backtrackDetects[Cl],
+                spikeamt,
                 cltickcount[Cl][0],
                 maxTickCountFor[Cl]
             );
@@ -2743,12 +2751,6 @@ bool isTickcountRepeated(int userid)
         return true;
     }
     return false;
-}
-
-// Returns if a tickcount is within the tolerance set - thanks Jtanz!
-bool IsValidTickcount(int Cl, int tolerance)
-{
-    return (abs((cltickcount[Cl][1] + 1) - cltickcount[Cl][0]) <= tolerance);
 }
 
 /********** StacLog functions **********/
