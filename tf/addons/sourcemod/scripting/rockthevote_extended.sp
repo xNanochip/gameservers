@@ -37,6 +37,7 @@
 #include "include/mapchooser_extended"
 #include <nextmap>
 #include <colors>
+#include <mapnames>
 
 #pragma semicolon 1
 
@@ -272,6 +273,9 @@ StartRTV()
 		new String:map[PLATFORM_MAX_PATH];
 		if (GetNextMap(map, sizeof(map)))
 		{
+			GetMapDisplayName(map, map, sizeof(map));
+			GetPrettyMapName(map, map, sizeof(map));
+			
 			CPrintToChatAll("[SM] %t", "Changing Maps", map);
 			CreateTimer(5.0, Timer_ChangeMap, _, TIMER_FLAG_NO_MAPCHANGE);
 			g_InChange = true;
@@ -313,7 +317,7 @@ public Action:Timer_ChangeMap(Handle:hTimer)
 	
 	new String:map[PLATFORM_MAX_PATH];
 	if (GetNextMap(map, sizeof(map)))
-	{	
+	{
 		ForceChangeLevel(map, "RTV after mapvote");
 	}
 	

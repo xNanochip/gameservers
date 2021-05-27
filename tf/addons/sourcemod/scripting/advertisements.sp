@@ -286,6 +286,10 @@ void ProcessVariables(char sText[1024])
 
     if (StrContains(sText, "{currentmap}", false) != -1) {
         GetCurrentMap(sBuffer, sizeof(sBuffer));
+        if (StrContains(sBuffer, "workshop") != -1)
+		{
+			GetMapDisplayName(sBuffer, sBuffer, sizeof sBuffer);
+		}
         ReplaceString(sText, sizeof(sText), "{currentmap}", sBuffer, false);
     }
 

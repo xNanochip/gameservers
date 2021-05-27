@@ -167,6 +167,10 @@ public void OnMapStart()
 	g_bCanRateMap = false;
 	
 	GetCurrentMap(g_current_map, sizeof(g_current_map));
+	if (StrContains(g_current_map, "workshop") != -1)
+	{
+		GetMapDisplayName(g_current_map, g_current_map, sizeof g_current_map);
+	}
 	
 	g_dismiss = GetConVarBool(g_cvars[CVAR_DISMISS]);
 	
@@ -174,6 +178,10 @@ public void OnMapStart()
 	{
 		char map[128];
 		g_aMapList.GetString(i, map, sizeof(map));
+		if (StrContains(map, "workshop") != -1)
+		{
+			GetMapDisplayName(map, map, sizeof map);
+		}
 		
 		if (StrEqual(map, g_current_map, false))
 		{

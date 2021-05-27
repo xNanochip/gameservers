@@ -52,6 +52,10 @@ public Action sm_skyprop_test(int client, int args)
 	
 	char sMap[64];
 	GetCurrentMap(sMap, sizeof(sMap));
+	if (StrContains(sMap, "workshop") != -1)
+	{
+		GetMapDisplayName(sMap, sMap, sizeof sMap);
+	}
 	
 	float flPos[3];
 	GetEntPropVector(client, Prop_Send, "m_vecOrigin", flPos);

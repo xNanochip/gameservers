@@ -121,9 +121,12 @@ public OnConfigsExecuted()
 public OnNominationRemoved(const String:map[], owner)
 {
 	new status;
+	
+	char resolvedMap[PLATFORM_MAX_PATH];
+	FindMap(map, resolvedMap, sizeof(resolvedMap));
 
 	/* Is the map in our list? */
-	if (!GetTrieValue(g_mapTrie, map, status))
+	if (!GetTrieValue(g_mapTrie, resolvedMap, status))
 	{
 		return;
 	}
@@ -134,7 +137,7 @@ public OnNominationRemoved(const String:map[], owner)
 		return;
 	}
 
-	SetTrieValue(g_mapTrie, map, MAPSTATUS_ENABLED);
+	SetTrieValue(g_mapTrie, resolvedMap, MAPSTATUS_ENABLED);
 }
 
 public Action:Command_Addmap(client, args)
@@ -146,31 +149,41 @@ public Action:Command_Addmap(client, args)
 	}
 
 	char mapname[PLATFORM_MAX_PATH];
+	char resolvedMap[PLATFORM_MAX_PATH];
 	GetCmdArg(1, mapname, sizeof(mapname));
 
+	if (FindMap(mapname, resolvedMap, sizeof(resolvedMap)) == FindMap_NotFound)
+	{
+		// We couldn't resolve the map entry to a filename, so...
+		ReplyToCommand(client, "%t", "Map was not found", mapname);
+		return Plugin_Handled;		
+	}
+	
+	char displayName[PLATFORM_MAX_PATH];
+	GetMapDisplayName(resolvedMap, displayName, sizeof(displayName));
 
 	new status;
-	if (!GetTrieValue(g_mapTrie, mapname, status))
+	if (!GetTrieValue(g_mapTrie, resolvedMap, status))
 	{
-		CReplyToCommand(client, "%t", "Map was not found", mapname);
+		CReplyToCommand(client, "%t", "Map was not found", displayName);
 		return Plugin_Handled;
 	}
 
-	new NominateResult:result = NominateMap(mapname, true, 0);
+	new NominateResult:result = NominateMap(resolvedMap, true, 0);
 
 	if (result > Nominate_Replaced)
 	{
 		/* We assume already in vote is the casue because the maplist does a Map Validity check and we forced, so it can't be full */
-		CReplyToCommand(client, "%t", "Map Already In Vote", mapname);
+		CReplyToCommand(client, "%t", "Map Already In Vote", displayName);
 
 		return Plugin_Handled;
 	}
 
 
-	SetTrieValue(g_mapTrie, mapname, MAPSTATUS_DISABLED|MAPSTATUS_EXCLUDE_NOMINATED);
+	SetTrieValue(g_mapTrie, resolvedMap, MAPSTATUS_DISABLED|MAPSTATUS_EXCLUDE_NOMINATED);
 
 
-	CReplyToCommand(client, "%t", "Map Inserted", mapname);
+	CReplyToCommand(client, "%t", "Map Inserted", displayName);
 	LogAction(client, -1, "\"%L\" inserted map \"%s\".", client, mapname);
 
 	return Plugin_Handled;
@@ -225,14 +238,15 @@ public Action:Command_Nominate(client, args)
 	}
 
 	char mapname[PLATFORM_MAX_PATH];
+	char arg1[PLATFORM_MAX_PATH];
 	char displayName[PLATFORM_MAX_PATH];
-	GetCmdArg(1, displayName, sizeof(displayName));
+	GetCmdArg(1, arg1, sizeof(arg1));
 
 	new status;
 
 	// This breaks with event maps.
 	/*
-	if (FindMap(displayName, mapname, sizeof(mapname)) == FindMap_NotFound)
+	if (FindMap(arg1, mapname, sizeof(mapname)) == FindMap_NotFound)
 	{
 		CReplyToCommand(client, "%t", "Map was not found", mapname);
 		return Plugin_Handled;
@@ -247,22 +261,28 @@ public Action:Command_Nominate(client, args)
 	for (int i = 0; i < GetArraySize(g_MapList); i++)
 	{
 		GetArrayString(g_MapList, i, sNeedle, sizeof(sNeedle));
-		if(StrContains(sNeedle, displayName) != -1)
+		GetMapDisplayName(sNeedle, displayName, sizeof displayName);
+		if (StrContains(displayName, arg1) != -1)
 		{
-			strcopy(mapname, sizeof(mapname), sNeedle);
-			bFound = true;
+			if (FindMap(sNeedle, mapname, sizeof(mapname)) != FindMap_NotFound)
+			{
+				bFound = true;
+				break;
+			}
 		}
 	}
 	if(!bFound)
 	{
-		CReplyToCommand(client, "%t", "Map was not found", displayName);
+		CReplyToCommand(client, "[NE] %t", "Map was not found", arg1);
 		return Plugin_Handled;
 	}
 	//----------------------------------------------------------//
+	
+	GetPrettyMapName(displayName, displayName, sizeof displayName);
 
 	if (!GetTrieValue(g_mapTrie, mapname, status))
 	{
-		CReplyToCommand(client, "%t", "Map was not found", mapname);
+		CReplyToCommand(client, "[NE] %t", "Map was not found", displayName);
 		return Plugin_Handled;
 	}
 
@@ -292,7 +312,7 @@ public Action:Command_Nominate(client, args)
 	{
 		if (result == Nominate_AlreadyInVote)
 		{
-			CReplyToCommand(client, "%t", "Map Already In Vote", mapname);
+			CReplyToCommand(client, "%t", "Map Already In Vote", displayName);
 		}
 		else
 		{
@@ -308,7 +328,7 @@ public Action:Command_Nominate(client, args)
 
 	char name[MAX_NAME_LENGTH];
 	GetClientName(client, name, sizeof(name));
-	PrintToChatAll("[NE] %t", "Map Nominated", name, mapname);
+	PrintToChatAll("[NE] %t", "Map Nominated", name, displayName);
 	LogMessage("%s nominated %s", name, mapname);
 
 	return Plugin_Continue;
@@ -317,7 +337,7 @@ public Action:Command_Nominate(client, args)
 AttemptNominate(client)
 {
 	SetMenuTitle(g_MapMenu, "%T", "Nominate Title", client);
-	DisplayMenu(g_MapMenu, client, MENU_TIME_FOREVER);
+	DisplayMenu(g_MapMenu, client, 30);
 
 	return;
 }
@@ -356,6 +376,11 @@ BuildMapMenu()
 		new status = MAPSTATUS_ENABLED;
 
 		GetArrayString(g_MapList, i, map, sizeof(map));
+		
+		FindMap(map, map, sizeof(map));
+		
+		char displayName[PLATFORM_MAX_PATH];
+		GetMapDisplayName(map, displayName, sizeof(displayName));
 
 		if (GetConVarBool(g_Cvar_ExcludeCurrent))
 		{
@@ -375,7 +400,7 @@ BuildMapMenu()
 		}
 
 		char sPrettyName[128];
-		GetPrettyMapName(map, sPrettyName, sizeof(sPrettyName));
+		GetPrettyMapName(displayName, sPrettyName, sizeof(sPrettyName));
 
 		AddMenuItem(g_MapMenu, map, sPrettyName);
 		SetTrieValue(g_mapTrie, map, status);
@@ -545,6 +570,8 @@ stock bool:IsNominateAllowed(client)
 		{
 			new String:map[PLATFORM_MAX_PATH];
 			GetNextMap(map, sizeof(map));
+			GetMapDisplayName(map, map, sizeof map);
+			GetPrettyMapName(map, map, sizeof map);
 			CReplyToCommand(client, "[NE] %t", "Next Map", map);
 			return false;
 		}

@@ -230,9 +230,10 @@ void StartRecord()
 		g_hDemoPath.GetString(sPath, sizeof(sPath));
 		FormatTime(sTime, sizeof(sTime), "%Y_%m_%d_%H_%M", GetTime());
 		GetCurrentMap(sMap, sizeof(sMap));
-
-		// replace slashes in map path name with dashes, to prevent fail on workshop maps
-		ReplaceString(sMap, sizeof(sMap), "/", "-", false);
+		if (StrContains(sMap, "workshop") != -1)
+		{
+			GetMapDisplayName(sMap, sMap, sizeof sMap);
+		}
 		int id = ce_server_index.IntValue;
 		ServerCommand("tv_record \"%s/%d-%s-%s\"", sPath, id, sTime, sMap);
 		g_bIsRecording = true;

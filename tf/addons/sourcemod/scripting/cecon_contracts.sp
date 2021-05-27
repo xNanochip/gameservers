@@ -880,6 +880,10 @@ public bool IsQuestActive(CEQuestDefinition xQuest)
 	// Checking what is the current map.
 	char sMap[64];
 	GetCurrentMap(sMap, sizeof(sMap));
+	if (StrContains(sMap, "workshop") != -1)
+	{
+		GetMapDisplayName(sMap, sMap, sizeof sMap);
+	}
 
 	if (!StrEqual(xQuest.m_sRestrictedToMap, "") && StrContains(sMap, xQuest.m_sRestrictedToMap) == -1)return false;
 	if (!StrEqual(xQuest.m_sStrictRestrictedToMap, "") && !StrEqual(xQuest.m_sStrictRestrictedToMap, sMap))return false;

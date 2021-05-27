@@ -48,6 +48,16 @@ public void OnConfigsExecuted()
 			LogError("Error loading Quickplay map rotation.");
 		}
 	}
+	for (int i = 0; i < m_hMapList.Length; i++)
+	{
+		char map[128];
+		m_hMapList.GetString(i, map, sizeof(map));
+		if (StrContains(map, "workshop") != -1)
+		{
+			GetMapDisplayName(map, map, sizeof map);
+		}
+		m_hMapList.SetString(i, map);
+	}
 }
 
 public Action ce_mm_empty_change_map(int args)
@@ -90,6 +100,10 @@ public Action ce_mm_empty_change_map(int args)
 	{
 		char sCurr[PLATFORM_MAX_PATH];
 		GetCurrentMap(sCurr, sizeof(sCurr));
+		if (StrContains(sCurr, "workshop") != -1)
+		{
+			GetMapDisplayName(sCurr, sCurr, sizeof sCurr);
+		}
 
 		if(!StrEqual(sCurr, sMap))
 		{
@@ -133,6 +147,10 @@ public Action ce_mm_empty_change_popfile(int args)
 
 		char sCurr[PLATFORM_MAX_PATH];
 		GetCurrentMap(sCurr, sizeof(sCurr));
+		if (StrContains(sCurr, "workshop") != -1)
+		{
+			GetMapDisplayName(sCurr, sCurr, sizeof sCurr);
+		}
 
 		if(StrEqual(sCurr, sMap))
 		{

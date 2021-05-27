@@ -281,6 +281,10 @@ public void OnMapStart()
 {
 	char currentMap[PLATFORM_MAX_PATH];
 	GetCurrentMap(currentMap, sizeof(currentMap));
+	if (StrContains(currentMap, "workshop") != -1)
+	{
+		GetMapDisplayName(currentMap, currentMap, sizeof currentMap);
+	}
 
 	if(StrContains(currentMap, "ctf_" , false) != -1)
 	{

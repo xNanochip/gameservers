@@ -549,24 +549,28 @@ public OnClientDisconnect(client)
 	g_NominateCount--;
 }
 
-public Action:Command_SetNextmap(client, args)
+public Action Command_SetNextmap(int client, int args)
 {
 	if (args < 1)
 	{
-		CReplyToCommand(client, "[MCE] Usage: sm_setnextmap <map>");
+		ReplyToCommand(client, "[SM] Usage: sm_setnextmap <map>");
 		return Plugin_Handled;
 	}
 
-	decl String:map[PLATFORM_MAX_PATH];
-	GetCmdArg(1, map, PLATFORM_MAX_PATH);
+	char map[PLATFORM_MAX_PATH];
+	char displayName[PLATFORM_MAX_PATH];
+	GetCmdArg(1, map, sizeof(map));
 
-	if (!IsMapValid(map))
+	if (FindMap(map, displayName, sizeof(displayName)) == FindMap_NotFound)
 	{
-		CReplyToCommand(client, "[MCE] %t", "Map was not found", map);
+		ReplyToCommand(client, "[SM] %t", "Map was not found", map);
 		return Plugin_Handled;
 	}
 
-	ShowActivity(client, "%t", "Changed Next Map", map);
+	GetMapDisplayName(displayName, displayName, sizeof(displayName));
+	GetPrettyMapName(displayName, displayName, sizeof displayName);
+
+	ShowActivity2(client, "[SM] ", "%t", "Changed Next Map", displayName);
 	LogAction(client, -1, "\"%L\" changed nextmap to \"%s\"", client, map);
 
 	SetNextMap(map);
@@ -1166,7 +1170,6 @@ InitiateVote(MapChange:when, Handle:inputlist=INVALID_HANDLE)
 		for (new i=0; i<nominationsToAdd; i++)
 		{
 			GetArrayString(g_NominateList, i, map, PLATFORM_MAX_PATH);
-
 			if (randomizeList == INVALID_HANDLE)
 			{
 				AddMapItem(map);
@@ -1359,7 +1362,8 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 						   const item_info[][2])
 {
 	decl String:map[PLATFORM_MAX_PATH];
-	GetMapItem(menu, item_info[0][VOTEINFO_ITEM_INDEX], map, PLATFORM_MAX_PATH);
+	char displayName[PLATFORM_MAX_PATH];
+	GetMapItem(menu, item_info[0][VOTEINFO_ITEM_INDEX], map, PLATFORM_MAX_PATH, displayName, sizeof displayName);
 
 	Call_StartForward(g_MapVoteEndForward);
 	Call_PushString(map);
@@ -1439,7 +1443,10 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 		{
 			if (g_NativeVotes)
 			{
-				NativeVotes_DisplayPass(menu, map);
+				char display[64];
+				GetMapDisplayName(map, display, sizeof display);
+				GetPrettyMapName(display, display, sizeof display);
+				NativeVotes_DisplayPass(menu, display);
 			}
 			if (GetConVarBool(g_Cvar_IntermissionVote) && !g_bDidRevote)
 			{
@@ -1469,7 +1476,10 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 			g_ChangeMapInProgress = false;
 			if (g_NativeVotes)
 			{
-				NativeVotes_DisplayPassEx(menu, NativeVotesPass_ChgLevel, map);
+				char display[64];
+				GetMapDisplayName(map, display, sizeof display);
+				GetPrettyMapName(display, display, sizeof display);
+				NativeVotes_DisplayPassEx(menu, NativeVotesPass_ChgLevel, display);
 			}
 		}
 		else // MapChange_RoundEnd
@@ -1479,7 +1489,10 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 
 			if (g_NativeVotes)
 			{
-				NativeVotes_DisplayPass(menu, map);
+				char display[64];
+				GetMapDisplayName(map, display, sizeof display);
+				GetPrettyMapName(display, display, sizeof display);
+				NativeVotes_DisplayPass(menu, display);
 			}
 		}
 
@@ -1487,7 +1500,7 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 		g_MapVoteCompleted = true;
 		
 		char sDisplay[128];
-		GetPrettyMapName(map, sDisplay, sizeof(sDisplay));
+		GetPrettyMapName(displayName, sDisplay, sizeof(sDisplay));
 
 		CPrintToChatAll("[MCE] %t", "Nextmap Voting Finished", sDisplay, RoundToFloor(float(item_info[0][VOTEINFO_ITEM_VOTES])/float(num_votes)*100), num_votes);
 		LogAction(-1, -1, "Voting for next map has finished. Nextmap: %s.", map);
@@ -1721,13 +1734,15 @@ public Handler_MapVoteMenu(Handle:menu, MenuAction:action, param1, param2)
 					}
 				}
 				while (strcmp(map, VOTE_EXTEND, false) == 0);
-
 				SetNextMap(map);
 				g_MapVoteCompleted = true;
 
 				if (g_NativeVotes)
 				{
-					NativeVotes_DisplayPass(menu, map);
+					char display[64];
+					GetMapDisplayName(map, display, sizeof display);
+					GetPrettyMapName(display, display, sizeof display);
+					NativeVotes_DisplayPass(menu, display);
 				}
 			}
 			else if (g_NativeVotes)
@@ -1796,7 +1811,17 @@ CreateNextVote()
 
 	decl String:map[PLATFORM_MAX_PATH];
 	new Handle:tempMaps  = CloneArray(g_MapList);
+	
+	for (int i = 0; i < GetArraySize(g_MapList); i++)
+	{
+		GetArrayString(g_MapList, i, map, sizeof(map));
+		if (FindMap(map, map, sizeof(map)) != FindMap_NotFound)
+		{
+			PushArrayString(tempMaps, map);
+		}
+	}
 
+	//GetCurrentMap always returns a resolved map
 	GetCurrentMap(map, PLATFORM_MAX_PATH);
 	RemoveStringFromArray(tempMaps, map);
 
@@ -2227,7 +2252,8 @@ public Native_CanNominate(Handle:plugin, numParams)
 stock AddMapItem(const String:map[])
 {
 	char sMap[128];
-	GetPrettyMapName(map, sMap, sizeof(sMap));
+	GetMapDisplayName(map, sMap, sizeof sMap);
+	GetPrettyMapName(sMap, sMap, sizeof(sMap));
 	if (g_NativeVotes)
 	{
 		NativeVotes_AddItem(g_VoteMenu, map, sMap);
@@ -2238,15 +2264,15 @@ stock AddMapItem(const String:map[])
 	}
 }
 
-stock GetMapItem(Handle:menu, position, String:map[], mapLen)
+stock GetMapItem(Handle:menu, position, String:map[], mapLen, String:displayBuff[]="", displayLen=0)
 {
 	if (g_NativeVotes)
 	{
-		NativeVotes_GetItem(menu, position, map, mapLen);
+		NativeVotes_GetItem(menu, position, map, mapLen, displayBuff, displayLen);
 	}
 	else
 	{
-		GetMenuItem(menu, position, map, mapLen);
+		GetMenuItem(menu, position, map, mapLen, _, displayBuff, displayLen);
 	}
 }
 

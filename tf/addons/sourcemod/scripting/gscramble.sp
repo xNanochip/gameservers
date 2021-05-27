@@ -909,6 +909,10 @@ public OnConfigsExecuted()
     new bool:bAuto = false;
 
     GetCurrentMap(sMapName, 32);
+    if (StrContains(sMapName, "workshop") != -1)
+	{
+		GetMapDisplayName(sMapName, sMapName, sizeof sMapName);
+	}
     SetConVarString(cvar_Version, VERSION);
 
     //load load global values

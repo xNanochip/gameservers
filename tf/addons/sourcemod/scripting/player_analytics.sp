@@ -227,6 +227,10 @@ public Action Timer_HandleConnect(Handle timer, any userid) {
 	char buffers[10][256];
 	FormatTime(date, sizeof(date), "%Y-%m-%d");
 	GetCurrentMap(map, sizeof(map));
+	if (StrContains(map, "workshop") != -1)
+	{
+		GetMapDisplayName(map, map, sizeof map);
+	}
 	GetClientName(client, buffers[0], sizeof(buffers[]));
 	GetClientAuthId(client, AuthId_Steam2, buffers[1], sizeof(buffers[]));
 	int num = FlagBitsToArray(GetUserFlagBits(client), flags, sizeof(flags));
