@@ -32,26 +32,6 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
         }
         return Plugin_Stop;
     }
-    /*
-    // MEGA DEBUG
-    if (StrContains(sArgs, "steamdown", false) != -1)
-    {
-        Steam_SteamServersDisconnected();
-        SteamWorks_SteamServersDisconnected(view_as<EResult>(1));
-        LogMessage("steamdown!");
-    }
-    if (StrContains(sArgs, "steamup", false) != -1)
-    {
-        Steam_SteamServersConnected();
-        SteamWorks_SteamServersConnected();
-        LogMessage("steamup!");
-    }
-
-    if (StrContains(sArgs, "checksteam", false) != -1)
-    {
-        LogMessage("%i", shouldCheckAuth());
-    }
-    */
     return Plugin_Continue;
 }
 
@@ -100,15 +80,18 @@ public Action OnClientCommand(int Cl, int args)
     return Plugin_Continue;
 }
 
+
 public void OnClientSettingsChanged(int Cl)
 {
+    //return;
+}
+/*
     // ignore invalid clients
     if (!IsValidClient(Cl))
     {
         return;
     }
     // shut up
-    return;
     if
     (
         // command occured recently
@@ -215,6 +198,7 @@ public void OnClientSettingsChanged(int Cl)
         }
     }
 }
+*/
 
 void userinfoSpamEtc(int userid, const char[] cvar, const char[] oldvalue, const char[] newvalue)
 {
