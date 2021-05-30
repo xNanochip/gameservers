@@ -107,7 +107,7 @@ public void Load_Maps_From_Collection(const char[] data) {
 
 public void Load_Mapcycle_From_Collection(const char[] data) {
 	File mapcycle; // The mapcycle to write to
-	char value[16]; // For later use
+	char value[64], map[64], displayName[64]; // For later use
 	KeyValues vdf = new KeyValues("response"); // For interpreting the VDF data
 	vdf.ImportFromString(data, "response"); // Interpret the response
 	vdf.JumpToKey("collectiondetails"); // Navigate to the list
@@ -120,7 +120,9 @@ public void Load_Mapcycle_From_Collection(const char[] data) {
 			vdf.GetString("filetype", value, sizeof(value)); // Is this a map?
 			if(StrEqual(value, "0")) {
 				vdf.GetString("publishedfileid", value, sizeof(value)); // Add to mapcycle_workshop.txt
-				PrintToServer("workshop/%s", value);
+				Format(map, sizeof map, "workshop/%s", value);
+				GetMapDisplayName(map, displayName, sizeof displayName);
+				PrintToServer("//%s\n%s", displayName, map);
 			}
 		} while(vdf.GotoNextKey());
 	}
