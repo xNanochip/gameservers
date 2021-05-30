@@ -5,12 +5,7 @@
 #include <cecon_items>
 #include <sdkhooks>
 #include <tf2_stocks>
-
-enum struct CEStrangePartDefinition 
-{
-	int m_iIndex;
-	char m_sEvent[256];
-}
+#include <cecon_stranges>
 
 #define MAX_ENTITIES 2048
 #define MAX_STRANGE_PARTS 10
@@ -19,6 +14,7 @@ int m_iStrangeLevel[MAX_ENTITIES + 1]; // Stores strange level of the entity.
 
 CEStrangePartDefinition m_xParts[MAX_ENTITIES + 1][MAX_STRANGE_PARTS + 1]; // Array of Strange parts of every entity.
 ArrayList m_hPartsDefinitions; // Strange Part Definitions
+ArrayList m_hLevelDataDefinitions; // Strange Part Definitions
 
 ConVar ce_strange_log_events;
 
@@ -77,47 +73,114 @@ public void ParseEconomySchema(KeyValues hConf)
 	}
 	
 	hConf.Rewind();
+	
+	m_hLevelDataDefinitions = new ArrayList(sizeof(CEStrangePartLevelData));
+	
+	if(hConf.JumpToKey("Stranges/LevelData", false))
+	{
+		if(hConf.GotoFirstSubKey())
+		{
+			do {
+				char sName[64];
+				hConf.GetSectionName(sName, sizeof(sName));
+
+				CEStrangePartLevelData hLevelData;
+				hLevelData.m_sDataName = sName;
+				
+				hLevelData.m_Levels = new ArrayList(sizeof(CEStrangePartLevel));
+				
+				if (hConf.GotoFirstSubKey())
+				{
+					do {
+						CEStrangePartLevel hLevel;
+						
+						char sPoints[11];
+						hConf.GetSectionName(sPoints, sizeof(sPoints));
+						int iPoints = StringToInt(sPoints);
+						hLevel.m_Points = iPoints;
+						
+						char sItemPrefix[64];
+						hConf.GetString("item_prefix", sItemPrefix, sizeof(sItemPrefix), "");
+						hLevel.m_sItemPrefix = sItemPrefix;
+						
+						int iItemStyle = hConf.GetNum("item_style", -1);
+						hLevel.m_iItemStyle = iItemStyle;
+						
+						hLevelData.m_Levels.PushArray(hLevel);
+						
+					} while (hConf.GotoNextKey());
+					hConf.GoBack();
+				}
+
+				m_hLevelDataDefinitions.PushArray(hLevelData);
+
+			} while (hConf.GotoNextKey());
+		}
+	}
+}
+
+public bool GetStrangeLevelDataByName(const char[] sName, CEStrangePartLevelData xDef)
+{
+	if (m_hLevelDataDefinitions == null)return false;
+	
+	for (int i = 0; i < m_hLevelDataDefinitions.Length; i++)
+	{
+		CEStrangePartLevelData levelData;
+		m_hLevelDataDefinitions.GetArray(i, levelData, sizeof(CEStrangePartLevelData));
+		if(StrEqual(levelData.m_sDataName, sName))
+		{
+			xDef = levelData;
+			return true;
+		}
+	}
+	return false;
 }
 
 public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem item, const char[] type)
 {
-	if(entity == -1) return;
+	if (entity == -1) return;
 	FlushEntityData(entity);
 
-	int iPart = CEconItems_GetEntityAttributeInteger(entity, "strange eater");
+	int iPart = 0; 
+	iPart = CEconItems_GetEntityAttributeInteger(entity, "strange eater");
 	
-	if(iPart > 0)
+	if (iPart > 0)
 	{
-		// TODO: Level calculation.
-		/*
-		int iValue = CE_GetAttributeInteger(entity, "strange eater value");
-		KeyValues hLevels = CEEaters_GetItemLevelData(defid);
-
-		int iLevel, iStyle;
-
-		if(hLevels.GotoFirstSubKey())
+		// If we have a special style that changes on the different strange levels,
+		// we'll apply it to our entity here.
+		if (CEconItems_GetEntityAttributeInteger(entity, "style changes on strange level") > 0)
 		{
-			do{
-				char sPoints[11];
-				hLevels.GetSectionName(sPoints, sizeof(sPoints));
-				int iPoints = StringToInt(sPoints);
-
-				if (iPoints > iValue)break;
-
-				iLevel = iPoints;
-				iStyle = hLevels.GetNum("item_style", 0);
-
-			} while (hLevels.GotoNextKey());
+			char sLevelData[64];
+			
+			// What catergory of data should we be looking at? e.g Digital Directive medal styling.
+			CEconItems_GetEntityAttributeString(entity, "strange level data", sLevelData, sizeof(sLevelData));
+			if (!StrEqual(sLevelData, ""))
+			{
+				CEStrangePartLevelData xLevelData;
+				
+				// Grab our level data:
+				if (GetStrangeLevelDataByName(sLevelData, xLevelData))
+				{
+					// Our strange eater value will tell us what style to use.
+					int iStrangeEaterValue = CEconItems_GetEntityAttributeInteger(entity, "strange eater value");
+					
+					ArrayList m_lLevels = xLevelData.m_Levels;
+					
+					// Apply our item styles depending on if our strange eater value meets the criteria for style.
+					for (int i = 0; i < m_lLevels.Length; i++)
+					{
+						CEStrangePartLevel xLevel;
+						xLevelData.m_Levels.GetArray(i, xLevel, sizeof(CEStrangePartLevel));
+						
+						// Do we have the required amount of points for this level?
+						if (iStrangeEaterValue >= xLevel.m_Points)
+						{
+							CEconItems_SetCustomEntityStyle(entity, xLevel.m_iItemStyle);
+						}
+					}
+				}
+			}
 		}
-		m_iLevel[entity] = iLevel;
-
-		bool bLevelChangesStyle = CE_GetAttributeInteger(entity, "style changes on strange level") > 0;
-		if(bLevelChangesStyle)
-		{
-			CEStyles_SetStyle(entity, iStyle);
-		}
-
-		delete hLevels;*/
 	}
 
 	// Dont track points if this item is a campaign item.
@@ -191,6 +254,7 @@ public Action cItemLevelUp(int args)
 public void FlushPartsMemory()
 {
 	delete m_hPartsDefinitions;
+	delete m_hLevelDataDefinitions;
 }
 
 public void FlushEntityData(int entity)
