@@ -83,15 +83,11 @@ public Action OnClientCommand(int Cl, int args)
 
 public void OnClientSettingsChanged(int Cl)
 {
-    //return;
-}
-/*
     // ignore invalid clients
     if (!IsValidClient(Cl))
     {
         return;
     }
-    // shut up
     if
     (
         // command occured recently
@@ -198,7 +194,6 @@ public void OnClientSettingsChanged(int Cl)
         }
     }
 }
-*/
 
 void userinfoSpamEtc(int userid, const char[] cvar, const char[] oldvalue, const char[] newvalue)
 {
