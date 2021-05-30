@@ -4,7 +4,6 @@
 // don't care if includes arent in newdecls
 #include <sourcemod>
 #include <regex>
-#include <sourcebanspp>
 #include <sourcecomms>
 // more colors double prints ????
 #include <color_literals>
@@ -49,20 +48,13 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
         return Plugin_Continue;
     }
 
-    if (MatchRegex(nazi, sArgs) > 0)
-    {
-        char reason[512];
-        Format(reason, sizeof(reason), "Auto banned for nazism, user said: %s", sArgs);
-        SBPP_BanPlayer(0, Cl, 0, reason);
-        return Plugin_Handled;
-    }
-
     if
     (
             MatchRegex(nword,  sArgs) > 0
          || MatchRegex(fslur,  sArgs) > 0
          || MatchRegex(tslur,  sArgs) > 0
          || MatchRegex(cslur,  sArgs) > 0
+         || MatchRegex(nazi, sArgs) > 0
     )
     {
         if (!hasClientBeenWarned[Cl])
