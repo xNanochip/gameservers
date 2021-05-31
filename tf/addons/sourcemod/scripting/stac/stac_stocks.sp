@@ -468,7 +468,8 @@ void PrintToImportant(const char[] format, any ...)
             MC_PrintToChat(i, "%s", buffer);
         }
     }
-
+    SetGlobalTransTarget(LANG_SERVER);
+    VFormat(buffer, sizeof(buffer), format, 2);
     if (StrContains(buffer, "detect", false) != -1)
     {
         StacLog("%s", buffer);
