@@ -17,6 +17,7 @@
 #define SECONDS_TO_DAYS 1.0 / 60 / 60 / 24
 
 #define BACKEND_CAMPAIGN_UPDATE_INTERVAL 30.0 // Every 30 seconds.
+#define BACKEND_CAMPAIGN_UPDATE_LIMIT 20 // Dont allow more than 20 campaign quests to be updated at the same time.
 
 public Plugin myinfo =
 {
@@ -290,6 +291,9 @@ enum struct CECampaignUpdateBatch
 	int m_iPoints;
 }
 
+bool m_bIsUpdatingBatch;
+bool m_bWasUpdatedWhileUpdating;
+
 ArrayList m_CampaignUpdateBatches;
 
 public void AddUpdateBatch(int client, const char[] campaign, int points)
@@ -322,6 +326,8 @@ public void AddUpdateBatch(int client, const char[] campaign, int points)
 	strcopy(xBatch.m_sSteamID, sizeof(xBatch.m_sSteamID), sSteamID);
 	strcopy(xBatch.m_sCampaign, sizeof(xBatch.m_sCampaign), campaign);
 	m_CampaignUpdateBatches.PushArray(xBatch);
+	
+	if (m_bIsUpdatingBatch)m_bWasUpdatedWhileUpdating = true;
 }
 
 public Action Timer_BackendUpdateInterval(Handle timer, any data)
@@ -330,9 +336,13 @@ public Action Timer_BackendUpdateInterval(Handle timer, any data)
 	if (m_CampaignUpdateBatches.Length == 0)return;
 
 	HTTPRequestHandle hRequest = CEconHTTP_CreateBaseHTTPRequest("/api/IEconomySDK/UserCampaigns", HTTPMethod_POST);
+	
+	int iCount = 0;
 
 	for (int i = 0; i < m_CampaignUpdateBatches.Length; i++)
 	{
+		if (iCount >= BACKEND_CAMPAIGN_UPDATE_LIMIT) break;
+		
 		CECampaignUpdateBatch xBatch;
 		m_CampaignUpdateBatches.GetArray(i, xBatch);
 
@@ -344,21 +354,56 @@ public Action Timer_BackendUpdateInterval(Handle timer, any data)
 
 		Steam_SetHTTPRequestGetOrPostParameter(hRequest, sKey, sValue);
 	}
+	
+	LogMessage("Sending a batch of %d quests. (%d left in the queue.)", iCount, m_CampaignUpdateBatches.Length);
 
 	Steam_SendHTTPRequest(hRequest, BackendUpdate_Callback);
-	delete m_CampaignUpdateBatches;
+	m_bIsUpdatingBatch = true;
 }
 
-public void BackendUpdate_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code)
+public void BackendUpdate_Callback(HTTPRequestHandle request, bool success, HTTPStatusCode code, any count)
 {
+	m_bIsUpdatingBatch = false;
+	bool bUpdated = m_bWasUpdatedWhileUpdating;
+	m_bWasUpdatedWhileUpdating = false;
+	
 	Steam_ReleaseHTTPRequest(request);
+	int iCount = count;
 
 	// If request was not succesful, return.
-	if (!success)return;
-	if (code != HTTPStatusCode_OK)return;
+	if (!success || code != HTTPStatusCode_OK)
+	{
+		LogMessage("Sending batch request returned with %d error. Try to send the next time. (Buffer remaining: %d, Batches affected: %d)", code, m_CampaignUpdateBatches.Length, iCount);
+		return;
+	}
+
+	if (m_CampaignUpdateBatches == null)return;
 
 	// Cool, we've updated everything.
-
+	
+	// If nothing has changed while we're making the request, remove the N batches at the bottom of the list.
+	if(!bUpdated)
+	{
+		// Remove the batch updates that we just 
+		for (int i = 0; i < iCount; i++)
+		{
+			if (i >= m_CampaignUpdateBatches.Length)break;
+			
+			m_CampaignUpdateBatches.Erase(i);
+			i--;
+			iCount--;
+		}
+	} else {	
+		LogMessage("Batch order has been updated while request was made. We are not sure if we can remove them now.");
+	}
+	
+	LogMessage("Succesfully updated %d batches. %d left in the queue.", count, m_CampaignUpdateBatches.Length);
+	
+	// If it's empty - delete it.
+	if(m_CampaignUpdateBatches.Length == 0)
+	{
+		delete m_CampaignUpdateBatches;
+	}
 }
 
 public Action teamplay_round_win(Event event, const char[] name, bool dontBroadcast)
