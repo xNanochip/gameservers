@@ -134,10 +134,10 @@ deploy-la:
     - lapub
     <<: *deploy_template
 
-deploy-brz:
-    tags:
-    - brzpub
-    <<: *deploy_template
+#deploy-brz:
+#    tags:
+#    - brzpub
+#    <<: *deploy_template
 
 deploy-chicago:
     tags:
