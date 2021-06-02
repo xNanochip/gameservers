@@ -1,3 +1,4 @@
+
 //============= Copyright Amper Software 2021, All rights reserved. ============//
 //
 // Purpose: Core plugin for Creators.TF Custom Economy plugin.
