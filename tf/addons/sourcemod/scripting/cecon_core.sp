@@ -109,7 +109,7 @@ int m_iFailureCount = 0;					// Amount of failures that we have encountered in a
 
 // To prevent infinite spam to the backend,
 // we timeout our requests if a certain amount of failures were made.
-#define COORDINATOR_FAILURE_TIMEOUT 20.0
+#define COORDINATOR_FAILURE_TIMEOUT 180.0
 
 ConVar 	ce_coordinator_enabled,		// If true, coordinator will be online.
 		ce_credentials_filename;	// Filename of the econome config.
