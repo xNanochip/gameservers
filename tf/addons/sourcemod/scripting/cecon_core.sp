@@ -551,9 +551,9 @@ public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success
 
 		} else {
 
-			// If we didn't reach the timeout limit yet, wait for one second and
+			// If we didn't reach the timeout limit yet, wait for a minute and
 			// try to make another attempt.
-			CreateTimer(1.0, Timer_DelayedCoordinatorRequest);
+			CreateTimer(60.0, Timer_DelayedCoordinatorRequest);
 		}
 	} else {
 
