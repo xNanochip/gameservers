@@ -16,7 +16,7 @@
 
 #define SECONDS_TO_DAYS 1.0 / 60 / 60 / 24
 
-#define BACKEND_CAMPAIGN_UPDATE_INTERVAL 1.0 // Every 30 seconds.
+#define BACKEND_CAMPAIGN_UPDATE_INTERVAL 30.0 // Every 30 seconds.
 
 public Plugin myinfo =
 {
