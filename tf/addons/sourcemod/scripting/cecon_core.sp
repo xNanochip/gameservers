@@ -527,20 +527,20 @@ public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success
 	if(bError)
 	{
 
-		if(!m_bIsBackendUnreachable)
-		{
-			// If last time backend was reachable, mark it as unreachable
-			// and throw a message in chat to notify everyone about downtime.
-			m_bIsBackendUnreachable = true;
-			CoordinatorOnBackendUnreachable();
-		}
-
 		// We increase this variable if an error happened.
 		m_iFailureCount++;
 
 		// If this variable reached the limit, we make a timeout.
 		if(m_iFailureCount >= COORDINATOR_MAX_FAILURES)
 		{
+			if(!m_bIsBackendUnreachable)
+			{
+				// If last time backend was reachable, mark it as unreachable
+				// and throw a message in chat to notify everyone about downtime.
+				m_bIsBackendUnreachable = true;
+				CoordinatorOnBackendUnreachable();
+			}
+			
 			// Throw a message in console.
 			LogError("Connection to Economy Coordinator failed after %d retries. Making another attempts in %f seconds", COORDINATOR_MAX_FAILURES, COORDINATOR_FAILURE_TIMEOUT);
 			// Reset the variable so that we start with zero upon next request.
