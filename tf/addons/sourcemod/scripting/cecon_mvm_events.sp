@@ -1281,10 +1281,11 @@ public Action player_healed(Handle hEvent, const char[] szName, bool bDontBroadc
 			else
 			{
 				if (health_attacker_last != 0 && TF2_IsPlayerInCondition(victim_last, TFCond_Milked)) {
-					if (amount > GetEntProp(patient, Prop_Data, "m_iMaxHealth") - GetEntProp(patient, Prop_Data, "m_iHealth"))
-					{
-						amount = GetEntProp(patient, Prop_Data, "m_iMaxHealth") - GetEntProp(patient, Prop_Data, "m_iHealth");
-					}
+					// Removed as people believed the healing counts even if the healed player is at max health (as green damage indicator mistakenly shows)
+					// if (amount > GetEntProp(patient, Prop_Data, "m_iMaxHealth") - GetEntProp(patient, Prop_Data, "m_iHealth"))
+					// {
+					// 	amount = GetEntProp(patient, Prop_Data, "m_iMaxHealth") - GetEntProp(patient, Prop_Data, "m_iHealth");
+					// }
 					CEcon_SendEventToClientFromGameEvent(healer, "TF_MVM_HEALING_MADMILK", amount, hEvent);
 				}
 
@@ -1324,9 +1325,10 @@ public Action player_healonhit(Handle hEvent, const char[] szName, bool bDontBro
 	{
 		if (TF2_IsPlayerInCondition(client, TFCond_RegenBuffed) && IsClientValid(GetConditionProvider(client, TFCond_RegenBuffed)))
 		{
-			if (health_attacker_last != 0 && amount > GetEntProp(client, Prop_Data, "m_iHealth") - health_attacker_last) {
-				amount = GetEntProp(client, Prop_Data, "m_iHealth") - health_attacker_last;
-			}
+			// Removed as people believed the healing counts even if the healed player is at max health (as green damage indicator mistakenly shows)
+			// if (health_attacker_last != 0 && amount > GetEntProp(client, Prop_Data, "m_iHealth") - health_attacker_last) {
+			// 	amount = GetEntProp(client, Prop_Data, "m_iHealth") - health_attacker_last;
+			// }
 			CEcon_SendEventToClientFromGameEvent(GetConditionProvider(client, TFCond_RegenBuffed), "TF_MVM_HEALING_CONCHEROR", amount, hEvent);
 		}
 		CEcon_SendEventToClientFromGameEvent(client, "TF_MVM_HEALING_ON_HIT", amount, hEvent);
