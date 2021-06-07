@@ -1,4 +1,3 @@
-
 //============= Copyright Amper Software 2021, All rights reserved. ============//
 //
 // Purpose: Core plugin for Creators.TF Custom Economy plugin.
@@ -578,7 +577,7 @@ public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success
 public void CoordinatorOnBackendUnreachable()
 {
 	// TODO: Make a forward.
-	PrintToChatAll("\x01Creators.TF Item Servers are \x03down.");
+	//PrintToChatAll("\x01Creators.TF Item Servers are \x03down.");
 	PrintToServer("[WARNING] Creators.TF Item Servers are down.");
 }
 
@@ -588,7 +587,7 @@ public void CoordinatorOnBackendUnreachable()
 public void CoordinatorOnBackendReachable()
 {
 	// TODO: Make a forward.
-	PrintToChatAll("\x01Creators.TF Item Servers are \x03up.");
+	//PrintToChatAll("\x01Creators.TF Item Servers are \x03up.");
 	PrintToServer("[WARNING] Creators.TF Item Servers are up.");
 }
 
