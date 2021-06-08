@@ -331,6 +331,7 @@ public Action CheckAllTraces(Handle hTimer)
             float curshortestdist;
             if
             (
+                // our cvar dist
                 dist <= g_arrCVars[MAXDIS].FloatValue
                 &&
                 // dist between our mouse and our last target
@@ -2789,7 +2790,7 @@ public int MenuHandler_UnSprayBanConf(Menu hMenu, MenuAction action, int client,
  //Used to clear a player from existence in this plugin.
 public void ClearVariables(int client)
 {
-	NormalForSpray[client] = ZERO_VECTOR;
+    NormalForSpray[client] = ZERO_VECTOR;
     g_fSprayVector[client] = ZERO_VECTOR;
     g_arrSprayName[client][0] = '\0';
     g_sAuth[client][0] = '\0';
@@ -2884,6 +2885,7 @@ public bool GetClientEyeEndLocation(int client, float vector[3])
 
 
 //Checks to make sure a spray is of a valid client.
-public bool ValidSpray(int entity, int contentsmask) {
+public bool ValidSpray(int entity, int contentsmask)
+{
     return entity > MaxClients;
 }
