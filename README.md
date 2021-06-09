@@ -1,4 +1,4 @@
-## Creators.TF Server Repository
+# Creators.TF Server Repository
 This is the repository that contains all of the code, configs, and content for the Creators.TF Servers. Creators.TF Servers have a lot of custom content such as custom weapons, cosmetics, strange parts, campaigns, just to name a few. A lot of this repository is the economy code (usually starting in `cecon_` or `ce_`), which is responsible for all of the previously mentioned custom features.
 
 The CI/CD scripts will automatically manage deployment out to all game servers when a commit is pushed.
@@ -19,6 +19,25 @@ File Structure: `<root install> / servers / tf / addons / sourcemod`
     - ∟ regextriggers - Config files required for the regex triggers plugin. Do not touch unless you know what you’re doing. 
     - ∟ sourcebans - Config files for SourceBans.
     - ∟ economy_$x.cfg - These config files are loaded in by cecon_core.smx  when it’s loaded so backend HTTP requests can go through. Do not touch these unless you have permission from a Core Developer.
+
+## Economy Plugin Outline
+- `cecon_core` - Responsible for establishing contact with the website via Long-Polling. Also handles parsing the Economy Schema from the website and sending Creators.TF Events to Clients. This plugins is required for the economy to work.
+- `cecon_items` - The core item for custom override items to work. This plugin handles getting player loadouts from the website, equipping items on players and calling forwards to other sub-item plugins.
+- `cecon_item_weapon` - Implements logic that creates custom weapons for the player.
+- `cecon_item_cosmetic` - Implements logic that creates custom cosmetics for the player.
+- `cecon_item_soundtrack` - Implements logic that creates custom music-kits for the player.
+- `cecon_contracts` - Handles receiving and updating custom player contracts with data from Creators.TF Events.
+- `cecon_tf2_events` - Creates Creators.TF Events based on ingame events.
+- `cecon_mvm_events` - Creates Creators.TF Events based on ingame events.
+- `cecon_mvm` - Handles the logic for controlling MVM-only gameservers.
+- `cecon_patreon` - Handles giving players ingame tags based on their Patreon subscription.
+- `cecon_http` - Natives to create HTTP requests to the website.
+- `cecon_matchmaking` - Currently unused due to Quickplay not being in active development.
+- `cecon_quickswitch` - Implements the !qs command to quickly switch between items in a slot without having to open the website.
+- `cecon_nohats` - Implements a command that can disable Creators.TF cosmetics for a player.
+- `cecon_giveitem` - Used to give Economy Items to admins without equipping them on the website.
+- `cecon_campaigns` - Handles receiving and updating campaigns with data from Creators.TF Events.
+- `cecon_stats` - Currently unfinished: Used to send statistics to the website with data from Creators.TF Events.
 
 ## Game Server Configuration
 There are three types of `.cfg` files to worry about:
