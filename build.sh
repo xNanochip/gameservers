@@ -1,69 +1,80 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-shopt -s globstar
+# shopt -s globstar
 
-SPCOMP_PATH=$(realpath "tf/addons/sourcemod/scripting/spcomp64")
-COMPILED_DIR=$(realpath 'tf/addons/sourcemod/plugins/')
-SCRIPTS_DIR=$(realpath 'tf/addons/sourcemod/scripting/')
+SPCOMP_PATH="./tf/addons/sourcemod/scripting/spcomp64"
+SCRIPTS_DIR="tf/addons/sourcemod/scripting/"
+COMPILED_DIR="tf/addons/sourcemod/plugins/"
+UNCOMPILED_LIST=$(mktemp)
+UPDATED_LIST=$(mktemp)
+trap "rm -f ${UNCOMPILED_LIST} ${UPDATED_LIST}" EXIT
 
-chmod 744 "$SPCOMP_PATH"
+usage() {
+    echo "This script looks for all the uncompiled .sp files, and those that changed against a reference commit"
+    echo "Then it compiles it somehow"
+    echo "Usage: ./build.sh <reference>"
+    exit 1
+}
 
-git diff --name-only HEAD "$1" | grep "\.sp$" > ./00
+input_validation() {
+    GIT_REF=${1}
+    if git rev-parse --verify --quiet ${GIT_REF} > /dev/null; then
+        info "Comparing against ${GIT_REF}"
+    else
+        echo "Reference ${GIT_REF} does not exists"
+        exit 2
+    fi
+}
+
+compile() {
+    while read -r plugin; do
+        echo ${SPCOMP_PATH} -D "${SCRIPTS_DIR}" "${plugin/${SCRIPTS_DIR}/}" -o "${COMPILED_DIR}$(basename "${plugin/.sp/}").smx" -v0
+    done < ${1}
+}
+
+[[ -x ${SPCOMP_PATH} ]] || chmod u+x ${SPCOMP_PATH}
+[[ -z ${1} ]] && usage || input_validation ${1}
+
+
+# ==========================
+# Compile all scripts that have been updated
+# ==========================
+
+echo "[INFO] Looking for all .sp files that have been updated"
+UPDATED=$(git diff --name-only HEAD "${GIT_REF}" | grep "\.sp$" | grep -v "*/stac/*" | grep -v "*/include/*" | grep -v "*/disabled/*" | grep -v "*/external/*" | grep -v "*/economy/*")
+
+echo "[INFO] Generating list of updated scripts:"
+echo "========================="
+# double check that the logic is correct here
+while IFS= read -r line; do
+    echo rm -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})"
+    echo ${line} >> ${UPDATED_LIST}
+done <<< "${UPDATED}"
+echo "========================="
+
+echo "[INFO] Compiling updated plugins"
+compile ${UPDATED_LIST}
+exit 0
 
 # ==========================
 # Compile all scripts that don't have any smxes
 # ==========================
 
-echo "Seeking for .sp in $SCRIPTS_DIR/**/*"
+echo "[INFO] Looking for all .sp files in ${SCRIPTS_DIR}"
+# double check that the logic is correct here
+UNCOMPILED=$(find ${SCRIPTS_DIR} -iname "*.sp" ! -path "*/stac/*" ! -path "*/include/*" ! -path "*/disabled/*" ! -path "*/external/*" ! -path "*/economy/*")
 
-for p in "$SCRIPTS_DIR"/**/*
-do
-    if [ "${p##*.}" == 'sp' ]; then
-        if [[ $p =~ "stac/" ]] || [[ $p =~ "include/" ]] || [[ $p =~ "disabled/" ]] || [[ $p =~ "external/" ]] || [[ $p =~ "economy/" ]]; then
-            continue
-        fi
-        PLUGIN_NAME=$(realpath --relative-to "$SCRIPTS_DIR" "$p")
-        PLUGIN_NAME=${PLUGIN_NAME%.*}
-        PLUGIN_SCRIPT_PATH="$SCRIPTS_DIR/$PLUGIN_NAME.sp"
-        PLUGIN_COMPILED_PATH="$COMPILED_DIR/$(basename "$PLUGIN_NAME").smx"
-
-        if [[ ! -f "$PLUGIN_COMPILED_PATH" ]]; then
-            echo "$PLUGIN_SCRIPT_PATH" >> ./00
-        fi
-    fi
-done
-
-echo "[INFO] Full compile list:"
+echo "[INFO] Generating list of uncompiled scripts:"
 echo "========================="
-cat ./00
+while IFS= read -r line; do
+    [[ ! -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})" ]] && echo ${line} | tee -a ${UNCOMPILED_LIST}
+done <<< "${UNCOMPILED}"
 echo "========================="
 
+echo "[INFO] Compiling uncompiled plugins"
+compile ${UNCOMPILED_LIST}
 
-echo "[INFO] Starting processing of plugin files."
-while read -r p; do
-    PLUGIN_NAME=$(realpath --relative-to "$SCRIPTS_DIR" "$p")
-    PLUGIN_NAME=${PLUGIN_NAME%.*}
-    PLUGIN_SCRIPT_PATH="$SCRIPTS_DIR/$PLUGIN_NAME.sp"
-    PLUGIN_COMPILED_PATH="$COMPILED_DIR/$(basename "$PLUGIN_NAME").smx"
-
-
-    if [[ ! -f "$PLUGIN_SCRIPT_PATH" ]]; then
-        if [[ -f "$PLUGIN_COMPILED_PATH" ]]; then
-            rm "$PLUGIN_COMPILED_PATH";
-        fi
-    fi
-
-    if [[ $p =~ "stac/" ]] || [[ $p =~ "include/" ]] || [[ $p =~ "disabled/" ]] || [[ $p =~ "external/" ]] || [[ $p =~ "economy/" ]] || [[ ! -f "$PLUGIN_SCRIPT_PATH" ]]; then
-        continue
-    fi
-
-    echo "$PLUGIN_SCRIPT_PATH";
-    if [[ -f "$PLUGIN_SCRIPT_PATH" ]]; then
-        $SPCOMP_PATH -D"$SCRIPTS_DIR" "$(realpath --relative-to "$SCRIPTS_DIR" "$PLUGIN_SCRIPT_PATH")" -o"$PLUGIN_COMPILED_PATH" -v0
-    fi
-done < ./00
-rm ./00
 
 echo "[INFO] All plugin files are recompiled."
 
-exit;
+exit 0
