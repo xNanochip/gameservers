@@ -139,10 +139,10 @@ deploy-la:
 #    - brzpub
 #    <<: *deploy_template
 
-deploy-chicago:
-    tags:
-    - chicago
-    <<: *deploy_template
+#deploy-chicago:
+#    tags:
+#    - chicago
+#    <<: *deploy_template
 
 deploy-chicago2:
     tags:
