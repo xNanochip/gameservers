@@ -73,7 +73,7 @@ public Plugin myinfo =
 	name = "Creators.TF Items Module",
 	author = "Creators.TF Team",
 	description = "Loadout, attributes, items module for Creators.TF Custom Economy.",
-	version = "1.1",
+	version = "1.1.1",
 	url = "https://creators.tf"
 }
 
@@ -709,7 +709,12 @@ public bool GivePlayerCEItem(int client, CEItem item)
 			m_hEconItem[iEntity] = item;
 
 			// Remove all of the TF2 Attributes.
-			TF2Attrib_RemoveAll(iEntity);
+			
+			// When we merged econ/persist-item into master, this caused a regression bug
+			// where MVM upgrades would get removed. TODO (ZoNiCaL): Possibly look at a way of
+			// preserving MVM upgrades but doing this step as well?
+		
+			//TF2Attrib_RemoveAll(iEntity);
 			
 			// If we have any original attributes in our attribute list,
 			// make sure to apply them here.
