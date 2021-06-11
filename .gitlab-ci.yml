@@ -134,21 +134,6 @@ deploy-la:
     - lapub
     <<: *deploy_template
 
-#deploy-brz:
-#    tags:
-#    - brzpub
-#    <<: *deploy_template
-
-#deploy-chicago:
-#    tags:
-#    - chicago
-#    <<: *deploy_template
-
-deploy-chicago2:
-    tags:
-    - chicago2
-    <<: *deploy_template
-
 deploy-chicago3:
     tags:
     - chicago3
@@ -169,10 +154,6 @@ deploy-eupotato2:
     - eupotato2
     <<: *deploy_template
 
-deploy-europe2:
-    tags:
-    - eu2
-    <<: *deploy_template
 
 deploy-fastdl:
     stage: deploy
