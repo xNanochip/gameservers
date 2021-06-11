@@ -131,10 +131,9 @@ public void OnPluginStart()
 	HookConVarChange(ce_coordinator_enabled, ce_coordinator_enabled__CHANGED);
 	HookConVarChange(ce_credentials_filename, ce_credentials_filename__CHANGED);
 
-	CreateTimer(5.0, Timer_CoordinatorWatchDog);
-
-	// We check every 5 seconds if coordinator is running, if it is not
-	// but it should, restart it.
+	// Start long polling in 5 seconds. Why? I don't know yet.
+	// TODO: THIS PROBABLY CAN BE REMOVED
+	CreateTimer(5.0, Timer_InitialStartLongPolling);
 
 	// ----------- SCHEMA ----------- //
 
@@ -166,7 +165,7 @@ public void OnPluginStart()
 }
 
 //-------------------------------------------------------------------
-// Purpose: Fired when map changes.
+// Purpose: Fired when map starts or changes. This is also fired after OnPluginStart if the plugin is manually loaded.
 //-------------------------------------------------------------------
 public void OnMapStart()
 {
@@ -224,7 +223,7 @@ public Action player_spawn(Handle hEvent, const char[] szName, bool bDontBroadca
 }
 
 //-------------------------------------------------------------------
-// Purpose: Fired when SteamTools is late loaded.
+// Purpose: Fired when SteamTools is late loaded. TODO: Need to confirm if this is actually a late load or if it loads regardless.
 //-------------------------------------------------------------------
 public void Steam_FullyLoaded()
 {
@@ -270,12 +269,19 @@ public void ReloadEconomyCredentials()
 
 	if(!FileExists(sLoc))
 	{
-		LogError("Invalid economy credentials file name.");
+		SetFailState("Couldn't find economy credentials file. Expected: %s", sLoc);
+		return;
 	}
 
 	// Create a new KeyValues to store the credentials in.
 	KeyValues kv = new KeyValues("Economy");
-	if (!kv.ImportFromFile(sLoc))return;
+	if (!kv.ImportFromFile(sLoc))
+	{
+		// This usually means that the KV format is incorrect in the file.
+		SetFailState("Failed to import economy credentials into key values.");
+		delete kv;
+		return;
+	}
 
 	// Load everything from the file.
 	kv.GetString("Key", m_sEconomyAccessKey, sizeof(m_sEconomyAccessKey));
@@ -289,7 +295,7 @@ public void ReloadEconomyCredentials()
 
 	// Everything was succesful, mark it as true again.
 	m_bCredentialsLoaded = true;
-	LogMessage("Loaded custom cconomy backend credentials.");
+	LogMessage("Loaded economy backend credentials.");
 
 	// Start coordinator request, if it's not started already.
 	SafeStartCoordinatorPolling();
@@ -410,7 +416,7 @@ public any Native_GetAuthorizationKey(Handle plugin, int numParams)
 // Purpose: Timer that reenables coordinator queue if it's offline,
 // but it should be online.
 //-------------------------------------------------------------------
-public Action Timer_CoordinatorWatchDog(Handle timer, any data)
+public Action Timer_InitialStartLongPolling(Handle timer, any data)
 {
 	SafeStartCoordinatorPolling();
 }
@@ -443,10 +449,18 @@ public void StartCoordinatorLongPolling()
 	// and all these conditions are met.
 
 	// If we decided not to have coordiantor feature, don't do it.
-	if (!ce_coordinator_enabled.BoolValue)return;
+	if (!ce_coordinator_enabled.BoolValue)
+	{
+		LogMessage("ce_coordinator_enabled is disabled therefore we won't start economy.");
+		return;
+	}
 
 	// If we failed to read economy credentials (Backend Domain, API Key, etc..).
-	if (!m_bCredentialsLoaded)return;
+	if (!m_bCredentialsLoaded)
+	{
+		SetFailState("Economy credentials was not loaded for some reason, therefore economy cannot start.");
+		return;
+	}
 
 	// All conditions were met, mark this flag as true and start the request.
 	m_bCoordinatorActive = true;
@@ -516,6 +530,7 @@ public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success
 			// the connection. We do not consider that as an error and just make another request
 			// right away.
 
+			// CoordinatorProcessRequestContent() will only return true if the response was not in Keyvalues or the ImportFromString failed.
 			bError = CoordinatorProcessRequestContent(request);
 		}
 	}
@@ -523,25 +538,25 @@ public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success
 	// If we ended up with an error, that means that something went wrong.
 	// Let's try a few more times (defined in COORDINATOR_MAX_FAILURES) and then
 	// make a timeout for COORDINATOR_FAILURE_TIMEOUT seconds.
-	if(bError)
+	if (bError)
 	{
 
 		// We increase this variable if an error happened.
 		m_iFailureCount++;
 
 		// If this variable reached the limit, we make a timeout.
-		if(m_iFailureCount >= COORDINATOR_MAX_FAILURES)
+		if (m_iFailureCount >= COORDINATOR_MAX_FAILURES)
 		{
-			if(!m_bIsBackendUnreachable)
+			if (!m_bIsBackendUnreachable)
 			{
 				// If last time backend was reachable, mark it as unreachable
 				// and throw a message in chat to notify everyone about downtime.
 				m_bIsBackendUnreachable = true;
 				CoordinatorOnBackendUnreachable();
 			}
-			
+
 			// Throw a message in console.
-			LogError("Connection to Economy Coordinator failed after %d retries. Making another attempts in %f seconds", COORDINATOR_MAX_FAILURES, COORDINATOR_FAILURE_TIMEOUT);
+			LogError("Connection to backend failed after %d retries. Making another attempts in %f seconds", COORDINATOR_MAX_FAILURES, COORDINATOR_FAILURE_TIMEOUT);
 			// Reset the variable so that we start with zero upon next request.
 			m_iFailureCount = 0;
 
@@ -553,6 +568,7 @@ public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success
 
 			// If we didn't reach the timeout limit yet, wait for a minute and
 			// try to make another attempt.
+			LogError("Connection to backend failed. Count: %d. Retrying...", m_iFailureCount);
 			CreateTimer(60.0, Timer_DelayedCoordinatorRequest);
 		}
 	} else {
@@ -560,7 +576,7 @@ public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success
 		// If there was no error, and last time backend was marked as unreachable,
 		// that means we've connected to it again.
 		// Send a message in chat to notify everyone that economy is up again.
-		if(m_bIsBackendUnreachable)
+		if (m_bIsBackendUnreachable)
 		{
 			m_bIsBackendUnreachable = false;
 			CoordinatorOnBackendReachable();
@@ -578,7 +594,7 @@ public void CoordinatorOnBackendUnreachable()
 {
 	// TODO: Make a forward.
 	//PrintToChatAll("\x01Creators.TF Item Servers are \x03down.");
-	PrintToServer("[WARNING] Creators.TF Item Servers are down.");
+	LogMessage("[WARNING] Creators.TF Item Servers are down.");
 }
 
 //-------------------------------------------------------------------
@@ -588,7 +604,7 @@ public void CoordinatorOnBackendReachable()
 {
 	// TODO: Make a forward.
 	//PrintToChatAll("\x01Creators.TF Item Servers are \x03up.");
-	PrintToServer("[WARNING] Creators.TF Item Servers are up.");
+	LogMessage("[WARNING] Creators.TF Item Servers are up.");
 }
 
 //-------------------------------------------------------------------
@@ -605,7 +621,7 @@ public void RF_DelayerCoordinatorRequest(any data)
 //-------------------------------------------------------------------
 public Action Timer_DelayedCoordinatorRequest(Handle timer, any data)
 {
-	StartCoordinatorLongPolling();
+	SafeStartCoordinatorPolling();
 }
 
 //-------------------------------------------------------------------
@@ -639,7 +655,11 @@ public bool CoordinatorProcessRequestContent(HTTPRequestHandle request)
 
 	// KeyValues.ImportFromString() returns false if it failed to process string into a KV handle.
 	// If this happens we return true because some error has occured.
-	if (!kv.ImportFromString(content))return true;
+	if (!kv.ImportFromString(content))
+	{
+		LogError("The response was not able to be read in Keyvalue Format.");
+		return true;
+	}
 
 	char sSessionKey[16];
 	kv.GetString("session_id", sSessionKey, sizeof(sSessionKey));
@@ -1145,7 +1165,7 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	if (!IsClientValid(client))return;
-	
+
 	// If we are playing MvM, we shouldn't be processing events for bots.
 	if (GameRules_GetProp("m_bPlayingMannVsMachine") != 0)
 	{
@@ -1154,11 +1174,11 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 			return;
 		}
 	}
-	
+
 	// TODO: Could we also add a check to prevent spectators from receiving any events? Or possibly pass through a
-	// default argument that prevents spectators from receiving events by default but it can be toggled? 
+	// default argument that prevents spectators from receiving events by default but it can be toggled?
 	// Food for thought. - ZoNiCaL.
-	
+
 	// APPENDIX - I'm currently disabling all spectators from receiving events here,
 	// but I want it to become some sort of optional argument in the native later.
 	if (GetClientTeam(client) < TF_TEAM_RED) return;
@@ -1174,7 +1194,7 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 		bool bSendMessage = true;
 		char szEventString[128];
 		GetConVarString(ce_events_log_event_filter, szEventString, sizeof(szEventString));
-		
+
 		if (!StrEqual(szEventString, ""))
 		{
 			if (StrContains(event, szEventString, false) != -1)
@@ -1185,14 +1205,14 @@ public any Native_SendEventToClient(Handle plugin, int numParams)
 			{
 				bSendMessage = false;
 			}
-			
+
 		}
-		
+
 		if (bSendMessage)
 		{
 			LogMessage("%s (client \"%N\") (add %d) (unique_id)", event, client, add, unique_id);
 		}
-		
+
 	}
 
 	// We only start new queue, if we are sure nothing is currently being proccessed.

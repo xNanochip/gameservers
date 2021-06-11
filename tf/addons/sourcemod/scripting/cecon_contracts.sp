@@ -59,6 +59,7 @@ bool m_bIsObjectiveMarked[MAXPLAYERS + 1][MAX_OBJECTIVES + 1];
 
 ConVar ce_quest_friend_sharing_enabled;
 ConVar ce_quest_background_enabled;
+ConVar ce_quest_debug;
 
 public void OnPluginStart()
 {
@@ -79,6 +80,7 @@ public void OnPluginStart()
 
 	ce_quest_friend_sharing_enabled = CreateConVar("ce_quest_friend_sharing_enabled", "1", "Enabled \"Friendly Fire\" feature, that allows to share progress with friends.");
 	ce_quest_background_enabled = CreateConVar("ce_quest_background_enabled", "1", "Enable background quests to track themselves.");
+	ce_quest_debug = CreateConVar("ce_quest_debug", "1", "Debug quests.");
 
 }
 
@@ -637,6 +639,8 @@ public void RequestClientContractProgress(int client)
 	Steam_SetHTTPRequestGetOrPostParameter(httpRequest, "steamid", sSteamID64);
 
 	Steam_SendHTTPRequest(httpRequest, RequestClientContractProgress_Callback, client);
+	
+	if (ce_quest_debug.BoolValue) PrintToServer("Sent Progress Request for %N", client);
 	return;
 }
 
@@ -645,14 +649,18 @@ public void RequestClientContractProgress_Callback(HTTPRequestHandle request, bo
 	// PrintToChatAll("RequestClientContractProgress_Callback() %d", code);
 	// We are not processing bots.
 	if (!IsClientReady(client))return;
+	if (ce_quest_debug.BoolValue) PrintToServer("Client ready: %N", client);
 
 	// If request was not succesful, return.
 	if (!success)return;
+	if (ce_quest_debug.BoolValue) PrintToServer("Success: %N", client);
 	if (code != HTTPStatusCode_OK)return;
+	if (ce_quest_debug.BoolValue) PrintToServer("HTTPStatusCode_OK: %N", client);
 
 	// Getting response size.
 	int size = Steam_GetHTTPResponseBodySize(request);
 	if(size < 0)return;
+	if (ce_quest_debug.BoolValue) PrintToServer("Size > 0: %N", client);
 
 	char[] content = new char[size + 1];
 
@@ -667,6 +675,7 @@ public void RequestClientContractProgress_Callback(HTTPRequestHandle request, bo
 
 	// If we fail to import content return.
 	if (!Response.ImportFromString(content))return;
+	if (ce_quest_debug.BoolValue) PrintToServer("Passed import for %N", client);
 
 	delete m_hProgress[client];
 	m_hProgress[client] = new ArrayList(sizeof(CEQuestClientProgress));
@@ -754,6 +763,7 @@ public void OnClientDisconnect(int client)
 
 public void PrepareClientData(int client)
 {
+	if (ce_quest_debug.BoolValue) PrintToServer("PrepareClientData %N", client);
 	if (!IsFakeClient(client))
 	{
 		GetClientAuthId(client, AuthId_SteamID64, m_sPlayerSteamID64[client], sizeof(m_sPlayerSteamID64[]));
@@ -830,18 +840,23 @@ public void SetClientActiveQuestByIndex(int client, int quest)
 {
 	// We can't change contract if we didn't load progress yet.
 	if (!IsClientProgressLoaded(client))return;
+	if (ce_quest_debug.BoolValue) PrintToServer("Client Progress was loaded: %N", client);
 	// We don't reactivate the quest if it's already active.
 	if (m_xActiveQuestStruct[client].m_iIndex == quest)return;
+	if (ce_quest_debug.BoolValue) PrintToServer("Contract wasn't a reactivate: %N", client);
 
 	if(quest == 0)
 	{
 		m_xActiveQuestStruct[client].m_iIndex = 0;
+		if (ce_quest_debug.BoolValue) PrintToServer("quest == 0: %N", client);
 	} else {
 		CEQuestDefinition xQuest;
+		if (ce_quest_debug.BoolValue) PrintToServer("quest != 0: %N", client);
 		if(GetQuestByDefIndex(quest, xQuest))
 		{
 			// We can't activate background quests.
 			if (xQuest.m_bBackground)return;
+			if (ce_quest_debug.BoolValue) PrintToServer("Contract wasn't a background quest: %N", client);
 
 			m_xActiveQuestStruct[client] = xQuest;
 
