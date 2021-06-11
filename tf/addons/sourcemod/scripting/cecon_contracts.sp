@@ -71,8 +71,6 @@ public void OnPluginStart()
 	
 	//ce_contracts_log = CreateConVar("ce_contracts_log", "0");
 	//ce_contracts_log_contract_filter = CreateConVar("ce_contracts_log_contract_filter", "");
-	
-	OnLateLoad();
 
 	CreateTimer(QUEST_HUD_REFRESH_RATE, Timer_HudRefresh, _, TIMER_REPEAT);
 	CreateTimer(BACKEND_QUEST_UPDATE_INTERVAL, Timer_QuestUpdateInterval, _, TIMER_REPEAT);
@@ -185,6 +183,7 @@ public Action cQuestActivate(int args)
 public void OnAllPluginsLoaded()
 {
 	ParseEconomyConfig(CEcon_GetEconomySchema());
+	OnLateLoad();
 }
 
 public void CEcon_OnSchemaUpdated(KeyValues hSchema)
