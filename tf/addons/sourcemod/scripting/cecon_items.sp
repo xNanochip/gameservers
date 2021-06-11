@@ -60,6 +60,7 @@
 #include <tf2>
 #include <tf2_stocks>
 #include <tf2attributes>
+#include <tf_persist_item>
 
 #pragma newdecls optional
 #include <steamtools>
@@ -72,7 +73,7 @@ public Plugin myinfo =
 	name = "Creators.TF Items Module",
 	author = "Creators.TF Team",
 	description = "Loadout, attributes, items module for Creators.TF Custom Economy.",
-	version = "1.0",
+	version = "1.1",
 	url = "https://creators.tf"
 }
 
@@ -114,6 +115,18 @@ bool m_bFullReapplication[MAXPLAYERS + 1];
 TFClassType m_nLoadoutUpdatedForClass[MAXPLAYERS + 1];
 
 ConVar ce_items_use_backend_loadout;
+
+/*
+	TODO(Zonical): Version 1.2
+		- Start experimentation of whether wearables are consistent (e.g not despawned on player death and whatnot).
+		- Attempt some optimisations of applying loadouts by comparing two different loadout states: OLD and CURRENT.
+		If an item is in both OLD and CURRENT, we shouldn't bother at all about applying that item, and just keep it
+		on the player. TF2_OnReplaceItem should handle the rest for us. If an item is in OLD but not in CURRENT, we
+		know we should remove it. This could save having to create and destroy a lot of entities, which could be the
+		source for FPS issues that have been going on recently.
+		- Create natives for grabbing a persons loadout by class. This could make disguised spies applying other peoples
+		cosmetics a possibility. CEconItems_GetClientClassLoadout(int client, CEconLoadoutClass class)?
+*/
 
 // Native and Forward creation.
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -398,6 +411,7 @@ public void PrecacheItemsFromSchema(KeyValues hSchema)
                 // Base item name and type.
 				hSchema.GetString("name", hDef.m_sName, sizeof(hDef.m_sName));
 				hSchema.GetString("type", hDef.m_sType, sizeof(hDef.m_sType));
+				//hSchema.GetString("provider", hDef.m_sProvider, sizeof(hDef.m_sProvider), "[PRV:1]");
 
                 // Getting attributes.
                 if(hSchema.JumpToKey("attributes"))
@@ -686,14 +700,24 @@ public bool GivePlayerCEItem(int client, CEItem item)
 		int iEntity = -1;
 		Call_Finish(iEntity);
 
-        // If subplugins return an entity index, we attach the given CEItem struct to it
-        // and apply original TF attributes if possible.
+        // If subplugins return an entity index, we attach the given CEItem struct to it.
+        // We'll then remove clear all the attributes to set this weapon to base stats,
+        // and then apply original TF attributes if possible.
 		if(IsEntityValid(iEntity))
 		{
 			m_bIsEconItem[iEntity] = true;
 			m_hEconItem[iEntity] = item;
 
+			// Remove all of the TF2 Attributes.
+			TF2Attrib_RemoveAll(iEntity);
+			
+			// If we have any original attributes in our attribute list,
+			// make sure to apply them here.
 			CEconItems_ApplyOriginalAttributes(iEntity);
+			
+			// Set our item style to default. Other plugins should override this
+			// on CEconItems_OnItemIsEquipped as they'll have access to this entity
+			// by then.
 			CEconItems_SetCustomEntityStyle(iEntity, 0);
 		}
 
@@ -920,6 +944,7 @@ public any Native_SetAttributeStringInArray(Handle plugin, int numParams)
 
 	return;
 }
+
 
 //---------------------------------------------------------------------
 // Native: CEconItems_SetAttributeIntegerInArray
@@ -2002,4 +2027,29 @@ public void AttributeUpdate_Callback(HTTPRequestHandle request, bool success, HT
 	if (code != HTTPStatusCode_OK)return;
 
 	// Cool, we've updated everything.
+}
+
+public Action TF2_OnReplaceItem(int client, int item)
+{
+	// Get our current class.
+	TFClassType m_hClientClass = TF2_GetPlayerClass(client);
+	CEconLoadoutClass m_hLoadoutClass = GetCEconLoadoutClassFromTFClass(m_hClientClass);
+	
+	// Is this item we're currently looking at a Creators.TF item?
+	if (CEconItems_IsEntityCustomEconItem(item))
+	{
+		// Grab this item in the form of a CEItem.
+		CEItem xItem;
+		CEconItems_GetEntityItemStruct(item, xItem);
+		
+		// Is this item currently in our loadout?
+		if (CEconItems_IsItemFromClientClassLoadout(client, m_hLoadoutClass, xItem))
+		{
+			// Don't replace it.
+			return Plugin_Handled;
+		}
+	}
+	
+	// We couldn't find this item in our loadout anymore, replace it.
+	return Plugin_Continue;
 }

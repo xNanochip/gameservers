@@ -40,7 +40,7 @@ public Plugin myinfo =
 	name = "Creators.TF (Cosmetics)", 
 	author = "Creators.TF Team", 
 	description = "Handler for the Cosmetic custom item type.", 
-	version = "1.0", 
+	version = "1.1", 
 	url = "https://creators.tf"
 };
 
@@ -70,6 +70,19 @@ bool m_bHasSeenWarning[MAXPLAYERS + 1];
 Handle m_hWarningTimers[MAXPLAYERS + 1];
 
 Handle g_WarningCookie;
+
+/*
+	TODO: Version 1.2
+		- Start experimentation of whether wearables are consistent (e.g not despawned on player death and whatnot).
+		- Attempt some optimisations of applying loadouts by comparing two different loadout states: OLD and CURRENT.
+		If an item is in both OLD and CURRENT, we shouldn't bother at all about applying that item, and just keep it
+		on the player. TF2_OnReplaceItem should handle the rest for us. If an item is in OLD but not in CURRENT, we
+		know we should remove it. This could save having to create and destroy a lot of entities, which could be the
+		source for FPS issues that have been going on recently.
+		- Create natives for grabbing a persons loadout by class. This could make disguised spies applying other peoples
+		cosmetics a possibility. CEconItems_GetClientClassLoadout(int client, CEconLoadoutClass class)?
+		- Remove the stupid comments and document everything better.
+*/
 
 public void OnPluginStart()
 {
@@ -112,6 +125,7 @@ public void OnClientDisconnect(int client)
 //--------------------------------------------------------------------
 public Action RemoveWearableWarning(Handle timer, int client)
 {
+	m_bHasSeenWarning[client] = false;
 	m_hWarningTimers[client] = null;
 }
 
@@ -151,6 +165,46 @@ public int EquipOverrideItem(int client, CEItem item, CEItemDefinitionCosmetic h
 	return -1;
 }
 
+public int FindSimilarWearableByRegion(int client, int region)
+{
+	// Loop through all of our cosmetics.
+	int next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
+	while (next != -1)
+	{
+		int iEdict = next;
+		next = GetEntPropEnt(iEdict, Prop_Data, "m_hMovePeer");
+
+		char classname[32];
+		GetEntityClassname(iEdict, classname, 32);
+
+		if (strncmp(classname, "tf_wearable", 11) != 0) continue;
+
+		char sNetClassName[32];
+		GetEntityNetClass(iEdict, sNetClassName, sizeof(sNetClassName));
+		
+		// We only remove CTFWearable and CTFWearableCampaignItem items.
+		if (!StrEqual(sNetClassName, "CTFWearable") && !StrEqual(sNetClassName, "CTFWearableCampaignItem"))continue;
+		
+		if (CEconItems_IsEntityCustomEconItem(iEdict))continue;
+		if (!HasEntProp(iEdict, Prop_Send, "m_iItemDefinitionIndex"))continue;
+		
+		int iItemDefIndex = GetEntProp(iEdict, Prop_Send, "m_iItemDefinitionIndex");
+		
+		// Invalid Item Definiton Index.
+		if (iItemDefIndex == 0xFFFF)continue;
+		
+		int iCompareBits = TF2Econ_GetItemEquipRegionGroupBits(iItemDefIndex);
+		if (region & iCompareBits)
+		{
+			// This item shares an equip region with another cosmetic.
+			return iEdict;
+		}
+	}
+	// We could not find a similar entity.
+	return -1;
+}
+
+
 //--------------------------------------------------------------------
 // Purpose: This is called upon item equipping process.
 //--------------------------------------------------------------------
@@ -168,64 +222,44 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 			return -1;
 		}
 		
-		// If we can get another cosmetic without having to remove anything,
-		// apply it here.
+		// Can we get another cosmetic?
 		if (CanGetAnotherCosmetic(client))
 		{
-			// Attempt to put on our cosmetic.
-			int iWearable = EquipOverrideItem(client, item, hDef);
-			if (iWearable != -1) { return iWearable; }
-		}
-		
-		// Let's try to remove base TF2 cosmetics with similar equip regions.
-		int next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
-		while (next != -1)
-		{
-			int iEdict = next;
-			next = GetEntPropEnt(iEdict, Prop_Data, "m_hMovePeer");
-
-			char classname[32];
-			GetEntityClassname(iEdict, classname, 32);
-
-			if (strncmp(classname, "tf_wearable", 11) != 0) continue;
-
-			char sNetClassName[32];
-			GetEntityNetClass(iEdict, sNetClassName, sizeof(sNetClassName));
+			// Does this item share any equip regions with another?
+			int iSimilarWearable = FindSimilarWearableByRegion(client, hDef.m_iEquipRegion);
 			
-			// We only remove CTFWearable and CTFWearableCampaignItem items.
-			if (!StrEqual(sNetClassName, "CTFWearable") && !StrEqual(sNetClassName, "CTFWearableCampaignItem"))continue;
-			
-			if (CEconItems_IsEntityCustomEconItem(iEdict))continue;
-			if (!HasEntProp(iEdict, Prop_Send, "m_iItemDefinitionIndex"))continue;
-			
-			int iItemDefIndex = GetEntProp(iEdict, Prop_Send, "m_iItemDefinitionIndex");
-			
-			// Invalid Item Definiton Index.
-			if (iItemDefIndex == 0xFFFF)continue;
-			
-			int iCompareBits = TF2Econ_GetItemEquipRegionGroupBits(iItemDefIndex);
-			if (hDef.m_iEquipRegion & iCompareBits != 0)
+			// Do we have a similar wearable?
+			if (IsValidEntity(iSimilarWearable) && IsWearableCosmetic(iSimilarWearable))
 			{
-				// We found a merging base TF2 cosmetic. Remove it.
-				TF2Wear_RemoveWearable(client, iEdict);
-				AcceptEntityInput(iEdict, "Kill");
+				// Change the model of our pre-existing wearable:
+				char sModel[512];
+				strcopy(sModel, sizeof(sModel), hDef.m_sWorldModel);
+				ParseCosmeticModel(client, sModel, sizeof(sModel));
 				
-				// Attempt to put on our wearable now.
+				PrecacheModel(sModel);
+				TF2Wear_SetModel(iSimilarWearable, sModel);
+				return iSimilarWearable;
+			}
+			else
+			{
+				// We couldn't find a similar wearable to override first. No worries! We can still equip this item.
 				int iWearable = EquipOverrideItem(client, item, hDef);
-				if (iWearable != -1) { return iWearable; }
+				if (iWearable != -1) 
+				{
+					return iWearable;
+				}
 			}
 		}
-
-		if (!CanGetAnotherCosmetic(client))
+		else
 		{
-			// We weren't able to find any items with similar equip regions. We'll now go through all of our wearables
-			// and create new cosmetics.
+			// We weren't able to find any items with similar equip regions.
+			// We'll now go through all of our wearables and create new cosmetics in their place.
 			int iAttempts = MAX_COSMETICS;
+			int next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
+			
 			while(iAttempts > 0 && !CanGetAnotherCosmetic(client))
 			{
 				iAttempts--;
-				
-				next = GetEntPropEnt(client, Prop_Data, "m_hMoveChild");
 				while (next != -1)
 				{
 					int iEdict = next;
@@ -442,7 +476,7 @@ public bool IsWearableCosmetic(int wearable)
 	// tf_wearables. We can use the ItemDefinitionIndex here:
 	int m_iListOfWearableWeapons[] =  { 133, 444, 405, 608, 231, 642 };
 	
-	for (int i = 0; i < sizeof(m_iListOfWearableWeapons), i++;)
+	for (int i = 0; i < sizeof(m_iListOfWearableWeapons); i++)
 	{
 		if (iItemDefIndex == m_iListOfWearableWeapons[i])
 		{
@@ -498,3 +532,33 @@ public void CEconItems_OnCustomEntityStyleUpdated(int client, int entity, int st
 		}
 	}
 }
+
+//--------------------------------------------------------------------
+// Purpose: If returned value is true, this item will be blocked.
+// We check here to see if this item can be used on this server.
+//--------------------------------------------------------------------
+
+/* 	PROVIDER CODE SUPPORT WILL BE IMPLEMENTED AT A FUTURE POINT
+	DON'T WORRY ABOUT ME FOR NOW
+	
+public bool CEconItems_ShouldItemBeBlocked(int client, CEItem xItem, const char[] type)
+{
+	if (!StrEqual(type, "cosmetic"))return false;
+	
+	// Grab our provider ID:
+	char providerID[16];
+	CEcon_GetServerProvider(providerID, sizeof(providerID));
+
+	// Grab the item definition from the schema here:
+	CEItemDefinition xDef;
+	if (CEconItems_GetItemDefinitionByIndex(xItem.m_iIndex, xDef))
+	{
+		// Does this servers provider ID match this economy item?
+		// If so, we wont block it by returning the opposite of StrEqual
+		// (in this case, true to false. If it doesn't, it'll be false to
+		// true instead).
+		return !StrEqual(providerID, xDef.m_sProvider, true);
+	}
+	return false;
+}
+*/

@@ -32,10 +32,13 @@ public APLRes AskPluginLoad2(Handle plugin, bool late, char[] error, int err_max
 
 	CreateNative("TF2Wear_SetEntPropFloatOfWeapon", Native_SetEntPropFloatOfWeapon);
 
+	CreateNative("TF2_GetPlayerLoadoutSlot", Native_GetLoadoutSlot);
+
 	return APLRes_Success;
 }
 
 Handle g_hSdkEquipWearable;
+Handle g_hGetEntFromSlot;
 
 public void OnPluginStart()
 {
@@ -46,6 +49,12 @@ public void OnPluginStart()
 		PrepSDKCall_SetFromConf(hGameConf, SDKConf_Virtual, "CTFPlayer::EquipWearable");
 		PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
 		g_hSdkEquipWearable = EndPrepSDKCall();
+		
+		StartPrepSDKCall(SDKCall_Player);
+		PrepSDKCall_SetFromConf(hGameConf, SDKConf_Signature, "CTFPlayer::GetEntityForLoadoutSlot");
+		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain );
+		PrepSDKCall_SetReturnInfo(SDKType_CBaseEntity, SDKPass_Pointer);
+		g_hGetEntFromSlot = EndPrepSDKCall();
 
 		CloseHandle(hGameConf);
 	}
@@ -367,4 +376,27 @@ public int Native_ParseEquipRegionString(Handle plugin, int numParams)
 	if (StrContains(string, "spy_coat") != -1)bits |= TFEquip_SpyCoat;
 	if (StrContains(string, "medic_hip") != -1)bits |= TFEquip_MedicHip;
 	return bits;
+}
+
+public int Native_GetLoadoutSlot(Handle plugin, int numParams)
+{
+	if (g_hGetEntFromSlot == null)
+	{
+		LogMessage("Error: Can't call GetLoadoutSlot, SDK functions not loaded!");
+		
+		// TODO (ZoNiCaL): Log error here to Sentry when it's merged into master.
+		// Our gamedata might be off!
+		return -1;
+	}
+	
+	int client = GetNativeCell(1);
+	if (client < 1 || client > MaxClients || !IsClientInGame(client))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Client %d is invalid", client);
+		return -1;
+	}
+	
+	int slot = GetNativeCell(2);
+	
+	return SDKCall(g_hGetEntFromSlot, client, slot);
 }

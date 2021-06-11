@@ -15,7 +15,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	RegAdminCmd("sm_giveitem", cGive, ADMFLAG_ROOT, "Gives a Creators.TF item");
+	RegAdminCmd("sm_giveitem", cGive, ADMFLAG_SLAY, "Gives a Creators.TF item");
 }
 
 public Action cGive(int client, int args)
