@@ -60,11 +60,8 @@ public Action OnPlayerRunCmd
     }
     engineTime[Cl][0] = GetEngineTime();
 
+    // calc client cmdrate
     calcTPSfor(Cl);
-
-    // avg'd over 10 ticks
-    //calcCmdrateFor[Cl] = 10.0 * Pow((engineTime[Cl][1] - engineTime[Cl][10]), -1.0);
-
 
     // grab angles
     // thanks to nosoop from the sm discord for some help with this
@@ -906,6 +903,7 @@ void triggerbotCheck(int userid)
         }
         if
         (
+            // thinking about removing this...
             (
                    didBangOnFrame[Cl][0]
                 || didHurtOnFrame[Cl][0]
