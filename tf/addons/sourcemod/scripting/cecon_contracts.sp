@@ -183,6 +183,7 @@ public Action cQuestActivate(int args)
 public void OnAllPluginsLoaded()
 {
 	ParseEconomyConfig(CEcon_GetEconomySchema());
+	OnLateLoad();
 }
 
 public void OnMapStart()
