@@ -173,7 +173,7 @@ Handle:FindItem(iClient, iItemDefinitionIndex)
 	
 	// Retrieve the STEAM auth string
 	new String:strAuth[64];
-	GetClientAuthString(iClient, strAuth, sizeof(strAuth));
+	GetClientAuthId(iClient, AuthId_Steam2, strAuth, sizeof(strAuth));
 	
 	// Check if it's on the list. If not, try with the global settings.
 	new Handle:hItemArray = INVALID_HANDLE; 

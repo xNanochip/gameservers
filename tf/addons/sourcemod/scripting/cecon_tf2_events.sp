@@ -752,7 +752,12 @@ public Action player_healed(Handle hEvent, const char[] szName, bool bDontBroadc
 
 public Action player_chargedeployed(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
+	int deployer = GetEventInt(hEvent, "userid");
 
+	if(IsClientValid(deployer))
+	{
+		CEcon_SendEventToClientFromGameEvent(deployer, "TF_DEPLOY_UBERCHARGE", 1, hEvent);
+	}
 	return Plugin_Continue;
 }
 

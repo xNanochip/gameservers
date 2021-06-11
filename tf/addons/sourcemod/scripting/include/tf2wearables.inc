@@ -9,6 +9,48 @@ native int TF2Wear_ParseEquipRegionString(const char[] string);
 
 native void TF2Wear_SetEntPropFloatOfWeapon(int weapon, PropType type, const char[] propname, float value, int children = 0);
 
+/*
+	NOTE: This is different from GetPlayerWeaponSlot()!
+	This will return an entity index from a players slot. This will return any entity
+	regardless of cosmetic or weapon. It's recommended to use the TF2LoadoutSlot enum
+	for the slot argument as this function grabs items from the entire loadout rather
+	than the players current inventory.
+	
+	@param client		Client index.
+	@param slot			Slot index to grab the entity from.
+	@return 			Entity index.
+	@error				Invalid client index.
+*/
+native int TF2_GetPlayerLoadoutSlot(int client, int slot);
+
+// This order is taken from g_szLoadoutStringsForDisplay in server_srv.so
+// Frankly, it makes a lot more sense than the version that contains aGrenade
+// since grenades have never existed in TF2
+enum TF2LoadoutSlot
+{
+	TF2LoadoutSlot_Primary,
+	TF2LoadoutSlot_Secondary,
+	TF2LoadoutSlot_Melee,
+	TF2LoadoutSlot_Utility,
+	TF2LoadoutSlot_Unknown1 = 3,
+	TF2LoadoutSlot_Building,
+	TF2LoadoutSlot_Unknown2,
+	TF2LoadoutSlot_PDA2,
+	TF2LoadoutSlot_Misc1,
+	TF2LoadoutSlot_Misc2,
+	TF2LoadoutSlot_Action,
+	TF2LoadoutSlot_Misc3,
+	TF2LoadoutSlot_Taunt1,
+	TF2LoadoutSlot_Taunt2,
+	TF2LoadoutSlot_Taunt3,
+	TF2LoadoutSlot_Taunt4,
+	TF2LoadoutSlot_Taunt5,
+	TF2LoadoutSlot_Taunt6,
+	TF2LoadoutSlot_Taunt7,
+	TF2LoadoutSlot_Taunt8,
+}
+
+
 
 #define TFEquip_WholeHead 		(1<<0)
 #define TFEquip_Hat 			(1<<1)
