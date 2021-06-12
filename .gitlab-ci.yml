@@ -114,6 +114,11 @@ deploy-europe:
     - eupub
     <<: *deploy_template
 
+deploy-europe2:
+    tags:
+    - eu2pub
+    <<: *deploy_template
+
 deploy-virginia:
     tags:
     - virginiapub
