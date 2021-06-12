@@ -1,80 +1,90 @@
 #!/usr/bin/env bash
 
-# shopt -s globstar
+# Variable initialisation
+WORKING_DIR="tf/addons/sourcemod"
+SPCOMP_PATH="scripting/spcomp64"
+SCRIPTS_DIR="scripting"
+COMPILED_DIR="plugins"
 
-SPCOMP_PATH="./tf/addons/sourcemod/scripting/spcomp64"
-SCRIPTS_DIR="tf/addons/sourcemod/scripting/"
-COMPILED_DIR="tf/addons/sourcemod/plugins/"
+# Temporary files
 UNCOMPILED_LIST=$(mktemp)
 UPDATED_LIST=$(mktemp)
-trap "rm -f ${UNCOMPILED_LIST} ${UPDATED_LIST}" EXIT
+trap "rm -f ${UNCOMPILED_LIST} ${UPDATED_LIST}; popd >/dev/null" EXIT
 
 usage() {
-    echo "This script looks for all the uncompiled .sp files, and those that changed against a reference commit"
-    echo "Then it compiles it somehow"
+    echo "This script looks for all uncompiled .sp files"
+    echo "and if a reference is gven, those that were updated"
+    echo "Then it compiles everything"
     echo "Usage: ./build.sh <reference>"
     exit 1
 }
 
+# Just checking the git refernece is valid
 input_validation() {
     GIT_REF=${1}
     if git rev-parse --verify --quiet ${GIT_REF} > /dev/null; then
-        info "Comparing against ${GIT_REF}"
+        echo "[INFO] Comparing against ${GIT_REF}"
     else
-        echo "Reference ${GIT_REF} does not exists"
+        echo "[ERROR] Reference ${GIT_REF} does not exists"
         exit 2
     fi
 }
 
+# Check for all changed *.sp files inside ${WORKING_DIR}, then remove its *.smx counterparts and write the list to a file
+list_updated(){
+    # double check that the logic is correct here
+    UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | grep -v -e "/stac/" -e "/include/" -e "/disabled/" -e "/external/" -e "/economy/")
+    
+    echo "[INFO] Generating list of updated scripts:"
+    while IFS= read -r line; do
+        echo rm -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})"
+        echo ${line/${WORKING_DIR}\//} >> ${UPDATED_LIST}
+    done <<< "${UPDATED}"
+}
+
+# Find all *.sp files inside ${WORKING_DIR} that do not have a *.smx counterpart and write the list to a file
+list_uncompiled(){
+    # double check that the logic is correct here
+    UNCOMPILED=$(find ${SCRIPTS_DIR} -iname "*.sp" ! -path "*/stac/*" ! -path "*/include/*" ! -path "*/disabled/*" ! -path "*/external/*" ! -path "*/economy/*")
+
+    echo "[INFO] Generating list of uncompiled scripts:"
+    while IFS= read -r line; do
+        [[ ! -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})" ]] && echo ${line} | tee -a ${UNCOMPILED_LIST}
+    done <<< "${UNCOMPILED}"
+}
+
+# This function takes a file as an argument
 compile() {
     while read -r plugin; do
-        echo ${SPCOMP_PATH} -D "${SCRIPTS_DIR}" "${plugin/${SCRIPTS_DIR}/}" -o "${COMPILED_DIR}$(basename "${plugin/.sp/}").smx" -v0
+        echo ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename ${plugin/.sp/.smx})" -v0
+        [[ $? -ne 0 ]] && compile_error ${plugin}
     done < ${1}
 }
 
-[[ -x ${SPCOMP_PATH} ]] || chmod u+x ${SPCOMP_PATH}
-[[ -z ${1} ]] && usage || input_validation ${1}
+# Auxiliary function to catch errors on ${SPCOMP}
+compile_error(){
+    echo "[ERROR] spcomp64 error while compiling ${1}"
+    exit 255
+}
 
+# Script begins here ↓
+pushd ${WORKING_DIR} >/dev/null
+[[ ! -x ${SPCOMP_PATH} ]] && chmod u+x ${SPCOMP_PATH}
 
-# ==========================
 # Compile all scripts that have been updated
-# ==========================
+if [[ -n ${1} ]]; then
+    input_validation ${1}
+    echo "[INFO] Looking for all .sp files that have been updated"
+    list_updated
+    echo "[INFO] Compiling updated plugins"
+    compile ${UPDATED_LIST}
+fi
 
-echo "[INFO] Looking for all .sp files that have been updated"
-UPDATED=$(git diff --name-only HEAD "${GIT_REF}" | grep "\.sp$" | grep -v "*/stac/*" | grep -v "*/include/*" | grep -v "*/disabled/*" | grep -v "*/external/*" | grep -v "*/economy/*")
-
-echo "[INFO] Generating list of updated scripts:"
-echo "========================="
-# double check that the logic is correct here
-while IFS= read -r line; do
-    echo rm -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})"
-    echo ${line} >> ${UPDATED_LIST}
-done <<< "${UPDATED}"
-echo "========================="
-
-echo "[INFO] Compiling updated plugins"
-compile ${UPDATED_LIST}
-exit 0
-
-# ==========================
-# Compile all scripts that don't have any smxes
-# ==========================
-
+# Compile all scripts that have not been compiled
 echo "[INFO] Looking for all .sp files in ${SCRIPTS_DIR}"
-# double check that the logic is correct here
-UNCOMPILED=$(find ${SCRIPTS_DIR} -iname "*.sp" ! -path "*/stac/*" ! -path "*/include/*" ! -path "*/disabled/*" ! -path "*/external/*" ! -path "*/economy/*")
-
-echo "[INFO] Generating list of uncompiled scripts:"
-echo "========================="
-while IFS= read -r line; do
-    [[ ! -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})" ]] && echo ${line} | tee -a ${UNCOMPILED_LIST}
-done <<< "${UNCOMPILED}"
-echo "========================="
-
+list_uncompiled
 echo "[INFO] Compiling uncompiled plugins"
 compile ${UNCOMPILED_LIST}
 
-
-echo "[INFO] All plugin files are recompiled."
-
+echo "[OK] All plugins compiled successfully !"
 exit 0
