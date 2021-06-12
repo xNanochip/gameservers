@@ -37,7 +37,7 @@ list_updated(){
     
     echo "[INFO] Generating list of updated scripts:"
     while IFS= read -r line; do
-        echo rm -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})"
+        rm -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})"
         echo ${line/${WORKING_DIR}\//} >> ${UPDATED_LIST}
     done <<< "${UPDATED}"
 }
@@ -49,14 +49,16 @@ list_uncompiled(){
 
     echo "[INFO] Generating list of uncompiled scripts:"
     while IFS= read -r line; do
-        [[ ! -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})" ]] && echo ${line} | tee -a ${UNCOMPILED_LIST}
+        [[ ! -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})" ]] && echo ${line} >> ${UNCOMPILED_LIST}
     done <<< "${UNCOMPILED}"
 }
 
 # This function takes a file as an argument
 compile() {
+    echo "[INFO] Compiling $(wc -l < ${1}) files"
     while read -r plugin; do
-        echo ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename ${plugin/.sp/.smx})" -v0
+        echo "[INFO] Compiling ${plugin}"
+        ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename ${plugin/.sp/.smx})" -v0 #-E
         [[ $? -ne 0 ]] && compile_error ${plugin}
     done < ${1}
 }
@@ -67,6 +69,7 @@ compile_error(){
     exit 255
 }
 
+###
 # Script begins here ↓
 pushd ${WORKING_DIR} >/dev/null
 [[ ! -x ${SPCOMP_PATH} ]] && chmod u+x ${SPCOMP_PATH}
@@ -81,7 +84,7 @@ if [[ -n ${1} ]]; then
 fi
 
 # Compile all scripts that have not been compiled
-echo "[INFO] Looking for all .sp files in ${SCRIPTS_DIR}"
+echo "[INFO] Looking for all .sp files in ${WORKING_DIR}/${SCRIPTS_DIR}"
 list_uncompiled
 echo "[INFO] Compiling uncompiled plugins"
 compile ${UNCOMPILED_LIST}
