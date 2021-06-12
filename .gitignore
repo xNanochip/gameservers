@@ -6,6 +6,7 @@
 !.ci-fastdl
 !.gitlab-ci.yml
 !tf
+!script
 tf/*
 !tf/addons
 !tf/custom

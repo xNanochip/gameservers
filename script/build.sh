@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Helper functions
+source script/helpers.sh
+
 # Variable initialisation
 WORKING_DIR="tf/addons/sourcemod"
 SPCOMP_PATH="scripting/spcomp64"
@@ -23,9 +26,9 @@ usage() {
 input_validation() {
     GIT_REF=${1}
     if git rev-parse --verify --quiet ${GIT_REF} > /dev/null; then
-        echo "[INFO] Comparing against ${GIT_REF}"
+        info "Comparing against ${GIT_REF}"
     else
-        echo "[ERROR] Reference ${GIT_REF} does not exists"
+        error "Reference ${GIT_REF} does not exists"
         exit 2
     fi
 }
@@ -35,7 +38,7 @@ list_updated(){
     # double check that the logic is correct here
     UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | grep -v -e "/stac/" -e "/include/" -e "/disabled/" -e "/external/" -e "/economy/")
     
-    echo "[INFO] Generating list of updated scripts:"
+    info "Generating list of updated scripts:"
     while IFS= read -r line; do
         rm -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})"
         echo ${line/${WORKING_DIR}\//} >> ${UPDATED_LIST}
@@ -47,7 +50,7 @@ list_uncompiled(){
     # double check that the logic is correct here
     UNCOMPILED=$(find ${SCRIPTS_DIR} -iname "*.sp" ! -path "*/stac/*" ! -path "*/include/*" ! -path "*/disabled/*" ! -path "*/external/*" ! -path "*/economy/*")
 
-    echo "[INFO] Generating list of uncompiled scripts:"
+    info "Generating list of uncompiled scripts:"
     while IFS= read -r line; do
         [[ ! -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})" ]] && echo ${line} >> ${UNCOMPILED_LIST}
     done <<< "${UNCOMPILED}"
@@ -55,9 +58,9 @@ list_uncompiled(){
 
 # This function takes a file as an argument
 compile() {
-    echo "[INFO] Compiling $(wc -l < ${1}) files"
+    info "Compiling $(wc -l < ${1}) files"
     while read -r plugin; do
-        echo "[INFO] Compiling ${plugin}"
+        info "Compiling ${plugin}"
         ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename ${plugin/.sp/.smx})" -v0 #-E
         [[ $? -ne 0 ]] && compile_error ${plugin}
     done < ${1}
@@ -65,7 +68,7 @@ compile() {
 
 # Auxiliary function to catch errors on ${SPCOMP}
 compile_error(){
-    echo "[ERROR] spcomp64 error while compiling ${1}"
+    error "spcomp64 error while compiling ${1}"
     exit 255
 }
 
@@ -77,17 +80,17 @@ pushd ${WORKING_DIR} >/dev/null
 # Compile all scripts that have been updated
 if [[ -n ${1} ]]; then
     input_validation ${1}
-    echo "[INFO] Looking for all .sp files that have been updated"
+    info "Looking for all .sp files that have been updated"
     list_updated
-    echo "[INFO] Compiling updated plugins"
+    info "Compiling updated plugins"
     compile ${UPDATED_LIST}
 fi
 
 # Compile all scripts that have not been compiled
-echo "[INFO] Looking for all .sp files in ${WORKING_DIR}/${SCRIPTS_DIR}"
+info "Looking for all .sp files in ${WORKING_DIR}/${SCRIPTS_DIR}"
 list_uncompiled
-echo "[INFO] Compiling uncompiled plugins"
+info "Compiling uncompiled plugins"
 compile ${UNCOMPILED_LIST}
 
-echo "[OK] All plugins compiled successfully !"
+ok "All plugins compiled successfully !"
 exit 0
