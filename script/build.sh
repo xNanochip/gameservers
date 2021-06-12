@@ -23,7 +23,7 @@ usage() {
 }
 
 # Just checking the git refernece is valid
-input_validation() {
+reference_validation() {
     GIT_REF=${1}
     if git rev-parse --verify --quiet ${GIT_REF} > /dev/null; then
         info "Comparing against ${GIT_REF}"
@@ -33,9 +33,8 @@ input_validation() {
     fi
 }
 
-# Check for all changed *.sp files inside ${WORKING_DIR}, then remove its *.smx counterparts and write the list to a file
+# Check for all changed *.sp files inside ${WORKING_DIR}, then remove their *.smx counterparts and write the list to a file
 list_updated(){
-    # double check that the logic is correct here
     UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | grep -v -e "/stac/" -e "/include/" -e "/disabled/" -e "/external/" -e "/economy/")
     
     info "Generating list of updated scripts:"
@@ -47,7 +46,6 @@ list_updated(){
 
 # Find all *.sp files inside ${WORKING_DIR} that do not have a *.smx counterpart and write the list to a file
 list_uncompiled(){
-    # double check that the logic is correct here
     UNCOMPILED=$(find ${SCRIPTS_DIR} -iname "*.sp" ! -path "*/stac/*" ! -path "*/include/*" ! -path "*/disabled/*" ! -path "*/external/*" ! -path "*/economy/*")
 
     info "Generating list of uncompiled scripts:"
@@ -66,7 +64,7 @@ compile() {
     done < ${1}
 }
 
-# Auxiliary function to catch errors on ${SPCOMP}
+# Auxiliary function to catch errors on spcomp64
 compile_error(){
     error "spcomp64 error while compiling ${1}"
     exit 255
@@ -79,7 +77,7 @@ pushd ${WORKING_DIR} >/dev/null
 
 # Compile all scripts that have been updated
 if [[ -n ${1} ]]; then
-    input_validation ${1}
+    reference_validation ${1}
     info "Looking for all .sp files that have been updated"
     list_updated
     info "Compiling updated plugins"
