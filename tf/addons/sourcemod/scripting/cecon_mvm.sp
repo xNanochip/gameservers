@@ -62,7 +62,7 @@ ArrayList m_hItemIndexes;
 public void OnPluginStart()
 {
 	ce_mvm_show_game_time = CreateConVar("ce_mvm_show_game_time", "1", "Enables game time summary to be shown in chat");
-	ce_mvm_switch_to_pubs_timer = CreateConVar("ce_mvm_switch_to_pubs_timer", "300", "Switch to pubs after this amount of time.");
+	ce_mvm_switch_to_pubs_timer = CreateConVar("ce_mvm_switch_to_pubs_timer", "-1", "Switch to pubs after this amount of time.");
 
 	HookEvent("mvm_begin_wave", mvm_begin_wave);
 	HookEvent("mvm_wave_complete", mvm_wave_complete);
