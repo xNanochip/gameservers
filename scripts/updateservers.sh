@@ -86,13 +86,15 @@ for dir in ./*/ ; do
             # git clean -d -f -x tf/addons/sourcemod/gamedata/
 
             echo "chmodding"
-            chmod 744 build.sh;
-            chmod 744 start.sh;
-            chmod 744 str0.py;
-            chmod 744 str0.ini;
+            # start script for servers is always at the root of our server dir
+            chmod 744 ./start.sh;
+            # everything else not so much
+            chmod 744 ./scripts/build.sh;
+            chmod 744 ./scripts/str0.py;
+            chmod 744 ./scripts/str0.ini;
 
             echo "running str0 to scrub steamclient spam"
-            python3 ./str0.py ../bin/steamclient.so -c ./str0.ini
+            python3 ./scripts/str0.py ./bin/steamclient.so -c ./scripts/str0.ini
 
             # don't run this often
             echo "garbage collecting"
@@ -100,7 +102,7 @@ for dir in ./*/ ; do
 
 
             echo "building"
-            ./build.sh "$COMMIT_OLD";
+            ./scripts/build.sh "$COMMIT_OLD";
 
         fi;
     fi;
