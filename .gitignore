@@ -1,6 +1,7 @@
 /*
 !str0*
 !build.sh
+!updateservers.sh
 !start.sh
 !.gitignore
 !.ci-fastdl
