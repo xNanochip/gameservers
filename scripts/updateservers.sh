@@ -25,8 +25,8 @@ for dir in ./*/ ; do
     cd "$dir" || exit
 
     # todo: fix this for git fscking
-    #echo "rming empty objects"
-    #find .git/objects/ -type f -empty -exec + xargs rm {} +;
+    echo "finding empty objects"
+    find .git/objects/ -type f -empty -exec ls {} +;
     #echo "fetching"
     #git fetch -p
     #echo "fscking"
@@ -50,8 +50,6 @@ for dir in ./*/ ; do
 
         echo "Comparing branches $(git rev-parse --abbrev-ref HEAD) and $CI_COMMIT_REF_NAME."
         if [ "$(git rev-parse --abbrev-ref HEAD)" == "$CI_COMMIT_REF_NAME" ]; then
-
-            pwd
             echo "cleaning any old git locks..."
             # don't fail if there are none
             rm .git/index.lock -v || true
