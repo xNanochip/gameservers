@@ -8,6 +8,7 @@ WORKING_DIR="tf/addons/sourcemod"
 SPCOMP_PATH="scripting/spcomp64"
 SCRIPTS_DIR="scripting"
 COMPILED_DIR="plugins"
+EXCLUDED_DIRS="/stac/ /include/ /disabled/ /external/ /economy/"
 
 # Temporary files
 UNCOMPILED_LIST=$(mktemp)
@@ -16,7 +17,7 @@ trap "rm -f ${UNCOMPILED_LIST} ${UPDATED_LIST}; popd >/dev/null" EXIT
 
 usage() {
     echo "This script looks for all uncompiled .sp files"
-    echo "and if a reference is gven, those that were updated"
+    echo "and if a reference is given, those that were updated"
     echo "Then it compiles everything"
     echo "Usage: ./build.sh <reference>"
     exit 1
@@ -28,33 +29,40 @@ reference_validation() {
     if git rev-parse --verify --quiet ${GIT_REF} > /dev/null; then
         info "Comparing against ${GIT_REF}"
     else
-        error "Reference ${GIT_REF} does not exists"
+        error "Reference ${GIT_REF} does not exist"
         exit 2
     fi
 }
 
-# Check for all changed *.sp files inside ${WORKING_DIR}, then remove their *.smx counterparts and write the list to a file
+# Find all changed *.sp files inside ${WORKING_DIR}
+# Write the full list to a file
+# Remove all the *.smx counterparts that exist
 list_updated(){
-    UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | grep -v -e "/stac/" -e "/include/" -e "/disabled/" -e "/external/" -e "/economy/")
+    UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | grep -v -e ${EXCLUDED_DIRS// / -e })
     
-    info "Generating list of updated scripts:"
+    info "Generating list of updated scripts"
     while IFS= read -r line; do
-        rm -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})"
+        # git diff reports the full path, we need it relative to ${WORKING_DIR}
         echo ${line/${WORKING_DIR}\//} >> ${UPDATED_LIST}
+        rm -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})"
     done <<< "${UPDATED}"
 }
 
-# Find all *.sp files inside ${WORKING_DIR} that do not have a *.smx counterpart and write the list to a file
+# Find all *.sp files inside ${WORKING_DIR}
+# Select those that do not have a *.smx counterpart
+# And write resulting list to a file
 list_uncompiled(){
-    UNCOMPILED=$(find ${SCRIPTS_DIR} -iname "*.sp" ! -path "*/stac/*" ! -path "*/include/*" ! -path "*/disabled/*" ! -path "*/external/*" ! -path "*/economy/*")
+    UNCOMPILED=$(find ${SCRIPTS_DIR} -iname "*.sp" | grep -v -e ${EXCLUDED_DIRS// / -e })
 
-    info "Generating list of uncompiled scripts:"
+    info "Generating list of uncompiled scripts"
     while IFS= read -r line; do
         [[ ! -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})" ]] && echo ${line} >> ${UNCOMPILED_LIST}
     done <<< "${UNCOMPILED}"
 }
 
-# This function takes a file as an argument
+# Iterate over a list files and compile all the *.sp files
+# Output will be ${COMPILED_DIR}/plugin_name.smx
+# If an error is found the function dies and report the failing file
 compile() {
     info "Compiling $(wc -l < ${1}) files"
     while read -r plugin; do
