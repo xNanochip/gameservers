@@ -10,6 +10,7 @@ SCRIPTS_DIR="scripting"
 COMPILED_DIR="plugins"
 # Exclusion list, use /dir/ for directories and /file_ for file_*.sp
 EXCLUDED="/stac/ /include/ /disabled/ /external/ /economy/ /attributes/ /discord_"
+EXCLUDED="grep -v -e ${EXCLUDED// / -e }"
 
 # Temporary files
 UNCOMPILED_LIST=$(mktemp)
@@ -39,7 +40,7 @@ reference_validation() {
 # Write the full list to a file
 # Remove all the *.smx counterparts that exist
 list_updated(){
-    UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | grep -v -e ${EXCLUDED// / -e })
+    UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | ${EXCLUDED})
     
     info "Generating list of updated scripts"
     while IFS= read -r line; do
@@ -53,7 +54,7 @@ list_updated(){
 # Select those that do not have a *.smx counterpart
 # And write resulting list to a file
 list_uncompiled(){
-    UNCOMPILED=$(find ${SCRIPTS_DIR} -iname "*.sp" | grep -v -e ${EXCLUDED// / -e })
+    UNCOMPILED=$(find ${SCRIPTS_DIR} -iname "*.sp" | ${EXCLUDED})
 
     info "Generating list of uncompiled scripts"
     while IFS= read -r line; do
