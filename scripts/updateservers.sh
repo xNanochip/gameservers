@@ -91,7 +91,7 @@ for dir in ./*/ ; do
             chmod 744 str0.ini;
 
             echo "running str0 to scrub steamclient spam"
-            python3 ./str0.py ./bin/steamclient.so -c ./str0.ini
+            python3 ./str0.py ../bin/steamclient.so -c ./str0.ini
 
             # don't run this often
             echo "garbage collecting"
