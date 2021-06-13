@@ -6,7 +6,6 @@ stages:
     script:
     - cd scripts && chmod +x updateservers.sh && bash updateservers.sh
 
-
 deploy-europe:
     tags:
     - eupub
@@ -57,7 +56,7 @@ deploy-eupotato2:
     - eupotato2
     <<: *deploy_template
 
-
+# TODO: why is this here? doesn't this run on the backend server? dafaq?
 deploy-fastdl:
     stage: deploy
     script:
