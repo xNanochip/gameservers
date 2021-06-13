@@ -4,7 +4,7 @@ stages:
 .deploy_template: &deploy_template
     stage: deploy
     script:
-    - chmod +x scripts/updateservers.sh && bash scripts/updateservers.sh
+    - cd scripts && chmod +x updateservers.sh && bash updateservers.sh
 
 
 deploy-europe:
