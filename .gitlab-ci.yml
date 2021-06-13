@@ -41,10 +41,10 @@ deploy-chicago3:
     - chicago3
     <<: *deploy_template
 
-deploy-uspotato1:
-    tags:
-    - uspotato1
-    <<: *deploy_template
+#deploy-uspotato1:
+#    tags:
+#    - uspotato1
+#    <<: *deploy_template
 
 deploy-eupotato1:
     tags:
