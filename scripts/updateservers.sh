@@ -51,6 +51,7 @@ for dir in ./*/ ; do
         echo "Comparing branches $(git rev-parse --abbrev-ref HEAD) and $CI_COMMIT_REF_NAME."
         if [ "$(git rev-parse --abbrev-ref HEAD)" == "$CI_COMMIT_REF_NAME" ]; then
 
+            pwd
             echo "cleaning any old git locks..."
             # don't fail if there are none
             rm .git/index.lock -v || true
