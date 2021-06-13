@@ -105,4 +105,5 @@ for dir in ./*/ ; do
 
         fi;
     fi;
+    cd ../;
 done
