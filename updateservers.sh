@@ -11,7 +11,6 @@ cd "${WORK_DIR}" || exit
 killall -s SIGKILL -q git || true
 # iterate thru directories in our work dir which we just cd'd to
 for dir in ./*/ ; do
-    pwd
     # we didn't find a git folder
     if [  ! -d "$dir".git ]; then
         # shouldn't this be better quoted or does bash handle that? idr
@@ -19,7 +18,6 @@ for dir in ./*/ ; do
         # go to the next folder (i think?? should be)
         continue;
     fi
-    pwd
     # we did find a git folder!
     # print out our cur folder
     echo "Operating on: $dir"
