@@ -568,7 +568,7 @@ public void Coordinator_Request_Callback(HTTPRequestHandle request, bool success
 
 			// If we didn't reach the timeout limit yet, wait for a minute and
 			// try to make another attempt.
-			LogError("Connection to backend failed. Count: %d. Retrying...", m_iFailureCount);
+			LogError("Connection to backend failed. Count: %d. Error code: %d. Retrying...", m_iFailureCount, code);
 			CreateTimer(60.0, Timer_DelayedCoordinatorRequest);
 		}
 	} else {

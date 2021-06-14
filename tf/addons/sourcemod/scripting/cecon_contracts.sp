@@ -80,7 +80,7 @@ public void OnPluginStart()
 
 	ce_quest_friend_sharing_enabled = CreateConVar("ce_quest_friend_sharing_enabled", "1", "Enabled \"Friendly Fire\" feature, that allows to share progress with friends.");
 	ce_quest_background_enabled = CreateConVar("ce_quest_background_enabled", "1", "Enable background quests to track themselves.");
-	ce_quest_debug = CreateConVar("ce_quest_debug", "1", "Debug quests.");
+	ce_quest_debug = CreateConVar("ce_quest_debug", "0", "Debug quests.");
 
 }
 
@@ -190,6 +190,7 @@ public void OnAllPluginsLoaded()
 
 public void OnMapStart()
 {
+	ParseEconomyConfig(CEcon_GetEconomySchema());
 	OnLateLoad();
 }
 
@@ -854,6 +855,7 @@ public void SetClientActiveQuestByIndex(int client, int quest)
 		if (ce_quest_debug.BoolValue) PrintToServer("quest != 0: %N", client);
 		if(GetQuestByDefIndex(quest, xQuest))
 		{
+			if (ce_quest_debug.BoolValue) PrintToServer("GotQuestByDefIndex: %N", client);
 			// We can't activate background quests.
 			if (xQuest.m_bBackground)return;
 			if (ce_quest_debug.BoolValue) PrintToServer("Contract wasn't a background quest: %N", client);

@@ -50,6 +50,11 @@ public void OnAllPluginsLoaded()
 	ParseCampaignList(CEcon_GetEconomySchema());
 }
 
+public void OnMapStart()
+{
+	ParseCampaignList(CEcon_GetEconomySchema());
+}
+
 public void CEcon_OnSchemaUpdated(KeyValues hSchema)
 {
 	ParseCampaignList(hSchema);
