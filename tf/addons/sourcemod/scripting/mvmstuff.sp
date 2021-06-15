@@ -11,7 +11,7 @@
 
 #define TF_DMG_MELEE                        (1 << 27) | (1 << 12) | (1 << 7)
 
-public Plugin myinfo = 
+public Plugin myinfo =
 {
 	name = "MvM stuff",
 	author = "rafradek",
@@ -728,11 +728,19 @@ public void Event_MissionComplete(Event event, const char[] name, bool dontBroad
 	reset_mission_timer = CreateTimer(12.0,ResetMissionTimer, 0);
 
 }
-public void OnEntityCreated(int entity, const char[] classname) {
-	if(strcmp(classname,"tank_boss") == 0 || strncmp(classname,"obj_",4) == 0) {
+
+
+public void OnEntityCreated(int entity, const char[] classname)
+{
+	if (strcmp(classname,"tank_boss") == 0 || strncmp(classname,"obj_",4) == 0)
+	{
 		SDKHook(entity, SDKHook_OnTakeDamage, OnAnyDamage);
 	}
-	else if(strcmp(classname,"tf_projectile_mechanicalarmorb") == 0) {
+	else if
+	// almost certain that this strcmp logic is bunk
+	//(strcmp(classname,"tf_projectile_mechanicalarmorb") == 0)
+	(StrEqual(classname,"tf_projectile_mechanicalarmorb"))
+	{
 		RequestFrame(OnEnergyBallSpawn,entity);
 		//SDKHook(entity,SDKHook_Spawn, OnEnergyBallSpawn);
 	}
@@ -752,8 +760,14 @@ public void OnEnergyBallSpawn(int entity)
 
 	if (IsValidEntity(entity))
 	{
+		// this shouldn't be needed but just in case
+		if (!HasEntProp(entity, Prop_Send, "m_hLauncher"))
+		{
+			return;
+		}
 		int launcher = GetEntPropEnt(entity,Prop_Send, "m_hLauncher");
-		if (IsValidEntity(launcher)) {
+		if (IsValidEntity(launcher))
+		{
 			float gameTime = GetGameTime();
 			float fireRateMult= SDKCall(attrib_float_prep,1.0,"mult_postfiredelay",launcher,0,false);
 			float nextAttack = GetEntPropFloat(launcher,Prop_Send, "m_flNextPrimaryAttack");
