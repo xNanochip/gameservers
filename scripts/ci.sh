@@ -67,7 +67,7 @@ for dir in ./*/ ; do
         #git fetch -p
         warn "fscking!!!"
         #git fsck --full
-        return 0;
+        continue;
     fi
 
     # no idea lol
