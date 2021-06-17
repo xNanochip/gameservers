@@ -7,12 +7,6 @@ gitclean=''
 gitgc=''
 debug=''
 
-debug()
-{
-    if [[ "$debug" == "true" ]]; then
-        printf "${CYAN}[DEBUG] ${1} ${RESET}"
-    fi
-}
 
 usage()
 {
@@ -27,9 +21,16 @@ while getopts 'cgv' flag; do
         c) gitclean='true'  ;;
         g) gitgc='true'     ;;
         v) debug='true'     ;;
-        *) usage && exit 1  ;;
+        \?) usage && exit 1  ;;
     esac
 done
+
+debug()
+{
+    if [[ "$debug" == "true" ]]; then
+        printf "${CYAN}[DEBUG] ${1} ${RESET}"
+    fi
+}
 
 # dirs to check for possible gameserver folders
 TARGET_DIRS=(/srv/daemon-data /var/lib/pterodactyl/volumes)
