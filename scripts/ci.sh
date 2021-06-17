@@ -61,8 +61,6 @@ for dir in ./*/ ; do
     # we did find a git folder!
     # print out our cur folder
     important "Operating on: $dir"
-
-    debug "pwd: $(pwd)";
     # go to our server dir or die trying
     cd "$dir" || { error "can't cd to $dir"; continue; }
     info "finding empty objects"
@@ -140,7 +138,7 @@ for dir in ./*/ ; do
             git clean -d -f -x tf/addons/sourcemod/gamedata/
         fi
 
-        info "chmodding"
+        debug "chmodding"
         # start script for servers is always at the root of our server dir
         chmod 744 ./start.sh;
         # everything else not so much
@@ -148,7 +146,7 @@ for dir in ./*/ ; do
         chmod 744 ./scripts/str0.py;
         chmod 744 ./scripts/str0.ini;
 
-        info "running str0 to scrub steamclient spam"
+        debug "running str0 to scrub steamclient spam"
         # ignore the output if it already scrubbed it
         python3 ./scripts/str0.py ./bin/steamclient.so -c ./scripts/str0.ini | grep -v "Failed to locate string"
 
@@ -161,10 +159,11 @@ for dir in ./*/ ; do
             warn "running git gc on user request"
             git gc;
         else
-            info "auto running git gc"
+            debug "auto running git gc"
             git gc --auto;
         fi
-        info "building"
+        info "building\n"
+
         ./scripts/build.sh "$COMMIT_OLD";
 
     fi;
