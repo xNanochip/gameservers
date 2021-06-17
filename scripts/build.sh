@@ -46,7 +46,7 @@ list_updated()
 {
     UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | ${EXCLUDED})
     if [[ -z $UPDATED ]]; then
-        info "No updated files in diff";
+        ok "No updated files in diff";
         return; 
     fi
     info "Generating list of updated scripts"
@@ -62,7 +62,12 @@ list_updated()
 # And write resulting list to a file
 list_uncompiled()
 {
-    UNCOMPILED=$(find ${SCRIPTS_DIR} -iname "*.sp" | ${EXCLUDED})
+    # this may need to be quoted
+    UNCOMPILED=$(find "${SCRIPTS_DIR}" -iname "*.sp" | "${EXCLUDED}")
+    if [[ -z $UNCOMPILED ]]; then
+        ok "No uncompiled .sp files";
+        return; 
+    fi
 
     info "Generating list of uncompiled scripts"
     while IFS= read -r line; do
@@ -98,11 +103,6 @@ pushd ${WORKING_DIR} >/dev/null || exit
 if [[ -n ${1} ]]; then
     reference_validation "${1}"
     info "Looking for all .sp files that have been updated"
-    if [[ $(wc -l < "${1}") == 0 ]]; then
-        info "No uncompiled .sp files";
-        return;
-    fi
-
     list_updated
     info "Compiling updated plugins"
     compile "${UPDATED_LIST}"
