@@ -52,10 +52,10 @@ deploy-eupotato1:
     - eupotato1
     <<: *deploy_template
 
-deploy-eupotato2:
-    tags:
-    - eupotato2
-    <<: *deploy_template
+#deploy-eupotato2:
+#    tags:
+#    - eupotato2
+#    <<: *deploy_template
 
 # TODO: why is this here? doesn't this run on the backend server? dafaq?
 deploy-fastdl:
