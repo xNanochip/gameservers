@@ -172,7 +172,7 @@ public void OnClientPutInServer(int client)
 	SDKHook(client, SDKHook_OnTakeDamage, OnAnyDamage);
 	if (IsFakeClient(client))
 	{
-		SDKHook(client, SDKHook_WeaponEquip, OnWeaponEquip)
+		SDKHook(client, SDKHook_WeaponEquip, OnWeaponEquip);
 	} else {
 		SDKHook(client, SDKHook_PreThink, OnPlayerThink);
 	}
