@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Helper functions
-source script/helpers.sh
+source scripts/helpers.sh
 
 # Variable initialisation
 WORKING_DIR="tf/addons/sourcemod"
