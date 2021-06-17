@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-if [[ -z "${DEPLOY_ENV}" ]]; then
+if [[ -z $TERM ]]; then
     export TERM=screen
 fi
 # Colours
