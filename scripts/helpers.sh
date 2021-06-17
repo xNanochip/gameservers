@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-if [[ -z $TERM ]]; then
-    export TERM=screen
-fi
+export TERM=screen
+
 # Colours
 BLACK=$(tput setaf 0)
 RED=$(tput setaf 1)
