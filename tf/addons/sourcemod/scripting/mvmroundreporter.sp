@@ -21,8 +21,8 @@ public Plugin:myinfo =
 
 public OnPluginStart ()
 {
-    CreateConVar("sm_mvmround_version", PLUGIN_VERSION, "Version of MvM Round Reporter", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
-    RegConsoleCmd("sm_mvmround", Command_MVMRound)
+    CreateConVar("sm_mvmround_version", PLUGIN_VERSION, "Version of MvM Round Reporter", FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
+    RegConsoleCmd("sm_mvmround", Command_MVMRound);
 }
 
 public Action:Command_MVMRound(client, args)
@@ -32,7 +32,7 @@ public Action:Command_MVMRound(client, args)
         return Plugin_Handled;
     }
 
-    new ent, round, maxrnd
+    new ent, round, maxrnd;
 
     ent = FindEntityByClassname(-1, "tf_objective_resource");
     round = GetEntProp(ent, Prop_Send, "m_nMannVsMachineWaveCount");
