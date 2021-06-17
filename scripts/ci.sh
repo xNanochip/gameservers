@@ -38,7 +38,7 @@ TARGET_DIRS=(/srv/daemon-data /var/lib/pterodactyl/volumes)
 WORK_DIR=$(du -s "${TARGET_DIRS[@]}" 2> /dev/null | sort -n | tail -n1 | cut -f2)
 # go to our directory with (presumably) gameservers in it or die trying
 debug "pwd: $(pwd)";
-cd "${WORK_DIR}" || error "couldn't cd to $dir ???"; exit
+cd "${WORK_DIR}" || echo "couldn't cd to $dir ???"; exit
 # kill any git operations that are running and don't fail if we don't find any
 # PROBABLY BAD PRACTICE LOL
 killall -s SIGKILL -q git || true
@@ -57,7 +57,7 @@ for dir in ./*/ ; do
     
     debug "pwd: $(pwd)";
     # go to our server dir or die trying
-    cd "$dir" || error "couldn't cd to $dir ???"; exit
+    cd "$dir" || echo "couldn't cd to $dir ???"; exit
 
     info "finding empty objects"
     numemptyobjs=$(find .git/objects/ -type f -empty | wc -l)
