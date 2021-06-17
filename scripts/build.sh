@@ -28,8 +28,9 @@ usage() {
 }
 
 # Just checking the git refernece is valid
-reference_validation() {
-    GIT_REF=${1}
+reference_validation()
+{
+    GIT_REF="${1}"
     if git rev-parse --verify --quiet "${GIT_REF}" > /dev/null; then
         info "Comparing against ${GIT_REF}"
     else
@@ -41,9 +42,13 @@ reference_validation() {
 # Find all changed *.sp files inside ${WORKING_DIR}
 # Write the full list to a file
 # Remove all the *.smx counterparts that exist
-list_updated(){
+list_updated()
+{
     UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | ${EXCLUDED})
-
+    if [[ -z $UPDATED ]]; then
+        echo "no updated files on git commit";
+        return; 
+    fi
     info "Generating list of updated scripts"
     while IFS= read -r line; do
         # git diff reports the full path, we need it relative to ${WORKING_DIR}
