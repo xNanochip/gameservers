@@ -91,9 +91,9 @@ list_uncompiled()
 # If an error is found the function dies and report the failing file
 compile()
 {
-    debug "Compiling $(wc -l < "${1}") files"
+    info "Compiling $(wc -l < "${1}") files"
     while read -r plugin; do
-        debug "Compiling ${plugin}"
+        info "Compiling ${plugin}"
         # compiler path  plugin name      output dir      output file replacing sp with smx
         ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename "${plugin/.sp/.smx}")" \
         -v=2 -z=9 -O=2 -\;=+ #-E
