@@ -71,8 +71,8 @@ list_uncompiled()
         [[ ! -f "${COMPILED_DIR}/$(basename "${line/.sp/.smx}")" ]] \
         && echo "${line}" >> "${UNCOMPILED_LIST}"
     done <<< "${UNCOMPILED}"
-    warn "$UNCOMPILED_LIST";
-    if [[ -z $UNCOMPILED_LIST ]]; then
+    wc -l < "$UNCOMPILED_LIST"
+    if [[  $(wc -l < "$UNCOMPILED_LIST") == 0 ]]; then
         ok "No uncompiled .sp files";
         return 1;
     fi
