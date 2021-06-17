@@ -24,7 +24,7 @@ while getopts 'cgv' flag; do
     esac
 done
 
-vinfo()
+info()
 {
     if [[ "$verbose" == "true" ]]; then
         info "${1}";
@@ -51,21 +51,21 @@ for dir in ./*/ ; do
     fi
     # we did find a git folder!
     # print out our cur folder
-    vinfo "Operating on: $dir"
+    important "Operating on: $dir"
     # go to our server dir or die trying
     cd "$dir" || exit
 
     # todo: fix this for git fscking
-    vinfo "finding empty objects"
+    info "finding empty objects"
     emptygitobjs=$(find .git/objects/ -type f -empty)
     echo $emptygitobjs
-    if [[ -z $emptygitobjs ]]; then
+    if [[ -z "$emptygitobjs" ]]; then
         error "FOUND EMPTY GIT OBJECTS, RUNNING GIT FSCK ON THIS REPOSITORY!";
         # i'll optimize this later
         find .git/objects/ -type f -empty -exec rm {} +;
         warn "fetching before git fscking"
         #git fetch -p
-        warning "fscking!!!"
+        warn "fscking!!!"
         #git fsck --full
         return 0;
     fi
@@ -82,35 +82,35 @@ for dir in ./*/ ; do
     #CI_REMOTE_REMOTE=${CI_REMOTE_REMOTE%.git}
 
     # why do we need to check this?
-    #vinfo "Comparing remotes $CI_LOCAL_REMOTE and $CI_REMOTE_REMOTE."
+    #info "Comparing remotes $CI_LOCAL_REMOTE and $CI_REMOTE_REMOTE."
     #if [ "$CI_LOCAL_REMOTE" == "$CI_REMOTE_REMOTE" ]; then
 
-    vinfo "Comparing branches $(git rev-parse --abbrev-ref HEAD) and $CI_COMMIT_REF_NAME."
+    info "Comparing branches $(git rev-parse --abbrev-ref HEAD) and $CI_COMMIT_REF_NAME."
     if [ "$(git rev-parse --abbrev-ref HEAD)" == "$CI_COMMIT_REF_NAME" ]; then
-        vinfo "cleaning any old git locks..."
+        info "cleaning any old git locks..."
         # don't fail if there are none
         # and suppress the stderror if its just telling us there are none
         rm .git/index.lock -v &> >(grep -v "No such") || true
-        vinfo "setting git config"
+        info "setting git config"
 
         git config --global user.email "support@creators.tf"
         git config --global user.name "Creators.TF Production"
 
         COMMIT_OLD=$(git rev-parse HEAD);
 
-        vinfo "clearing stash"
+        info "clearing stash"
         git stash clear;
 
-        vinfo "fetching"
+        info "fetching"
         git fetch origin "$CI_COMMIT_REF_NAME";
 
-        vinfo "resetting"
+        info "resetting"
         git reset --hard origin/"$CI_COMMIT_REF_NAME";
 
-        vinfo "cleaning cfg folder"
+        info "cleaning cfg folder"
         git clean -d -f -x tf/cfg/
 
-        vinfo "cleaning maps folder"
+        info "cleaning maps folder"
         git clean -d -f tf/maps
 
         if [[ "$gitclean" == "true" ]]; then
@@ -120,7 +120,7 @@ for dir in ./*/ ; do
             git clean -d -f -x tf/addons/sourcemod/gamedata/
         fi
 
-        vinfo "chmodding"
+        info "chmodding"
         # start script for servers is always at the root of our server dir
         chmod 744 ./start.sh;
         # everything else not so much
@@ -128,19 +128,19 @@ for dir in ./*/ ; do
         chmod 744 ./scripts/str0.py;
         chmod 744 ./scripts/str0.ini;
 
-        vinfo "running str0 to scrub steamclient spam"
+        info "running str0 to scrub steamclient spam"
         # ignore the output if it already scrubbed it
         python3 ./scripts/str0.py ./bin/steamclient.so -c ./scripts/str0.ini | grep -v "Failed to locate string"
 
         # don't run this often
-        vinfo "garbage collecting"
+        info "garbage collecting"
         if [[ "$gitgc" == "true" ]]; then
             info "running git gc!!!"
             git gc --aggressive
         else
             git gc --auto ;
         fi
-        vinfo "building"
+        info "building"
         ./scripts/build.sh "$COMMIT_OLD";
 
     fi;

@@ -12,6 +12,10 @@ CYAN=$(tput setaf 6)
 WHITE=$(tput setaf 7)
 RESET=$(tput sgr0)
 
+important()
+{
+    echo "${PURPLE}[IMPORTANT] ${1} ${RESET}"
+}
 
 ok()
 {
