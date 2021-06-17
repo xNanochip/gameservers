@@ -41,7 +41,7 @@ reference_validation() {
 # Remove all the *.smx counterparts that exist
 list_updated(){
     UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | ${EXCLUDED})
-    
+
     info "Generating list of updated scripts"
     while IFS= read -r line; do
         # git diff reports the full path, we need it relative to ${WORKING_DIR}
