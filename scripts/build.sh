@@ -45,6 +45,7 @@ reference_validation()
 list_updated()
 {
     UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | ${EXCLUDED})
+    # skip compile if there's nothing *to* compile
     if [[ -z $UPDATED ]]; then
         ok "No updated files in diff";
         return 1;
@@ -66,12 +67,16 @@ list_uncompiled()
     # this may need to be quoted
     UNCOMPILED=$(find "${SCRIPTS_DIR}" -iname "*.sp" | ${EXCLUDED})
     info "Generating list of uncompiled scripts"
-    # please for the love of god comment this
+    # while loop, read from our uncompiled list we just got
     while IFS= read -r line; do
-        [[ ! -f "${COMPILED_DIR}/$(basename "${line/.sp/.smx}")" ]] \
-        && echo "${line}" >> "${UNCOMPILED_LIST}"
+        # if file doesnt exist at compiled dir
+        if [[ ! -f "${COMPILED_DIR}/$(basename "${line/.sp/.smx}")" ]]; then
+            # then tack it on to the end of the temp file we made
+            echo "${line}" >> "${UNCOMPILED_LIST}"
+        fi;
     done <<< "${UNCOMPILED}"
-    wc -l < "$UNCOMPILED_LIST"
+
+    # skip compile if there's nothing *to* compile
     if [[  $(wc -l < "$UNCOMPILED_LIST") == 0 ]]; then
         ok "No uncompiled .sp files";
         return 1;
@@ -88,14 +93,22 @@ compile()
     info "Compiling $(wc -l < "${1}") files"
     while read -r plugin; do
         info "Compiling ${plugin}"
-        ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename "${plugin/.sp/.smx}")" -v0 #-E
-        [[ $? -ne 0 ]] && compile_error "${plugin}"
+        # compiler path  plugin name      output dir      output file replacing sp with smx
+        ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename "${plugin/.sp/.smx}")" \
+        -v=2 -z=9 -O=2 -\;=+ #-E
+        # verbose, max compressed, max optimized, require semicolons ( #-E treats errors as warnings )
+
+        # if something has gone wrong then stop everything and yell about it
+        if [[ $? -ne 0 ]]; then
+            compile_error "${plugin}"
+        fi
     done < "${1}"
     return 0;
 }
 
 # Auxiliary function to catch errors on spcomp64
-compile_error(){
+compile_error()
+{
     error "spcomp64 error while compiling ${1}"
     exit 255
 }
@@ -110,6 +123,7 @@ if [[ -n ${1} ]]; then
     reference_validation "${1}"
     info "Looking for all .sp files that have been updated"
     list_updated
+    # only compile if we found something to compile
     if [[ $? -eq 0 ]]; then
         info "Compiling updated plugins"
         compile "${UPDATED_LIST}"
@@ -119,6 +133,7 @@ fi
 # Compile all scripts that have not been compiled
 info "Looking for all .sp files in ${WORKING_DIR}/${SCRIPTS_DIR}"
 list_uncompiled
+# only compile if we found something to compile
 if [[ $? -eq 0 ]]; then
     info "Compiling uncompiled plugins"
     compile "${UNCOMPILED_LIST}"
