@@ -6,7 +6,7 @@ stages:
     script:
     - chmod +x ./scripts/ci.sh
     # read the script if you're gonna mess with flags PLEASE
-    - bash ./scripts/ci.sh -c -s -h -v
+    - bash ./scripts/ci.sh
 
 deploy-europe:
     tags:

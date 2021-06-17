@@ -137,9 +137,7 @@ for dir in ./*/ ; do
         # start script for servers is always at the root of our server dir
         chmod 744 ./start.sh;
         # everything else not so much
-        chmod 744 ./scripts/build.sh;
-        chmod 744 ./scripts/str0.py;
-        chmod 744 ./scripts/str0.ini;
+        chmod 744 ./scripts/* -Rf
 
         debug "running str0 to scrub steamclient spam"
         # ignore the output if it already scrubbed it
@@ -160,7 +158,7 @@ for dir in ./*/ ; do
         ok "git repo updated on this server ($dir)"
         info "running build script"
 
-        ./scripts/build.sh "$COMMIT_OLD";
+        ./scripts/spbuild.sh "$COMMIT_OLD";
 
     fi;
     cd ../;
