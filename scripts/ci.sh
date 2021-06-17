@@ -55,11 +55,11 @@ for dir in ./*/ ; do
     # go to our server dir or die trying
     cd "$dir" || exit
 
-    # todo: fix this for git fscking
     info "finding empty objects"
-    emptygitobjs=$(find .git/objects/ -type f -empty)
-    echo $emptygitobjs
-    if [[ -z "$emptygitobjs" ]]; then
+    numemptyobjs=$(find .git/objects/ -type f -empty | wc -l)
+    # you do not need the $ apparently
+    # https://github.com/koalaman/shellcheck/wiki/SC2004
+    if (( numemptyobjs > 0 )); then
         error "FOUND EMPTY GIT OBJECTS, RUNNING GIT FSCK ON THIS REPOSITORY!";
         # i'll optimize this later
         find .git/objects/ -type f -empty -exec rm {} +;
