@@ -14,25 +14,25 @@ RESET=$(tput sgr0)
 
 important()
 {
-    printf "${PURPLE}[IMPORTANT] ${1} ${RESET}"
+    printf "${PURPLE}[IMPORTANT] ${1} ${RESET}\n"
 }
 
 ok()
 {
-    printf "${GREEN}[OK] ${1} ${RESET}"
+    printf "${GREEN}[OK] ${1} ${RESET}\n"
 }
 
 info()
 {
-    printf "${BLU}[INFO] ${1} ${RESET}"
+    printf "${BLU}[INFO] ${1} ${RESET}\n"
 }
 
 warn()
 {
-    printf "${YELLOW}[WARN] ${1} ${RESET}"
+    printf "${YELLOW}[WARN] ${1} ${RESET}\n"
 }
 
 error()
 {
-    printf "${RED}[ERROR] ${1} ${RESET}"
+    printf "${RED}[ERROR] ${1} ${RESET}\n"
 }
