@@ -21,14 +21,14 @@ while getopts 'cgv' flag; do
         c) gitclean='true'  ;;
         g) gitgc='true'     ;;
         v) debug='true'     ;;
-#\?) usage && exit 1  ;;
+        ?) usage && exit 1  ;;
     esac
 done
 
 debug()
 {
     if [[ "$debug" == "true" ]]; then
-        printf "${CYAN}[DEBUG] ${1} ${RESET}"
+        printf "${CYAN}[DEBUG] ${1} ${RESET}\n"
     fi
 }
 
