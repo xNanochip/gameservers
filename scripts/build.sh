@@ -68,7 +68,7 @@ list_uncompiled()
     info "Generating list of uncompiled scripts"
     # please for the love of god comment this
     while IFS= read -r line; do
-        [[ ! -f "${COMPILED_DIR}/$(basename "${line/.sp/.smx}")" ]]
+        [[ ! -f "${COMPILED_DIR}/$(basename "${line/.sp/.smx}")" ]] \
         && echo "${line}" >> "${UNCOMPILED_LIST}"
     done <<< "${UNCOMPILED}"
     warn "$UNCOMPILED_LIST";
