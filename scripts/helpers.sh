@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 if [[ -z "${DEPLOY_ENV}" ]]; then
-    export TERM=xterm-256color
+    export TERM=screen
 fi
 # Colours
 BLACK=$(tput setaf 0)
@@ -14,21 +14,22 @@ WHITE=$(tput setaf 7)
 RESET=$(tput sgr0)
 
 
-ok
+ok()
 {
-    echo '"${GREEN}"[OK] "${1}" "${RESET}"'
+    echo "${GREEN}[OK] ${1} ${RESET}"
 }
 
 info()
 {
-    echo '"${BLU}"[INFO] "${1}" "${RESET}"'
+    echo "${BLU}[INFO] ${1} ${RESET}"
 }
-# todo
+
 warn()
 {
     echo "${YELLOW}[WARN] ${1} ${RESET}"
 }
 
-error(){
+error()
+{
     echo "${RED}[ERROR] ${1} ${RESET}"
 }
