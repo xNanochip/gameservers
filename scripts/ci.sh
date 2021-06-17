@@ -58,14 +58,15 @@ for dir in ./*/ ; do
     # todo: fix this for git fscking
     vinfo "finding empty objects"
     emptygitobjs=$(find .git/objects/ -type f -empty)
+    echo $emptygitobjs
     if [[ -z $emptygitobjs ]]; then
         error "FOUND EMPTY GIT OBJECTS, RUNNING GIT FSCK ON THIS REPOSITORY!";
         # i'll optimize this later
         find .git/objects/ -type f -empty -exec rm {} +;
-        warning "fetching before git fscking"
-        git fetch -p
+        warn "fetching before git fscking"
+        #git fetch -p
         warning "fscking!!!"
-        git fsck --full
+        #git fsck --full
         return 0;
     fi
 
