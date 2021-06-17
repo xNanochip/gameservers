@@ -15,7 +15,7 @@ EXCLUDED="grep -v -e ${EXCLUDED// / -e }"
 # Temporary files
 UNCOMPILED_LIST=$(mktemp)
 UPDATED_LIST=$(mktemp)
-trap 'rm -f "${UNCOMPILED_LIST}" "${UPDATED_LIST}"; popd &>/dev/null' EXIT
+trap "rm -f ${UNCOMPILED_LIST} ${UPDATED_LIST}; popd >/dev/null" EXIT
 
 usage() {
     echo "This script looks for all uncompiled .sp files"
@@ -28,7 +28,7 @@ usage() {
 # Just checking the git refernece is valid
 reference_validation() {
     GIT_REF=${1}
-    if git rev-parse --verify --quiet "${GIT_REF}" > /dev/null; then
+    if git rev-parse --verify --quiet ${GIT_REF} > /dev/null; then
         info "Comparing against ${GIT_REF}"
     else
         error "Reference ${GIT_REF} does not exist"
@@ -45,8 +45,8 @@ list_updated(){
     info "Generating list of updated scripts"
     while IFS= read -r line; do
         # git diff reports the full path, we need it relative to ${WORKING_DIR}
-        echo "${line/${WORKING_DIR}\//}" >> "${UPDATED_LIST}"
-        rm -f "${COMPILED_DIR}/$(basename "${line/.sp/.smx}")"
+        echo ${line/${WORKING_DIR}\//} >> ${UPDATED_LIST}
+        rm -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})"
     done <<< "${UPDATED}"
 }
 
@@ -58,7 +58,7 @@ list_uncompiled(){
 
     info "Generating list of uncompiled scripts"
     while IFS= read -r line; do
-        [[ ! -f "${COMPILED_DIR}/$(basename "${line/.sp/.smx}")" ]] && echo "${line}" >> "${UNCOMPILED_LIST}"
+        [[ ! -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})" ]] && echo ${line} >> ${UNCOMPILED_LIST}
     done <<< "${UNCOMPILED}"
 }
 
@@ -66,12 +66,12 @@ list_uncompiled(){
 # Output will be ${COMPILED_DIR}/plugin_name.smx
 # If an error is found the function dies and report the failing file
 compile() {
-    info "Compiling $(wc -l < "${1}") files"
+    info "Compiling $(wc -l < ${1}) files"
     while read -r plugin; do
         info "Compiling ${plugin}"
-        ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename "${plugin/.sp/.smx}")" -v0 #-E
-        [[ $? -ne 0 ]] && compile_error "${plugin}"
-    done < "${1}"
+        ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename ${plugin/.sp/.smx})" -v0 #-E
+        [[ $? -ne 0 ]] && compile_error ${plugin}
+    done < ${1}
 }
 
 # Auxiliary function to catch errors on spcomp64
@@ -82,23 +82,23 @@ compile_error(){
 
 ###
 # Script begins here ↓
-pushd ${WORKING_DIR} >/dev/null || exit
+pushd ${WORKING_DIR} >/dev/null
 [[ ! -x ${SPCOMP_PATH} ]] && chmod u+x ${SPCOMP_PATH}
 
 # Compile all scripts that have been updated
 if [[ -n ${1} ]]; then
-    reference_validation "${1}"
+    reference_validation ${1}
     info "Looking for all .sp files that have been updated"
     list_updated
     info "Compiling updated plugins"
-    compile "${UPDATED_LIST}"
+    compile ${UPDATED_LIST}
 fi
 
 # Compile all scripts that have not been compiled
 info "Looking for all .sp files in ${WORKING_DIR}/${SCRIPTS_DIR}"
 list_uncompiled
 info "Compiling uncompiled plugins"
-compile "${UNCOMPILED_LIST}"
+compile ${UNCOMPILED_LIST}
 
 ok "All plugins compiled successfully !"
 exit 0
