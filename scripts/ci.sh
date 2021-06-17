@@ -48,14 +48,15 @@ for dir in ./*/ ; do
     CI_REMOTE_REMOTE=${CI_REMOTE_REMOTE%.git}
 
     # why do we need to check this?
-    info "Comparing remotes $CI_LOCAL_REMOTE and $CI_REMOTE_REMOTE."
-    if [ "$CI_LOCAL_REMOTE" == "$CI_REMOTE_REMOTE" ]; then
+    #info "Comparing remotes $CI_LOCAL_REMOTE and $CI_REMOTE_REMOTE."
+    #if [ "$CI_LOCAL_REMOTE" == "$CI_REMOTE_REMOTE" ]; then
 
         info "Comparing branches $(git rev-parse --abbrev-ref HEAD) and $CI_COMMIT_REF_NAME."
         if [ "$(git rev-parse --abbrev-ref HEAD)" == "$CI_COMMIT_REF_NAME" ]; then
             info "cleaning any old git locks..."
             # don't fail if there are none
-            rm .git/index.lock -v || true
+            # and suppress the stderror if its just telling us there are none
+            rm .git/index.lock -v &> >(grep -v "No such") || true
             info "setting git config"
 
             git config --global user.email "support@creators.tf"
@@ -95,17 +96,17 @@ for dir in ./*/ ; do
             chmod 744 ./scripts/str0.ini;
 
             info "running str0 to scrub steamclient spam"
+            # ignore the output if it already scrubbed it
             python3 ./scripts/str0.py ./bin/steamclient.so -c ./scripts/str0.ini | grep -v "Failed to locate string"
 
             # don't run this often
             info "garbage collecting"
             git gc --auto ;
 
-
             info "building"
             ./scripts/build.sh "$COMMIT_OLD";
 
         fi;
-    fi;
+    #fi;
     cd ../;
 done
