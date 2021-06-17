@@ -143,6 +143,8 @@ for dir in ./*/ ; do
         # ignore the output if it already scrubbed it
         python3 ./scripts/str0.py ./bin/steamclient.so -c ./scripts/str0.ini | grep -v "Failed to locate string"
 
+        info "git pruning"
+        git prune;
         # don't run this often
         info "garbage collecting"
         if [[ "$gitgc_aggressive" == "true" ]]; then
