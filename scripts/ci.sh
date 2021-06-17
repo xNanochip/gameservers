@@ -7,7 +7,6 @@ gitclean=''
 gitshallow=''
 gitgc_aggressive=''
 gitgc=''
-debug=''
 
 
 usage()
@@ -26,17 +25,11 @@ while getopts 'csahv' flag; do
         s) gitshallow='true'            ;;
         a) gitgc_aggressive='true'      ;;
         h) gitgc='true'                 ;;
-        v) debug='true'                 ;;
+        v) export ctf_show_debug='true' ;;
         ?) usage && exit 1              ;;
     esac
 done
 
-debug()
-{
-    if [[ "$debug" == "true" ]]; then
-        echo "${CYAN}[DEBUG] ${1} ${RESET}"
-    fi
-}
 
 # dirs to check for possible gameserver folders
 TARGET_DIRS=(/srv/daemon-data /var/lib/pterodactyl/volumes)
@@ -61,6 +54,8 @@ for dir in ./*/ ; do
     # we did find a git folder!
     # print out our cur folder
     important "Operating on: $dir"
+
+    debug "pwd: $(pwd)";
     # go to our server dir or die trying
     cd "$dir" || { error "can't cd to $dir"; continue; }
     info "finding empty objects"
@@ -162,7 +157,8 @@ for dir in ./*/ ; do
             debug "auto running git gc"
             git gc --auto;
         fi
-        info "building\n"
+        ok "git repo updated on this server ($dir)"
+        info "running build script"
 
         ./scripts/build.sh "$COMMIT_OLD";
 
