@@ -98,7 +98,7 @@ pushd ${WORKING_DIR} >/dev/null || exit
 if [[ -n ${1} ]]; then
     reference_validation "${1}"
     info "Looking for all .sp files that have been updated"
-    if [[ wc -l < "${1}" == 0 ]]; then
+    if [[ $(wc -l < "${1}") == 0 ]]; then
         info "No uncompiled .sp files";
         return;
     fi
