@@ -65,6 +65,7 @@ list_uncompiled()
 {
     # this may need to be quoted
     UNCOMPILED=$(find "${SCRIPTS_DIR}" -iname "*.sp" | ${EXCLUDED})
+    warn "$UNCOMPILED";
     if [[ -z $UNCOMPILED ]]; then
         ok "No uncompiled .sp files";
         return 1;
