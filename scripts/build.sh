@@ -65,16 +65,18 @@ list_uncompiled()
 {
     # this may need to be quoted
     UNCOMPILED=$(find "${SCRIPTS_DIR}" -iname "*.sp" | ${EXCLUDED})
-    warn "$UNCOMPILED";
-    if [[ -z $UNCOMPILED ]]; then
+    info "Generating list of uncompiled scripts"
+    # please for the love of god comment this
+    while IFS= read -r line; do
+        [[ ! -f "${COMPILED_DIR}/$(basename "${line/.sp/.smx}")" ]]
+        && echo "${line}" >> "${UNCOMPILED_LIST}"
+    done <<< "${UNCOMPILED}"
+    warn "$UNCOMPILED_LIST";
+    if [[ -z $UNCOMPILED_LIST ]]; then
         ok "No uncompiled .sp files";
         return 1;
     fi
 
-    info "Generating list of uncompiled scripts"
-    while IFS= read -r line; do
-        [[ ! -f "${COMPILED_DIR}/$(basename "${line/.sp/.smx}")" ]] && echo "${line}" >> "${UNCOMPILED_LIST}"
-    done <<< "${UNCOMPILED}"
     return 0;
 }
 
