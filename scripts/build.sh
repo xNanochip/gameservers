@@ -47,7 +47,7 @@ list_updated()
     UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | ${EXCLUDED})
     if [[ -z $UPDATED ]]; then
         ok "No updated files in diff";
-        return; 
+        return 1;
     fi
     info "Generating list of updated scripts"
     while IFS= read -r line; do
@@ -55,6 +55,7 @@ list_updated()
         echo "${line/${WORKING_DIR}\//}" >> "${UPDATED_LIST}"
         rm -f "${COMPILED_DIR}/$(basename "${line/.sp/.smx}")"
     done <<< "${UPDATED}"
+    return 0;
 }
 
 # Find all *.sp files inside ${WORKING_DIR}
@@ -66,13 +67,14 @@ list_uncompiled()
     UNCOMPILED=$(find "${SCRIPTS_DIR}" -iname "*.sp" | ${EXCLUDED})
     if [[ -z $UNCOMPILED ]]; then
         ok "No uncompiled .sp files";
-        return; 
+        return 1; 
     fi
 
     info "Generating list of uncompiled scripts"
     while IFS= read -r line; do
         [[ ! -f "${COMPILED_DIR}/$(basename "${line/.sp/.smx}")" ]] && echo "${line}" >> "${UNCOMPILED_LIST}"
     done <<< "${UNCOMPILED}"
+    return 0;
 }
 
 # Iterate over a list files and compile all the *.sp files
@@ -86,6 +88,7 @@ compile()
         ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename "${plugin/.sp/.smx}")" -v0 #-E
         [[ $? -ne 0 ]] && compile_error "${plugin}"
     done < "${1}"
+    return 0;
 }
 
 # Auxiliary function to catch errors on spcomp64
@@ -103,16 +106,18 @@ pushd ${WORKING_DIR} >/dev/null || exit
 if [[ -n ${1} ]]; then
     reference_validation "${1}"
     info "Looking for all .sp files that have been updated"
-    list_updated
-    info "Compiling updated plugins"
-    compile "${UPDATED_LIST}"
+    if list_updated; then
+        info "Compiling updated plugins"
+        compile "${UPDATED_LIST}"
+    fi
 fi
 
 # Compile all scripts that have not been compiled
 info "Looking for all .sp files in ${WORKING_DIR}/${SCRIPTS_DIR}"
-list_uncompiled
-info "Compiling uncompiled plugins"
-compile "${UNCOMPILED_LIST}"
+if list_uncompiled; then
+    info "Compiling uncompiled plugins"
+    compile "${UNCOMPILED_LIST}"
+fi
 
 ok "All plugins compiled successfully !"
 exit 0
