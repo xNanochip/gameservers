@@ -6,7 +6,7 @@
 
 #define VERSION "1.2-creators"
 
-new Handle:hAdminMenu = INVALID_HANDLE
+new Handle:hAdminMenu = INVALID_HANDLE;
 new Handle:hPlayerSelectMenu = INVALID_HANDLE;
 new Handle:hAmountSelectMenu = INVALID_HANDLE;
 
@@ -27,7 +27,7 @@ public OnPluginStart()
 	
 	AutoExecConfig(true);
 	
-	new Handle:topmenu;
+	Handle topmenu;
 	if (LibraryExists("adminmenu") && ((topmenu = GetAdminTopMenu()) != INVALID_HANDLE))
 	{
 		OnAdminMenuReady(topmenu);
@@ -92,7 +92,7 @@ public AdminMenu_AddMoney(Handle:topmenu, TopMenuAction:action, TopMenuObject:ob
 			new String:indexstr[32];
 			IntToString(i, indexstr, sizeof(indexstr)); 
 			
-			AddMenuItem(hPlayerSelectMenu,indexstr, infostr)
+			AddMenuItem(hPlayerSelectMenu,indexstr, infostr);
 		}
 		
 		InsertMenuItem(hPlayerSelectMenu, 0, "red", "Team Red");
