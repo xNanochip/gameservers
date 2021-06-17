@@ -5,38 +5,39 @@ source scripts/helpers.sh
 
 gitclean=''
 gitgc=''
-verbose=''
+debug=''
+
+debug()
+{
+    if [[ "$debug" == "true" ]]; then
+        echo "${CYAN}[DEBUG] ${1} ${RESET}"
+    fi
+}
 
 usage()
 {
     echo "Usage, assuming you are running this as a ci script, which you should be"
     echo "  -c cleans all plugins and compiles them from scratch as well as cleaning all untracked files in the sourcemod folder"
     echo "  -g runs aggressive git housekeeping on all repositories ( THIS WILL TAKE A VERY LONG TIME )"
-    echo "  -v prints verbose info about running job to console ( aka the running job window on gitlab )"
+    echo "  -v enables debug printing"
 }
 
 while getopts 'cgv' flag; do
     case "${flag}" in
         c) gitclean='true'  ;;
         g) gitgc='true'     ;;
-        v) verbose='true'   ;;
+        v) debug='true'     ;;
         *) usage && exit 1  ;;
     esac
 done
-
-info()
-{
-    if [[ "$verbose" == "true" ]]; then
-        info "${1}";
-    fi
-}
 
 # dirs to check for possible gameserver folders
 TARGET_DIRS=(/srv/daemon-data /var/lib/pterodactyl/volumes)
 # this is clever and infinitely smarter than what it was before, good job
 WORK_DIR=$(du -s "${TARGET_DIRS[@]}" 2> /dev/null | sort -n | tail -n1 | cut -f2)
 # go to our directory with (presumably) gameservers in it or die trying
-cd "${WORK_DIR}" || exit
+debug "pwd: $(pwd)";
+cd "${WORK_DIR}" || error "couldn't cd to $dir ???"; exit
 # kill any git operations that are running and don't fail if we don't find any
 # PROBABLY BAD PRACTICE LOL
 killall -s SIGKILL -q git || true
@@ -52,8 +53,10 @@ for dir in ./*/ ; do
     # we did find a git folder!
     # print out our cur folder
     important "Operating on: $dir"
+    
+    debug "pwd: $(pwd)";
     # go to our server dir or die trying
-    cd "$dir" || exit
+    cd "$dir" || error "couldn't cd to $dir ???"; exit
 
     info "finding empty objects"
     numemptyobjs=$(find .git/objects/ -type f -empty | wc -l)
@@ -87,6 +90,7 @@ for dir in ./*/ ; do
 
     info "Comparing branches $(git rev-parse --abbrev-ref HEAD) and $CI_COMMIT_REF_NAME."
     if [ "$(git rev-parse --abbrev-ref HEAD)" == "$CI_COMMIT_REF_NAME" ]; then
+        debug "branches match"
         info "cleaning any old git locks..."
         # don't fail if there are none
         # and suppress the stderror if its just telling us there are none
