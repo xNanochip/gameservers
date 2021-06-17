@@ -21,7 +21,7 @@ while getopts 'cgv' flag; do
         c) gitclean='true'  ;;
         g) gitgc='true'     ;;
         v) debug='true'     ;;
-        \?) usage && exit 1  ;;
+#\?) usage && exit 1  ;;
     esac
 done
 
