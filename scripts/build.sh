@@ -46,7 +46,7 @@ list_updated()
 {
     UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | ${EXCLUDED})
     if [[ -z $UPDATED ]]; then
-        echo "no updated files on git commit";
+        info "No updated files in diff";
         return; 
     fi
     info "Generating list of updated scripts"
@@ -73,7 +73,8 @@ list_uncompiled()
 # Iterate over a list files and compile all the *.sp files
 # Output will be ${COMPILED_DIR}/plugin_name.smx
 # If an error is found the function dies and report the failing file
-compile() {
+compile()
+{
     info "Compiling $(wc -l < "${1}") files"
     while read -r plugin; do
         info "Compiling ${plugin}"
@@ -97,6 +98,11 @@ pushd ${WORKING_DIR} >/dev/null || exit
 if [[ -n ${1} ]]; then
     reference_validation "${1}"
     info "Looking for all .sp files that have been updated"
+    if [[ wc -l ${1} == 0 ]]; then
+        info "No uncompiled .sp files";
+        return;
+    fi
+
     list_updated
     info "Compiling updated plugins"
     compile "${UPDATED_LIST}"
