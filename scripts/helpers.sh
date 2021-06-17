@@ -14,25 +14,25 @@ RESET=$(tput sgr0)
 
 important()
 {
-    echo "${PURPLE}[IMPORTANT] ${1} ${RESET}"
+    printf "${PURPLE}[IMPORTANT] ${1} ${RESET}"
 }
 
 ok()
 {
-    echo "${GREEN}[OK] ${1} ${RESET}"
+    printf "${GREEN}[OK] ${1} ${RESET}"
 }
 
 info()
 {
-    echo "${BLU}[INFO] ${1} ${RESET}"
+    printf "${BLU}[INFO] ${1} ${RESET}"
 }
 
 warn()
 {
-    echo "${YELLOW}[WARN] ${1} ${RESET}"
+    printf "${YELLOW}[WARN] ${1} ${RESET}"
 }
 
 error()
 {
-    echo "${RED}[ERROR] ${1} ${RESET}"
+    printf "${RED}[ERROR] ${1} ${RESET}"
 }
