@@ -19,7 +19,8 @@ UPDATED_LIST=$(mktemp)
 # TODO: I am pretty sure this needs to be single quoted with double quotes around the vars
 trap "rm -f ${UNCOMPILED_LIST} ${UPDATED_LIST}; popd >/dev/null" EXIT
 
-usage() {
+usage()
+{
     echo "This script looks for all uncompiled .sp files"
     echo "and if a reference is given, those that were updated"
     echo "Then it compiles everything"
@@ -32,7 +33,7 @@ reference_validation()
 {
     GIT_REF="${1}"
     if git rev-parse --verify --quiet "${GIT_REF}" > /dev/null; then
-        info "Comparing against ${GIT_REF}"
+        debug "Comparing against ${GIT_REF}"
     else
         error "Reference ${GIT_REF} does not exist"
         exit 2
@@ -50,7 +51,7 @@ list_updated()
         ok "No updated files in diff";
         return 1;
     fi
-    info "Generating list of updated scripts"
+    debug "Generating list of updated scripts"
     while IFS= read -r line; do
         # git diff reports the full path, we need it relative to ${WORKING_DIR}
         echo "${line/${WORKING_DIR}\//}" >> "${UPDATED_LIST}"
@@ -66,7 +67,7 @@ list_uncompiled()
 {
     # this may need to be quoted
     UNCOMPILED=$(find "${SCRIPTS_DIR}" -iname "*.sp" | ${EXCLUDED})
-    info "Generating list of uncompiled scripts"
+    debug "Generating list of uncompiled scripts"
     # while loop, read from our uncompiled list we just got
     while IFS= read -r line; do
         # if file doesnt exist at compiled dir
@@ -90,9 +91,9 @@ list_uncompiled()
 # If an error is found the function dies and report the failing file
 compile()
 {
-    info "Compiling $(wc -l < "${1}") files"
+    debug "Compiling $(wc -l < "${1}") files"
     while read -r plugin; do
-        info "Compiling ${plugin}"
+        debug "Compiling ${plugin}"
         # compiler path  plugin name      output dir      output file replacing sp with smx
         ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename "${plugin/.sp/.smx}")" \
         -v=2 -z=9 -O=2 -\;=+ #-E
@@ -121,21 +122,21 @@ pushd ${WORKING_DIR} >/dev/null || exit
 # Compile all scripts that have been updated
 if [[ -n ${1} ]]; then
     reference_validation "${1}"
-    info "Looking for all .sp files that have been updated"
+    debug "Looking for all .sp files that have been updated"
     list_updated
     # only compile if we found something to compile
     if [[ $? -eq 0 ]]; then
-        info "Compiling updated plugins"
+        debug "Compiling updated plugins"
         compile "${UPDATED_LIST}"
     fi
 fi
 
 # Compile all scripts that have not been compiled
-info "Looking for all .sp files in ${WORKING_DIR}/${SCRIPTS_DIR}"
+debug "Looking for all .sp files in ${WORKING_DIR}/${SCRIPTS_DIR}"
 list_uncompiled
 # only compile if we found something to compile
 if [[ $? -eq 0 ]]; then
-    info "Compiling uncompiled plugins"
+    debug "Compiling uncompiled plugins"
     compile "${UNCOMPILED_LIST}"
 fi
 
