@@ -45,7 +45,7 @@ reference_validation()
 # Remove all the *.smx counterparts that exist
 list_updated()
 {
-    UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | ${EXCLUDED})
+    UPDATED=$(git diff --name-only "${GIT_REF}" HEAD . | grep "\.sp$" | ${EXCLUDED})
     # skip compile if there's nothing *to* compile
     if [[ -z $UPDATED ]]; then
         ok "No updated files in diff";
