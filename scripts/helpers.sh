@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-export TERM=screen
-
+if [[ -z $TERM ]]; then;
+    export TERM=screen
+fi
 # Colours
 BLACK=$(tput setaf 0)
 RED=$(tput setaf 1)
@@ -12,27 +13,36 @@ CYAN=$(tput setaf 6)
 WHITE=$(tput setaf 7)
 RESET=$(tput sgr0)
 
-important()
-{
-    printf "${PURPLE}[IMPORTANT] ${1} ${RESET}\n"
-}
 
-ok()
+error()
 {
-    printf "${GREEN}[OK] ${1} ${RESET}\n"
-}
-
-info()
-{
-    printf "${BLU}[INFO] ${1} ${RESET}\n"
+    echo "${RED}[ERROR] ${1} ${RESET}"
 }
 
 warn()
 {
-    printf "${YELLOW}[WARN] ${1} ${RESET}\n"
+    echo "${YELLOW}[WARN] ${1} ${RESET}"
 }
 
-error()
+important()
 {
-    printf "${RED}[ERROR] ${1} ${RESET}\n"
+    echo "${PURPLE}[IMPORTANT] ${1} ${RESET}"
 }
+
+ok()
+{
+    echo "${GREEN}[OK] ${1} ${RESET}"
+}
+
+info()
+{
+    echo "${BLU}[INFO] ${1} ${RESET}"
+}
+
+debug()
+{
+    if [[ "$ctf_show_debug" == "true" ]]; then
+        echo "${CYAN}[DEBUG] ${1} ${RESET}"
+    fi
+}
+
