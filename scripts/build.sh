@@ -67,7 +67,7 @@ list_uncompiled()
     UNCOMPILED=$(find "${SCRIPTS_DIR}" -iname "*.sp" | ${EXCLUDED})
     if [[ -z $UNCOMPILED ]]; then
         ok "No uncompiled .sp files";
-        return 1; 
+        return 1;
     fi
 
     info "Generating list of uncompiled scripts"
@@ -106,7 +106,8 @@ pushd ${WORKING_DIR} >/dev/null || exit
 if [[ -n ${1} ]]; then
     reference_validation "${1}"
     info "Looking for all .sp files that have been updated"
-    if list_updated; then
+    list_updated
+    if [[ $? -eq 0 ]]; then
         info "Compiling updated plugins"
         compile "${UPDATED_LIST}"
     fi
@@ -114,7 +115,8 @@ fi
 
 # Compile all scripts that have not been compiled
 info "Looking for all .sp files in ${WORKING_DIR}/${SCRIPTS_DIR}"
-if list_uncompiled; then
+list_uncompiled
+if [[ $? -eq 0 ]]; then
     info "Compiling uncompiled plugins"
     compile "${UNCOMPILED_LIST}"
 fi
