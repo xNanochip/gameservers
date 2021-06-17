@@ -14,15 +14,18 @@ WHITE=$(tput setaf 7)
 RESET=$(tput sgr0)
 
 
-ok(){
-    echo "${GREEN}[OK] ${1} ${RESET}"
+ok
+{
+    echo '"${GREEN}"[OK] "${1}" "${RESET}"'
 }
 
-info(){
-    echo "${BLU}[INFO] ${1} ${RESET}"
+info()
+{
+    echo '"${BLU}"[INFO] "${1}" "${RESET}"'
 }
-
-warn(){
+# todo
+warn()
+{
     echo "${YELLOW}[WARN] ${1} ${RESET}"
 }
 
