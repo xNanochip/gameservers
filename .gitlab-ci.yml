@@ -4,7 +4,8 @@ stages:
 .deploy_template: &deploy_template
     stage: deploy
     script:
-    - chmod +x ./scripts/ci.sh && bash ./scripts/ci.sh
+    - chmod +x ./scripts/ci.sh
+    - bash ./scripts/ci.sh -v
 
 deploy-europe:
     tags:
