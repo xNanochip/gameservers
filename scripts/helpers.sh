@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-
+if [[ -z "${DEPLOY_ENV}" ]]; then
+    export TERM=xterm-256color
+fi
 # Colours
 BLACK=$(tput setaf 0)
 RED=$(tput setaf 1)
