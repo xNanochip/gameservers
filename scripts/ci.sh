@@ -10,7 +10,7 @@ debug=''
 debug()
 {
     if [[ "$debug" == "true" ]]; then
-        echo "${CYAN}[DEBUG] ${1} ${RESET}"
+        printf "${CYAN}[DEBUG] ${1} ${RESET}"
     fi
 }
 
