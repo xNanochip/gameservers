@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # check if we are in a terminal, if not, set our term var to screen so tput doesn't whine
-set | grep TERM &> /dev/null || { warn "no terminal set, defaulting to screen"; export TERM=screen; }
-
+#set | grep TERM &> /dev/null || { warn "no terminal set, defaulting to screen"; export TERM=screen; }
+export TERM=screen;
 # Colours
 BLACK=$(tput setaf 0)
 RED=$(tput setaf 1)
