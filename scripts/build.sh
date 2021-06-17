@@ -63,7 +63,7 @@ list_updated()
 list_uncompiled()
 {
     # this may need to be quoted
-    UNCOMPILED=$(find "${SCRIPTS_DIR}" -iname "*.sp" | "${EXCLUDED}")
+    UNCOMPILED=$(find "${SCRIPTS_DIR}" -iname "*.sp" | ${EXCLUDED})
     if [[ -z $UNCOMPILED ]]; then
         ok "No uncompiled .sp files";
         return; 
