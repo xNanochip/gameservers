@@ -4,6 +4,8 @@
 source scripts/helpers.sh
 
 gitclean=''
+gitshallow=''
+gitgc_aggressive=''
 gitgc=''
 debug=''
 
@@ -11,24 +13,28 @@ debug=''
 usage()
 {
     echo "Usage, assuming you are running this as a ci script, which you should be"
-    echo "  -c cleans all plugins and compiles them from scratch as well as cleaning all untracked files in the sourcemod folder"
-    echo "  -g runs aggressive git housekeeping on all repositories ( THIS WILL TAKE A VERY LONG TIME )"
+    echo "  -c removes all plugins and compiles them from scratch and recursively removes all untracked files in the sourcemod folder"
+    echo "  -s culls ('shallowifies') all repositories to only have the last 25 commits, implies -h"
+    echo "  -a runs aggressive git housekeeping on all repositories (THIS WILL TAKE A VERY LONG TIME)"
+    echo "  -h runs normal git housekeeping on all repositories (git gc always gets run with --auto, this will force it to run)"
     echo "  -v enables debug printing"
 }
 
-while getopts 'cgv' flag; do
+while getopts 'csahv' flag; do
     case "${flag}" in
-        c) gitclean='true'  ;;
-        g) gitgc='true'     ;;
-        v) debug='true'     ;;
-        ?) usage && exit 1  ;;
+        c) gitclean='true'              ;;
+        s) gitshallow='true'            ;;
+        a) gitgc_aggressive='true'      ;;
+        h) gitgc='true'                 ;;
+        v) debug='true'                 ;;
+        ?) usage && exit 1              ;;
     esac
 done
 
 debug()
 {
     if [[ "$debug" == "true" ]]; then
-        printf "${CYAN}[DEBUG] ${1} ${RESET}\n"
+        echo "${CYAN}[DEBUG] ${1} ${RESET}"
     fi
 }
 
@@ -38,7 +44,8 @@ TARGET_DIRS=(/srv/daemon-data /var/lib/pterodactyl/volumes)
 WORK_DIR=$(du -s "${TARGET_DIRS[@]}" 2> /dev/null | sort -n | tail -n1 | cut -f2)
 # go to our directory with (presumably) gameservers in it or die trying
 debug "pwd: $(pwd)";
-cd "${WORK_DIR}"
+cd "${WORK_DIR}" || { error "can't cd to workdir $dir!!!"; exit 1; }
+
 # kill any git operations that are running and don't fail if we don't find any
 # PROBABLY BAD PRACTICE LOL
 killall -s SIGKILL -q git || true
@@ -54,11 +61,10 @@ for dir in ./*/ ; do
     # we did find a git folder!
     # print out our cur folder
     important "Operating on: $dir"
-    
+
     debug "pwd: $(pwd)";
     # go to our server dir or die trying
-    cd "$dir"
-
+    cd "$dir" || { error "can't cd to $dir"; continue; }
     info "finding empty objects"
     numemptyobjs=$(find .git/objects/ -type f -empty | wc -l)
     # you do not need the $ apparently
@@ -68,9 +74,9 @@ for dir in ./*/ ; do
         # i'll optimize this later
         find .git/objects/ -type f -empty -exec rm {} +;
         warn "fetching before git fscking"
-        #git fetch -p
+        git fetch -p
         warn "fscking!!!"
-        #git fsck --full
+        git fsck --full
         continue;
     fi
 
@@ -92,34 +98,42 @@ for dir in ./*/ ; do
     info "Comparing branches $(git rev-parse --abbrev-ref HEAD) and $CI_COMMIT_REF_NAME."
     if [ "$(git rev-parse --abbrev-ref HEAD)" == "$CI_COMMIT_REF_NAME" ]; then
         debug "branches match"
-        info "cleaning any old git locks..."
+        debug "cleaning any old git locks..."
         # don't fail if there are none
         # and suppress the stderror if its just telling us there are none
         rm .git/index.lock -v &> >(grep -v "No such") || true
-        info "setting git config"
+        debug "setting git config..."
 
         git config --global user.email "support@creators.tf"
         git config --global user.name "Creators.TF Production"
 
         COMMIT_OLD=$(git rev-parse HEAD);
 
-        info "shallowifying repo..."
-        git stash drop;
-        git reflog expire --expire=all --all;
-        git tag -l | xargs git tag -d;
-        info "pulling last 50 commits..."
-        git fetch origin "$CI_COMMIT_REF_NAME" --depth 50;
+        if [[ "$gitshallow" == "true" ]]; then
+            warn "shallowifying repo on user request"
+            info "clearing stash..."
+            git stash clear;
+            info "expiring reflog..."
+            git reflog expire --expire=all --all;
+            info "deleting tags..."
+            git tag -l | xargs git tag -d;
+            info "setting git gc to automatically run..."
+            gitgc='true'
+        fi
+        info "fetching..."
+        git fetch origin "$CI_COMMIT_REF_NAME" --depth 25;
 
-        info "resetting"
+        info "resetting..."
         git reset --hard origin/"$CI_COMMIT_REF_NAME";
 
-        info "cleaning cfg folder"
+        info "cleaning cfg folder..."
         git clean -d -f -x tf/cfg/
 
-        info "cleaning maps folder"
+        info "cleaning maps folder..."
         git clean -d -f tf/maps
 
         if [[ "$gitclean" == "true" ]]; then
+            warn "recursively cleaning sourcemod folder on user request"
             git clean -d -f -x tf/addons/sourcemod/plugins/
             git clean -d -f -x tf/addons/sourcemod/plugins/external
             git clean -d -f -x tf/addons/sourcemod/data/
@@ -140,11 +154,15 @@ for dir in ./*/ ; do
 
         # don't run this often
         info "garbage collecting"
-        if [[ "$gitgc" == "true" ]]; then
-            info "running git gc!!!"
-            git gc --aggressive
+        if [[ "$gitgc_aggressive" == "true" ]]; then
+            warn "running aggressive git gc!!!"
+            git gc --aggressive --prune=all;
+        elif [[ "$gitgc" == "true" ]]; then
+            warn "running git gc on user request"
+            git gc;
         else
-            git gc --auto ;
+            info "auto running git gc"
+            git gc --auto;
         fi
         info "building"
         ./scripts/build.sh "$COMMIT_OLD";
