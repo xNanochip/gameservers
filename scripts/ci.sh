@@ -103,11 +103,12 @@ for dir in ./*/ ; do
 
         COMMIT_OLD=$(git rev-parse HEAD);
 
-        info "clearing stash"
-        git stash clear;
-
-        info "fetching"
-        git fetch origin "$CI_COMMIT_REF_NAME";
+        info "shallowifying repo..."
+        git stash drop;
+        git reflog expire --expire=all --all;
+        git tag -l | xargs git tag -d;
+        info "pulling last 50 commits..."
+        git fetch origin/"$CI_COMMIT_REF_NAME" --depth 50;
 
         info "resetting"
         git reset --hard origin/"$CI_COMMIT_REF_NAME";
