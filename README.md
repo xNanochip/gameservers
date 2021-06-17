@@ -61,3 +61,8 @@ The game server regions are as follows:
 
 - `quickplay/server-$xxx` - Each individual game server has it's own config file so it can set it's hostname and server index number. This config file will call the other two files previously mentioned.
 
+## Scripts 
+STRTA: or Scripts To Rule Them All:
+- `script/helpers.sh`: Contains an useful collection of shared functions.
+- `script/build.sh`: Compiles any uncompiled `.sp` plugin and (if given a git reference) any `.sp` in need of an update.
+

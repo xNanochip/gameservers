@@ -1,69 +1,104 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-shopt -s globstar
+# Helper functions
+source script/helpers.sh
 
-SPCOMP_PATH=$(realpath "tf/addons/sourcemod/scripting/spcomp64")
-COMPILED_DIR=$(realpath 'tf/addons/sourcemod/plugins/')
-SCRIPTS_DIR=$(realpath 'tf/addons/sourcemod/scripting/')
+# Variable initialisation
+WORKING_DIR="tf/addons/sourcemod"
+SPCOMP_PATH="scripting/spcomp64"
+SCRIPTS_DIR="scripting"
+COMPILED_DIR="plugins"
+# Exclusion list, use /dir/ for directories and /file_ for file_*.sp
+EXCLUDED="/stac/ /include/ /disabled/ /external/ /economy/ /attributes/ /discord_"
+EXCLUDED="grep -v -e ${EXCLUDED// / -e }"
 
-chmod 744 "$SPCOMP_PATH"
+# Temporary files
+UNCOMPILED_LIST=$(mktemp)
+UPDATED_LIST=$(mktemp)
+trap "rm -f ${UNCOMPILED_LIST} ${UPDATED_LIST}; popd >/dev/null" EXIT
 
-git diff --name-only HEAD "$1" | grep "\.sp$" > ./00
+usage() {
+    echo "This script looks for all uncompiled .sp files"
+    echo "and if a reference is given, those that were updated"
+    echo "Then it compiles everything"
+    echo "Usage: ./build.sh <reference>"
+    exit 1
+}
 
-# ==========================
-# Compile all scripts that don't have any smxes
-# ==========================
-
-echo "Seeking for .sp in $SCRIPTS_DIR/**/*"
-
-for p in "$SCRIPTS_DIR"/**/*
-do
-    if [ "${p##*.}" == 'sp' ]; then
-        if [[ $p =~ "stac/" ]] || [[ $p =~ "include/" ]] || [[ $p =~ "disabled/" ]] || [[ $p =~ "external/" ]] || [[ $p =~ "economy/" ]]; then
-            continue
-        fi
-        PLUGIN_NAME=$(realpath --relative-to "$SCRIPTS_DIR" "$p")
-        PLUGIN_NAME=${PLUGIN_NAME%.*}
-        PLUGIN_SCRIPT_PATH="$SCRIPTS_DIR/$PLUGIN_NAME.sp"
-        PLUGIN_COMPILED_PATH="$COMPILED_DIR/$(basename "$PLUGIN_NAME").smx"
-
-        if [[ ! -f "$PLUGIN_COMPILED_PATH" ]]; then
-            echo "$PLUGIN_SCRIPT_PATH" >> ./00
-        fi
+# Just checking the git refernece is valid
+reference_validation() {
+    GIT_REF=${1}
+    if git rev-parse --verify --quiet ${GIT_REF} > /dev/null; then
+        info "Comparing against ${GIT_REF}"
+    else
+        error "Reference ${GIT_REF} does not exist"
+        exit 2
     fi
-done
+}
 
-echo "[INFO] Full compile list:"
-echo "========================="
-cat ./00
-echo "========================="
+# Find all changed *.sp files inside ${WORKING_DIR}
+# Write the full list to a file
+# Remove all the *.smx counterparts that exist
+list_updated(){
+    UPDATED=$(git diff --name-only HEAD "${GIT_REF}" . | grep "\.sp$" | ${EXCLUDED})
+    
+    info "Generating list of updated scripts"
+    while IFS= read -r line; do
+        # git diff reports the full path, we need it relative to ${WORKING_DIR}
+        echo ${line/${WORKING_DIR}\//} >> ${UPDATED_LIST}
+        rm -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})"
+    done <<< "${UPDATED}"
+}
 
+# Find all *.sp files inside ${WORKING_DIR}
+# Select those that do not have a *.smx counterpart
+# And write resulting list to a file
+list_uncompiled(){
+    UNCOMPILED=$(find ${SCRIPTS_DIR} -iname "*.sp" | ${EXCLUDED})
 
-echo "[INFO] Starting processing of plugin files."
-while read -r p; do
-    PLUGIN_NAME=$(realpath --relative-to "$SCRIPTS_DIR" "$p")
-    PLUGIN_NAME=${PLUGIN_NAME%.*}
-    PLUGIN_SCRIPT_PATH="$SCRIPTS_DIR/$PLUGIN_NAME.sp"
-    PLUGIN_COMPILED_PATH="$COMPILED_DIR/$(basename "$PLUGIN_NAME").smx"
+    info "Generating list of uncompiled scripts"
+    while IFS= read -r line; do
+        [[ ! -f "${COMPILED_DIR}/$(basename ${line/.sp/.smx})" ]] && echo ${line} >> ${UNCOMPILED_LIST}
+    done <<< "${UNCOMPILED}"
+}
 
+# Iterate over a list files and compile all the *.sp files
+# Output will be ${COMPILED_DIR}/plugin_name.smx
+# If an error is found the function dies and report the failing file
+compile() {
+    info "Compiling $(wc -l < ${1}) files"
+    while read -r plugin; do
+        info "Compiling ${plugin}"
+        ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename ${plugin/.sp/.smx})" -v0 #-E
+        [[ $? -ne 0 ]] && compile_error ${plugin}
+    done < ${1}
+}
 
-    if [[ ! -f "$PLUGIN_SCRIPT_PATH" ]]; then
-        if [[ -f "$PLUGIN_COMPILED_PATH" ]]; then
-            rm "$PLUGIN_COMPILED_PATH";
-        fi
-    fi
+# Auxiliary function to catch errors on spcomp64
+compile_error(){
+    error "spcomp64 error while compiling ${1}"
+    exit 255
+}
 
-    if [[ $p =~ "stac/" ]] || [[ $p =~ "include/" ]] || [[ $p =~ "disabled/" ]] || [[ $p =~ "external/" ]] || [[ $p =~ "economy/" ]] || [[ ! -f "$PLUGIN_SCRIPT_PATH" ]]; then
-        continue
-    fi
+###
+# Script begins here ↓
+pushd ${WORKING_DIR} >/dev/null
+[[ ! -x ${SPCOMP_PATH} ]] && chmod u+x ${SPCOMP_PATH}
 
-    echo "$PLUGIN_SCRIPT_PATH";
-    if [[ -f "$PLUGIN_SCRIPT_PATH" ]]; then
-        $SPCOMP_PATH -D"$SCRIPTS_DIR" "$(realpath --relative-to "$SCRIPTS_DIR" "$PLUGIN_SCRIPT_PATH")" -o"$PLUGIN_COMPILED_PATH" -v0
-    fi
-done < ./00
-rm ./00
+# Compile all scripts that have been updated
+if [[ -n ${1} ]]; then
+    reference_validation ${1}
+    info "Looking for all .sp files that have been updated"
+    list_updated
+    info "Compiling updated plugins"
+    compile ${UPDATED_LIST}
+fi
 
-echo "[INFO] All plugin files are recompiled."
+# Compile all scripts that have not been compiled
+info "Looking for all .sp files in ${WORKING_DIR}/${SCRIPTS_DIR}"
+list_uncompiled
+info "Compiling uncompiled plugins"
+compile ${UNCOMPILED_LIST}
 
-exit;
+ok "All plugins compiled successfully !"
+exit 0
