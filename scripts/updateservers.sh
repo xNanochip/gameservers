@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+# Helper functions
+source scripts/helpers.sh
 
 # dirs to check for possible gameserver folders
 TARGET_DIRS=(/srv/daemon-data /var/lib/pterodactyl/volumes)
@@ -14,18 +17,18 @@ for dir in ./*/ ; do
     # we didn't find a git folder
     if [  ! -d "$dir".git ]; then
         # shouldn't this be better quoted or does bash handle that? idr
-        echo "$dir has no .git folder!";
+        warn "$dir has no .git folder!";
         # go to the next folder (i think?? should be)
         continue;
     fi
     # we did find a git folder!
     # print out our cur folder
-    echo "Operating on: $dir"
+    info "Operating on: $dir"
     # go to our server dir or die trying
     cd "$dir" || exit
 
     # todo: fix this for git fscking
-    echo "finding empty objects"
+    info "finding empty objects"
     find .git/objects/ -type f -empty -exec ls {} +;
     #echo "fetching"
     #git fetch -p
@@ -45,34 +48,34 @@ for dir in ./*/ ; do
     CI_REMOTE_REMOTE=${CI_REMOTE_REMOTE%.git}
 
     # why do we need to check this?
-    echo "Comparing remotes $CI_LOCAL_REMOTE and $CI_REMOTE_REMOTE."
+    info "Comparing remotes $CI_LOCAL_REMOTE and $CI_REMOTE_REMOTE."
     if [ "$CI_LOCAL_REMOTE" == "$CI_REMOTE_REMOTE" ]; then
 
-        echo "Comparing branches $(git rev-parse --abbrev-ref HEAD) and $CI_COMMIT_REF_NAME."
+        info "Comparing branches $(git rev-parse --abbrev-ref HEAD) and $CI_COMMIT_REF_NAME."
         if [ "$(git rev-parse --abbrev-ref HEAD)" == "$CI_COMMIT_REF_NAME" ]; then
-            echo "cleaning any old git locks..."
+            info "cleaning any old git locks..."
             # don't fail if there are none
             rm .git/index.lock -v || true
-            echo "setting git config"
+            info "setting git config"
 
             git config --global user.email "support@creators.tf"
             git config --global user.name "Creators.TF Production"
 
             COMMIT_OLD=$(git rev-parse HEAD);
 
-            echo "clearing stash"
+            info "clearing stash"
             git stash clear;
 
-            echo "fetching"
+            info "fetching"
             git fetch origin "$CI_COMMIT_REF_NAME";
 
-            echo "resetting"
+            info "resetting"
             git reset --hard origin/"$CI_COMMIT_REF_NAME";
 
-            echo "cleaning cfg folder"
+            info "cleaning cfg folder"
             git clean -d -f -x tf/cfg/
 
-            echo "cleaning maps folder"
+            info "cleaning maps folder"
             git clean -d -f tf/maps
 
             # TODO: make this a flag
@@ -83,7 +86,7 @@ for dir in ./*/ ; do
             # git clean -d -f -x tf/addons/sourcemod/data/
             # git clean -d -f -x tf/addons/sourcemod/gamedata/
 
-            echo "chmodding"
+            info "chmodding"
             # start script for servers is always at the root of our server dir
             chmod 744 ./start.sh;
             # everything else not so much
@@ -91,15 +94,15 @@ for dir in ./*/ ; do
             chmod 744 ./scripts/str0.py;
             chmod 744 ./scripts/str0.ini;
 
-            echo "running str0 to scrub steamclient spam"
-            python3 ./scripts/str0.py ./bin/steamclient.so -c ./scripts/str0.ini
+            info "running str0 to scrub steamclient spam"
+            python3 ./scripts/str0.py ./bin/steamclient.so -c ./scripts/str0.ini | grep -v "Failed to locate string"
 
             # don't run this often
-            echo "garbage collecting"
+            info "garbage collecting"
             git gc --auto ;
 
 
-            echo "building"
+            info "building"
             ./scripts/build.sh "$COMMIT_OLD";
 
         fi;
