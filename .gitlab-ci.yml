@@ -11,7 +11,7 @@ stages:
     #  -a runs aggressive git housekeeping on all repositories (THIS WILL TAKE A VERY LONG TIME)"
     #  -h runs normal git housekeeping on all repositories (git gc always gets run with --auto, this will force it to run)"
     #  -v enables debug printing"
-    - bash ./scripts/ci.sh -v -s -h -c
+    - bash ./scripts/ci.sh
 
 deploy-europe:
     tags:
