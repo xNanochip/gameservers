@@ -28,8 +28,14 @@ public Action restart(int Cl, int args)
     }
     else
     {
-        b_restart = true;
-        ReplyToCommand(Cl, "Server will restart on map change.");
+    	if (GetRealClientCount() > 0)
+    	{
+	        b_restart = true;
+	        ReplyToCommand(Cl, "Server will restart on map change.");
+	    } else {
+	    	ReplyToCommand(Cl, "Restarting since there are no players on this server.");
+	    	RestartNow();
+	    }
     }
 }
 
@@ -55,8 +61,14 @@ public Action kill(int Cl, int args)
     }
     else
     {
-        b_kill = true;
-        ReplyToCommand(Cl, "Server will die on map change.");
+    	if (GetRealClientCount() > 0)
+    	{
+	        b_kill = true;
+	        ReplyToCommand(Cl, "Server will die on map change.");
+	    } else {
+	    	ReplyToCommand(Cl, "Killing since there are no players on this server.");
+	    	KillNow();
+	    }
     }
 }
 
@@ -97,4 +109,17 @@ public void OnMapStart()
     {
         RequestFrame(RestartNow);
     }
+}
+
+stock int GetRealClientCount()
+{
+	int count = 0;
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i) && !IsFakeClient(i) && !IsClientSourceTV(i) && !IsClientReplay(i))
+		{
+			count++;
+		}
+	}
+	return count;
 }
