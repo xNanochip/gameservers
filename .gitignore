@@ -1,16 +1,17 @@
-/*
-!str0*
-!build.sh
-!start.sh
-!scripts
+# don't ignore scripts folder
+!scripts/
+# don't ignore gitignore?
 !.gitignore
-!.ci-fastdl
-!.gitlab-ci.yml
+# don't ignore any ci stuff
+!.*ci
+# don't ignore the entire tf folder
 !tf
-!script
+# but do ignore the directories in it
 tf/*
+# except for these ones
 !tf/addons
 !tf/custom
+# i don't think this needs to be gitignored
 tf/addons/sourcemod/configs/items.cfg
 tf/addons/*/scripting/**/*.smx
 tf/addons/*/plugins/*.smx
