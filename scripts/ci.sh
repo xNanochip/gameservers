@@ -73,21 +73,6 @@ for dir in ./*/ ; do
         continue;
     fi
 
-    # no idea lol
-    #CI_LOCAL_REMOTE=$(git remote get-url origin);
-    #CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE##*@}";
-    #CI_LOCAL_REMOTE=$(echo "$CI_LOCAL_REMOTE" | tr : /)
-    #CI_LOCAL_REMOTE=${CI_LOCAL_REMOTE%.git}
-    #
-    ## pretty sure these are cicd vars? dunno
-    #CI_REMOTE_REMOTE="$CI_SERVER_HOST/$CI_PROJECT_PATH.git"
-    #CI_REMOTE_REMOTE=$(echo "$CI_REMOTE_REMOTE" | tr : /)
-    #CI_REMOTE_REMOTE=${CI_REMOTE_REMOTE%.git}
-
-    # why do we need to check this?
-    #info "Comparing remotes $CI_LOCAL_REMOTE and $CI_REMOTE_REMOTE."
-    #if [ "$CI_LOCAL_REMOTE" == "$CI_REMOTE_REMOTE" ]; then
-
     info "Comparing branches $(git rev-parse --abbrev-ref HEAD) and $CI_COMMIT_REF_NAME."
     if [ "$(git rev-parse --abbrev-ref HEAD)" == "$CI_COMMIT_REF_NAME" ]; then
         debug "branches match"

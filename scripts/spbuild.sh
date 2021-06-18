@@ -9,7 +9,7 @@ SPCOMP_PATH="scripting/spcomp64"
 SCRIPTS_DIR="scripting"
 COMPILED_DIR="plugins"
 # Exclusion list, use /dir/ for directories and /file_ for file_*.sp
-EXCLUDED="/stac/ /include/ /disabled/ /external/ /economy/ /attributes/ /discord_"
+EXCLUDED="/stac/ /include/ /disabled/ /external/ /economy/ /attributes/ /discord/"
 EXCLUDED="grep -v -e ${EXCLUDED// / -e }"
 
 # Temporary files
