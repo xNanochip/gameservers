@@ -3,6 +3,8 @@ stages:
 
 .deploy_template: &deploy_template
     stage: deploy
+    only:
+    - master
     script:
     - whoami
     - kill -SIGKILL $(pidof git) || true
