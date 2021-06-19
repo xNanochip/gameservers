@@ -13,7 +13,7 @@ insert_final_newline = true
 # https://github.com/editorconfig/editorconfig/issues/323
 [*.{sp,inc}]
 
-indent_style = space
+#indent_style = space
 indent_size = 4
 trim_trailing_whitespace = true
 translate_tabs_to_spaces = true
