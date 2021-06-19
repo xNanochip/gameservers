@@ -66,3 +66,4 @@ STRTA: or Scripts To Rule Them All:
 - `script/helpers.sh`: Contains an useful collection of shared functions.
 - `script/build.sh`: Compiles any uncompiled `.sp` plugin and (if given a git reference) any `.sp` in need of an update.
 
+ 
