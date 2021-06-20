@@ -45,52 +45,13 @@ tf/addons/*/backup/*
 !tf/addons/sourcemod/scripting/fixes/*
 !tf/addons/sourcemod/scripting/fixes/
 
+
 !tf/maps
 !tf/maps/*
 tf/maps/graphs
 
 // All maps, that are downloaded on testing servers have _t postfix.
-tf/maps/*_t.bsp
-
-# stock maps we use
-#tf/maps/cp_dustbowl.bsp
-#tf/maps/cp_freight_final1.bsp
-#tf/maps/cp_gorge.bsp
-#tf/maps/cp_mountainlab.bsp
-#tf/maps/cp_powerhouse.bsp
-#tf/maps/cp_snakewater_final1.bsp
-#tf/maps/cp_steel.bsp
-#tf/maps/cp_sunshine.bsp
-#tf/maps/koth_harvest_final.bsp
-#tf/maps/koth_highpass.bsp
-#tf/maps/koth_king.bsp
-#tf/maps/pl_borneo.bsp
-#tf/maps/pl_enclosure_final.bsp
-#tf/maps/pl_pier.bsp
-#tf/maps/pl_swiftwater_final1.bsp
-#tf/maps/pl_upward.bsp
-#tf/maps/plr_bananabay.bsp
-#tf/maps/itemtest.bsp
-
-# alt gamemodes
-#tf/maps/ctf_2fort.bsp
-#tf/maps/ctf_landfall.bsp
-#tf/maps/ctf_turbine.bsp
-#tf/maps/plr_hightower.bsp
-#tf/maps/plr_nightfall_final.bsp
-#tf/maps/cp_degrootkeep.bsp
-#tf/maps/ctf_foundry.bsp
-#tf/maps/ctf_hellfire.bsp
-#tf/maps/ctf_thundermountain.bsp
-#tf/maps/pass_brickyard.bsp
-#tf/maps/pass_district.bsp
-#tf/maps/pass_timbertown.bsp
-#tf/maps/rd_asteroid.bsp
-#tf/maps/pd_watergate.bsp
-#tf/maps/pd_monster_bash.bsp
-#tf/maps/sd_doomsday.bsp
-#tf/maps/tc_hydro.bsp
-
+#tf/maps/*_t.bsp
 
 !tf/materials
 !tf/models
