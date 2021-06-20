@@ -424,6 +424,8 @@ public Handler_MapSelectMenu(Handle:menu, MenuAction:action, param1, param2)
 			char name[MAX_NAME_LENGTH];
 			char sDisplay[PLATFORM_MAX_PATH];
 			GetMenuItem(menu, param2, map, sizeof(map), _, sDisplay, sizeof(sDisplay));
+			
+			FindMap(map, map, sizeof map);
 
 			GetClientName(param1, name, MAX_NAME_LENGTH);
 
