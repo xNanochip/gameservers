@@ -40,7 +40,7 @@ stagingservers=(
 tagstouse=("${stagingservers[@]}")
 # don't use master and make sure these vars are actually defined if [ -z "$CI_COMMIT_BRANCH" ];
 if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]] && [ -n "$CI_COMMIT_BRANCH" ] && [ -n "${CI_DEFAULT_BRANCH}" ]; then
-    tagstouse=("${allservers[*]}")
+    tagstouse=("${allservers[@]}")
 fi
 
 
