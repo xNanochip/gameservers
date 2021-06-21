@@ -7,7 +7,7 @@ jobnames=(
 
 # scripts to execute for each job
 jobs=(
-    "bash ./scripts/_1-pull-n-build.sh" -c -s -h -v
+    "bash ./scripts/_1-pull-n-build.sh -c -s -h -v"
 )
 
 #    echo "  -c removes all plugins and compiles them from scratch and recursively removes all untracked files in the sourcemod folder"
