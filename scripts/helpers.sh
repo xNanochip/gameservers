@@ -3,6 +3,7 @@
 # check if we are in a terminal, if not, set our term var to screen so tput doesn't whine
 #set | grep TERM &> /dev/null || { warn "no terminal set, defaulting to screen"; export TERM=screen; }
 export TERM=screen;
+
 # Colours
 BLACK=$(tput setaf 0)
 RED=$(tput setaf 1)
@@ -13,7 +14,6 @@ PURPLE=$(tput setaf 5)
 CYAN=$(tput setaf 6)
 WHITE=$(tput setaf 7)
 RESET=$(tput sgr0)
-
 
 error()
 {
@@ -42,7 +42,7 @@ info()
 
 debug()
 {
-    if [[ "$ctf_show_debug" == "true" ]]; then
+    if ${ctf_show_debug}; then
         echo "${CYAN}[DEBUG] ${1} ${RESET}"
     fi
 }
