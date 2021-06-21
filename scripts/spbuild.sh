@@ -48,8 +48,8 @@ list_updated()
     UPDATED=$(git diff --name-only "${GIT_REF}" HEAD . | grep "\.sp$" | ${EXCLUDED})
     # skip compile if there's nothing *to* compile
     if [[ -z $UPDATED ]]; then
-        ok "No updated files in diff";
-        return 1;
+        ok "No updated files in diff"
+        return 1
     fi
     debug "Generating list of updated scripts"
     while IFS= read -r line; do
@@ -57,7 +57,7 @@ list_updated()
         echo "${line/${WORKING_DIR}\//}" >> "${UPDATED_LIST}"
         rm -f "${COMPILED_DIR}/$(basename "${line/.sp/.smx}")"
     done <<< "${UPDATED}"
-    return 0;
+    return 0
 }
 
 # Find all *.sp files inside ${WORKING_DIR}
@@ -79,11 +79,11 @@ list_uncompiled()
 
     # skip compile if there's nothing *to* compile
     if [[  $(wc -l < "$UNCOMPILED_LIST") == 0 ]]; then
-        ok "No uncompiled .sp files";
-        return 1;
+        ok "No uncompiled .sp files"
+        return 1
     fi
 
-    return 0;
+    return 0
 }
 
 # Iterate over a list files and compile all the *.sp files
@@ -96,7 +96,7 @@ compile()
         info "Compiling ${plugin}"
         # compiler path  plugin name      output dir      output file replacing sp with smx
         ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename "${plugin/.sp/.smx}")" \
-        -v=2 -z=9 -O=2 -\;=+ #-E
+            -v=2 -z=9 -O=2 -\;=+ #-E
         # verbose, max compressed, max optimized, require semicolons ( #-E treats errors as warnings )
 
         # if something has gone wrong then stop everything and yell about it
@@ -104,7 +104,7 @@ compile()
             compile_error "${plugin}"
         fi
     done < "${1}"
-    return 0;
+    return 0
 }
 
 # Auxiliary function to catch errors on spcomp64
