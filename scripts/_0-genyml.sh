@@ -37,10 +37,10 @@ stagingservers=(
 
 
 # use staging by default
-tagstouse=("${staging[@]}")
-# don't use master and make sure these vars are actually defined
-if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]] && [ -z ${$CI_COMMIT_BRANCH+x} ] && [ -z ${$CI_DEFAULT_BRANCH+x} ]; then
-    tagstouse=("${servertags[@]}")
+tagstouse=("${stagingservers[@]}")
+# don't use master and make sure these vars are actually defined if [ -z "$CI_COMMIT_BRANCH" ];
+if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]] && [ -n "$CI_COMMIT_BRANCH" ] && [ -n "${CI_DEFAULT_BRANCH}" ]; then
+    tagstouse=("${allservers[*]}")
 fi
 
 
@@ -60,17 +60,17 @@ i=0
 for jobname in "${jobnames[@]}"
 do
     # for loop for all the servers
-    for tag in "${allservers[@]}"
+    for tag in "${tagstouse[@]}"
     do
         # Job definition
         # I rather use a Here Document, but I can't be arsed with the whitepaces in YAML
         echo "${jobname}-${tag}:"
         echo "  stage: ${jobname}"
         echo "  script: ${jobs[i]}"
-        if [[ ! "${stagingservers[@]}" =~ "${tag}" ]]; then
-            echo "  only:"
-            echo "    - master"
-        fi
+        #if [[ ! "${stagingservers[@]}" =~ "${tag}" ]]; then
+        #    echo "  only:"
+        #    echo "    - master"
+        #fi
 
         # Needs
         # only do the needs stuff if we're not on the first stage
