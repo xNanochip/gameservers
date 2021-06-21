@@ -7,8 +7,15 @@ jobnames=(
 
 # scripts to execute for each job
 jobs=(
-    "./scripts/_1-pull-n-build.sh"
+    "./scripts/_1-pull-n-build.sh" -c -s -h -v
 )
+
+#    echo "  -c removes all plugins and compiles them from scratch and recursively removes all untracked files in the sourcemod folder"
+#    echo "  -s culls ('shallowifies') all repositories to only have the last 25 commits, implies -h"
+#    echo "  -a runs aggressive git housekeeping on all repositories (THIS WILL TAKE A VERY LONG TIME)"
+#    echo "  -h runs normal git housekeeping on all repositories (git gc always gets run with --auto, this will force it to run)"
+#    echo "  -v enables debug printing"
+
 
 # all servers tags
 allservers=(
