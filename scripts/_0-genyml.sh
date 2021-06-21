@@ -35,6 +35,15 @@ stagingservers=(
     virginiapub
 )
 
+
+# use staging by default
+tagstouse=("${staging[@]}")
+# don't use master and make sure these vars are actually defined
+if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]] && [ -z ${$CI_COMMIT_BRANCH+x} ] && [ -z ${$CI_DEFAULT_BRANCH+x} ]; then
+    tagstouse=("${servertags[@]}")
+fi
+
+
 # stages
 echo "stages:"
 
