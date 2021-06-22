@@ -18,6 +18,8 @@ public Plugin myinfo =
 	url = "https://creators.tf"
 }
 
+char blimp_models[][] = {"models/bots/boss_bot/boss_blimp.mdl", "models/bots/boss_bot/boss_blimp_damage1.mdl", "models/bots/boss_bot/boss_blimp_damage2.mdl", "models/bots/boss_bot/boss_blimp_damage3.mdl"};
+int blimp_models_precached[4];
 bool uses_custom_upgrades = false;
 
 #define TF_MAXPLAYERS 34 // 33 max players + 1 for offset
@@ -172,6 +174,10 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
+	for (int i = 0; i < 4; i++)
+	{
+		blimp_models_precached[i] = PrecacheModel(blimp_models[i], false);
+	}
 	if(GameRules_GetProp("m_bPlayingMannVsMachine") == 0)
 	{
 		// Only works in MVM.
@@ -979,12 +985,23 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 	{
 		if (GetEntProp(i, Prop_Data, "m_iHealth") > 0)
 			continue;
+
+		
+		char modelstr[128];
+		for (int j = 0; j < 4; j++)
+		{
+			if (GetEntProp(i, Prop_Data, "m_nModelIndex") == blimp_models_precached[j] || GetEntProp(i, Prop_Data, "m_nModelIndexOverrides", 4, 0) == blimp_models_precached[j])
+			{
+				is_blimp = true;
+				break;
+			}
+		}
 	}
 
-	//if (is_blimp)
+	if (!is_blimp)
 		CEcon_SendEventToAll("TF_MVM_DESTROY_TANK", 1, GetRandomInt(0, 10000));
-	//else
-		//CEcon_SendEventToAll("TF_MVM_DESTROY_TANK_BLIMP", 1, GetRandomInt(0, 10000));
+	else
+		CEcon_SendEventToAll("TF_MVM_DESTROY_TANK_BLIMP", 1, GetRandomInt(0, 10000));
 	
 
 	return Plugin_Continue;
