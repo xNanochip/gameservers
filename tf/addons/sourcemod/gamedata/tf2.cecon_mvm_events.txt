@@ -12,7 +12,7 @@
 				"linux"				"@_ZNK15CTFPlayerShared20GetConditionProviderE7ETFCond"
 				"mac"				"@_ZNK15CTFPlayerShared20GetConditionProviderE7ETFCond"
 			}
-			
+
 			"CAttributeManager::AttribHookValueFloat"
 			{
 				// (float value, string_t attrClass, CBaseEntity* ent, CUtlVector<CBaseEntity*> *reentrant, bool const_str)
@@ -24,3 +24,6 @@
         }
     }
 }
+
+// where is this from? no idea
+// is it up to date? no idea

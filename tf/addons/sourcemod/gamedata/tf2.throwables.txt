@@ -6,19 +6,21 @@
 		{
 			"CTFProjectile_Throwable::InitThrowable"
 			{
-				"linux"		"268"
-				"windows"	"267"
+				"linux"		"269"
+				"windows"	"268"
 			}
 			"CTFProjectile_Arrow::InitArrow"
 			{
-				"linux"		"240"
-				"windows"	"239"
+				"linux"		"241"
+				"windows"	"240"
 			}
 			"CBaseCombatCharacter::GiveAmmo"
 			{
-				"linux"		"256"
-				"windows"	"255"
+				"linux"		"257"
+				"windows"	"256"
 			}
 		}
 	}
 }
+// from i don't know
+// used in ./tf/addons/sourcemod/scripting/attributes/ce_set_throwable_type.sp

@@ -61,7 +61,10 @@
 #include <tf2_stocks>
 #include <tf2attributes>
 #include <tf_persist_item>
+#include <tf_econ_data>
 
+// ?
+// there's an updated vers of steamtools inc, u guys know that rite
 #pragma newdecls optional
 #include <steamtools>
 #pragma newdecls required
@@ -73,7 +76,7 @@ public Plugin myinfo =
 	name = "Creators.TF Items Module",
 	author = "Creators.TF Team",
 	description = "Loadout, attributes, items module for Creators.TF Custom Economy.",
-	version = "1.1.1",
+	version = "1.1.2",
 	url = "https://creators.tf"
 }
 
@@ -88,9 +91,10 @@ Handle 	g_CEcon_ShouldItemBeBlocked,
 
 		g_CEcon_OnCustomEntityStyleUpdated;
 
+// 	we use sm-tf2econdata
 // SDKCalls for native TF2 economy reading.
-Handle 	g_SDKCallGetEconItemSchema,
-		g_SDKCallSchemaGetAttributeDefinitionByName;
+//Handle 	g_SDKCallGetEconItemSchema,
+//		g_SDKCallSchemaGetAttributeDefinitionByName;
 
 // Variables, needed to attach a specific CEItem to an entity.
 bool m_bIsEconItem[MAX_ENTITY_LIMIT + 1];
@@ -106,8 +110,10 @@ StringMap m_IndexedDictionary;
 ArrayList m_PartialReapplicationTypes = null;
 
 bool m_bLoadoutCached[MAXPLAYERS + 1];
+// TODO: enumstructify or fix so it doesnt whine on compile
+// maybe view_as<int>(CEconLoadoutClass)?
 ArrayList m_Loadout[MAXPLAYERS + 1][CEconLoadoutClass]; 	// Cached loadout data of a user.
-ArrayList m_MyItems[MAXPLAYERS + 1]; 					// Array of items this user is wearing.
+ArrayList m_MyItems[MAXPLAYERS + 1]; 						// Array of items this user is wearing.
 
 bool m_bWaitingForLoadout[MAXPLAYERS + 1];
 bool m_bInRespawn[MAXPLAYERS + 1];
@@ -231,6 +237,8 @@ public void OnPluginStart()
 		SetFailState("Failed to load gamedata (tf2.creators).");
 	}
 
+	/*
+
 	StartPrepSDKCall(SDKCall_Static);
 	PrepSDKCall_SetFromConf(hGameConf, SDKConf_Signature, "GEconItemSchema");
 	PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
@@ -242,6 +250,7 @@ public void OnPluginStart()
 	PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
 	g_SDKCallSchemaGetAttributeDefinitionByName = EndPrepSDKCall();
 
+	*/
 	// Loadout
 	HookEvent("post_inventory_application", post_inventory_application);
 	HookEvent("player_spawn", player_spawn);
@@ -1222,13 +1231,14 @@ public any Native_IsAttributeNameOriginal(Handle plugin, int numParams)
 {
     char sName[64];
     GetNativeString(1, sName, sizeof(sName));
-
-	Address pSchema = SDKCall(g_SDKCallGetEconItemSchema);
-	if(pSchema)
-	{
-		return SDKCall(g_SDKCallSchemaGetAttributeDefinitionByName, pSchema, sName) != Address_Null;
-	}
-	return false;
+    return TF2Econ_TranslateAttributeNameToDefinitionIndex(sName);
+	//
+	//Address pSchema = SDKCall(g_SDKCallGetEconItemSchema);
+	//if(pSchema)
+	//{
+	//	return SDKCall(g_SDKCallSchemaGetAttributeDefinitionByName, pSchema, sName) != Address_Null;
+	//}
+	//return false;
 }
 
 // Loadout
