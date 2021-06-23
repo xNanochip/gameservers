@@ -34,7 +34,7 @@
 				"linux"				"@_ZN15CEconItemSchema28GetAttributeDefinitionByNameEPKc"
 				"windows"			"\x55\x8B\xEC\x83\xEC\x14\x53\x8B\x5D\x08\x56\x57\x8B\xF9\x85\xDB"
 			}
-
+			
 			"TranslateWeaponEntForClass()"
 			{
 				// get x-ref to structure containing string "saxxy"
@@ -42,7 +42,7 @@
 				"linux"		"@_Z26TranslateWeaponEntForClassPKci"
 				"windows"	"\x55\x8B\xEC\x53\x8B\x5D\x08\x56\x57\x85\xDB\x74\x2A\x33\xFF"
 			}
-
+			
 			"KeyValues::GetString()"
 			{
 				// contains semi-unique x-ref "%lld" (in the windows version there's two refs to it in the function)
@@ -57,7 +57,7 @@
 				"linux"		"@_ZN9KeyValues7FindKeyEPKcb"
 				"windows"	"\x55\x8B\xEC\x81\xEC\x04\x01\x00\x00\x56\x8B\x75\x08\x57"
 			}
-
+			
 			"GetProtoScriptObjDefManager()"
 			{
 				// start from CQuestDefinition::BPostDataLoaded() with xref "Invalid loaner item name %s in %d: %s"
@@ -76,7 +76,7 @@
 				"windows"	"\x80\x79\x06\x00\x8B\x01\x74\x2A\xFF\x50\x04\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x8B\x40\x24"
 			}
 		}
-
+		
 		"Offsets"
 		{
 			"CEconItemDefinition::m_pKeyValues"
@@ -144,7 +144,7 @@
 				"linux"		"308"
 				"windows"	"308"
 			}
-
+			
 			// wait, shoot, this is CTFItemDefinition -- rename this once the next revision is out?
 			"CEconItemDefinition::m_aiItemSlot"
 			{
@@ -154,7 +154,7 @@
 				"linux"		"512"
 				"windows"	"512"
 			}
-
+			
 			"CEconItemAttributeDefinition::m_pKeyValues"
 			{
 				// set in CEconItemAttributeDefinition::BInitFromKV() after KeyValues::MakeCopy()
@@ -186,7 +186,7 @@
 				"linux"		"52"
 				"windows"	"52"
 			}
-
+			
 			"CEconItemQualityDefinition::m_iValue"
 			{
 				// refer to CEconItemQualityDefinition::BInitFromKV()
@@ -198,7 +198,7 @@
 				"linux"		"4"
 				"windows"	"4"
 			}
-
+			
 			"CEconItemRarityDefinition::m_iValue"
 			{
 				// refer to CEconItemRarityDefinition::BInitFromKV()
@@ -210,7 +210,7 @@
 				"linux"		"8"
 				"windows"	"8"
 			}
-
+			
 			"CEconItemSchema::m_ItemRarities"
 			{
 				// offset into `ebx` in CEconItemSchema::GetRarityDefinition() on linux
@@ -276,7 +276,7 @@
 				"linux"		"948"
 				"windows"	"948"
 			}
-
+			
 			"CTFItemSchema::m_ItemSlotNames"
 			{
 				// used in CTFItemDefinition::BInitFromKV() in the same block that "head" and "misc" are referenced
@@ -284,7 +284,7 @@
 				"linux"		"1432"
 				"windows"	"1432"
 			}
-
+			
 			// attachedparticlesystem_t is initialized in CEconItemSchema::BInitAttributeControlledParticleSystems()
 			"attachedparticlesystem_t::m_pszParticleSystem"
 			{
@@ -296,7 +296,7 @@
 				"linux"		"24"
 				"windows"	"24"
 			}
-
+			
 			"CProtoBufScriptObjectDefinitionManager::m_PaintList"
 			{
 				// some sort of struct of size 0x10 with a CPaintKitDefinition* at 0x0C
@@ -307,6 +307,3 @@
 		}
 	}
 }
-// from https://github.com/nosoop/SM-TFEconData
-// unknown if this needs an update
-// used across econ

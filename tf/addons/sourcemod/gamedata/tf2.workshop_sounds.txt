@@ -18,7 +18,7 @@
 				"read"			"0"
 			}
 		}
-
+		
 		"Functions"
 		{
 			"CSoundscapeSystem::Init()"
@@ -36,7 +36,7 @@
 				"this"			"address"
 			}
 		}
-
+		
 		"Signatures"
 		{
 			"CSoundscapeSystem::Init()"
@@ -60,14 +60,14 @@
 				"linux"			"@_ZN19CSoundEmitterSystem18LevelInitPreEntityEv"
 				"windows"		"\x55\x8B\xEC\x81\xEC\x00\x03\x00\x00"
 			}
-
+			
 			"soundemitterbase"
 			{
 				"library"		"server"
 				"linux"			"@soundemitterbase"
 			}
 		}
-
+		
 		"Offsets"
 		{
 			"ISoundEmitterSystemBase::AddSoundOverride()"
@@ -79,4 +79,3 @@
 		}
 	}
 }
-// from: https://github.com/nosoop/SM-TFWorkshopSoundsFix

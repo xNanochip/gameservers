@@ -32,7 +32,7 @@
 				"linux"				"@_Z17AllocPooledStringPKc"
 				"mac"				"@_Z17AllocPooledStringPKc"
 			}
-			"CBaseServer::GetClient"
+			"CBaseServer::GetClient" 
 			{
 				"library"			"server"
 				"linux"				"@_ZN11CBaseServer9GetClientEi"
@@ -44,7 +44,16 @@
 				"linux"				"@_ZN15CTFPlayerShared4BurnEP9CTFPlayerP13CTFWeaponBasef"
 				"mac"				"@_ZN15CTFPlayerShared4BurnEP9CTFPlayerP13CTFWeaponBasef"
 			}
+			
         }
+		"Offsets"
+		{
+			"CTFPlayer::EquipWearable"
+			{
+				"windows"	"430"
+				"linux"		"431"
+				"mac"		"431"
+			}
+		}
     }
 }
-// no idea what this is from but use tf2.wearables gamedata for the GetWearables func please
