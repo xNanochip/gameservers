@@ -143,7 +143,7 @@ public void OnPluginStart()
 
 	HookEvent("player_used_powerup_bottle", player_used_powerup_bottle);
 
-	Handle hData = LoadGameConfigFile("tf2.mvm");
+	Handle hData = LoadGameConfigFile("tf2.cecon_mvm_events");
 	if (hData != null)
 	{
 		StartPrepSDKCall(SDKCall_Raw);
