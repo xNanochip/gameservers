@@ -7,6 +7,7 @@
 #include <tf2>
 #include <tf2_stocks>
 #include <cecon>
+#include <tf2attributes>
 
 public Plugin myinfo =
 {
@@ -83,7 +84,7 @@ PlayerData player_data[TF_MAXPLAYERS];
 StringMap player_data_mission;
 
 Handle get_condition_provider_handle;
-Handle attrib_float_handle;
+//Handle attrib_float_handle;
 
 int TankDamage[MAXPLAYERS+1] = 0;
 int GrenadeDamage[MAXPLAYERS+1] = 0;
@@ -140,8 +141,8 @@ public void OnPluginStart()
 
 	HookEvent("player_used_powerup_bottle", player_used_powerup_bottle);
 
-	Handle hData = LoadGameConfigFile("tf2.cecon_mvm_events");
-	if(hData != null)
+	Handle hData = LoadGameConfigFile("tf2.mvm");
+	if (hData != null)
 	{
 		StartPrepSDKCall(SDKCall_Raw);
 		PrepSDKCall_SetFromConf(hData, SDKConf_Signature, "CTFPlayerShared::GetConditionProvider");
@@ -149,18 +150,20 @@ public void OnPluginStart()
 		PrepSDKCall_SetReturnInfo(SDKType_CBaseEntity, SDKPass_Plain);
 		get_condition_provider_handle = EndPrepSDKCall();
 
-		StartPrepSDKCall(SDKCall_Static);
-		PrepSDKCall_SetFromConf(hData, SDKConf_Signature, "CAttributeManager::AttribHookValueFloat");
+		//StartPrepSDKCall(SDKCall_Static);
+		//PrepSDKCall_SetFromConf(hData, SDKConf_Signature, "CAttributeManager::AttribHookValueFloat");
+		//
+		//PrepSDKCall_AddParameter(SDKType_Float, SDKPass_Plain);
+		//PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
+		//PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer, VDECODE_FLAG_ALLOWNULL);
+		//PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+		//PrepSDKCall_AddParameter(SDKType_Bool, SDKPass_Plain);
+		//PrepSDKCall_SetReturnInfo(SDKType_Float, SDKPass_Plain);
 
-		PrepSDKCall_AddParameter(SDKType_Float, SDKPass_Plain);
-		PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
-		PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer, VDECODE_FLAG_ALLOWNULL);
-		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
-		PrepSDKCall_AddParameter(SDKType_Bool, SDKPass_Plain);
-		PrepSDKCall_SetReturnInfo(SDKType_Float, SDKPass_Plain);
-
-		attrib_float_handle = EndPrepSDKCall();
-	} else {
+		//attrib_float_handle = EndPrepSDKCall();
+	}
+	else
+	{
 	}
 
 	AddNormalSoundHook(OnSound);
@@ -1857,14 +1860,14 @@ public int GetConditionProvider(int client, TFCond cond)
 
 public float GetAttributeValue(int entity, char[] attribute, float inValue)
 {
-	if (attrib_float_handle == null)
-	{
-		LogMessage("Null");
-		return inValue;
-	}
+	//if (attrib_float_handle == null)
+	//{
+	//	LogMessage("Null");
+	//	return inValue;
+	//}
+	//return SDKCall(attrib_float_handle, inValue, attribute, entity, 0, false);
 
-	return SDKCall(attrib_float_handle, inValue, attribute, entity, 0, false);
-
+	return TF2Attrib_HookValueFloat(inValue, attribute,entity);
 }
 
 public bool HasFullUberOfType(int client, int type)

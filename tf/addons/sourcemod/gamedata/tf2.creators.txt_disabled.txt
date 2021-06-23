@@ -10,7 +10,7 @@
 				"linux"		"@_Z15GEconItemSchemav"
 				"windows"	"\xE8\x2A\x2A\x2A\x2A\x83\xC0\x04\xC3"
 			}
-			
+
 			"CEconItemSchema::GetAttributeDefinitionByName"
 			{
 				"library"			"server"
