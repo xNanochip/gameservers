@@ -37,26 +37,30 @@
                 "mac"       "@_ZNK17CBaseCombatWeapon12GetPrintNameEv"
             }
         }
-        "Offsets"
-        {
-            "CTFWeaponBase::GetMaxClip1"
-            {
-                "library"   "server"
-                "linux"     "323"
-                "windows"   "317"
-            }
-            "CBaseCombatWeapon::GetSlot"
-            {
-                "library"   "server"
-                "linux"     "331"
-                "windows"   "325"
-            }
-            "CBaseCombatWeapon::GetPrintName"
-            {
-                "library"   "server"
-                "linux"     "334"
-                "windows"   "328"
-            }
-        }
+        //"Offsets"
+        //{
+        //    "CTFWeaponBase::GetMaxClip1"
+        //    {
+        //        "library"   "server"
+        //        "linux"     "324"
+        //        "windows"   "318"
+        //    }
+        //    "CBaseCombatWeapon::GetSlot"
+        //    {
+        //        "library"   "server"
+        //        "linux"     "333"
+        //        "windows"   "327"
+        //    }
+        //    "CBaseCombatWeapon::GetPrintName"
+        //    {
+        //        "library"   "server"
+        //        "linux"     "336"
+        //        "windows"   "330"
+        //    }
+        //}
     }
 }
+// from https://github.com/Chdata/TF2-GameData/blob/master/weapon.data.txt
+// i updated it manually
+// used in /tf/addons/sourcemod/scripting/cecon_item_weapon.sp
+// i don't think you need to use the offsets if you're going to have signatures lol
