@@ -91,10 +91,10 @@ Handle 	g_CEcon_ShouldItemBeBlocked,
 
 		g_CEcon_OnCustomEntityStyleUpdated;
 
-// 	we use sm-tf2econdata
+// 	we should use sm-tf2econdata
 // SDKCalls for native TF2 economy reading.
-//Handle 	g_SDKCallGetEconItemSchema,
-//		g_SDKCallSchemaGetAttributeDefinitionByName;
+Handle 	g_SDKCallGetEconItemSchema,
+		g_SDKCallSchemaGetAttributeDefinitionByName;
 
 // Variables, needed to attach a specific CEItem to an entity.
 bool m_bIsEconItem[MAX_ENTITY_LIMIT + 1];
