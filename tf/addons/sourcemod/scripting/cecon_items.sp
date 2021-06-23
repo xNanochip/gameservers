@@ -231,11 +231,11 @@ public void CEcon_OnSchemaUpdated(KeyValues hSchema)
 public void OnPluginStart()
 {
 	// Attributes
-	Handle hGameConf = LoadGameConfigFile("tf2.creators");
-	if (!hGameConf)
-	{
-		SetFailState("Failed to load gamedata (tf2.creators).");
-	}
+	//Handle hGameConf = LoadGameConfigFile("tf2.creators");
+	//if (!hGameConf)
+	//{
+	//	SetFailState("Failed to load gamedata (tf2.creators).");
+	//}
 
 	/*
 
