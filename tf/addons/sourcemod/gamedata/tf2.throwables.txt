@@ -22,4 +22,5 @@
 		}
 	}
 }
-// from i don't know and i also don't think it's used anywhere?
+// from i don't know
+// used in ./tf/addons/sourcemod/scripting/attributes/ce_set_throwable_type.sp
