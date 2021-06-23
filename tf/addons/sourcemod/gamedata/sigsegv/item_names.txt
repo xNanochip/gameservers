@@ -33,7 +33,7 @@
 36 Blutsauger
 37 Ubersaw
 38 Axtinguisher
-39 Flare Gun
+39 
 40 Backburner
 41 Natascha
 42 Sandvich
@@ -263,15 +263,15 @@
 887 Rust Botkiller Flame Thrower Mk.I
 888 Rust Botkiller Scattergun Mk.I
 889 Rust Botkiller Rocket Launcher Mk.I
-890 Blood Botkiller Sniper Rifle Mk.I
+890 
 891 Blood Botkiller Minigun Mk.I
-892 Blood Botkiller Knife Mk.I
-893 Blood Botkiller Wrench Mk.I
-894 Blood Botkiller Medi Gun Mk.I
-895 Blood Botkiller Stickybomb Launcher Mk.I
-896 Blood Botkiller Flame Thrower Mk.I
-897 Blood Botkiller Scattergun Mk.I
-898 Blood Botkiller Rocket Launcher Mk.I
+892 
+893 
+894 
+895 
+896 
+897 
+898 
 899 Carbonado Botkiller Sniper Rifle Mk.I
 900 Carbonado Botkiller Minigun Mk.I
 901 Carbonado Botkiller Knife Mk.I
@@ -372,8 +372,8 @@
 5086 Summer Starter Kit
 5087 Summer Adventure Pack
 5605 Fireproof Secret Diary
-5607 Pile Of Ash
-5626 Pile Of Curses
+5607 Pile of Ash
+5626 Pile of Curses
 5637 Pile of Robo Community Crate Key Gifts
 5638 A Random Robo Community Crate Key Gift
 5639 Summer Claim Check
