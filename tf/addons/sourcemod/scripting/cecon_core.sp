@@ -4,6 +4,10 @@
 //
 //=========================================================================//
 
+// This gives us 64KB of heap space, from the default of 4KB.
+// This should hopefully prevent "Not enough space on the heap" errors.
+#pragma dynamic 65536
+
 #include <steamtools>
 
 #pragma semicolon 1
