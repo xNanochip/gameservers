@@ -4536,6 +4536,31 @@
 					type "sym"
 					sym  "_ZN24CTFWeaponBaseGrenadeProj22SetDetonateTimerLengthEf"
 				}
+				"CBaseTrigger::StartTouch"
+				{
+					type "sym"
+					sym  "_ZN12CBaseTrigger10StartTouchEP11CBaseEntity"
+				}
+				"CBaseTrigger::EndTouch"
+				{
+					type "sym"
+					sym  "_ZN12CBaseTrigger8EndTouchEP11CBaseEntity"
+				}
+				"CTFPointWeaponMimic::GetFiringAngles"
+				{
+					type "sym"
+					sym  "_ZNK19CTFPointWeaponMimic15GetFiringAnglesEv"
+				}
+				"CBaseEntity::FireBullets"
+				{
+					type "sym"
+					sym  "_ZN11CBaseEntity11FireBulletsERK17FireBulletsInfo_t"
+				}
+				"CBaseEntity::ModifyFireBulletsDamage"
+				{
+					type "sym"
+					sym  "_ZN11CBaseEntity23ModifyFireBulletsDamageEP15CTakeDamageInfo"
+				}
 				
 			}
 			"addrs_group"
