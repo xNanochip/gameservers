@@ -1231,7 +1231,7 @@ public any Native_IsAttributeNameOriginal(Handle plugin, int numParams)
 {
     char sName[64];
     GetNativeString(1, sName, sizeof(sName));
-    return TF2Econ_TranslateAttributeNameToDefinitionIndex(sName);
+    return (TF2Econ_TranslateAttributeNameToDefinitionIndex(sName) != -1);
 	//
 	//Address pSchema = SDKCall(g_SDKCallGetEconItemSchema);
 	//if(pSchema)
