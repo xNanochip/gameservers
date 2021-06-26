@@ -460,8 +460,7 @@ public Action Command_Max_Players(int client, int args)
     if (args < 1)
     {
         ReplyToCommand(client, "[SM] Usage: sm_max_players <player count>");
-
-        return Plugin_Handled
+        return Plugin_Handled;
     }
     char maxnum[3];
     GetCmdArg(1, maxnum, 3);
