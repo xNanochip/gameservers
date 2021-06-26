@@ -391,7 +391,7 @@ public Action Command_Password(int client, int args)
         }
         else
         {
-            ReplyToCommand(client, "[MVM-Admin] Password is not set");
+            ReplyToCommand(client, "[SM] Password is not set");
         }
     }
     return Plugin_Handled;
