@@ -391,7 +391,7 @@ public Action Command_Password(int client, int args)
         }
         else
         {
-            ReplyToCommand(client, "[MVM-Admin] Password is not set");
+            ReplyToCommand(client, "[SM] Password is not set");
         }
     }
     return Plugin_Handled;
@@ -1114,7 +1114,7 @@ public Action Command_Team(int client, int args)
         }
         //ChangeClientTeam(target_list[i],teamnum);
     }
-    ReplyToCommand(client,"[SM] ", "Moved %s to %s team",target_name,teamname);
+    ReplyToCommand(client,"[SM] Moved %s to %s team",target_name,teamname);
     return Plugin_Handled;
 }
 
