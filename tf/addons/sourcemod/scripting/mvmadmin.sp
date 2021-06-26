@@ -1367,33 +1367,6 @@ public Action Command_Ent_Create(int client, int args)
     float playerpos[3];
     GetEntPropVector(client, Prop_Send, "m_vecOrigin", playerpos);
 
-
-
-    int pushEntity = CreateEntityByName("trigger_push");
-    if (pushEntity != -1)
-    {
-    	DispatchKeyValue(pushEntity, "pushdir", "0 90 0");
-    	DispatchKeyValue(pushEntity, "speed", "500");
-    	DispatchKeyValue(pushEntity, "spawnflags", "64");
-    }
-
-
-    TeleportEntity(pushEntity, playerpos, NULL_VECTOR, NULL_VECTOR);
-
-    int enteffects = GetEntProp(pushEntity, Prop_Send, "m_fEffects");
-    enteffects |= 32;
-    SetEntProp(pushEntity, Prop_Send, "m_fEffects", enteffects); 
-    DispatchSpawn(pushEntity);
-    ActivateEntity(pushEntity);
-    SetEntityModel(pushEntity, "models/weapons/w_models/w_minigun.mdl");
-
-    float minbounds[3] = {-200.0, -200.0, -200.0};
-    float maxbounds[3] = {200.0, 200.0, 200.0};
-    SetEntPropVector(pushEntity, Prop_Send, "m_vecMins", minbounds);
-    SetEntPropVector(pushEntity, Prop_Send, "m_vecMaxs", maxbounds);
-
-    SetEntProp(pushEntity, Prop_Send, "m_nSolidType", 2);
-
     ReplyToCommand(client,"[SM] ", "Created entity %s",classname);
 
     return Plugin_Handled;
