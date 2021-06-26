@@ -412,7 +412,7 @@ public Action Command_Wave_Start(int client, int args)
     }
     else
     {
-        ReplyToCommand(client,"[SM] ", "Wave already started");
+        ReplyToCommand(client,"[SM] Wave already started");
     }
     return Plugin_Handled;
 }
@@ -450,7 +450,7 @@ public Action Command_Population(int client, int args)
     char name[128];
     GetCmdArg(1, name, 128);
     ServerCommand("tf_mvm_popfile %s",name);
-    ReplyToCommand(client,"[SM] ", "Opened population file %s", name);
+    ReplyToCommand(client,"[SM] Opened population file %s", name);
     return Plugin_Handled;
 }
 
@@ -594,7 +594,7 @@ public Action Command_Addcash(int client, int args)
         //SDKCall(add_cash_handle,money,target,false,true,false);
         SetEntProp(target, Prop_Send,"m_nCurrency",GetEntProp(target, Prop_Send,"m_nCurrency")+money);
     }
-    ReplyToCommand(client,"[SM] ", "Gave %i credits to %s", money, target_name);
+    ReplyToCommand(client,"[SM] Gave %i credits to %s", money, target_name);
     return Plugin_Handled;
 }
 public Action Command_Addcash_All(int client, int args)
@@ -609,7 +609,7 @@ public Action Command_Addcash_All(int client, int args)
     GetCmdArg(1, moneys, 6);
     int money = StringToInt(moneys);
     SDKCall(add_cash_no_player_handle,money);
-    ReplyToCommand(client,"[SM] ", "Given %i credits to everybody", money);
+    ReplyToCommand(client,"[SM] Given %i credits to everybody", money);
 
     return Plugin_Handled;
 }
@@ -631,7 +631,7 @@ public Action Command_JumpToWave(int client, int args)
 
     if (wave < 0 || wave >= max_wave)
     {
-        ReplyToCommand(client, "[SM] wave number out of bounds [1,%d]",max_wave);
+        ReplyToCommand(client, "[SM] Wave number out of bounds [1,%d]",max_wave);
         return Plugin_Handled;
     }
     if (IsDuringWave()){
@@ -749,7 +749,7 @@ public Action Command_Ent_Fire(int client, int args)
         RemoveEntity(ref);
     }
 
-    ReplyToCommand(client,"[SM] ", "Activated input %s of %s",input,target);
+    ReplyToCommand(client,"[SM] Activated input %s of %s",input,target);
     return Plugin_Handled;
 }
 
@@ -792,7 +792,7 @@ public Action Command_Ent_Fire_Player(int client, int args)
             SetEntProp(target_list[i], Prop_Send, "m_bUseClassAnimations",1);
         }
     }
-    ReplyToCommand(client,"[SM] ", "Activated input %s of %s",input,target_name);
+    ReplyToCommand(client,"[SM] Activated input %s of %s",input,target_name);
     return Plugin_Handled;
 }
 
@@ -848,7 +848,7 @@ public Action Command_Addcond(int client, int args)
         TF2_AddCondition(target_list[i], view_as<TFCond>(cond), time, 0);
     }
 
-    ReplyToCommand(client,"[SM] ", "Added condition #%i to %s for a duration of %.0f seconds",cond,target_name,time);
+    ReplyToCommand(client,"[SM] Added condition #%i to %s for a duration of %.0f seconds",cond,target_name,time);
     return Plugin_Handled;
 }
 
@@ -1367,7 +1367,7 @@ public Action Command_Ent_Create(int client, int args)
     float playerpos[3];
     GetEntPropVector(client, Prop_Send, "m_vecOrigin", playerpos);
 
-    ReplyToCommand(client,"[SM] ", "Created entity %s",classname);
+    ReplyToCommand(client,"[SM] Created entity %s",classname);
 
     return Plugin_Handled;
 }
