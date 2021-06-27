@@ -484,7 +484,7 @@ public Action ResetCaber(Handle handle, int data)
 		if (!IsClientInGame(i) || !IsPlayerAlive(i))
 			continue;
 		
-		int iWeapon = GetPlayerWeaponSlot(i, 2);\
+		int iWeapon = GetPlayerWeaponSlot(i, 2);
 		if (iWeapon > 0 && GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex") == 307 && ((!IsFakeClient(i) && GetConVarBool(caber_buff_enabled)) || TF2Attrib_HookValueFloat(0.0,"regenerate_stickbomb",iWeapon) != 0.0 )) {
 			if (GetEntProp(iWeapon, Prop_Send, "m_iDetonated") == 1)
 			{
