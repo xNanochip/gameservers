@@ -45,7 +45,6 @@ bool extramodded_set = false;
 bool mvm10_set = false;
 bool super_fire_fan[MAXPLAYERS];
 bool vanilla_mode;
-Handle attrib_float_prep;
 Handle burn_prep;
 
 StringMap whitelisted_afterburn_items;
@@ -86,18 +85,6 @@ public void OnPluginStart()
 	AddCommandListener(Command_CallVote, "callvote"); // TF2, CS:GO
 
 	Handle game_conf = LoadGameConfigFile("tf2.mvm");
-
-	StartPrepSDKCall(SDKCall_Static);
-	if (PrepSDKCall_SetFromConf(game_conf,SDKConf_Signature,"CAttributeManager::AttribHookValueFloat"))
-	{
-		PrepSDKCall_AddParameter(SDKType_Float, SDKPass_Plain);
-		PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
-		PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer, VDECODE_FLAG_ALLOWNULL);
-		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
-		PrepSDKCall_AddParameter(SDKType_Bool, SDKPass_Plain);
-		PrepSDKCall_SetReturnInfo(SDKType_Float, SDKPass_Plain);
-	}
-	attrib_float_prep = EndPrepSDKCall();
 
 	StartPrepSDKCall(SDKCall_Raw);
 	if (PrepSDKCall_SetFromConf(game_conf,SDKConf_Signature,"CTFPlayerShared::Burn"))
@@ -497,8 +484,8 @@ public Action ResetCaber(Handle handle, int data)
 		if (!IsClientInGame(i) || !IsPlayerAlive(i))
 			continue;
 		
-		int iWeapon = GetPlayerWeaponSlot(i, 2);
-		if (iWeapon > 0 && GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex") == 307 && ((!IsFakeClient(i) && GetConVarBool(caber_buff_enabled)) || SDKCall(attrib_float_prep,0.0,"regenerate_stickbomb",iWeapon,0,false) != 0.0 )) {
+		int iWeapon = GetPlayerWeaponSlot(i, 2);\
+		if (iWeapon > 0 && GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex") == 307 && ((!IsFakeClient(i) && GetConVarBool(caber_buff_enabled)) || TF2Attrib_HookValueFloat(0.0,"regenerate_stickbomb",iWeapon) != 0.0 )) {
 			if (GetEntProp(iWeapon, Prop_Send, "m_iDetonated") == 1)
 			{
 				SetEntProp(iWeapon, Prop_Send, "m_iDetonated", 0);
@@ -769,7 +756,7 @@ public void OnEnergyBallSpawn(int entity)
 		if (IsValidEntity(launcher))
 		{
 			float gameTime = GetGameTime();
-			float fireRateMult= SDKCall(attrib_float_prep,1.0,"mult_postfiredelay",launcher,0,false);
+			float fireRateMult= TF2Attrib_HookValueFloat(1.0,"mult_postfiredelay",launcher);
 			float nextAttack = GetEntPropFloat(launcher,Prop_Send, "m_flNextPrimaryAttack");
 
 			SetEntPropFloat(launcher, Prop_Send, "m_flNextPrimaryAttack", gameTime+((nextAttack-gameTime)*fireRateMult));
@@ -798,7 +785,7 @@ public Action OnAnyDamage(int victim, int& attacker, int& inflictor, float& dama
 						if (strcmp(victim_classname, "tank_boss") == 0)
 							damage *= 1.1;
 
-						damage = SDKCall(attrib_float_prep,1.31 * damage,"mult_dmg",weapon,0,false);
+						damage = TF2Attrib_HookValueFloat(1.31 * damage,"mult_dmg",weapon);
 						if (last_stickbomb_victim == victim) {
 							damagetype |= TF_DMG_MELEE;
 							last_stickbomb_victim = 0;
@@ -811,10 +798,10 @@ public Action OnAnyDamage(int victim, int& attacker, int& inflictor, float& dama
 				}
 			}
 			if ((damagetype & DMG_SHOCK) == DMG_SHOCK && strcmp(classname,"tf_weapon_mechanical_arm") == 0) {
-				damage = SDKCall(attrib_float_prep,damage,"mult_dmg",weapon,0,false);
+				damage = TF2Attrib_HookValueFloat(damage,"mult_dmg",weapon);
 			}
 			if (damagecustom == 46 && (strcmp(classname, "tf_weapon_raygun") == 0 || strcmp(classname, "tf_weapon_drg_pomson") == 0)) {
-				damage = SDKCall(attrib_float_prep,damage,"mult_dmg",weapon,0,false);
+				damage = TF2Attrib_HookValueFloat(damage,"mult_dmg",weapon);
 			}
 		}
 		//PrintToChat(attacker,"%d %f %d %d %d", attacker,damage, damagetype, weapon, damagecustom);
@@ -834,7 +821,7 @@ public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& d
 	//PrintToChatAll("%d %f %d %d %d", attacker,damage, damagetype, weapon, damagecustom);
 	//Stickbomb reset
 	if (attacker == victim && !vanilla_mode && weapon > 0 && damagecustom == 42 
-		&& ((!IsFakeClient(victim) && GetConVarBool(caber_buff_enabled)) || SDKCall(attrib_float_prep,0.0,"regenerate_stickbomb",weapon,0,false) != 0.0 ))
+		&& ((!IsFakeClient(victim) && GetConVarBool(caber_buff_enabled)) || TF2Attrib_HookValueFloat(0.0,"regenerate_stickbomb",weapon) != 0.0 ))
 	{
 		RequestFrame(ResetCaberSingle, weapon);
 	}
@@ -850,7 +837,7 @@ public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& d
 					TF2_StunPlayer(victim,0.6,0.12,TF_STUNFLAG_SLOWDOWN,attacker);
 				}
 				
-				else if (damagecustom == 14 && ((GetConVarBool(radius_sleeper_enabled) && !IsFakeClient(attacker)) || SDKCall(attrib_float_prep,damage,"radius_sleeper",attacker,0,false) != 0.0) && strcmp(classname,"tf_weapon_sniperrifle") == 0) {
+				else if (damagecustom == 14 && ((GetConVarBool(radius_sleeper_enabled) && !IsFakeClient(attacker)) || TF2Attrib_HookValueFloat(damage,"radius_sleeper",attacker) != 0.0) && strcmp(classname,"tf_weapon_sniperrifle") == 0) {
 					float charge = GetEntPropFloat(weapon,Prop_Send, "m_flChargedDamage");
 					if (charge > 0.0) {
 						float pos[3];
@@ -888,7 +875,7 @@ public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& d
 			}
 			Address address = TF2Attrib_GetByDefIndex(weapon,208);
 			if ((address != Address_Null && TF2Attrib_GetValue(address ) > 0)){
-				BurnClient(victim, attacker, -1, SDKCall(attrib_float_prep, 10.0, "mult_wpn_burntime",weapon,0,false));
+				BurnClient(victim, attacker, -1, TF2Attrib_HookValueFloat(10.0, "mult_wpn_burntime",weapon));
 				//PrintToChat(attacker," burning");
 			}
 			//PrintToChatAll("Damagetype %d %d",damagetype, damagecustom);
@@ -905,8 +892,8 @@ public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& d
 		}
 		
 		if (damagecustom == 75) {
-			damage = SDKCall(attrib_float_prep,damage,"mult_dmg",attacker,0,false);
-			damage = SDKCall(attrib_float_prep,damage,"mult_dmg_vs_players",attacker,0,false);
+			damage = TF2Attrib_HookValueFloat(damage,"mult_dmg",attacker);
+			damage = TF2Attrib_HookValueFloat(damage,"mult_dmg_vs_players",attacker);
 		}
 		//PrintToServer("%d %f %d %d %d", attacker,damage, damagetype, weapon, damagecustom);
 	}
