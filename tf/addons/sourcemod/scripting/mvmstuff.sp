@@ -474,25 +474,6 @@ public void OnMapStart()
 	SetGameDescription();
 	firstrestart = false;
 	firstfakeballspawn = true;
-	//if (GetConVarBool(caber_buff_enabled))
-	CreateTimer(2.0, ResetCaber, 0, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
-}
-public Action ResetCaber(Handle handle, int data)
-{
-	for (int i=1; i<= MaxClients; i++)
-	{		
-		if (!IsClientInGame(i) || !IsPlayerAlive(i))
-			continue;
-		
-		int iWeapon = GetPlayerWeaponSlot(i, 2);
-		if (iWeapon > 0 && GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex") == 307 && ((!IsFakeClient(i) && GetConVarBool(caber_buff_enabled)) || TF2Attrib_HookValueFloat(0.0,"regenerate_stickbomb",iWeapon) != 0.0 )) {
-			if (GetEntProp(iWeapon, Prop_Send, "m_iDetonated") == 1)
-			{
-				SetEntProp(iWeapon, Prop_Send, "m_iDetonated", 0);
-			}
-		}
-	}
-	return Plugin_Continue;
 }
 
 public void OnMapEnd(){
@@ -809,22 +790,11 @@ public Action OnAnyDamage(int victim, int& attacker, int& inflictor, float& dama
 	return Plugin_Changed;
 }
 
-public void ResetCaberSingle(int weapon)
-{
-	if (GetEntProp(weapon, Prop_Send, "m_iDetonated") == 1)
-		SetEntProp(weapon, Prop_Send, "m_iDetonated", 0);
-}
-
 public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3], int damagecustom)
 {
 	
 	//PrintToChatAll("%d %f %d %d %d", attacker,damage, damagetype, weapon, damagecustom);
 	//Stickbomb reset
-	if (attacker == victim && !vanilla_mode && weapon > 0 && damagecustom == 42 
-		&& ((!IsFakeClient(victim) && GetConVarBool(caber_buff_enabled)) || TF2Attrib_HookValueFloat(0.0,"regenerate_stickbomb",weapon) != 0.0 ))
-	{
-		RequestFrame(ResetCaberSingle, weapon);
-	}
 
 	if (attacker > 0 && attacker != victim && attacker <= MaxClients && IsClientInGame(attacker) ){
 
