@@ -25,6 +25,7 @@ allservers=(
     chicago3
     auspub
     sgppub
+    uspotato1
     eupotato1
     eu2pub
 )
