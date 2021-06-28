@@ -12,6 +12,7 @@ cp_sunshine
 cp_dustbowl
 cp_gorge
 cp_mountainlab
+cp_steel
 koth_harvest_final
 koth_highpass
 koth_king
@@ -43,8 +44,6 @@ workshop/1272700588
 workshop/2068252300
 // --- cp_villa
 workshop/2113052569
-// --- cp_steel_refresh
-workshop/2376443257
 // --- koth_ashville
 workshop/2130459942
 // --- koth_bagel_rc4a
