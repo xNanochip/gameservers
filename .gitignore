@@ -32,6 +32,7 @@ tf/cfg/*
 !tf/cfg/pure_server_whitelist.txt
 !tf/cfg/sd_doomsday_event.cfg
 !tf/cfg/ctf_*.cfg
+
 # fix sv pure
 !tf/cfg/pure_server_*
 !tf/cfg/trusted_keys_base.txt
@@ -41,6 +42,7 @@ tf/addons/*/data/_*.data
 tf/addons/*/configs/sourcebans/sb_admins.cfg
 tf/addons/*/configs/sourcebans/sb_admin_groups.cfg
 tf/addons/*/configs/sourcebans/sourcebans.cfg
+tf/addons/*/configs/ctferrorlogger.cfg
 tf/addons/*/configs/item_schema.cfg
 tf/addons/*/backup/*
 !tf/addons/sourcemod/scripting/fixes/*
