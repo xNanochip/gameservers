@@ -1131,14 +1131,14 @@ static bool IsNetworkedRuntimeAttribute(Address pDefType) {
 
 /**
  * Unloads the attribute in a given CEconItemAttribute instance.
- */
+
 static void UnloadAttributeValue(Address pAttrDef, Address pEconItemAttribute) {
 	Address pDefType = DereferencePointer(pAttrDef + view_as<Address>(0x08));
 	Address pAttributeValue = pEconItemAttribute + view_as<Address>(0x08);
 	
 	SDKCall(hSDKAttributeValueUnload, pDefType, pAttributeValue);
 }
-
+*/
 /**
  * Unloads the given raw attribute value.
  */
