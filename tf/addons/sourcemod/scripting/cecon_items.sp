@@ -93,8 +93,8 @@ Handle 	g_CEcon_ShouldItemBeBlocked,
 
 // 	we should use sm-tf2econdata
 // SDKCalls for native TF2 economy reading.
-Handle 	g_SDKCallGetEconItemSchema,
-		g_SDKCallSchemaGetAttributeDefinitionByName;
+//Handle 	g_SDKCallGetEconItemSchema,
+//		g_SDKCallSchemaGetAttributeDefinitionByName;
 
 // Variables, needed to attach a specific CEItem to an entity.
 bool m_bIsEconItem[MAX_ENTITY_LIMIT + 1];
@@ -110,9 +110,8 @@ StringMap m_IndexedDictionary;
 ArrayList m_PartialReapplicationTypes = null;
 
 bool m_bLoadoutCached[MAXPLAYERS + 1];
-// TODO: enumstructify or fix so it doesnt whine on compile
-// maybe view_as<int>(CEconLoadoutClass)?
-ArrayList m_Loadout[MAXPLAYERS + 1][CEconLoadoutClass]; 	// Cached loadout data of a user.
+//ArrayList m_Loadout[MAXPLAYERS + 1][CEconLoadoutClass];
+ArrayList m_Loadout[MAXPLAYERS + 1][view_as<int>(CEconLoadoutClass)]; 	// Cached loadout data of a user.
 ArrayList m_MyItems[MAXPLAYERS + 1]; 						// Array of items this user is wearing.
 
 bool m_bWaitingForLoadout[MAXPLAYERS + 1];

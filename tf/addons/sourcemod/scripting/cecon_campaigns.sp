@@ -155,17 +155,18 @@ public Action cDump(int args)
 // Logic is taken from CRTime::RTime32FromFmtString method.
 public int TimeFromString(const char[] sFormat, const char[] sValue)
 {
-	enum tm
-	{
-		m_iYear,
-		m_iMon,
-		m_iDay,
-		m_iHour,
-		m_iMin,
-		m_iSec
-	}
+    enum tm:
+    {
+        m_iYear,
+        m_iMon,
+        m_iDay,
+        m_iHour,
+        m_iMin,
+        m_iSec,
+        m_iMAX,
+    }
 
-	int time[tm];
+    int time[m_iMAX];
 
 	int iFormatLen = strlen(sFormat);
 	int iValueLen = strlen(sValue);

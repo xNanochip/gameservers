@@ -44,14 +44,12 @@ int m_iWaveTime;
 bool m_bWaitForGameRestart;
 bool m_bWeJustFailed;
 
-bool m_bUpdatingSigsegv;
-
 char m_sLastTourLootHash[128];
-
+/*
 Regex dhooksRegex;
 Regex sigRegex;
 Regex numbersRegex;
-
+*/
 enum struct CEItemBaseIndex
 {
 	int m_iItemDefinitionIndex;
@@ -81,9 +79,13 @@ public void OnPluginStart()
 	// SigSegv extension workaround.
 	AddCommandListener(cChangelevel, "changelevel");
 	ce_mvm_restart_on_changelevel_from_mvm = CreateConVar("ce_mvm_restart_on_changelevel_from_mvm", "0");
-	
+	/*
+
 	sigRegex  = CompileRegex("\\[\\d+\\] sigsegv MvM");
 	numbersRegex = CompileRegex("\\d+");
+	dhooksRegex  = CompileRegex("\\[\\d+\\] DHooks");
+
+	*/
 }
 
 public Action cChangelevel(int client, const char[] command, int args)
@@ -401,7 +403,6 @@ Action LoadFirstMission(Handle handle)
 
 public void OnMapStart()
 {
-	dhooksRegex  = CompileRegex("\\[\\d+\\] DHooks");
 
 	if (TF2MvM_IsPlayingMvM())
 	{
@@ -444,15 +445,14 @@ public Action Timer_BackToPubs(Handle timer, any data)
 
 public void LoadSigsegvExtension()
 {
-	
 	// unload comp fixes, the only plugin that uses dhooks - this takes at least a frame
 	//ServerCommand("sm plugins unload external/tf2-comp-fixes.smx");
 	//ServerExecute();
 
 	// Update true sigsegv extension file from update file
-	LoadSigsegvForReal(null);
+	LoadSigsegvForReal();
 }
-
+/*
 // moronic that sourcemod forces me to do this instead of allowing forcible unloading of extensions by name
 Action checkDhooksExtNum(Handle timer)
 {
@@ -513,14 +513,13 @@ void checkSigsegvExtNum()
 		}
 	}
 }
-
-Action LoadSigsegvForReal(Handle timer)
+*/
+Action LoadSigsegvForReal()
 {
 	ServerCommand("sm exts load sigsegv.ext.2.tf2");
 	ServerExecute();
 	ServerCommand("exec sigsegv_mvm_convars");
 	ServerExecute();
-	m_bUpdatingSigsegv = false;
 }
 
 public bool TF2MvM_IsPlayingMvM()

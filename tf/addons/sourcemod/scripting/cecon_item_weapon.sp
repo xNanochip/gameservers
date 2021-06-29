@@ -68,7 +68,7 @@ public void OnPluginStart()
 {
 	HookEvent("player_death", player_death);
 	HookEvent("player_death", player_death_PRE, EventHookMode_Pre);
-	
+
 	Handle hGameConf = LoadGameConfigFile("tf2.weapons");
 	if (hGameConf != null)
 	{
@@ -79,7 +79,7 @@ public void OnPluginStart()
 		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
 		PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
 		g_hSdkGetMaxAmmo = EndPrepSDKCall();
-		
+
 		StartPrepSDKCall(SDKCall_Entity);
 		PrepSDKCall_SetFromConf(hGameConf, SDKConf_Virtual, "CTFWeaponBase::GetMaxClip1");
 		PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
@@ -198,7 +198,7 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 			return iWear;
 		} else {
 			int iWeapon = CreateWeapon(client, hDef.m_iBaseIndex, hDef.m_sClassName, item.m_nQuality, hDef.m_bPreserveAttributes);
-			if(iWeapon > -1)
+			if (iWeapon > -1)
 			{
 				int iBaseDefID = GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex");
 				int item_slot = TF2Econ_GetItemSlot(iBaseDefID, TF2_GetPlayerClass(client));
@@ -240,28 +240,38 @@ public int CEconItems_OnEquipItem(int client, CEItem item, const char[] type)
 					next = GetEntPropEnt(iEdict, Prop_Data, "m_hMovePeer");
 					char classname[32];
 					GetEntityClassname(iEdict, classname, 32);
-					
+
 					// We need to also include the demoshield entity here as well since that is also considered a weapon.
 					// The previous version of this check only checked to see if the classname string length matched with
 					// "tf_wearable". We can do that better with a StrContains check.
-					
+
 					// EDIT 23/04/21 8:09am - So you wanna know something really funny? This also applies to other weapons like
 					// the Razorback and the Contracker! Thanks TF2 Team! - ZoNiCaL.
-					if (StrContains(classname, "tf_wearable") == -1) continue;
 
+					// is there any reason to not do a non case sensitive check with "wearable"?
+					// (StrContains(classname, "wearable", false) == -1)
+					if (StrContains(classname, "tf_wearable") == -1)
+					{
+						continue;
+					}
+
+					/* i don't think we need to check the netclass? like at all?
 					char sClass[32];
 					GetEntityNetClass(iEdict, sClass, sizeof(sClass));
-					
+
 					// Make sure we include all types of wearables. With the same check above, we need to also include the
 					// other wearable weapon entites because it doesn't have CTFWearable in it's classname.
-					
-					if (!StrContains(sClass, "CTFWearable") == -1 && (
-					!StrEqual(classname, "tf_wearable_demoshield") ||
-					!StrEqual(classname, "tf_wearable_razorback")  ||
-					!StrEqual(classname, "tf_wearable_campaign_item") )) continue;
 
+					if (StrContains(sClass, "CTFWearable") == -1)
+					{
+					    continue;
+					}
+					*/
 					int iDefIndex = GetEntProp(iEdict, Prop_Send, "m_iItemDefinitionIndex");
-					if (iDefIndex == 0xFFFF)continue;
+					if (iDefIndex == 0xFFFF)
+					{
+						continue;
+					}
 
 					int iSlot = TF2Econ_GetItemSlot(iDefIndex, TF2_GetPlayerClass(client));
 					if (iSlot == item_slot)
@@ -305,7 +315,7 @@ public void RF_OnDrawWeapon(any data)
 	int client = pack.ReadCell();
 	int weapon = pack.ReadCell();
 	delete pack;
-	
+
 	OnDrawWeapon(client, weapon);
 }
 
@@ -315,7 +325,7 @@ public void RF_RegenerateWeapon(any data)
 	int client = pack.ReadCell();
 	int weapon = pack.ReadCell();
 	delete pack;
-	
+
 	TF2_RegenerateWeaponAmmo(client, weapon);
 }
 
@@ -830,9 +840,9 @@ public bool CEconItems_ShouldItemBeBlocked(int client, CEItem xItem, const char[
 public void TF2_RegenerateWeaponAmmo(int client, int weapon)
 {
 	if (!IsValidEntity(weapon))return;
-	
+
 	int iAmmoType = TF2_GetWeaponAmmoType(client, weapon);
-	
+
 	int iMaxAmmo = CTFPlayer_GetMaxAmmo(client, iAmmoType);
 	int iClipSize = CTFWeaponBase_GetMaxClip1(weapon);
 

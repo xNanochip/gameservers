@@ -39,11 +39,11 @@ public Action sm_maptest(int client, int args)
 	char arg1[64], arg2[16], map[PLATFORM_MAX_PATH], display[PLATFORM_MAX_PATH];
 	GetCmdArg(1, arg1, sizeof arg1);
 	GetCmdArg(2, arg2, sizeof arg2);
-	bool foundMap = false;
+	//bool foundMap = false;
 	if (FindMap(arg1, map, sizeof map) != FindMap_NotFound)
 	{
 		PrintToServer("Found Map: %s", map);
-		foundMap = true;
+		//foundMap = true;
 	}
 	else
 	{
