@@ -106,7 +106,7 @@ public void Load_Maps_From_Collection(const char[] data) {
 }
 
 public void Load_Mapcycle_From_Collection(const char[] data) {
-	File mapcycle; // The mapcycle to write to
+	//File mapcycle; // The mapcycle to write to
 	char value[64], map[64], displayName[64]; // For later use
 	KeyValues vdf = new KeyValues("response"); // For interpreting the VDF data
 	vdf.ImportFromString(data, "response"); // Interpret the response

@@ -33,8 +33,8 @@ enum struct CEPlayerStat
 
 ArrayList m_hStatDefinitions;
 
-ArrayList m_hProgress[MAXPLAYERS + 1];
-bool m_bWaitingForProgress[MAXPLAYERS + 1];
+//ArrayList m_hProgress[MAXPLAYERS + 1];
+//bool m_bWaitingForProgress[MAXPLAYERS + 1];
 
 public void OnPluginStart()
 {

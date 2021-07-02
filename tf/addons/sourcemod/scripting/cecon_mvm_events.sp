@@ -39,12 +39,12 @@ enum struct PlayerData
 {
 	int touched_cp_area;
 	int tank_damage_last_second;
-	
+
 	// Use this for MVP check instead.
 	int tank_damage_wave;
 
 	int tank_damage_mission;
-	
+
 	// Bit mask of every client index who damaged the player
 	int hit_tracker;
 
@@ -317,7 +317,7 @@ public void OnTankSpawn(int tank)
 	{
 		//PrintToChatAll("IsBlimp!");
 	}
-	
+
 	//Hook individual tank damage
 	SDKHook(tank, SDKHook_OnTakeDamageAlive, TankTakeDamage);
 	//PrintToChatAll("Tank Spawned");
@@ -332,7 +332,7 @@ public Action TankTakeDamage(int tank, int &attacker, int &inflictor, float &dam
 		TankDamage[attacker] += RoundFloat(damage);
 		if (damagetype & DMG_BLAST) //Track Blast Damage
 		{
-			if (IsValidEntity(weapon)) 
+			if (IsValidEntity(weapon))
 			{
 				char classname[32];
 				GetEntityClassname(weapon, classname, sizeof(classname));
@@ -371,12 +371,14 @@ public Action mvm_mission_complete(Handle hEvent, const char[] szName, bool bDon
 
 	CEcon_SendEventToAll("TF_MVM_MISSION_COMPLETE", 1, GetRandomInt(0, 9999));
 
-	int resource = GetPlayerResourceEntity();
 	int objective_resource = FindEntityByClassname(-1, "tf_objective_resource");
 
+
+	/*
+	int resource = GetPlayerResourceEntity();
 	int highest_damage_tank = 0;
 	int highest_damage_tank_player = 0;
-
+	*/
 	int highest_damage = 0;
 	int highest_damage_player = 0;
 
@@ -447,10 +449,12 @@ public Action player_death(Handle hEvent, const char[] szName, bool bDontBroadca
 	int attacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"));
 	int assister = GetClientOfUserId(GetEventInt(hEvent, "assister"));
 
+	/*
 	int weapon_def = GetEventInt(hEvent, "weapon_def_index");
 	int death_flags = GetEventInt(hEvent, "death_flags");
-	int customkill = GetEventInt(hEvent, "customkill");
 	int kill_streak_victim = GetEventInt(hEvent, "kill_streak_victim");
+	*/
+	int customkill = GetEventInt(hEvent, "customkill");
 	int crit_type = GetEventInt(hEvent, "crit_type");
 
 	char weapon_name[64];
@@ -802,7 +806,7 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 				data.wave_finished_counter = 0;
 
 				SetPlayerMissionData(i, data, true);
-				
+
 				ResetDamage(i);
 			}
 		}
@@ -812,13 +816,13 @@ public Action mvm_begin_wave(Handle hEvent, const char[] szName, bool bDontBroad
 	CEcon_SendEventToAll("TF_MVM_WAVE_BEGIN", 1, GetRandomInt(0, 9999));
 
 	bonus_currency_counter = 0;
-	
+
 	// (Safety), reset tank damage here as well.
 	for (int i; i < TF_MAXPLAYERS, i++;)
 	{
 		// Players only.
 		if (!IsClientValid(i) || IsFakeClient(i))continue;
-		
+
 		// Reset this players tank damage.
 		player_data[i].tank_damage_wave = 0;
 	}
@@ -893,7 +897,7 @@ public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBr
 			CEcon_SendEventToAll("TF_MVM_COLLECT_CURRENCY_A", 1, GetRandomInt(0, 9999));
 		}
 	}
-	
+
 	CheckTopDamage(hEvent);
 	/*
 	int iTankDamageMVP = -1;
@@ -903,20 +907,20 @@ public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBr
 	{
 		// Players only.
 		if (!IsClientValid(i))continue;
-		
+
 		// Has this player dealt the most damage?
 		if (player_data[i].tank_damage_wave > iDamageDealt && player_data[i].tank_damage_wave > 0)
 		{
 			iTankDamageMVP = i;
 			iDamageDealt = player_data[i].tank_damage_wave;
 		}
-		
+
 		// Reset this players tank damage.
 		player_data[i].tank_damage_wave = 0;
 	}
-	
+
 	//PrintToChatAll("%d", iTankDamageMVP);
-	
+
 	// Send event to the MVP if we have one.
 	if (iTankDamageMVP != -1)
 	{
@@ -930,7 +934,10 @@ public Action mvm_wave_complete(Handle hEvent, const char[] szName, bool bDontBr
 // Loop through all valid players and find the player with the most damage
 public void CheckTopDamage(Handle tEvent)
 {
-	int top, second, damage, topblast;
+	int top;
+	//int second;
+	int damage;
+	int topblast;
 	int topdmg = 0;
 	int topgrenadedmg = 0;
 	//char firstname[64], secondname[64];
@@ -960,7 +967,7 @@ public void CheckTopDamage(Handle tEvent)
 		{
 			topblast = top;
 			CEcon_SendEventToClientFromGameEvent(topblast, "TF_MVM_DAMAGE_TANK_MVP_GRENADE", 1, tEvent);
-			
+
 			//Debug
 			//PrintToChatAll("top damage player also has top blast damage");
 		}
@@ -986,8 +993,7 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 		if (GetEntProp(i, Prop_Data, "m_iHealth") > 0)
 			continue;
 
-		
-		char modelstr[128];
+		//char modelstr[128];
 		for (int j = 0; j < 4; j++)
 		{
 			if (GetEntProp(i, Prop_Data, "m_nModelIndex") == blimp_models_precached[j] || GetEntProp(i, Prop_Data, "m_nModelIndexOverrides", 4, 0) == blimp_models_precached[j])
@@ -1002,7 +1008,7 @@ public Action mvm_tank_destroyed_by_players(Handle hEvent, const char[] szName, 
 		CEcon_SendEventToAll("TF_MVM_DESTROY_TANK", 1, GetRandomInt(0, 10000));
 	else
 		CEcon_SendEventToAll("TF_MVM_DESTROY_TANK_BLIMP", 1, GetRandomInt(0, 10000));
-	
+
 
 	return Plugin_Continue;
 }
@@ -1030,7 +1036,7 @@ void CountVacType(int client, int damage, int crit, TFCond vac_heal_cond, TFCond
 		healer = GetConditionProvider(client, vac_heal_cond);
 
 		dmg_resisted = damage * 0.18;
-		
+
 	}
 	// Find vac resist medics
 	if (dmg_resisted > 0.0)
@@ -1042,15 +1048,16 @@ void CountVacType(int client, int damage, int crit, TFCond vac_heal_cond, TFCond
 		CEcon_SendEventToClientUnique(client, "TF_MVM_BLOCK_DAMAGE_VAC", RoundFloat(dmg_resisted));
 	}
 }
-
+/*
 int resist_client_last;
 int resist_tick_last;
 
 int player_hurt_client_last;
+int player_hurt_weapon_id_last;
+//int player_hurt_madmilk_last;
+*/
 int player_hurt_attacker_last;
 int player_hurt_tick_last;
-int player_hurt_madmilk_last;
-int player_hurt_weapon_id_last;
 int damage_type_last;
 int inflictor_last;
 int health_attacker_last;
@@ -1064,13 +1071,14 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 	bool crit = GetEventBool(hEvent, "crit");
 	bool minicrit = GetEventBool(hEvent, "minicrit");
 	int bonuseffect = GetEventInt(hEvent, "bonuseffect");
-	int weaponid = GetEventInt(hEvent, "weaponid");
 
+	/*
+	int weaponid = GetEventInt(hEvent, "weaponid");
 	player_hurt_client_last = client;
 	player_hurt_attacker_last = attacker;
 	player_hurt_weapon_id_last = weaponid;
 	player_hurt_tick_last = GetGameTickCount();
-
+	*/
 	if (IsClientValid(attacker) && attacker != client)
 	{
 		if (IsFakeClient(client) && !IsFakeClient(attacker))
@@ -1155,27 +1163,27 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 		}
 		else if (IsFakeClient(attacker))
 		{
-			if (damage_type_last & (DMG_BURN | DMG_IGNITE)) 
+			if (damage_type_last & (DMG_BURN | DMG_IGNITE))
 			{
 				CountVacType(client, damage, crit, TFCond_SmallFireResist, TFCond_UberFireResist);
 			}
-			if (damage_type_last & (DMG_BLAST)) 
+			if (damage_type_last & (DMG_BLAST))
 			{
 				CountVacType(client, damage, crit, TFCond_SmallBlastResist, TFCond_UberBlastResist);
 			}
-			if (damage_type_last & (DMG_BULLET | DMG_BUCKSHOT)) 
+			if (damage_type_last & (DMG_BULLET | DMG_BUCKSHOT))
 			{
 				CountVacType(client, damage, crit, TFCond_SmallBulletResist, TFCond_UberBulletResist);
 			}
 		}
-		
+
 	}
 
 
 	// Battalions backup check
 	if (IsClientValid(attacker) && IsFakeClient(attacker) && !IsFakeClient(client))
 	{
-		
+
 
 		if (TF2_IsPlayerInCondition(client, TFCond_DefenseBuffed))
 		{
@@ -1198,8 +1206,8 @@ public Action player_hurt(Handle hEvent, const char[] szName, bool bDontBroadcas
 
 public Action damage_resisted(Handle hEvent, const char[] szName, bool bDontBroadcast)
 {
-	resist_client_last = GetEventInt(hEvent, "entindex");
-	resist_tick_last = GetGameTickCount();
+	//resist_client_last = GetEventInt(hEvent, "entindex");
+	//resist_tick_last = GetGameTickCount();
 }
 
 int damagecustom_last;
@@ -1208,7 +1216,7 @@ public Action OnPlayerDamage(int victim, int& attacker, int& inflictor, float& d
 	victim_last = victim;
 	if (IsClientValid(attacker))
 		health_attacker_last = GetEntProp(attacker, Prop_Data, "m_iHealth");
-	
+
 	damage_type_last = damagetype;
 	weapon_damage_last = weapon;
 	damagecustom_last = damagecustom;
@@ -1414,8 +1422,8 @@ public Action medic_death(Handle hEvent, const char[] szName, bool bDontBroadcas
 
 	// Only count regular uber
 	bool charged_uber = charged && GetAttributeValue(healer, "set_charge_type", 0.0) == 0.0;
-	
-	
+
+
 	if (charged_uber && IsClientValid(healer) && IsFakeClient(healer))
 	{
 		CEcon_SendEventToClientFromGameEvent(attacker, "TF_MVM_KILL_UBER_MEDIC", 1, hEvent);
@@ -1505,9 +1513,9 @@ public Action player_carryobject(Handle hEvent, const char[] szName, bool bDontB
 	int type = GetEventInt(hEvent, "object");
 	//int entity = GetEventInt(hEvent, "index");
 	if (type == 2) //OBJ_SENTRYGUN
-	{		
+	{
 		player_data[builder].buster_save_sentry_ranged = GetAttributeValue(GetEntPropEnt(builder, Prop_Data, "m_hActiveWeapon"), "building_teleporting_pickup", 0.0) != 0.0;
-		
+
 	}
 
 	return Plugin_Continue;

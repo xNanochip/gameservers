@@ -318,10 +318,11 @@ enum eTeamworkReasons
     playerExtinguish
 };
 
-new e_RoundState:g_RoundState,
-    ScrambleTime:g_iDefMode,
-    g_aTeams[e_TeamInfo],
-    g_aPlayers[MAXPLAYERS + 1][e_PlayerInfo];
+
+e_RoundState g_RoundState;
+ScrambleTime g_iDefMode;
+int g_aTeams[e_TeamInfo];
+int g_aPlayers[MAXPLAYERS + 1][e_PlayerInfo];
 
 
 //new g_iRoundTimer;
