@@ -9,7 +9,7 @@ cp_powerhouse
 cp_freight_final1
 cp_snakewater_final1
 cp_sunshine
-cp_dustbowl
+cp_mercenarypark
 cp_gorge
 cp_mountainlab
 cp_steel
