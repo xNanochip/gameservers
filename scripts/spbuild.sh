@@ -111,7 +111,7 @@ compile()
 compile_error()
 {
     error "spcomp64 error while compiling ${1}"
-    exit 255
+#    exit 255
 }
 
 ###
