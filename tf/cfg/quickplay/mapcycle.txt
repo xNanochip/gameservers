@@ -10,21 +10,21 @@ cp_freight_final1
 cp_snakewater_final1
 cp_sunshine
 cp_mercenarypark
+cp_mossrock
 cp_gorge
 cp_mountainlab
 cp_steel
 koth_harvest_final
 koth_highpass
 koth_king
+koth_lazarus
 pl_borneo
 pl_enclosure_final
 pl_frontier
 pl_swiftwater_final1
 pl_upward
 pl_pier
-plr_bananabay
 // ---------- NON DEFAULT MAPS NOT ON WORKSHOP ---------- //
-cp_gullywash_f3
 cp_process_f7
 pl_barnblitz_pro6
 // ---------- WORKSHOP MAPS ---------- //

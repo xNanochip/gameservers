@@ -1,0 +1,141 @@
+"Games"
+{
+	"tf"
+	{
+		"Functions"
+		{
+			"CBaseCombatWeapon::SendWeaponAnim()"
+			{
+				"offset"		"CBaseCombatWeapon::SendWeaponAnim()"
+				"hooktype"		"entity"
+				"return"		"bool"
+				"this"			"entity"
+				"arguments"
+				{
+					"activity"
+					{
+						"type"	"int"
+					}
+				}
+			}
+			"CBaseEntity::GetDamage()"
+			{
+				"offset"		"CBaseEntity::GetDamage()"
+				"hooktype"		"entity"
+				"return"		"float"
+				"this"			"entity"
+			}
+			"CBaseGrenade::GetDamageRadius()"
+			{
+				"offset"		"CBaseGrenade::GetDamageRadius()"
+				"hooktype"		"entity"
+				"return"		"float"
+				"this"			"entity"
+			}
+			"CTFBaseRocket::Explode()"
+			{
+				"offset"		"CTFBaseRocket::Explode()"
+				"hooktype"		"entity"
+				"return"		"void"
+				"this"			"entity"
+				"arguments"
+				{
+					"trace"
+					{
+						"type"	"int"
+					}
+					"target"
+					{
+						"type"	"cbaseentity"
+					}
+				}
+			}
+			"CTFWeaponBase::GetInitialAfterburnDuration()"
+			{
+				"offset"		"CTFWeaponBase::GetInitialAfterburnDuration()"
+				"hooktype"		"entity"
+				"return"		"float"
+				"this"			"entity"
+			}
+			"CTFWeaponBaseGun::FireJar()"
+			{
+				"offset"		"CTFWeaponBaseGun::FireJar()"
+				"hooktype"		"entity"
+				"return"		"bool"
+				"this"			"entity"
+				"arguments"
+				{
+					"player"
+					{
+						"type"	"cbaseentity"
+					}
+				}
+			}
+			"CTFWeaponBaseGun::GetProjectileSpeed()"
+			{
+				"offset"		"CTFWeaponBaseGun::GetProjectileSpeed()"
+				"hooktype"		"entity"
+				"return"		"float"
+				"this"			"entity"
+			}
+		}
+		"Offsets"
+		{
+			"CBaseCombatWeapon::IsBaseCombatWeapon()"
+			{
+				"windows"	"86"
+				"linux"		"87"
+			}
+			"CBaseCombatWeapon::SendWeaponAnim()"
+			{
+				"windows"	"243"
+				"linux"		"249"
+			}
+			"CBaseEntity::GetDamage()"
+			{
+				"windows"		"128"
+				"linux"			"129"
+			}
+			"CBaseGrenade::GetDamageRadius()"
+			{
+				"windows"	"235"
+				"linux"		"236"
+			}
+			"CBasePlayer::Weapon_ShootPosition()"
+			{
+				"windows"	"269"
+				"linux"		"270"
+			}
+			"CTFBaseRocket::Explode()"
+			{
+				"windows"	"233"
+				"linux"		"234"
+			}
+			"CTFWeaponBase::GetInitialAfterburnDuration()"
+			{
+				"windows"	"449"
+				"linux"		"456"
+			}
+			"CTFWeaponBase::GetAfterburnRateOnHit()"
+			{
+				"windows"	"450"
+				"linux"		"457"
+			}
+			"CTFWeaponBaseGrenadeProj::InitGrenade(int float)"
+			{
+				"windows"	"237"
+				"linux"		"239"
+			}
+			"CTFWeaponBaseGun::FireJar()"
+			{
+				"windows"	"469"
+				"linux"		"476"
+			}
+			"CTFWeaponBaseGun::GetProjectileSpeed()"
+			{
+				"windows"	"474"
+				"linux"		"481"
+			}
+		}
+	}
+}
