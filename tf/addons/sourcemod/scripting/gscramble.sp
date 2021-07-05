@@ -28,6 +28,7 @@ along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 #include <tf2>
 #include <tf2_stocks>
 #include <sdktools>
+#include <morecolors>
 
 // comment out to disable debug
 //#define DEBUG
@@ -535,7 +536,7 @@ public Action:CMD_Listener(client, const String:command[], argc)
                 }
                 if (GetClientTeam(client) >= 2)
                 {
-                    PrintToChat(client, "\x01\x04[SM]\x01 %t", "BlockJointeam");
+                    MC_PrintToChat(client, "[{creators}Creators.TF{default}] %t", "BlockJointeam");
                     LogAction(-1, client, "\"%L\" is being blocked from using the %s command due to setting", client, command);
                     return Plugin_Handled;
                 }
@@ -644,7 +645,7 @@ public Action:cmd_AddBuddy(client, args)
 {
     if (!g_bUseBuddySystem)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "BuddyDisabledError");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "BuddyDisabledError");
 
         return Plugin_Handled;
     }
@@ -673,7 +674,7 @@ public Action:cmd_AddBuddy(client, args)
     }
     else
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "BuddyArgError");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "BuddyArgError");
     }
 
     return Plugin_Handled;
@@ -684,13 +685,13 @@ public Action:cmd_Preference(client, args)
     if (!g_bHooked)
     {
 
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "EnableReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "EnableReply");
         return Plugin_Handled;
     }
 
     if (!GetConVarBool(cvar_Preference))
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "PrefDisabled");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "PrefDisabled");
 
         return Plugin_Handled;
     }
@@ -1071,7 +1072,7 @@ public Action:Timer_VoteAd(Handle:timer)
 
     if (strlen(sVotes))
     {
-        PrintToChatAll("\x01\x04[SM]\x01 %t", "VoteAd", sVotes);
+        MC_PrintToChatAll("[{creators}Creators.TF{default}] %t", "VoteAd", sVotes);
     }
 
     return Plugin_Continue;
@@ -1578,7 +1579,7 @@ public Action:Event_PlayerDisconnect(Handle:event, const String:name[], bool:don
                 {
                     if (IsClientInGame(i))
                     {
-                        PrintToChat(i, "\x01\x04[SM]\x01 %t", "YourBuddyLeft");
+                        MC_PrintToChat(i, "[{creators}Creators.TF{default}] %t", "YourBuddyLeft");
                     }
 
                     g_aPlayers[i][iBuddy] = 0;
@@ -1678,7 +1679,7 @@ public Action:Timer_PrefAnnounce(Handle:timer, any:id)
 
     if ((client = GetClientOfUserId(id)))
     {
-        PrintToChat(client, "\x01\x04[SM]\x01 %t", "PrefAnnounce");
+        MC_PrintToChat(client, "[{creators}Creators.TF{default}] %t", "PrefAnnounce");
     }
 
     return Plugin_Handled;
@@ -1709,7 +1710,7 @@ public Action:timer_Restore(Handle:timer, any:id)
     {
         ChangeClientTeam(client, g_iTeamIds[iIndex]);
         ShowVGUIPanel(client, "team", _, false);
-        PrintToChat(client, "\x01\x04[SM]\x01 %t", "TeamRestore");
+        MC_PrintToChat(client, "[{creators}Creators.TF{default}] %t", "TeamRestore");
         TF2_SetPlayerClass(client, TFClass_Scout);
         LogAction(client, -1, "\"%L\" has had his/her old team restored after reconnecting.", client);
         RestoreMenuCheck(client, g_iTeamIds[iIndex]);
@@ -1825,7 +1826,7 @@ PerformVoteReset(client)
 {
     LogAction(client, -1, "\"%L\" has reset all the public votes", client);
     ShowActivity(client, "%t", "AdminResetVotes");
-    ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "ResetReply", g_iVotes);
+    MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "ResetReply", g_iVotes);
 
     for (new i = 1; i <= MaxClients; i++)
     {
@@ -1843,11 +1844,11 @@ HandleStacker(client)
 
         GetClientName(client, clientName, 32);
         LogAction(client, -1, "\"%L\" was blocked from changing teams", client);
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "BlockSwitchMessage");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "BlockSwitchMessage");
 
         if (!g_bSilent)
         {
-            PrintToChatAll("\x01\x04[SM]\x01 %t", "ShameMessage", clientName);
+            MC_PrintToChatAll("[{creators}Creators.TF{default}] %t", "ShameMessage", clientName);
         }
 
         g_aPlayers[client][iBlockWarnings]++;
@@ -1870,13 +1871,13 @@ PerformBalance(client)
 {
     if (g_bArenaMode)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "ArenaReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "ArenaReply");
         return;
     }
 
     if (!g_bHooked)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "EnableReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "EnableReply");
         return;
     }
 
@@ -1888,7 +1889,7 @@ PerformBalance(client)
     }
     else
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "NoImbalnceReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "NoImbalnceReply");
     }
 
 }
@@ -1929,7 +1930,7 @@ public Action:cmd_Scramble_Now(client, args)
 {
     if (args > 3)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "NowCommandReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "NowCommandReply");
         return Plugin_Handled;
     }
 
@@ -1942,7 +1943,7 @@ public Action:cmd_Scramble_Now(client, args)
 
         if((fDelay = StringToFloat(arg1)) == 0.0)
         {
-            ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "NowCommandReply");
+            MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "NowCommandReply");
             return Plugin_Handled;
         }
 
@@ -1968,7 +1969,7 @@ public Action:cmd_Scramble_Now(client, args)
             }
             if ((mode = e_ScrambleModes:StringToInt(arg3)) > randomSort)
             {
-                ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "NowCommandReply");
+                MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "NowCommandReply");
                 return Plugin_Handled;
             }
         }
@@ -1982,13 +1983,13 @@ stock PerformScrambleNow(client, Float:fDelay = 5.0, bool:respawn = false, e_Scr
 {
     if (!g_bHooked)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "EnableReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "EnableReply");
         return;
     }
 
     if (g_bNoSequentialScramble && g_bScrambledThisRound)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "ScrambledAlready");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "ScrambledAlready");
         return;
     }
 
@@ -2011,19 +2012,19 @@ stock AttemptScrambleVote(client)
 {
     if (g_bArenaMode)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "ArenaReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "ArenaReply");
         return;
     }
 
     if (GetConVarBool(cvar_AdminBlockVote) && g_iNumAdmins > 0)
     {
-        ReplyToCommand(client, "\x01x04[SM] %t", "AdminBlockVoteReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "AdminBlockVoteReply");
         return;
     }
 
     if (!g_bHooked)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "EnableReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "EnableReply");
         return;
     }
 
@@ -2031,43 +2032,43 @@ stock AttemptScrambleVote(client)
 
     if (!GetConVarBool(cvar_VoteEnable))
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "VoteDisabledReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "VoteDisabledReply");
         return;
     }
 
     if (g_bNoSequentialScramble && g_bScrambledThisRound)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "ScrambledAlready");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "ScrambledAlready");
         return;
     }
 
     if (!g_bVoteAllowed)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "VoteDelayedReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "VoteDelayedReply");
         return;
     }
 
     if (g_iVotesNeeded - g_iVotes == 1 && GetConVarInt(cvar_VoteMode) == 1 && IsVoteInProgress())
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "Vote in Progress");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "Vote in Progress");
         return;
     }
 
     if (GetConVarInt(cvar_MinPlayers) > g_iVoters)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "NotEnoughPeopleVote");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "NotEnoughPeopleVote");
         return;
     }
 
     if (g_aPlayers[client][bHasVoted] == true)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "AlreadyVoted");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "AlreadyVoted");
         return;
     }
 
     if (g_bScrambleNextRound)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "ScrambleReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "ScrambleReply");
         return;
     }
 
@@ -2082,7 +2083,7 @@ stock AttemptScrambleVote(client)
             }
             else
             {
-                ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "VoteRoundTimeReply", iRoundLimit);
+                MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "VoteRoundTimeReply", iRoundLimit);
                 return;
             }
         }
@@ -2094,7 +2095,7 @@ stock AttemptScrambleVote(client)
     new String:clientName[MAX_NAME_LENGTH + 1];
 
     GetClientName(client, clientName, 32);
-    PrintToChatAll("\x01\x04[SM]\x01 %t", "VoteTallied", clientName, g_iVotes, g_iVotesNeeded);
+    MC_PrintToChatAll("[{creators}Creators.TF{default}] %t", "VoteTallied", clientName, g_iVotes, g_iVotesNeeded);
 
     if (g_iVotes >= g_iVotesNeeded && !g_bScrambleNextRound)
     {
@@ -2106,7 +2107,7 @@ stock AttemptScrambleVote(client)
         {
             g_bScrambleNextRound = true;
             if (!g_bSilent)
-                PrintToChatAll("\x01\x04[SM]\x01 %t", "ScrambleRound");
+                MC_PrintToChatAll("[{creators}Creators.TF{default}] %t", "ScrambleRound");
         }
         else if (!Override && GetConVarInt(cvar_VoteMode) == 2)
         {
@@ -2121,13 +2122,13 @@ public Action:cmd_Vote(client, args)
 {
     if (IsVoteInProgress())
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "Vote in Progress");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "Vote in Progress");
         return Plugin_Handled;
     }
 
     if (args < 1)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 Usage: sm_scramblevote <now/end>");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] Usage: sm_scramblevote <now/end>");
         return Plugin_Handled;
     }
 
@@ -2145,7 +2146,7 @@ public Action:cmd_Vote(client, args)
     }
     else
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "InvalidArgs");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "InvalidArgs");
         return Plugin_Handled;
     }
 
@@ -2157,43 +2158,43 @@ PerformVote(client, ScrambleTime:mode)
 {
     if (g_bArenaMode)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "ArenaReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "ArenaReply");
         return;
     }
 
     if (!g_bHooked)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "EnableReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "EnableReply");
         return;
     }
 
     if (GetConVarInt(cvar_MinPlayers) > g_iVoters)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "NotEnoughPeopleVote");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "NotEnoughPeopleVote");
         return;
     }
 
     if (g_bScrambleNextRound)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "ScrambleReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "ScrambleReply");
         return;
     }
 
     if (IsVoteInProgress())
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "Vote in Progress");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "Vote in Progress");
         return;
     }
 
     if (!g_bVoteAllowed)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "VoteDelayedReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "VoteDelayedReply");
         return;
     }
 
     if (g_bNoSequentialScramble && g_bScrambledThisRound)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "ScrambledAlready");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "ScrambledAlready");
         return;
     }
 
@@ -2205,7 +2206,7 @@ StartScrambleVote(ScrambleTime:mode, time=20)
 {
     if (IsVoteInProgress())
     {
-        PrintToChatAll("\x01\x04[SM]\x01 %t", "VoteWillStart");
+        MC_PrintToChatAll("[{creators}Creators.TF{default}] %t", "VoteWillStart");
         CreateTimer(1.0, Timer_ScrambleVoteStarter, mode, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
         return;
     }
@@ -2269,7 +2270,7 @@ public Handler_VoteCallback(Handle:menu, MenuAction:action, param1, param2)
 
         if (comp >= comp2)
         {
-            PrintToChatAll("\x01\x04[SM]\x01 %t", "VoteWin", RoundToNearest(comp*100), i_totalVotes);
+            MC_PrintToChatAll("[{creators}Creators.TF{default}] %t", "VoteWin", RoundToNearest(comp*100), i_totalVotes);
             LogAction(-1 , 0, "%T", "VoteWin", LANG_SERVER, RoundToNearest(comp*100), i_totalVotes);
 
             if (g_bScrambleAfterVote)
@@ -2281,14 +2282,14 @@ public Handler_VoteCallback(Handle:menu, MenuAction:action, param1, param2)
                 if ((g_bFullRoundOnly && g_bWasFullRound) || !g_bFullRoundOnly)
                 {
                     g_bScrambleNextRound = true;
-                    PrintToChatAll("\x01\x04[SM]\x01 %t", "ScrambleStartVote");
+                    MC_PrintToChatAll("[{creators}Creators.TF{default}] %t", "ScrambleStartVote");
                 }
             }
         }
         else
         {
             new against = 100 - RoundToNearest(comp*100);
-            PrintToChatAll("\x01\x04[SM]\x01 %t", "VoteFailed", against, i_totalVotes);
+            MC_PrintToChatAll("[{creators}Creators.TF{default}] %t", "VoteFailed", against, i_totalVotes);
             LogAction(-1 , 0, "%T", "VoteFailed", LANG_SERVER, against, i_totalVotes);
         }
     }
@@ -2370,7 +2371,7 @@ PerformCancel(client)
     }
     else
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "NoScrambleReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "NoScrambleReply");
         return;
     }
 }
@@ -2382,19 +2383,19 @@ SetupRoundScramble(client)
 {
     if (!g_bHooked)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "EnableReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "EnableReply");
         return;
     }
 
     if (g_bNoSequentialScramble && g_bScrambledThisRound)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "ScrambledAlready");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "ScrambledAlready");
         return;
     }
 
     if (g_bScrambleNextRound)
     {
-        ReplyToCommand(client, "\x01\x04[SM]\x01 %t", "ScrambleReply");
+        MC_ReplyToCommand(client, "[{creators}Creators.TF{default}] %t", "ScrambleReply");
         return;
     }
 
@@ -2466,7 +2467,7 @@ public Event_RoundStart(Handle:event, const String:name[], bool:dontBroadcast)
             g_bPreGameScramble = true;
             g_bScrambleNextRound = true;
             if (!g_bSilent)
-                PrintToChatAll("\x01\x04[SM]\x01 %t", "ScrambleRound");
+                MC_PrintToChatAll("[{creators}Creators.TF{default}] %t", "ScrambleRound");
         }
     }
     else if (g_RoundState == preGame)
@@ -3021,7 +3022,7 @@ bool:CheckSpecChange(client)
 
     if (difference >= GetConVarInt(cvar_BalanceLimit))
     {
-        PrintToChat(client, "\x01\x04[SM]\x01 %t", "SpecChangeBlock");
+        MC_PrintToChat(client, "[{creators}Creators.TF{default}] %t", "SpecChangeBlock");
         LogAction(client, -1, "Client \"%L\" is being blocked from swapping to spectate", client);
         return true;
     }
