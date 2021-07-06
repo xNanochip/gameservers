@@ -1,7 +1,8 @@
 stages:
   - genyml
   - trigger
-  - pull-n-build
+  - pull
+  - build
 
 # this generates our yml so we don't run on more servers than needed
 generate-yml:
