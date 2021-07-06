@@ -12,7 +12,7 @@ generate-yml:
     paths:
       - cfg.yml
   tags:
-    - backend
+    - worker
 
 
 trigger-ci:
