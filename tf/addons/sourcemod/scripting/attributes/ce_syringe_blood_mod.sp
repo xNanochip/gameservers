@@ -7,6 +7,7 @@
 #include <cecon_items>
 
 #include <tf2wearables>
+#include <tf2attributes>
 #include <tf2items>
 
 #define SOUND_HEAL "creators/weapons/syringe_heal.wav"
@@ -14,15 +15,15 @@
 #define SOUND_HEAL_READY_VO "vo/medic_mvm_say_ready01.mp3"
 #define SOUND_HEAL_DONE_VO "vo/medic_specialcompleted07.mp3"
 
+#define HEALING_CAP 40
 #define APPLY_CONDITION TFCond_RegenBuffed
-#define HEALING_CAP 15
 #define DEFAULT_OVERHEAL 1.5
 #define THINK_RATE 0.5
 
 #define CHAR_FULL "■"
 #define CHAR_EMPTY "□"
 
-#define PLUGIN_NAME           "[CE Attribute] ]syringe blood mod"
+#define PLUGIN_NAME           "[CE Attribute] syringe blood mod"
 #define PLUGIN_AUTHOR         "Creators.TF Team"
 #define PLUGIN_DESCRIPTION    "syringe blood mod"
 #define PLUGIN_VERSION        "1.00"
@@ -62,7 +63,7 @@ public void OnMapStart()
 	PrecacheSound(SOUND_HEAL_READY_VO);
 }
 
-public void OnClientConnected(int client)
+public void OnClientPutInServer(client)
 {
 	ResetCharge(client);
 	SDKHook(client, SDKHook_TraceAttack, OnTraceAttack);
@@ -90,14 +91,13 @@ public Action OnTraceAttack(int victim, int &attacker, int &inflictor, float &da
 	if(!IsPlayerAlive(attacker)) return Plugin_Continue;
 	if(!IsPlayerAlive(victim)) return Plugin_Continue;
 	if(GetClientTeam(attacker) != GetClientTeam(victim)) return Plugin_Continue; // we cant heal enemies
-
 	int iWeapon = GetEntPropEnt(attacker, Prop_Send, "m_hActiveWeapon");
 	if(IsValidEntity(iWeapon) && IsSyringeBloodMod(iWeapon))
 	{
 		// are we actually fully charged
 		if(m_iBlood[attacker] >= m_iBloodCap[attacker])
 		{
-			ApplyCharge(victim, attacker, iWeapon);
+			ApplyCharge(attacker, victim, iWeapon);
 		}
 	}
 	return Plugin_Continue;
@@ -128,17 +128,20 @@ void UpdateCharge(int client)
 	// if we are already at max charge, no need to check anything
 	if(m_iBlood[client] >= m_iBloodCap[client])
 	{
+		m_iBlood[client] = m_iBloodCap[client];
 		return;
 	}
 	
 	int iActualHealingAmount = GetHealing(client);
 	int iDelta = iActualHealingAmount - m_iLastHealingAmount[client];
 	
+	#if defined HEALING_CAP
 	// Clamp the healing done to avoid getting instant charges with fast healing like quickfix uber
 	if(iDelta > HEALING_CAP)
 	{
 		iDelta = HEALING_CAP;
 	}
+	#endif
 	
 	m_iBlood[client] += iDelta;
 	m_iLastHealingAmount[client] = iActualHealingAmount;
@@ -146,6 +149,7 @@ void UpdateCharge(int client)
 	// if we reached the cap after healing, play the voicelines and such
 	if(m_iBlood[client] >= m_iBloodCap[client])
 	{
+		m_iBlood[client] = m_iBloodCap[client];
 		EmitSoundToClient(client, SOUND_HEAL_READY);
 		EmitSoundToAll(SOUND_HEAL_READY_VO, client);
 	}
@@ -172,7 +176,7 @@ void DrawHUD(int client)
 
 	Format(sHUDText, sizeof(sHUDText), "Syringe: %d%%%%   \n%s   ", iPercents, sProgress);
 
-	if(iPercents >= 1.0)
+	if(iPercents >= 100)
 	{
 		SetHudTextParams(1.0, 0.8, 0.5, 255, 0, 0, 255);
 	} else {
@@ -192,8 +196,8 @@ void ApplyCharge(int client, int victim, int weapon)
 	if (iHealth > iMaxHealth) iHealth = iMaxHealth;
 	
 	// Apply the syringe gun effects
-	TF2_AddCondition(victim, APPLY_CONDITION, CEconItems_GetEntityAttributeFloat(weapon, "syringe blood mode uber"), client);
 	SetEntityHealth(victim, iHealth);
+	TF2_AddCondition(victim, APPLY_CONDITION, CEconItems_GetEntityAttributeFloat(weapon, "syringe blood mode uber"), client);
 	
 	// lastly all the cosmetic stuff
 	EmitSoundToAll(SOUND_HEAL, victim);
@@ -281,66 +285,36 @@ int GetMaxOverheal(client, victim)
 	int iMaxHealth = GetEntProp(victim, Prop_Data, "m_iMaxHealth");
 	
 	// first all the multipliers from the healer
-	float flOverhealMultiplier = GetPlayerAttributeFloat(client, "overheal bonus") * GetPlayerAttributeFloat(client, "overheal penalty");
-	int iOverhealExpertAttribute = GetPlayerAttributeInteger(client, "overheal expert") / 4;
+	float flOverhealMultiplier = TF2Attrib_HookValueFloat(1.0, "mult_medigun_overheal_amount", client);
+	int iOverhealExpertAttribute = TF2Attrib_HookValueInt(0, "overheal_expert", client) / 4;
 	if(iOverhealExpertAttribute > 0)
 	{
 		flOverhealMultiplier += iOverhealExpertAttribute / 4; // overheal expert is additive
 	}
-	
 	// last all the multipliers from the victim
-	int iVictimWeapon = GetEntProp(victim, Prop_Send, "m_hActiveWeapon");
-	float flMaxOverhealMultiplier = GetPlayerAttributeFloat(client, "patient overheal penalty");
-	flMaxOverhealMultiplier *= CEconItems_GetEntityAttributeFloat(iVictimWeapon, "mult_patient_overheal_penalty_active"); // yes this name is the correct name
+	float flMaxOverhealMultiplier = TF2Attrib_HookValueFloat(1.0, "mult_patient_overheal_penalty", victim);
 	
-	return RoundToFloor(iMaxHealth * ((DEFAULT_OVERHEAL * flOverhealMultiplier) * flMaxOverhealMultiplier));
+	float flTotalMultiplier = ((DEFAULT_OVERHEAL-1) * flOverhealMultiplier) * flMaxOverhealMultiplier; // as an inverted percentage (0.5 -> 150% multiplier)
+	return RoundToFloor(iMaxHealth * (1 + flTotalMultiplier));
 }
 
 int GetHealing(int client)
 {
+	if(!IsClientValid(client))
+	{
+		return 0;
+	}
+	
 	return GetEntProp(client, Prop_Send, "m_iHealPoints");
 }
 
 //Utility Functions
 
-float GetPlayerAttributeFloat(int client, const char[] name)
-{
-	float flValue = 1.0;
-	for (int i = 0; i <= TFWeaponSlot_PDA; i++)
-	{
-		int iWeapon = GetPlayerWeaponSlot(client, i);
-		
-		if(IsValidEntity(iWeapon))
-		{
-			float flWeaponValue = CEconItems_GetEntityAttributeFloat(iWeapon, name);
-			if(flWeaponValue != 0.0)
-			{
-				flValue *= flWeaponValue;
-			}
-		}
-	}
-	return flValue;
-}
-
-int GetPlayerAttributeInteger(int client, const char[] name)
-{
-	int iValue = 0;
-	for (int i = 0; i <= TFWeaponSlot_PDA; i++)
-	{
-		int iWeapon = GetPlayerWeaponSlot(client, i);
-		
-		if(IsValidEntity(iWeapon))
-		{
-			iValue += CEconItems_GetEntityAttributeInteger(iWeapon, name);
-		}
-	}
-	return iValue;
-}
-
 bool IsClientValid(int client)
 {
-	if (client <= 0 || client > MAXPLAYERS)return false;
-	if (!IsClientInGame(client))return false;
-	if (!IsClientAuthorized(client))return false;
+	if (client <= 0 || client > MaxClients) return false;
+	if(!IsValidEntity(client)) return false;
+	if (!IsClientInGame(client)) return false;
+	if (!IsClientAuthorized(client)) return false;
 	return true;
 }
