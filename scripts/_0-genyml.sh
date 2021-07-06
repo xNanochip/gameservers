@@ -18,8 +18,6 @@ allservers=(
     backend
     chicago3
     eu2pub
-    eu2pub
-    eupotato1
     eupotato1
     eupotato2
     eupub
