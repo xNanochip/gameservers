@@ -253,7 +253,13 @@ public void CallAdmin_OnReportPost(int client, int target, const char[] reason)
 	{
 		ReplaceString(sMSG, sizeof(sMSG), "{STV_PORT}", g_sSTVPort);
 		ReplaceString(sMSG, sizeof(sMSG), "{STV_PASSWORD}", g_sSTVPassword);
-		if (demo) ReplaceString(sMSG, sizeof(sMSG), "{DEMO_NAME}", g_sDemoName);
+
+        // Johnny: The locator script requires the extension at the end of the url.
+        //           E.g., status.creators.tf/locate.php?q=stvdemos/202-2021_07_02_23_33-pl_vigil_rc7.dem
+		if (demo)
+		{
+			ReplaceString(sMSG, sizeof(sMSG), "{DEMO_NAME}.dem", g_sDemoName);
+		}
 	}
 	
 	ReplaceString(sMSG, sizeof(sMSG), "{REASON}", sReason);
