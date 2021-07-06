@@ -15,7 +15,6 @@ jobs=(
 # all servers tags
 allservers=(
     auspub
-    backend
     chicago3
     eu2pub
     eupotato1
