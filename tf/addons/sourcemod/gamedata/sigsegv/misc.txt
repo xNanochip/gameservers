@@ -4561,6 +4561,39 @@
 					type "sym"
 					sym  "_ZN11CBaseEntity23ModifyFireBulletsDamageEP15CTakeDamageInfo"
 				}
+				"CTriggerHurt::HurtEntity"
+				{
+					type "sym"
+					sym  "_ZN12CTriggerHurt10HurtEntityEP11CBaseEntityf"
+				}
+				"CHLTVClient::ExecuteStringCommand"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN11CHLTVClient20ExecuteStringCommandEPKc"
+				}
+				"CHLTVClient::SpawnPlayer"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN11CHLTVClient11SpawnPlayerEv"
+				}
+				"CHLTVServer::ConnectClient"
+				{
+					type "sym"
+					lib  "engine"
+					sym  "_ZN11CHLTVServer13ConnectClientER8netadr_siiiiPKcS3_S3_i"
+				}
+				"CTFGameRules::BetweenRounds_Think"
+				{
+					type "sym"
+					sym  "_ZN12CTFGameRules19BetweenRounds_ThinkEv"
+				}
+				"CSchemaAttributeType_Default::ConvertStringToEconAttributeValue"
+				{
+					type "sym"
+					sym  "_ZNK28CSchemaAttributeType_Default34BConvertStringToEconAttributeValueEPK28CEconItemAttributeDefinitionPKcP22attribute_data_union_tb"
+				}
 				
 			}
 			"addrs_group"

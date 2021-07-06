@@ -829,7 +829,16 @@
 					type "sym"
 					sym  "_ZN9CTFPlayer8GiveAmmoEiib11EAmmoSource"
 				}
-				
+				"CTFPlayer::DropCurrencyPack"
+				{
+					type "sym"
+					sym  "_ZN9CTFPlayer16DropCurrencyPackE17CurrencyRewards_tibP11CBasePlayer"
+				}
+				"CTFPlayer::ManageBuilderWeapons"
+				{
+					type "sym"
+					sym  "_ZN9CTFPlayer20ManageBuilderWeaponsEP19TFPlayerClassData_t"
+				}
 
 			//	"GetTFConditionName"
 			//	{

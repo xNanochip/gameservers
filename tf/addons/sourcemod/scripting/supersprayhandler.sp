@@ -11,7 +11,6 @@
 #include <adminmenu>
 
 
-
 //Used to easily access my cvars out of an array.
 #define PLUGIN_VERSION "1.3.4"
 enum {
@@ -140,9 +139,6 @@ public void OnPluginStart() {
 
     RegAdminCmd("sm_sbans", Command_Spraybans, ADMFLAG_GENERIC, "Shows a list of all connected spray banned players.");
     RegAdminCmd("sm_spraybans", Command_Spraybans, ADMFLAG_GENERIC, "Shows a list of all connected spray banned players.");
-
-
-    RegAdminCmd("sm_loc", cmd_loc, ADMFLAG_GENERIC, "loc");
 
     CreateConVar("sm_ssh_version", PLUGIN_VERSION, "Super Spray Handler version", FCVAR_SPONLY|FCVAR_DONTRECORD|FCVAR_NOTIFY);
 
@@ -1643,12 +1639,6 @@ public Action Command_TraceSpray(int client, int args) {
     PrintToChat(client, "[SSH] %T", "No Spray", client);
 
     return Plugin_Handled;
-}
-
-Action cmd_loc(int client, int args)
-{
-    float vec[3];
-    GetClientEyeEndLocation(client, vec);
 }
 
 void showTraceSquare(float vec[3], int client, int lookingclient)
