@@ -474,6 +474,27 @@ public void OnMapStart()
 	SetGameDescription();
 	firstrestart = false;
 	firstfakeballspawn = true;
+		//if (GetConVarBool(caber_buff_enabled))
+	CreateTimer(2.0, ResetCaber, 0, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
+}
+public Action ResetCaber(Handle handle, int data)
+{
+	for (int i=1; i<= MaxClients; i++)
+	{		
+		if (!IsClientInGame(i) || !IsPlayerAlive(i))
+			continue;
+		
+		int iWeapon = GetPlayerWeaponSlot(i, 2);
+		// if weapon def id is caber, and caber buff convar is enabled, or regenerate_stickbomb attribute is present, regenerate it
+		if (iWeapon > 0 && GetEntProp(iWeapon, Prop_Send, "m_iItemDefinitionIndex") == 307 
+			&& ((!IsFakeClient(i) && GetConVarBool(caber_buff_enabled)) || TF2Attrib_HookValueFloat(0.0,"regenerate_stickbomb",iWeapon) != 0.0 )) {
+			if (GetEntProp(iWeapon, Prop_Send, "m_iDetonated") == 1)
+			{
+				SetEntProp(iWeapon, Prop_Send, "m_iDetonated", 0);
+			}
+		}
+	}
+	return Plugin_Continue;
 }
 
 public void OnMapEnd(){

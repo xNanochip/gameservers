@@ -1,96 +1,77 @@
 #pragma semicolon 1
-#pragma newdecls required
 
+#include <sourcemod>
+#include <sdktools>
 #include <sdkhooks>
 #include <tf2_stocks>
 #include <cecon_items>
+
 #include <tf2wearables>
+#include <tf2attributes>
+#include <tf2items>
 
-#define HEAL_SOUND "creators/weapons/syringe_heal.wav"
-#define HEAL_READY "player/recharged.wav"
-#define HEAL_READY_VO "vo/medic_mvm_say_ready01.mp3"
-#define HEAL_DONE_VO "vo/medic_specialcompleted07.mp3"
+#define SOUND_HEAL "creators/weapons/syringe_heal.wav"
+#define SOUND_HEAL_READY "player/recharged.wav"
+#define SOUND_HEAL_READY_VO "vo/medic_mvm_say_ready01.mp3"
+#define SOUND_HEAL_DONE_VO "vo/medic_specialcompleted07.mp3"
 
-#define MEDIGUN_CLASSNAME "tf_weapon_medigun"
+#define HEALING_CAP 40
+#define APPLY_CONDITION TFCond_RegenBuffed
 #define DEFAULT_OVERHEAL 1.5
-#define HUD_RATE 0.5
+#define THINK_RATE 0.5
 
 #define CHAR_FULL "■"
 #define CHAR_EMPTY "□"
-#define SYRINGE_HEALING_CAP 15
+
+#define PLUGIN_NAME           "[CE Attribute] syringe blood mod"
+#define PLUGIN_AUTHOR         "Creators.TF Team"
+#define PLUGIN_DESCRIPTION    "syringe blood mod"
+#define PLUGIN_VERSION        "1.00"
+#define PLUGIN_URL            "https//creators.tf"
+
+int m_iBlood[MAXPLAYERS]; // the amount of health stored in the syringe
+int m_iBloodCap[MAXPLAYERS]; // the max amount of health that can be stored in the syringe
+int m_iLastHealingAmount[MAXPLAYERS]; // the amount of healing done last time we checked (used to calculate the difference to add to blood)
 
 public Plugin myinfo =
 {
-	name = "[CE Attribute] syringe blood mod",
-	author = "Creators.TF Team",
-	description = "syringe blood mod",
-	version = "1.00",
-	url = "https://creators.tf"
+	name = PLUGIN_NAME,
+	author = PLUGIN_AUTHOR,
+	description = PLUGIN_DESCRIPTION,
+	version = PLUGIN_VERSION,
+	url = PLUGIN_URL
 };
 
-int m_iBlood[MAXPLAYERS + 1];
-int m_iCap[MAXPLAYERS + 1];
-int m_iLastValue[MAXPLAYERS + 1];
-
-bool m_bReady[MAXPLAYERS + 1];
-bool m_bChecked[MAXPLAYERS + 1];
-
-public Action evPlayerDeath(Handle hEvent, const char[] szName, bool bDontBroadcast)
+public void OnPluginStart()
 {
-	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
-
-	m_iBlood[client] = 0;
-	m_bReady[client] = false;
-	m_bChecked[client] = false;
-	m_iLastValue[client] = GetEntProp(client, Prop_Send, "m_iHealPoints");
-
-	return Plugin_Continue;
-}
-
-public Action evPlayerSpawn(Handle hEvent, const char[] szName, bool bDontBroadcast)
-{
-	int client = GetClientOfUserId(GetEventInt(hEvent, "userid"));
-
-	m_bReady[client] = false;
-	m_bChecked[client] = false;
-	m_iLastValue[client] = GetEntProp(client, Prop_Send, "m_iHealPoints");
-
-	return Plugin_Continue;
-}
-
-public Action evRoundStart(Handle hEvent, const char[] szName, bool bDontBroadcast)
-{
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		m_iBlood[i] = 0;
-		if(IsClientInGame(i))
-		{
-			m_iLastValue[i] = GetEntProp(i, Prop_Send, "m_iHealPoints");
-			for (int j = 0; j < 5; j++)
-			{
-				int iWeapon = GetPlayerWeaponSlot(i, j);
-
-				if (!IsValidEntity(iWeapon))continue;
-				if (!CEconItems_IsEntityCustomEconItem(iWeapon))continue;
-				if (!CEconItems_GetEntityAttributeBool(iWeapon, "syringe blood mode"))continue;
-
-				TF2Wear_SetEntPropFloatOfWeapon(iWeapon, Prop_Send, "m_flPoseParameter", 0.0);
-			}
-		}
-	}
-	return Plugin_Continue;
-}
-
-public bool IsSyringeBloodMod(int weapon)
-{
-	return CEconItems_GetEntityAttributeBool(weapon, "syringe blood mode");
+	// Hook our events
+	HookEvent("player_death", OnPlayerReset);
+	HookEvent("player_spawn", OnPlayerReset);
+	HookEvent("post_inventory_application", OnPlayerReset);
+	HookEvent("teamplay_round_start", OnRoundStart);
+	
+	// Create our hud/charge updating timer
+	CreateTimer(THINK_RATE, Timer_Think, _, TIMER_REPEAT);
 }
 
 public void OnMapStart()
 {
-	PrecacheSound(HEAL_SOUND);
-	PrecacheSound(HEAL_DONE_VO);
-	PrecacheSound(HEAL_READY_VO);
+	// Precache our sounds just in case
+	PrecacheSound(SOUND_HEAL);
+	PrecacheSound(SOUND_HEAL_READY);
+	PrecacheSound(SOUND_HEAL_DONE_VO);
+	PrecacheSound(SOUND_HEAL_READY_VO);
+}
+
+public void OnClientPutInServer(client)
+{
+	ResetCharge(client);
+	SDKHook(client, SDKHook_TraceAttack, OnTraceAttack);
+}
+
+public void OnClientDisconnect(int client)
+{
+	ResetCharge(client);
 }
 
 public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem xItem, const char[] type)
@@ -99,114 +80,93 @@ public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem xItem, co
 	if(CEconItems_GetEntityAttributeBool(entity, "syringe blood mode"))
 	{
 		int m_iCapacity = CEconItems_GetEntityAttributeInteger(entity, "syringe blood mode capacity");
-		m_iCap[client] = m_iCapacity;
-
-		if(m_iCapacity > 0)
-		{
-			float flPose = float(m_iBlood[client]) / float(m_iCapacity);
-			TF2Wear_SetEntPropFloatOfWeapon(entity, Prop_Send, "m_flPoseParameter", flPose);
-		}
+		m_iBloodCap[client] = m_iCapacity;
 	}
 }
 
-public int TF2_GetUberValue(int client)
+public Action OnTraceAttack(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &ammotype, int hitbox, int hitgroup)
 {
-	int iMedigun = GetPlayerWeaponSlot(client, 1);
-	if (iMedigun > 0 && HasEntProp(iMedigun, Prop_Send, "m_flChargeLevel"))
+	if(!IsClientValid(attacker)) return Plugin_Continue;
+	if(!IsClientValid(victim)) return Plugin_Continue;
+	if(!IsPlayerAlive(attacker)) return Plugin_Continue;
+	if(!IsPlayerAlive(victim)) return Plugin_Continue;
+	if(GetClientTeam(attacker) != GetClientTeam(victim)) return Plugin_Continue; // we cant heal enemies
+	int iWeapon = GetEntPropEnt(attacker, Prop_Send, "m_hActiveWeapon");
+	if(IsValidEntity(iWeapon) && IsSyringeBloodMod(iWeapon))
 	{
-		return RoundToFloor(GetEntPropFloat(iMedigun, Prop_Send, "m_flChargeLevel") * 100);
-	}
-	return 0;
-}
-
-public void OnPluginStart()
-{
-	HookEvent("player_death", evPlayerDeath);
-	HookEvent("teamplay_round_start", evRoundStart);
-	HookEvent("player_spawn", evPlayerSpawn);
-	HookEvent("post_inventory_application", evPlayerSpawn);
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if(IsClientInGame(i))
+		// are we actually fully charged
+		if(m_iBlood[attacker] >= m_iBloodCap[attacker])
 		{
-			OnClientPostAdminCheck(i);
+			ApplyCharge(attacker, victim, iWeapon);
 		}
 	}
-	CreateTimer(HUD_RATE, Timer_Think, _, TIMER_REPEAT);
+	return Plugin_Continue;
 }
 
-public Action Timer_Think(Handle timer, any data)
+public Action Timer_Think(Handle hTimer, any data)
 {
-	for (int i = 1; i <= MaxClients; i++)
+	for (int i = 1; i <= MAXPLAYERS; i++)
 	{
-		if(IsClientInGame(i) && IsPlayerAlive(i) && m_iCap[i] > 0)
+		if(IsClientValid(i))
 		{
-			Syringe_UpdateCheck(i);
-			Syringe_UpdateCharge(i);
-			Syringe_DrawHUD(i);
-		}
-	}
-}
-
-public void Syringe_UpdateCheck(int client)
-{
-	if (m_bChecked[client])return;
-
-	for (int j = 0; j <= 5; j++)
-	{
-		int iWeapon = GetPlayerWeaponSlot(client, j);
-		if(iWeapon > 0 && IsValidEntity(iWeapon) && IsSyringeBloodMod(iWeapon))
-		{
-			m_bChecked[client] = true;
-			break;
-		}
-	}
-
-	if(!m_bChecked[client])
-	{
-			m_iBlood[client] = 0;
-			m_iCap[client] = 0;
-	}
-}
-
-public void Syringe_UpdateCharge(int client)
-{
-	int iActualValue  = GetEntProp(client, Prop_Send, "m_iHealPoints");
-	int iAmount = iActualValue - m_iLastValue[client];
-
-	if (iAmount > SYRINGE_HEALING_CAP)iAmount = SYRINGE_HEALING_CAP;
-	m_iLastValue[client] = iActualValue;
-
-	if(m_bChecked[client] && m_iCap[client] > 0)
-	{
-		m_iBlood[client] += iAmount;
-		if (m_iBlood[client] > m_iCap[client]) m_iBlood[client] = m_iCap[client];
-		if(!m_bReady[client] && m_iBlood[client] == m_iCap[client])
-		{
-			ClientCommand(client, "playgamesound %s", HEAL_READY);
-			EmitSoundToAll(HEAL_READY_VO, client);
-			m_bReady[client] = true;
-		}
-
-		float flPose = float(m_iBlood[client]) / float(m_iCap[client]);
-		for (int j = 0; j <= 5; j++)
-		{
-			int iWeapon = GetPlayerWeaponSlot(client, j);
-			if(iWeapon > 0 && IsValidEntity(iWeapon) && IsSyringeBloodMod(iWeapon))
+			// check for class type to save looping over every weapon
+			// if this attribute ever gets applied to other classes, remove this check
+			if(TF2_GetPlayerClass(i) == TFClass_Medic)
 			{
-				TF2Wear_SetEntPropFloatOfWeapon(iWeapon, Prop_Send, "m_flPoseParameter", flPose);
+				if(HasAttribute(i))
+				{
+					UpdateCharge(i);
+					DrawHUD(i);
+				}
 			}
 		}
 	}
 }
 
-public void Syringe_DrawHUD(int client)
+void UpdateCharge(int client)
 {
-	if (!m_bChecked[client])return;
+	// if we are already at max charge, no need to check anything
+	if(m_iBlood[client] >= m_iBloodCap[client])
+	{
+		m_iBlood[client] = m_iBloodCap[client];
+		return;
+	}
+	
+	int iActualHealingAmount = GetHealing(client);
+	int iDelta = iActualHealingAmount - m_iLastHealingAmount[client];
+	
+	#if defined HEALING_CAP
+	// Clamp the healing done to avoid getting instant charges with fast healing like quickfix uber
+	if(iDelta > HEALING_CAP)
+	{
+		iDelta = HEALING_CAP;
+	}
+	#endif
+	
+	m_iBlood[client] += iDelta;
+	m_iLastHealingAmount[client] = iActualHealingAmount;
+	
+	// if we reached the cap after healing, play the voicelines and such
+	if(m_iBlood[client] >= m_iBloodCap[client])
+	{
+		m_iBlood[client] = m_iBloodCap[client];
+		EmitSoundToClient(client, SOUND_HEAL_READY);
+		EmitSoundToAll(SOUND_HEAL_READY_VO, client);
+	}
+	UpdatePoseParameter(client, GetWeaponWithAttribute(client));
+}
 
+void UpdatePoseParameter(int client, int weapon)
+{
+	// update the pose parameter so the weapon model can show the correct amount of charge ( in %)
+	TF2Wear_SetEntPropFloatOfWeapon(weapon, Prop_Send, "m_flPoseParameter", float(m_iBlood[client]) / float(m_iBloodCap[client]));
+}
+
+void DrawHUD(int client)
+{
 	char sHUDText[128];
 	char sProgress[32];
-	int iPercents = RoundToCeil(float(m_iBlood[client]) / float(m_iCap[client]) * 100.0);
+	int iPercents = RoundToCeil(float(m_iBlood[client]) / float(m_iBloodCap[client]) * 100.0);
 
 	for (int j = 1; j <= 10; j++)
 	{
@@ -216,7 +176,7 @@ public void Syringe_DrawHUD(int client)
 
 	Format(sHUDText, sizeof(sHUDText), "Syringe: %d%%%%   \n%s   ", iPercents, sProgress);
 
-	if(m_bReady[client])
+	if(iPercents >= 100)
 	{
 		SetHudTextParams(1.0, 0.8, 0.5, 255, 0, 0, 255);
 	} else {
@@ -225,143 +185,139 @@ public void Syringe_DrawHUD(int client)
 	ShowHudText(client, -1, sHUDText);
 }
 
-public void OnClientPostAdminCheck(int client)
-{
-	SDKHook(client, SDKHook_TraceAttack, TraceAttack);
-	m_iLastValue[client] = GetEntProp(client, Prop_Send, "m_iHealPoints");
-}
-
-public Action TraceAttack(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &ammotype, int hitbox, int hitgroup)
-{
-	if(!IsClientValid(attacker)) return Plugin_Continue;
-	if(!IsClientValid(victim)) return Plugin_Continue;
-	if(!IsPlayerAlive(attacker)) return Plugin_Continue;
-	if(!IsPlayerAlive(victim)) return Plugin_Continue;
-	if(GetClientTeam(attacker) != GetClientTeam(victim)) return Plugin_Continue;
-
-	int iWeapon = GetEntPropEnt(attacker, Prop_Send, "m_hActiveWeapon");
-	if(iWeapon > 0 && IsSyringeBloodMod(iWeapon) && m_iCap[attacker] > 0)
-	{
-		int iHealth = GetClientHealth(victim);
-		int iMaxHealth = TF2_GetOverheal(victim, 1.5);
-
-		if(iHealth <= iMaxHealth && m_iBlood[attacker] >= m_iCap[attacker])
-		{
-			Syringe_ApplyEffect(victim, attacker, iWeapon);
-		}
-	}
-	return Plugin_Continue;
-}
-
-public void Syringe_ApplyEffect(int victim, int attacker, int iWeapon)
+void ApplyCharge(int client, int victim, int weapon)
 {
 	int iBaseHealth = GetClientHealth(victim);
-	int iMaxHealth = TF2_GetOverheal(victim, 1.5);
+	int iMaxHealth = GetMaxOverheal(client, victim);
 
-	int iHeal = CEconItems_GetEntityAttributeInteger(iWeapon, "syringe blood mode heal");
-	EmitSoundToAll(HEAL_SOUND, victim);
-
-	EmitSoundToAll(HEAL_DONE_VO, attacker);
-	int iHealth = iBaseHealth + iHeal;
+	// get the amount of health we heal and make sure to not go over the max overheal
+	int iHealing = CEconItems_GetEntityAttributeInteger(weapon, "syringe blood mode heal");
+	int iHealth = iBaseHealth + iHealing;
 	if (iHealth > iMaxHealth) iHealth = iMaxHealth;
-
-	int iDelta = iHealth - iBaseHealth;
-	m_iLastValue[attacker] += iHeal;
-	SetEntProp(attacker, Prop_Send, "m_iHealPoints", m_iLastValue[attacker]);
-
+	
+	// Apply the syringe gun effects
 	SetEntityHealth(victim, iHealth);
-
-	m_iBlood[attacker] = 0;
-	m_bReady[attacker] = false;
-
-	TF2Wear_SetEntPropFloatOfWeapon(iWeapon, Prop_Send, "m_flPoseParameter", 0.0);
-
-	// Getting Ubercharge type
-	int iMedigun = GetPlayerWeaponSlot(attacker, 1);
-	if(IsValidEntity(iMedigun))
-	{
-		// Check if this weapon is medigun.
-		char sClassName[64];
-		GetEntityClassname(iMedigun, sClassName, sizeof(sClassName));
-		if(StrEqual(sClassName, MEDIGUN_CLASSNAME))
-		{
-			TFCond iCond;
-			int iDefIndex = GetEntProp(iMedigun, Prop_Send, "m_iItemDefinitionIndex");
-			switch(iDefIndex)
-			{
-				case 35:iCond = TFCond_Buffed; 			// Kritzkrieg
-				case 411:iCond = TFCond_RegenBuffed;	// Megahealer
-				case 998: {								// Vacc
-					int iCharge = GetEntProp(iMedigun, Prop_Send, "m_nChargeResistType");
-					switch(iCharge)
-					{
-						case 0:iCond = TFCond_UberBulletResist;		// Bullet Resist
-						case 1:iCond = TFCond_UberBlastResist;		// Blast Resist
-						case 2:iCond = TFCond_UberFireResist;		// Fire Resist
-					}
-				}
-				default:iCond = TFCond_DefenseBuffed; 	// Stock Uber
-			}
-			TF2_AddCondition(victim, iCond, CEconItems_GetEntityAttributeFloat(iWeapon, "syringe blood mode uber"), attacker);
-		}
-	}
-
+	TF2_AddCondition(victim, APPLY_CONDITION, CEconItems_GetEntityAttributeFloat(weapon, "syringe blood mode uber"), client);
+	
+	// lastly all the cosmetic stuff
+	EmitSoundToAll(SOUND_HEAL, victim);
+	EmitSoundToAll(SOUND_HEAL_DONE_VO, client);
+	ResetCharge(client);
+	UpdatePoseParameter(client, weapon);
+	
+	// not sure why this is here but the original syringe code had it so ill just port it over just in case
 	Event hEvent = CreateEvent("player_healed");
-	if (hEvent == null)return;
+	if (hEvent == null) return;
 	hEvent.SetInt("sourcemod", 1);
 	hEvent.SetInt("patient", GetClientUserId(victim));
-	hEvent.SetInt("healer", GetClientUserId(attacker));
-	hEvent.SetInt("amount", iDelta);
+	hEvent.SetInt("healer", GetClientUserId(client));
+	hEvent.SetInt("amount", iHealth - iBaseHealth);
 	hEvent.Fire();
 
 	hEvent = CreateEvent("player_healonhit", true);
-	hEvent.SetInt("amount", iDelta);
+	hEvent.SetInt("amount", iHealth - iBaseHealth);
 	hEvent.SetInt("entindex", victim);
 	hEvent.Fire();
 }
 
-public void OnClientDisconnect(int client)
+// Called whenever something that resets the player happens
+// (ex: resupplying, death)
+public Action OnPlayerReset(Handle hEvent, const char[] sName, bool bDontBroadcast)
 {
-	m_iCap[client] = 0;
-	m_iBlood[client] = 0;
-	m_bReady[client] = false;
+	int iPlayer = GetClientOfUserId(GetEventInt(hEvent, "userid"));
+	ResetCharge(iPlayer);
+	return Plugin_Continue;
 }
 
-public void OnClientConnected(int client)
+// reset all players on round start
+public Action OnRoundStart(Handle hEvent, const char[] sName, bool bDontBroadcast)
 {
-	m_iCap[client] = 0;
-	m_iBlood[client] = 0;
-	m_bReady[client] = false;
-}
-
-public int TF2_GetOverheal(int iClient, float flOverHeal)
-{
-	int iEnt = -1;
-	while((iEnt = FindEntityByClassname(iEnt, "tf_wearable_razorback")) != INVALID_ENT_REFERENCE)
+	for(int i = 0; i < MAXPLAYERS; i++)
 	{
-		if(GetEntPropEnt(iEnt, Prop_Send, "m_hOwnerEntity") != iClient) continue;
-		return TF2_GetMaxHealth(iClient);
+		if(IsClientValid(i))
+		{
+			ResetCharge(i);
+		}
 	}
-
-	return RoundToFloor(TF2_GetMaxHealth(iClient) * flOverHeal);
 }
 
-public int TF2_GetMaxHealth(int iClient)
+void ResetCharge(int client)
 {
-    return GetEntProp(iClient, Prop_Data, "m_iMaxHealth");
+	m_iBlood[client] = 0;
+	m_iLastHealingAmount[client] = GetHealing(client);
 }
 
-public bool IsClientReady(int client)
+bool IsSyringeBloodMod(int weapon)
 {
-	if (!IsClientValid(client))return false;
-	if (IsFakeClient(client))return false;
-	return true;
+	return CEconItems_GetEntityAttributeBool(weapon, "syringe blood mode");
 }
 
-public bool IsClientValid(int client)
+// check if any weapon on the player has the attribute
+bool HasAttribute(int client)
 {
-	if (client <= 0 || client > MaxClients)return false;
-	if (!IsClientInGame(client))return false;
-	if (!IsClientAuthorized(client))return false;
+	for (int i = 0; i <= TFWeaponSlot_Melee; i++)
+	{
+		int iWeapon = GetPlayerWeaponSlot(client, i);
+		if(iWeapon > 0 && IsValidEntity(iWeapon) && IsSyringeBloodMod(iWeapon))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+// check which weapon on the player has the attribute
+int GetWeaponWithAttribute(int client)
+{
+	for (int i = 0; i <= TFWeaponSlot_Melee; i++)
+	{
+		int iWeapon = GetPlayerWeaponSlot(client, i);
+		if(iWeapon > 0 && IsValidEntity(iWeapon) && IsSyringeBloodMod(iWeapon))
+		{
+			return iWeapon;
+		}
+	}
+	return -1;
+}
+
+int GetMaxOverheal(client, victim)
+{
+	int iMaxHealth = GetEntProp(victim, Prop_Data, "m_iMaxHealth");
+	
+	
+	// first all the multipliers from the healer
+	float flOverhealMultiplier = TF2Attrib_HookValueFloat(1.0, "mult_medigun_overheal_amount", client);
+	int iOverhealExpertAttribute = TF2Attrib_HookValueInt(0, "overheal_expert", client);
+	// last all the multipliers from the victim
+	float flMaxOverhealMultiplier = TF2Attrib_HookValueFloat(1.0, "mult_patient_overheal_penalty", victim);
+	
+	float flTotalMultiplier = ((DEFAULT_OVERHEAL-1) * flOverhealMultiplier) * flMaxOverhealMultiplier; // as an inverted percentage (0.5 -> 150% multiplier)
+	
+	if(iOverhealExpertAttribute > 0)
+	{
+		flTotalMultiplier += float(iOverhealExpertAttribute)/ 4.0; // overheal expert is additive
+	}
+	
+	return RoundToFloor(iMaxHealth * (1 + flTotalMultiplier));
+}
+
+int GetHealing(int client)
+{
+	if(!IsClientValid(client))
+	{
+		return 0;
+	}
+	
+	return GetEntProp(client, Prop_Send, "m_iHealPoints");
+}
+
+//Utility Functions
+
+bool IsClientValid(int client)
+{
+	if (client <= 0 || client > MaxClients) return false;
+	if(!IsValidEntity(client)) return false;
+	if (!IsClientInGame(client)) return false;
+	if (!IsClientAuthorized(client)) return false;
 	return true;
 }
