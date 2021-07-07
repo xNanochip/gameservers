@@ -76,7 +76,7 @@ for dir in ./*/ ; do
                 bash ${SCRIPTS_DIR}/_1-pull.sh "${ARGS}"
                 ;;
             build)
-                COMMIT_OLD=$(git rev-parse HEAD)
+                COMMIT_OLD=$(git rev-parse HEAD~1)
                 info "Building updated and uncompiled .sp files"
                 bash ${SCRIPTS_DIR}/_2-build.sh "${COMMIT_OLD}"
                 ;;
