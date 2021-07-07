@@ -64,6 +64,10 @@ for dir in ./*/ ; do
     info "Comparing branches ${CI_COMMIT_HEAD} and ${CI_COMMIT_REF_NAME}."
     info "Comparing local ${CI_LOCAL_REMOTE} and remote ${CI_REMOTE_REMOTE}."
 
+    if [[ "${CI_LOCAL_REMOTE}" == "gitlab.com/creators_tf/servers" ]]; then
+        git remote set-url origin ***REPLACED PRIVATE URL***
+    fi
+    
     if [[ "${CI_COMMIT_HEAD}" == "${CI_COMMIT_REF_NAME}" ]] && [[ "${CI_LOCAL_REMOTE}" == "${CI_REMOTE_REMOTE}" ]]; then
         debug "branches match"
         # remember to remove the echo from here before merging
