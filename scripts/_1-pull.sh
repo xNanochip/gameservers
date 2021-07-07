@@ -54,6 +54,8 @@ rm -fv .git/index.lock
 debug "setting git config..."
 git config --global user.email "support@creators.tf"
 git config --global user.name "Creators.TF Production"
+# set url
+git remote set-url origin ***REPLACED PRIVATE URL***
 
 if ${gitshallow}; then
     warn "shallowifying repo on user request"
