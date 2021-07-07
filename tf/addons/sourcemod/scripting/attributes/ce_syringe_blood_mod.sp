@@ -284,17 +284,20 @@ int GetMaxOverheal(client, victim)
 {
 	int iMaxHealth = GetEntProp(victim, Prop_Data, "m_iMaxHealth");
 	
+	
 	// first all the multipliers from the healer
 	float flOverhealMultiplier = TF2Attrib_HookValueFloat(1.0, "mult_medigun_overheal_amount", client);
-	int iOverhealExpertAttribute = TF2Attrib_HookValueInt(0, "overheal_expert", client) / 4;
-	if(iOverhealExpertAttribute > 0)
-	{
-		flOverhealMultiplier += iOverhealExpertAttribute / 4; // overheal expert is additive
-	}
+	int iOverhealExpertAttribute = TF2Attrib_HookValueInt(0, "overheal_expert", client);
 	// last all the multipliers from the victim
 	float flMaxOverhealMultiplier = TF2Attrib_HookValueFloat(1.0, "mult_patient_overheal_penalty", victim);
 	
 	float flTotalMultiplier = ((DEFAULT_OVERHEAL-1) * flOverhealMultiplier) * flMaxOverhealMultiplier; // as an inverted percentage (0.5 -> 150% multiplier)
+	
+	if(iOverhealExpertAttribute > 0)
+	{
+		flTotalMultiplier += float(iOverhealExpertAttribute)/ 4.0; // overheal expert is additive
+	}
+	
 	return RoundToFloor(iMaxHealth * (1 + flTotalMultiplier));
 }
 
