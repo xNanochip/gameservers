@@ -70,16 +70,15 @@ for dir in ./*/ ; do
     
     if [[ "${CI_COMMIT_HEAD}" == "${CI_COMMIT_REF_NAME}" ]] && [[ "${CI_LOCAL_REMOTE}" == "${CI_REMOTE_REMOTE}" ]]; then
         debug "branches match"
-        # remember to remove the echo from here before merging
         case "${COMMAND}" in
             pull)
                 info "Pulling git repo"
-                echo ${SCRIPTS_DIR}/_1-pull.sh "${ARGS}"
+                bash ${SCRIPTS_DIR}/_1-pull.sh "${ARGS}"
                 ;;
             build)
                 COMMIT_OLD=$(git rev-parse HEAD)
                 info "Building updated and uncompiled .sp files"
-                echo ${SCRIPTS_DIR}/_2-build.sh "${COMMIT_OLD}"
+                bash ${SCRIPTS_DIR}/_2-build.sh "${COMMIT_OLD}"
                 ;;
             *)
                 error "${COMMAND} is not supported"
