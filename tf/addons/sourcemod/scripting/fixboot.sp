@@ -26,3 +26,4 @@ Action GoToNextMap(Handle timer)
         ServerCommand("changelevel_next");
     }
 }
+//
