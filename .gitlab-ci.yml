@@ -19,7 +19,7 @@ fastdl:
 
 compile_plugins:
   stage: compile_plugins
-  script: ./scripts/ci.sh build
+  script: ./scripts/_2-build.sh
   needs: []
   tags:
   - worker
