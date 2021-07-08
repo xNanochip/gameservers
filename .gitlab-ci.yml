@@ -25,7 +25,7 @@ generate-yml:
       - cfg.yml
   tags:
     - worker
-
+  needs: []
 
 trigger-ci:
   stage: trigger
@@ -33,5 +33,6 @@ trigger-ci:
     include:
       - artifact: cfg.yml
         job: generate-yml
+  needs: [generate-yml]
 
 
