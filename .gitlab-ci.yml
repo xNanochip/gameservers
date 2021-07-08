@@ -1,5 +1,6 @@
 stages:
   - fastdl
+  - compile_plugins
   - genyml
   - trigger
   #- pull
@@ -16,6 +17,17 @@ fastdl:
   #- staging
   #- mvm
 
+compile_plugins:
+  stage: compile_plugins:
+  script: ./scripts/ci.sh build
+  needs: []
+  tags:
+  - worker
+  #only:
+  #- master
+  #- staging
+  #- mvm
+
 # this generates our yml so we don't run on more servers than needed
 generate-yml:
   stage: genyml
@@ -25,7 +37,7 @@ generate-yml:
       - cfg.yml
   tags:
     - worker
-  needs: []
+  needs: [compile_plugins]
 
 trigger-ci:
   stage: trigger
