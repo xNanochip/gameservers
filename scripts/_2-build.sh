@@ -96,8 +96,8 @@ compile()
         info "Compiling ${plugin}"
         # compiler path  plugin name    output dir       output file replacing sp with smx
         ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename "${plugin/.sp/.smx}")" \
-            -v=2 -z=9 -O=2 -\;=+ -E -w 241
-        # verbose, max compressed, max optimized, require semicolons, treat errors as warnings, disable enum struct warning
+            -v=2 -z=9 -O=2 -\;=+ -w 241 -E
+        # verbose, max compressed, max optimized, require semicolons, disable enum struct warning, treat errors as warnings
 
         # if something has gone wrong then stop everything and yell about it
         if [[ $? -ne 0 ]]; then
