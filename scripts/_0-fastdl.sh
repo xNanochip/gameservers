@@ -9,8 +9,8 @@ echo "Comparing $SHA_BEFORE // $SHA_AFTER"
 GIT_DIFF=$(git diff --name-only "$SHA_AFTER" "$SHA_BEFORE")
 
 cd "$CI_PROJECT_DIR" || exit
-git checkout "$CI_COMMIT_REF_NAME"
-git reset --hard origin/"$CI_COMMIT_REF_NAME"
+#git checkout "$CI_COMMIT_REF_NAME"
+#git reset --hard origin/"$CI_COMMIT_REF_NAME"
 
 echo "[INFO] Repository path = $CI_PROJECT_DIR"
 
@@ -60,6 +60,6 @@ while read -r pattern; do
             bzip2 "$ASSET_FASTDL_PATH";
         fi
     done
-done < ../.ci-fastdl
+done < fastdl-list.txt
 exit
 
