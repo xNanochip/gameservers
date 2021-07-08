@@ -102,6 +102,7 @@ compile()
         # if something has gone wrong then stop everything and yell about it
         if [[ $? -ne 0 ]]; then
             compile_error "${plugin}"
+            exit 1;
         fi
     done < "${1}"
     return 0
