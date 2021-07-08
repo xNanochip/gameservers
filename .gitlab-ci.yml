@@ -11,10 +11,10 @@ fastdl:
   needs: []
   tags:
   - fastdl
-  only:
-  - master
-  - staging
-  - mvm
+  #only:
+  #- master
+  #- staging
+  #- mvm
 
 # this generates our yml so we don't run on more servers than needed
 generate-yml:
