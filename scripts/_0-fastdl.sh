@@ -1,26 +1,30 @@
 #!/bin/bash
+# Helper functions
+source scripts/helpers.sh
+# obvious
 whoami
+# ?
 shopt -s globstar
 
 SHA_BEFORE="$CI_COMMIT_BEFORE_SHA"
 SHA_AFTER="$CI_COMMIT_SHA"
 
-echo "Comparing $SHA_BEFORE // $SHA_AFTER"
+info "Comparing $SHA_BEFORE // $SHA_AFTER"
 GIT_DIFF=$(git diff --name-only "$SHA_AFTER" "$SHA_BEFORE")
 
 cd "$CI_PROJECT_DIR" || exit
 #git checkout "$CI_COMMIT_REF_NAME"
 #git reset --hard origin/"$CI_COMMIT_REF_NAME"
 
-echo "[INFO] Repository path = $CI_PROJECT_DIR"
+info "Repository path = $CI_PROJECT_DIR"
 
 FASTDL_PATH="/var/www/fastdl/content/branches/$CI_COMMIT_REF_NAME";
 cd tf || exit 1
 while read -r pattern; do
-    echo "Pattern: $pattern"
+    important "Pattern: ${pattern}"
 
     # We go through all the files of this pattern and see if bz2 version is valid.
-    for i in ./$pattern; do
+    for i in ./${pattern}; do
 
         # Skip missing files.
         [[ ! -f $i ]] && continue;
@@ -56,7 +60,7 @@ while read -r pattern; do
             # Copying the src file.
             cp "$ASSET_SRC_PATH" "$ASSET_FASTDL_PATH";
 
-            echo "[INFO] Archiving $ASSET_FASTDL_PATH";
+            info "Archiving $ASSET_FASTDL_PATH";
             bzip2 "$ASSET_FASTDL_PATH";
         fi
     done
