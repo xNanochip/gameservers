@@ -63,3 +63,4 @@ while read -r pattern; do
 done < ./fastdl-patterns.txt
 exit
 
+
