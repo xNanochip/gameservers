@@ -1,8 +1,20 @@
 stages:
+  - fastdl
   - genyml
   - trigger
-  - pull
-  - build
+  #- pull
+  #- build
+
+fastdl:
+  stage: fastdl
+  script: ./scripts/_0-fastdl.sh
+  needs: []
+  tags:
+  - fastdl
+  #only:
+  #- master
+  #- staging
+  #- mvm
 
 # this generates our yml so we don't run on more servers than needed
 generate-yml:
@@ -13,7 +25,7 @@ generate-yml:
       - cfg.yml
   tags:
     - worker
-
+  needs: []
 
 trigger-ci:
   stage: trigger
@@ -21,4 +33,6 @@ trigger-ci:
     include:
       - artifact: cfg.yml
         job: generate-yml
+  needs: [generate-yml]
+
 
