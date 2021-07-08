@@ -10,7 +10,7 @@
 #define MAX_ENTITIES 2048
 #define MAX_STRANGE_PARTS 10
 
-int m_iStrangeLevel[MAX_ENTITIES + 1]; // Stores strange level of the entity.
+//int m_iStrangeLevel[MAX_ENTITIES + 1]; // Stores strange level of the entity.
 
 CEStrangePartDefinition m_xParts[MAX_ENTITIES + 1][MAX_STRANGE_PARTS + 1]; // Array of Strange parts of every entity.
 ArrayList m_hPartsDefinitions; // Strange Part Definitions
@@ -27,7 +27,7 @@ public Plugin myinfo =
 	url = "https://creators.tf"
 };
 
-Handle g_hOnEconItemNewLevel;
+//Handle g_hOnEconItemNewLevel;
 
 public void OnPluginStart()
 {
