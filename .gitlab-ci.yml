@@ -34,3 +34,4 @@ trigger-ci:
       - artifact: cfg.yml
         job: generate-yml
 
+
