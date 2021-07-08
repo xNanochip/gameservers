@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Helper functions
-source scripts/helpers.sh
+source .scripts/helpers.sh
 
 # Variable initialisation
 WORKING_DIR="tf/addons/sourcemod"
@@ -51,7 +51,7 @@ list_updated()
         ok "No updated files in diff"
         return 1
     fi
-    debug "Generating list of updated scripts"
+    debug "Generating list of updated plugins"
     while IFS= read -r line; do
         # git diff reports the full path, we need it relative to ${WORKING_DIR}
         echo "${line/${WORKING_DIR}\//}" >> "${UPDATED_LIST}"
@@ -67,7 +67,7 @@ list_uncompiled()
 {
     # this may need to be quoted
     UNCOMPILED=$(find "${SCRIPTS_DIR}" -iname "*.sp" | ${EXCLUDED})
-    debug "Generating list of uncompiled scripts"
+    debug "Generating list of uncompiled plugins"
     # while loop, read from our uncompiled list we just got
     while IFS= read -r line; do
         # if file doesnt exist at compiled dir
@@ -96,13 +96,12 @@ compile()
         info "Compiling ${plugin}"
         # compiler path  plugin name    output dir       output file replacing sp with smx
         ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename "${plugin/.sp/.smx}")" \
-            -v=2 -z=9 -O=2 -\;=+ -w 241 -E
-        # verbose, max compressed, max optimized, require semicolons, disable enum struct warning, treat errors as warnings
+            -v=2 -z=9 -O=2 -\;=+ -E
+        # verbose, max compressed, max optimized, require semicolons, treat errors as warnings
 
         # if something has gone wrong then stop everything and yell about it
         if [[ $? -ne 0 ]]; then
             compile_error "${plugin}"
-            exit 1;
         fi
     done < "${1}"
     return 0
@@ -112,7 +111,7 @@ compile()
 compile_error()
 {
     error "spcomp64 error while compiling ${1}"
-#    exit 255
+    exit 255
 }
 
 ###
