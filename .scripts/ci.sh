@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Helper functions
-source scripts/helpers.sh
+source .scripts/helpers.sh
 
 usage()
 {
@@ -10,8 +10,8 @@ usage()
     echo "    pull: Cleans and pulls the repo (if applicable)"
     echo "    build: Build unbuilt and updated plugins"
     echo "    <arguments>: All arguments are passed down to the command, for more info check"
-    echo "      ./scripts/_1-pull.sh usage"
-    echo "      ./scripts/_2-build.sh usage"
+    echo "      ./.scripts/_1-pull.sh usage"
+    echo "      ./.scripts/_2-build.sh usage"
     exit 1
 }
 
@@ -30,9 +30,9 @@ TARGET_DIRS=(/srv/daemon-data /var/lib/pterodactyl/volumes)
 # this is clever and infinitely smarter than what it was before, good job
 WORK_DIR=$(du -s "${TARGET_DIRS[@]}" 2> /dev/null | sort -n | tail -n1 | cut -f2)
 # go to our directory with (presumably) gameservers in it or die trying
-debug "scripts dir: ${PWD}/scripts"
+debug "scripts dir: ${PWD}/.scripts"
 debug "working dir: ${WORK_DIR}"
-SCRIPTS_DIR="${PWD}/scripts"
+SCRIPTS_DIR="${PWD}/.scripts"
 cd "${WORK_DIR}" || { error "can't cd to workdir ${WORK_DIR}!!!"; exit 1; }
 
 # kill any git operations that are running and don't fail if we don't find any

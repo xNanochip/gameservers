@@ -1,6 +1,6 @@
 #!/bin/bash
 # Helper functions
-source scripts/helpers.sh
+source .scripts/helpers.sh
 # obvious
 whoami
 # ?
@@ -64,6 +64,6 @@ while read -r pattern; do
             bzip2 "$ASSET_FASTDL_PATH";
         fi
     done
-done < ../scripts/fastdl-patterns.txt
+done < ../.scripts/fastdl-patterns.txt
 exit
 

@@ -3,35 +3,29 @@ stages:
   - compile_plugins
   - genyml
   - trigger
-  #- pull
-  #- build
 
 fastdl:
   stage: fastdl
-  script: ./scripts/_0-fastdl.sh
+  script: ./.scripts/_0-fastdl.sh
   needs: []
   tags:
   - fastdl
-  #only:
-  #- master
-  #- staging
-  #- mvm
+  only:
+  - master
+  - staging
+  - mvm
 
 compile_plugins:
   stage: compile_plugins
-  script: ./scripts/_2-build.sh
+  script: ./.scripts/_2-build.sh
   needs: []
   tags:
   - worker
-  #only:
-  #- master
-  #- staging
-  #- mvm
 
 # this generates our yml so we don't run on more servers than needed
 generate-yml:
   stage: genyml
-  script: ./scripts/_0-genyml.sh | tee cfg.yml
+  script: ./.scripts/_0-genyml.sh | tee cfg.yml
   artifacts:
     paths:
       - cfg.yml
