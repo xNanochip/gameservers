@@ -6,24 +6,24 @@ jobnames=(
     build
 )
 
-# scripts to execute for each job
+# scripts to execute for each job - adjust flags here
 jobs=(
-    "./scripts/ci.sh pull -v"
-    "./scripts/ci.sh build"
+    "./.scripts/ci.sh pull -v -c -s -h"
+    "./.scripts/ci.sh build"
 )
 
 # all servers tags
 allservers=(
-    auspub
+    virginiapub
     chicago3
-    eu2pub
-    eupotato1
-    eupotato2
-    eupub
     lapub
+    eupub
+    eu2pub
+    auspub
     sgppub
     uspotato1
-    virginiapub
+    eupotato1
+    eupotato2
 )
 
 # staging servers tags
@@ -43,7 +43,7 @@ fi
 echo "---"
 echo "stages:"
 
-# for loop for our job names list
+# job names
 for jobname in "${jobnames[@]}"
 do
     echo "  - ${jobname}"

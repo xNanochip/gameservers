@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Helper functions
-source scripts/helpers.sh
+source .scripts/helpers.sh
 
 # Variable initialisation
 gitclean=false
@@ -92,7 +92,7 @@ fi
 
 # ignore the output if it already scrubbed it
 debug "running str0 to scrub steamclient spam"
-python3 ./scripts/str0.py ./bin/steamclient.so -c ./scripts/str0.ini | grep -v "Failed to locate string"
+python3 ./.scripts/str0.py ./bin/steamclient.so -c ./.scripts/str0.ini | grep -v "Failed to locate string"
 
 info "git pruning"
 git prune
