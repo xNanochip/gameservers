@@ -60,6 +60,6 @@ while read -r pattern; do
             bzip2 "$ASSET_FASTDL_PATH";
         fi
     done
-done < ./scripts/fastdl-list.txt
+done < ./fastdl-patterns.txt
 exit
 
