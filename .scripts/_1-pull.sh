@@ -21,9 +21,10 @@ usage()
     exit 1
 }
 
+
 [[ ${CI} ]] || { error "This script is only to be executed in GitLab CI"; exit 1; }
 
-while getopts 'csahv' flag; do
+while getopts ":csahv" flag; do
     case "${flag}" in
         c) gitclean=true                ;;
         s) gitshallow=true              ;;

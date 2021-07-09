@@ -4,6 +4,10 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 # Helper functions
 source ${SCRIPT_DIR}/helpers.sh
 
+PULL_SH="_1-pull.sh"
+BUILD_SH="_2-build.sh"
+
+
 # webhook url
 
 #WEBHOOK_URL="***REPLACED PRIVATE URL***"
@@ -15,8 +19,8 @@ usage()
     echo "    pull: Cleans and pulls the repo (if applicable)"
     echo "    build: Build unbuilt and updated plugins"
     echo "    <arguments>: All arguments are passed down to the command, for more info check"
-    echo "      ./.scripts/_1-pull.sh usage"
-    echo "      ./.scripts/_2-build.sh usage"
+    echo "      ./.scripts/${PULL_SH} usage"
+    echo "      ./.scripts/${BUILD_SH} usage"
     exit 1
 }
 
@@ -29,6 +33,7 @@ usage()
 
 # get first arg, pass it as command to run after iterating
 COMMAND=${1}
+echo $COMMAND
 # shift args down, deleting first arg as we just set it to a var
 shift 1
 
@@ -55,11 +60,6 @@ for dir in ./*/ ; do
     # we didn't find a git folder
     if [ ! -d "${dir}/.git" ]; then
         warn "${dir} has no .git folder! skipping"
-        #curl -i -H "Accept: application/json" -H "Content-Type:application/json" -X POST --data "\
-        #{\
-        #    \"content\": \"${dir} has no .git folder! skipping!\"\
-        #}"\
-        #$WEBHOOK_URL
         # maybe remove these in the future
         continue
     fi
@@ -85,14 +85,13 @@ for dir in ./*/ ; do
         case "${COMMAND}" in
             pull)
                 info "Pulling git repo"
-                debug "${SCRIPT_DIR}/_1-pull.sh $@"
-                bash "${SCRIPT_DIR}/_1-pull.sh $@"
+                # DON'T QUOTE THIS
+                bash ${SCRIPT_DIR}/${PULL_SH} $*
                 ;;
             build)
                 COMMIT_OLD=$(git rev-parse HEAD~1)
                 info "Building updated and uncompiled .sp files"
-                debug "${SCRIPT_DIR}/_2-build.sh ${COMMIT_OLD}"
-                bash "${SCRIPT_DIR}/_2-build.sh ${COMMIT_OLD}"
+                bash ${SCRIPT_DIR}/${BUILD_SH} ${COMMIT_OLD}
                 ;;
             *)
                 error "${COMMAND} is not supported"
