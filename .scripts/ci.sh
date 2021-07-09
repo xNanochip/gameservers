@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 
 # Helper functions
-source .scripts/helpers.sh
-
-
+source ./.scripts/helpers.sh
 
 # webhook url
 
-WEBHOOK_URL="***REPLACED PRIVATE URL***"
+#WEBHOOK_URL="***REPLACED PRIVATE URL***"
 
 usage()
 {
@@ -21,7 +19,7 @@ usage()
     exit 1
 }
 
-[[ ${CI} ]] || { error "This script is only to be executed in GitLab CI"; exit 1; }
+#[[ ${CI} ]] || { error "This script is only to be executed in GitLab CI"; exit 1; }#
 
 # Input check
 [[ "$#" == 0 ]] && usage
@@ -31,20 +29,25 @@ usage()
 # get first arg, pass it as command to run after iterating
 COMMAND=${1}
 # shift args down, deleting first arg as we just set it to a var
-shift
-# set our new args to a var
-ARGS="$*"
+shift 1
+
 
 # dirs to check for possible gameserver folders
-TARGET_DIRS=(/srv/daemon-data /var/lib/pterodactyl/volumes)
+TARGET_DIRS=(
+    /srv/daemon-data
+    /var/lib/pterodactyl/volumes
+)
+
 # this is clever and infinitely smarter than what it was before, good job
 WORK_DIR=$(du -s "${TARGET_DIRS[@]}" 2> /dev/null | sort -n | tail -n1 | cut -f2)
-# go to our directory with (presumably) gameservers in it or die trying
-SCRIPTS_DIR="${PWD}/.scripts"
 
+#
+SCRIPTS_DIR="${PWD}/.scripts"
 debug "scripts dir: ${SCRIPTS_DIR}"
 debug "working dir: ${WORK_DIR}"
 
+
+# go to our directory with (presumably) gameservers in it or die trying
 cd "${WORK_DIR}" || { error "can't cd to workdir ${WORK_DIR}!!!"; exit 1; }
 
 # kill any git operations that are running and don't fail if we don't find any
@@ -86,21 +89,22 @@ for dir in ./*/ ; do
         case "${COMMAND}" in
             pull)
                 info "Pulling git repo"
-                debug "${SCRIPTS_DIR}"/_1-pull.sh "${ARGS}"
-                bash "${SCRIPTS_DIR}"/_1-pull.sh "${ARGS}"
+                debug "${SCRIPTS_DIR}/_1-pull.sh $@"
+                bash "${SCRIPTS_DIR}/_1-pull.sh $*"
                 ;;
             build)
                 COMMIT_OLD=$(git rev-parse HEAD~1)
                 info "Building updated and uncompiled .sp files"
-                bash "${SCRIPTS_DIR}"/_2-build.sh "${COMMIT_OLD}"
+                debug "${SCRIPTS_DIR}/_2-build.sh ${COMMIT_OLD}"
+                bash "${SCRIPTS_DIR}/_2-build.sh ${COMMIT_OLD}"
                 ;;
             *)
                 error "${COMMAND} is not supported"
                 exit 1
                 ;;
         esac
-    else
-        important "Branches do not match, doing nothing"
-    fi
+    #else
+        #important "Branches do not match, doing nothing"
+    #fi
     cd ..
 done

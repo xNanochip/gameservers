@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Helper functions
-source .scripts/helpers.sh
+source ./.scripts/helpers.sh
 
 # Variable initialisation
 gitclean=false
