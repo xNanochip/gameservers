@@ -56,11 +56,11 @@ for dir in ./*/ ; do
     # we didn't find a git folder
     if [ ! -d "${dir}/.git" ]; then
         warn "${dir} has no .git folder! skipping"
-        curl -i -H "Accept: application/json" -H "Content-Type:application/json" -X POST --data "\
-        {\
-            \"content\": \"${dir} has no .git folder! skipping!\"\
-        }"\
-        $WEBHOOK_URL
+        #curl -i -H "Accept: application/json" -H "Content-Type:application/json" -X POST --data "\
+        #{\
+        #    \"content\": \"${dir} has no .git folder! skipping!\"\
+        #}"\
+        #$WEBHOOK_URL
         # maybe remove these in the future
         continue
     fi
@@ -86,6 +86,7 @@ for dir in ./*/ ; do
         case "${COMMAND}" in
             pull)
                 info "Pulling git repo"
+                debug "${SCRIPTS_DIR}"/_1-pull.sh "${ARGS}"
                 bash "${SCRIPTS_DIR}"/_1-pull.sh "${ARGS}"
                 ;;
             build)
