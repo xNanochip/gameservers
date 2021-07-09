@@ -7,7 +7,7 @@ source .scripts/helpers.sh
 
 # webhook url
 
-WEBHOOK_URL="***REPLACED PRIVATE URL***"
+#WEBHOOK_URL="***REPLACED PRIVATE URL***"
 
 usage()
 {
@@ -21,7 +21,7 @@ usage()
     exit 1
 }
 
-[[ ${CI} ]] || { error "This script is only to be executed in GitLab CI"; exit 1; }
+#[[ ${CI} ]] || { error "This script is only to be executed in GitLab CI"; exit 1; }#
 
 # Input check
 [[ "$#" == 0 ]] && usage
@@ -31,12 +31,15 @@ usage()
 # get first arg, pass it as command to run after iterating
 COMMAND=${1}
 # shift args down, deleting first arg as we just set it to a var
-shift
-# set our new args to a var
-ARGS="$*"
+shift 1
+
 
 # dirs to check for possible gameserver folders
-TARGET_DIRS=(/srv/daemon-data /var/lib/pterodactyl/volumes)
+TARGET_DIRS=(
+    /srv/daemon-data
+    /var/lib/pterodactyl/volumes
+)
+
 # this is clever and infinitely smarter than what it was before, good job
 WORK_DIR=$(du -s "${TARGET_DIRS[@]}" 2> /dev/null | sort -n | tail -n1 | cut -f2)
 # go to our directory with (presumably) gameservers in it or die trying
@@ -81,26 +84,27 @@ for dir in ./*/ ; do
     info "Comparing branches ${CI_COMMIT_HEAD} and ${CI_COMMIT_REF_NAME}."
     info "Comparing local ${CI_LOCAL_REMOTE} and remote ${CI_REMOTE_REMOTE}."
 
-    if [[ "${CI_COMMIT_HEAD}" == "${CI_COMMIT_REF_NAME}" ]] && [[ "${CI_LOCAL_REMOTE}" == "${CI_REMOTE_REMOTE}" ]]; then
+    #if [[ "${CI_COMMIT_HEAD}" == "${CI_COMMIT_REF_NAME}" ]] && [[ "${CI_LOCAL_REMOTE}" == "${CI_REMOTE_REMOTE}" ]]; then
         debug "branches match"
         case "${COMMAND}" in
             pull)
                 info "Pulling git repo"
-                debug "${SCRIPTS_DIR}"/_1-pull.sh "${ARGS}"
-                bash "${SCRIPTS_DIR}"/_1-pull.sh "${ARGS}"
+                debug "${SCRIPTS_DIR}/_1-pull.sh $*"
+                # bash "${SCRIPTS_DIR}/_1-pull.sh $*"
                 ;;
             build)
                 COMMIT_OLD=$(git rev-parse HEAD~1)
                 info "Building updated and uncompiled .sp files"
-                bash "${SCRIPTS_DIR}"/_2-build.sh "${COMMIT_OLD}"
+                debug "${SCRIPTS_DIR}/_2-build.sh ${COMMIT_OLD}"
+                # bash "${SCRIPTS_DIR}/_2-build.sh ${COMMIT_OLD}"
                 ;;
             *)
                 error "${COMMAND} is not supported"
                 exit 1
                 ;;
         esac
-    else
-        important "Branches do not match, doing nothing"
-    fi
+    #else
+        #important "Branches do not match, doing nothing"
+    #fi
     cd ..
 done
