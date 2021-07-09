@@ -91,6 +91,7 @@ for dir in ./*/ ; do
             build)
                 COMMIT_OLD=$(git rev-parse HEAD~1)
                 info "Building updated and uncompiled .sp files"
+                # DON'T QUOTE THIS EITHER
                 bash ${SCRIPT_DIR}/${BUILD_SH} ${COMMIT_OLD}
                 ;;
             *)
