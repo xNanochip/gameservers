@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 # Helper functions
-source ./.scripts/helpers.sh
+source ${SCRIPT_DIR}/helpers.sh
 
 # Variable initialisation
 WORKING_DIR="tf/addons/sourcemod"

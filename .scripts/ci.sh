@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 # Helper functions
-source ./.scripts/helpers.sh
+source ${SCRIPT_DIR}/helpers.sh
 
 # webhook url
 
@@ -31,7 +32,6 @@ COMMAND=${1}
 # shift args down, deleting first arg as we just set it to a var
 shift 1
 
-
 # dirs to check for possible gameserver folders
 TARGET_DIRS=(
     /srv/daemon-data
@@ -41,11 +41,7 @@ TARGET_DIRS=(
 # this is clever and infinitely smarter than what it was before, good job
 WORK_DIR=$(du -s "${TARGET_DIRS[@]}" 2> /dev/null | sort -n | tail -n1 | cut -f2)
 
-#
-SCRIPTS_DIR="${PWD}/.scripts"
-debug "scripts dir: ${SCRIPTS_DIR}"
 debug "working dir: ${WORK_DIR}"
-
 
 # go to our directory with (presumably) gameservers in it or die trying
 cd "${WORK_DIR}" || { error "can't cd to workdir ${WORK_DIR}!!!"; exit 1; }
@@ -89,14 +85,14 @@ for dir in ./*/ ; do
         case "${COMMAND}" in
             pull)
                 info "Pulling git repo"
-                debug "${SCRIPTS_DIR}/_1-pull.sh $@"
-                bash "${SCRIPTS_DIR}/_1-pull.sh $*"
+                debug "${SCRIPT_DIR}/_1-pull.sh $@"
+                bash "${SCRIPT_DIR}/_1-pull.sh $@"
                 ;;
             build)
                 COMMIT_OLD=$(git rev-parse HEAD~1)
                 info "Building updated and uncompiled .sp files"
-                debug "${SCRIPTS_DIR}/_2-build.sh ${COMMIT_OLD}"
-                bash "${SCRIPTS_DIR}/_2-build.sh ${COMMIT_OLD}"
+                debug "${SCRIPT_DIR}/_2-build.sh ${COMMIT_OLD}"
+                bash "${SCRIPT_DIR}/_2-build.sh ${COMMIT_OLD}"
                 ;;
             *)
                 error "${COMMAND} is not supported"
