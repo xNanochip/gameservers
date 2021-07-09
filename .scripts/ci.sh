@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 
 # Helper functions
-source .scripts/helpers.sh
-
-
+source ./.scripts/helpers.sh
 
 # webhook url
 
@@ -42,12 +40,14 @@ TARGET_DIRS=(
 
 # this is clever and infinitely smarter than what it was before, good job
 WORK_DIR=$(du -s "${TARGET_DIRS[@]}" 2> /dev/null | sort -n | tail -n1 | cut -f2)
-# go to our directory with (presumably) gameservers in it or die trying
-SCRIPTS_DIR="${PWD}/.scripts"
 
+#
+SCRIPTS_DIR="${PWD}/.scripts"
 debug "scripts dir: ${SCRIPTS_DIR}"
 debug "working dir: ${WORK_DIR}"
 
+
+# go to our directory with (presumably) gameservers in it or die trying
 cd "${WORK_DIR}" || { error "can't cd to workdir ${WORK_DIR}!!!"; exit 1; }
 
 # kill any git operations that are running and don't fail if we don't find any
@@ -89,7 +89,7 @@ for dir in ./*/ ; do
         case "${COMMAND}" in
             pull)
                 info "Pulling git repo"
-                debug "${SCRIPTS_DIR}/_1-pull.sh $*"
+                debug "${SCRIPTS_DIR}/_1-pull.sh $@"
                 # bash "${SCRIPTS_DIR}/_1-pull.sh $*"
                 ;;
             build)
