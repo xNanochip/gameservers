@@ -24,12 +24,12 @@ usage()
 
 while getopts 'csahv' flag; do
     case "${flag}" in
-        c) gitclean=true ;;
-        s) gitshallow=true ;;
-        a) gitgc_aggressive=true ;;
-        h) gitgc=true ;;
-        v) export ctf_show_debug=true ;;
-        ?) usage ;;
+        c) gitclean=true                ;;
+        s) gitshallow=true              ;;
+        a) gitgc_aggressive=true        ;;
+        h) gitgc=true                   ;;
+        v) export ctf_show_debug=true   ;;
+        ?) usage                        ;;
     esac
 done
 
@@ -59,13 +59,13 @@ if ${gitshallow}; then
     warn "shallowifying repo on user request"
     info "clearing stash..."
     git stash clear
-    
+
     info "expiring reflog..."
     git reflog expire --expire=all --all
-    
+
     info "deleting tags..."
     git tag -l | xargs git tag -d
-    
+
     info "setting git gc to automatically run..."
     gitgc=true
 fi
@@ -110,4 +110,4 @@ else
     git gc --auto
 fi
 
-ok "git repo updated on this server (${dir})"
+ok "git repo updated on this server (${PWD}})"
