@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+# Helper functions
+source ${SCRIPT_DIR}/discord_helpers.sh
+
+
 # check if we are in a terminal, if not, set our term var to screen so tput doesn't whine
 export TERM=screen
 
@@ -45,4 +50,6 @@ debug()
         echo "${CYAN}[DEBUG] ${1} ${RESET}"
     fi
 }
+
+
 

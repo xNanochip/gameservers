@@ -8,10 +8,6 @@ PULL_SH="_1-pull.sh"
 BUILD_SH="_2-build.sh"
 
 
-# webhook url
-
-#WEBHOOK_URL="***REPLACED PRIVATE URL***"
-
 usage()
 {
     echo "Usage, assuming you are running this as a ci script, which you should be"
@@ -24,7 +20,7 @@ usage()
     exit 1
 }
 
-#[[ ${CI} ]] || { error "This script is only to be executed in GitLab CI"; exit 1; }#
+# [[ ${CI} ]] || { error "This script is only to be executed in GitLab CI"; exit 1; }
 
 # Input check
 [[ "$#" == 0 ]] && usage
@@ -33,7 +29,6 @@ usage()
 
 # get first arg, pass it as command to run after iterating
 COMMAND=${1}
-echo $COMMAND
 # shift args down, deleting first arg as we just set it to a var
 shift 1
 
@@ -49,7 +44,7 @@ WORK_DIR=$(du -s "${TARGET_DIRS[@]}" 2> /dev/null | sort -n | tail -n1 | cut -f2
 debug "working dir: ${WORK_DIR}"
 
 # go to our directory with (presumably) gameservers in it or die trying
-cd "${WORK_DIR}" || { error "can't cd to workdir ${WORK_DIR}!!!"; exit 1; }
+cd "${WORK_DIR}" || { error "can't cd to workdir ${WORK_DIR}!!!"; hook "can't cd to workdir ${WORK_DIR}"; exit 1; }
 
 # kill any git operations that are running and don't fail if we don't find any
 # PROBABLY BAD PRACTICE LOL
@@ -60,6 +55,7 @@ for dir in ./*/ ; do
     # we didn't find a git folder
     if [ ! -d "${dir}/.git" ]; then
         warn "${dir} has no .git folder! skipping"
+        hook "${dir} has no .git folder!"
         # maybe remove these in the future
         continue
     fi

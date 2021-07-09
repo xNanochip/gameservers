@@ -39,6 +39,7 @@ info "Finding empty objects"
 numemptyobjs=$(find .git/objects/ -type f -empty | wc -l)
 if (( numemptyobjs > 0 )); then
     error "FOUND EMPTY GIT OBJECTS, RUNNING GIT FSCK ON THIS REPOSITORY!"
+    hook "FOUND EMPTY GIT OBJECTS! RUNNING GIT FSCK!"
     find .git/objects/ -type f -empty -delete
     warn "fetching before git fscking"
     git fetch -p
@@ -112,4 +113,4 @@ else
     git gc --auto
 fi
 
-ok "git repo updated on this server (${PWD}})"
+ok "git repo updated on this server (${PWD})"
