@@ -84,19 +84,19 @@ for dir in ./*/ ; do
     info "Comparing branches ${CI_COMMIT_HEAD} and ${CI_COMMIT_REF_NAME}."
     info "Comparing local ${CI_LOCAL_REMOTE} and remote ${CI_REMOTE_REMOTE}."
 
-    #if [[ "${CI_COMMIT_HEAD}" == "${CI_COMMIT_REF_NAME}" ]] && [[ "${CI_LOCAL_REMOTE}" == "${CI_REMOTE_REMOTE}" ]]; then
+    if [[ "${CI_COMMIT_HEAD}" == "${CI_COMMIT_REF_NAME}" ]] && [[ "${CI_LOCAL_REMOTE}" == "${CI_REMOTE_REMOTE}" ]]; then
         debug "branches match"
         case "${COMMAND}" in
             pull)
                 info "Pulling git repo"
                 debug "${SCRIPTS_DIR}/_1-pull.sh $@"
-                # bash "${SCRIPTS_DIR}/_1-pull.sh $*"
+                bash "${SCRIPTS_DIR}/_1-pull.sh $*"
                 ;;
             build)
                 COMMIT_OLD=$(git rev-parse HEAD~1)
                 info "Building updated and uncompiled .sp files"
                 debug "${SCRIPTS_DIR}/_2-build.sh ${COMMIT_OLD}"
-                # bash "${SCRIPTS_DIR}/_2-build.sh ${COMMIT_OLD}"
+                bash "${SCRIPTS_DIR}/_2-build.sh ${COMMIT_OLD}"
                 ;;
             *)
                 error "${COMMAND} is not supported"
