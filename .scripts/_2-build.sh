@@ -90,8 +90,14 @@ list_uncompiled()
 # Iterate over a list files and compile all the *.sp files
 # Output will be ${COMPILED_DIR}/plugin_name.smx
 # If an error is found the function dies and report the failing file
+
+# Iterate over a list files and compile all the *.sp files
+# Output will be ${COMPILED_DIR}/plugin_name.smx
+# If an error is found the function prints the warnings to stdout and kills the
+# job after it compiled every plugin
 compile()
 {
+    failed=0
     info "Compiling $(wc -l < "${1}") files"
     while read -r plugin; do
         info "Compiling ${plugin}"
@@ -102,9 +108,13 @@ compile()
 
         # if something has gone wrong then stop everything and yell about it
         if [[ $? -ne 0 ]]; then
-            compile_error "${plugin}"
+            error "spcomp error while compiling ${plugin}"
+            failed=1
         fi
     done < "${1}"
+    if [[ failed -ne 0 ]]; then
+        exit 1
+    fi
     return 0
 }
 
