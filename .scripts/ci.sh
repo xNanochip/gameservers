@@ -3,6 +3,12 @@
 # Helper functions
 source .scripts/helpers.sh
 
+
+
+# webhook url
+
+WEBHOOK_URL="***REPLACED PRIVATE URL***"
+
 usage()
 {
     echo "Usage, assuming you are running this as a ci script, which you should be"
@@ -21,29 +27,40 @@ usage()
 [[ "$#" == 0 ]] && usage
 
 # Variable initialisation
+
+# get first arg, pass it as command to run after iterating
 COMMAND=${1}
+# shift args down, deleting first arg as we just set it to a var
 shift
-ARGS="$@"
+# set our new args to a var
+ARGS="$*"
 
 # dirs to check for possible gameserver folders
 TARGET_DIRS=(/srv/daemon-data /var/lib/pterodactyl/volumes)
 # this is clever and infinitely smarter than what it was before, good job
 WORK_DIR=$(du -s "${TARGET_DIRS[@]}" 2> /dev/null | sort -n | tail -n1 | cut -f2)
 # go to our directory with (presumably) gameservers in it or die trying
-debug "scripts dir: ${PWD}/.scripts"
-debug "working dir: ${WORK_DIR}"
 SCRIPTS_DIR="${PWD}/.scripts"
+
+debug "scripts dir: ${SCRIPTS_DIR}"
+debug "working dir: ${WORK_DIR}"
+
 cd "${WORK_DIR}" || { error "can't cd to workdir ${WORK_DIR}!!!"; exit 1; }
 
 # kill any git operations that are running and don't fail if we don't find any
 # PROBABLY BAD PRACTICE LOL
-killall -s SIGKILL -q git || true
+# killall -s SIGKILL -q git || true
 
 # iterate thru directories in our work dir which we just cd'd to
 for dir in ./*/ ; do
     # we didn't find a git folder
     if [ ! -d "${dir}/.git" ]; then
         warn "${dir} has no .git folder! skipping"
+        curl -i -H "Accept: application/json" -H "Content-Type:application/json" -X POST --data "\
+        {\
+            \"content\": \"${dir} has no .git folder! skipping!\"\
+        }"\
+        $WEBHOOK_URL
         # maybe remove these in the future
         continue
     fi
@@ -69,12 +86,12 @@ for dir in ./*/ ; do
         case "${COMMAND}" in
             pull)
                 info "Pulling git repo"
-                bash ${SCRIPTS_DIR}/_1-pull.sh "${ARGS}"
+                bash "${SCRIPTS_DIR}"/_1-pull.sh "${ARGS}"
                 ;;
             build)
                 COMMIT_OLD=$(git rev-parse HEAD~1)
                 info "Building updated and uncompiled .sp files"
-                bash ${SCRIPTS_DIR}/_2-build.sh "${COMMIT_OLD}"
+                bash "${SCRIPTS_DIR}"/_2-build.sh "${COMMIT_OLD}"
                 ;;
             *)
                 error "${COMMAND} is not supported"
