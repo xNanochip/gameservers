@@ -103,8 +103,8 @@ for dir in ./*/ ; do
                 exit 1
                 ;;
         esac
-    #else
-        #important "Branches do not match, doing nothing"
-    #fi
+    else
+        important "Branches do not match, doing nothing"
+    fi
     cd ..
 done
