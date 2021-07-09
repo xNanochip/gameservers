@@ -64,6 +64,9 @@ int m_hLastWeapon[MAXPLAYERS + 1];
 Handle 	g_hSdkGetMaxAmmo,
 		g_hSdkGetMaxClip;
 
+bool m_bLogicMedievalExists;
+int m_hLogicMedievalEntity;
+
 public void OnPluginStart()
 {
 	HookEvent("player_death", player_death);
@@ -147,10 +150,34 @@ public void OnEntityCreated(int entity, const char[] classname)
 	if (entity < 1)return;
 	strcopy(m_sWeaponModel[entity], PLATFORM_MAX_PATH, "");
 
+	// This check is here so we can delete custom econ weapons on the floor.
 	if (StrEqual(classname, "tf_dropped_weapon"))
 	{
 		// Hook dropped weapon and remove them immediately.
 		SDKHook(entity, SDKHook_SpawnPost, OnWeaponDropped);
+	}
+	
+	// If we have a tf_logic_medieval entity, we're in medieval mode, so
+	// we should block some weapons. This is a backup check if m_bPlayingMedieval
+	// isnt set for some reason.
+	if (StrEqual(classname, "tf_logic_medieval"))
+	{
+		m_hLogicMedievalEntity = entity;
+		m_bLogicMedievalExists = true;
+	}
+}
+
+//--------------------------------------------------------------------
+// Purpose: This is fired when an entity is destroyed. We use this to
+// check if a tf_logic_medieval entity no longer exists in the server.
+// This will allow players to use non-medieval override weapons again.
+//--------------------------------------------------------------------
+public void OnEntityDestroyed(int entity)
+{
+	if (entity == m_hLogicMedievalEntity)
+	{
+		m_hLogicMedievalEntity = -1;
+		m_bLogicMedievalExists = false;
 	}
 }
 
@@ -364,43 +391,69 @@ public void ProcessEconSchema(KeyValues kv)
 
 	if (kv == null)return;
 
+	// Our items are stored in a KeyValues object called "Items"
 	if (kv.JumpToKey("Items"))
 	{
+		// Jump to our first item.
 		if (kv.GotoFirstSubKey())
 		{
+			// Iterate through ALL of our items in the economy schema.
 			do {
+				// We only care about items with type "weapon". We can safely
+				// ignore anything else.
 				char sType[16];
 				kv.GetString("type", sType, sizeof(sType));
 				if (!StrEqual(sType, "weapon"))continue;
 
 				char sIndex[11];
 				kv.GetSectionName(sIndex, sizeof(sIndex));
-
+				
+				// Create a CEItemDefinitionWeapon struct. We'll push this into
+				// an ArrayList of weapon definitions so we can access them
+				// if we want to at a later point.
 				CEItemDefinitionWeapon hDef;
 				hDef.m_iIndex = StringToInt(sIndex);
 				hDef.m_iBaseIndex = kv.GetNum("item_index", -1);
 
+				// Access clip size and ammo.
 				hDef.m_iClip = kv.GetNum("weapon_clip");
 				hDef.m_iAmmo = kv.GetNum("weapon_ammo");
 
+				// Preserve Attributes value. This should be returned as a bool.
 				hDef.m_bPreserveAttributes = kv.GetNum("preserve_attributes", 0) == 1;
 
+				// World model. Typically a c_model.
 				kv.GetString("world_model", hDef.m_sWorldModel, sizeof(hDef.m_sWorldModel));
+				
+				// The base item class that this item will use when we create it for the player.
 				kv.GetString("item_class", hDef.m_sClassName, sizeof(hDef.m_sClassName));
+				
+				// The log name that's used for the
 				kv.GetString("item_logname", hDef.m_sLogName, sizeof(hDef.m_sLogName));
 
+				// Parse all of our weapon styles. If a weapon has a different style depending
+				// on what comes in through the players loadout, we can easily grab it in the
+				// future.
 				if(kv.JumpToKey("visuals/styles", false))
 				{
+					// Jump to the first style in the list.
 					if(kv.GotoFirstSubKey())
 					{
+						// Loop through all of the styles.
 						do {
 							int iWorldStyleIndex = m_hStyles.Length;
 							int iLocalStyleIndex = hDef.m_iStylesCount;
 
 							kv.GetSectionName(sIndex, sizeof(sIndex));
-
+							
+							// Create a CEItemDefinitionWeaponStyle struct. We'll be storing this
+							// later in our weapon definition struct.
 							CEItemDefinitionWeaponStyle xStyle;
+							
+							// We grab styles by ID.
 							xStyle.m_iIndex = StringToInt(sIndex);
+							
+							// Grab the world model override.
 							kv.GetString("world_model", xStyle.m_sWorldModel, sizeof(xStyle.m_sWorldModel));
 
 							m_hStyles.PushArray(xStyle);
@@ -432,12 +485,24 @@ public int CreateWeapon(int client, int index, const char[] classname, int quali
 
 	Handle hWeapon = TF2Items_CreateItem(nFlags);
 
+	// Weapon classname.
 	char class[128];
 	strcopy(class, sizeof(class), classname);
 
+	// If for some reason this client is not a recognised class, don't
+	// bother creating a weapon for them.
 	if (TF2_GetPlayerClass(client) == TFClass_Unknown)return -1;
 
-	if(StrEqual(class, "tf_weapon_saxxy"))
+	// This section deals with giving a player the same type of "base weapon"
+	// for each class. In Live TF2, some items have multiple copies with different
+	// classnames. An example of this is the Shotgun: (tf_weapon_shotgun_soldier,
+	// tf_weapon_shotgun_primary, tf_weapon_shotgun_pyro, tf_weapon_shotgun_hwg).
+	// In our economy schema, we can only have one base classname to select our
+	// items with. This can be circumnavigated by using special classnames.
+	
+	// If a multi-class weapon needs to be given and it needs to use a different
+	// base item, make sure it's specified here.
+	if(StrEqual(class, "tf_weapon_saxxy"))			// Catch-all Melee item.
 	{
 		switch (TF2_GetPlayerClass(client))
 		{
@@ -451,7 +516,7 @@ public int CreateWeapon(int client, int index, const char[] classname, int quali
 			case TFClass_Pyro: Format(class, sizeof(class), "tf_weapon_fireaxe");
 			case TFClass_Heavy: Format(class, sizeof(class), "tf_weapon_fireaxe");
 		}
-	} else if(StrEqual(class, "tf_weapon_shotgun"))
+	} else if(StrEqual(class, "tf_weapon_shotgun"))	// Catch-all shotgun.
 	{
 		switch (TF2_GetPlayerClass(client))
 		{
@@ -460,14 +525,14 @@ public int CreateWeapon(int client, int index, const char[] classname, int quali
 			case TFClass_Pyro: Format(class, sizeof(class), "tf_weapon_shotgun_pyro");
 			case TFClass_Heavy: Format(class, sizeof(class), "tf_weapon_shotgun_hwg");
 		}
-	} else if(StrEqual(class, "tf_weapon_pistol"))
+	} else if(StrEqual(class, "tf_weapon_pistol"))	// Catch-all pistol.
 	{
 		switch (TF2_GetPlayerClass(client))
 		{
 			case TFClass_Scout: Format(class, sizeof(class), "tf_weapon_pistol_scout");
 			case TFClass_Engineer: Format(class, sizeof(class), "tf_weapon_pistol");
 		}
-	} else if(StrEqual(class, "tf_weapon_throwable"))
+	} else if(StrEqual(class, "tf_weapon_throwable")) // Catch-all throwable item.
 	{
 		switch (TF2_GetPlayerClass(client))
 		{
@@ -519,30 +584,25 @@ public int CreateWeapon(int client, int index, const char[] classname, int quali
 		}
 	}
 
+	// Construct the final parts of our entity:
+	// Classname, Item Def Index, and Quality.
 	TF2Items_SetClassname(hWeapon, class);
 	TF2Items_SetItemIndex(hWeapon, index);
 	TF2Items_SetQuality(hWeapon, quality);
 
+	// Create our weapon entity.
 	int iWep = TF2Items_GiveNamedItem(client, hWeapon);
 	delete hWeapon;
 
+	// Set our weapon level to -1. We don't use this for Creators items.
 	SetEntProp(iWep, Prop_Send, "m_iEntityLevel", -1);
 	return iWep;
 }
 
 //--------------------------------------------------------------------
-// Purpose: Returns true if weapon's world model is supposed
-// to be visible.
-//--------------------------------------------------------------------
-public bool ShouldDrawWeaponWorldModel(int client, int weapon)
-{
-	if (!ShouldDrawWeaponModel(client, weapon))return false;
-	return true;
-}
-
-//--------------------------------------------------------------------
 // Purpose: Returns true if weapon's view model is supposed
-// to be visible.
+// to be visible. We don't draw viewmodels for bots as we
+// don't see from their POV.
 //--------------------------------------------------------------------
 public bool ShouldDrawWeaponViewModel(int client, int weapon)
 {
@@ -553,6 +613,8 @@ public bool ShouldDrawWeaponViewModel(int client, int weapon)
 
 //--------------------------------------------------------------------
 // Purpose: Returns true if weapon is supposed to be visible.
+// This weapon will render if it's active, a Creators.TF economy item,
+// and if it has a valid weapon model.
 //--------------------------------------------------------------------
 public bool ShouldDrawWeaponModel(int client, int weapon)
 {
@@ -573,15 +635,11 @@ public void OnDrawWeapon(int client, int iWeapon)
 	// Draw models only if we're supposed to be drawing them in the first place.
 	if(ShouldDrawWeaponModel(client, iWeapon))
 	{
-
-		// If client is a bot, don't bother with Wearables bullshit,
-		// and just change the model of the weapon. However, this
-		// breaks animations in first person, so we can't really do
-		// that with real players.
-
+		// If client is a bot, we're not going to deal with wearables.
+		// Instead, we'll just change the model of the weapon. However, this
+		// breaks animations in first person, so we don't do this with real players.
 		if(IsFakeClient(client))
 		{
-
 			for (int i = 0; i < 4; i++)
 			{
 				SetEntProp(iWeapon, Prop_Send, "m_nModelIndexOverrides", PrecacheModel(m_sWeaponModel[iWeapon]), _, i);
@@ -593,14 +651,13 @@ public void OnDrawWeapon(int client, int iWeapon)
 
 			bool bShouldDrawHands = false;
 
-			// These are the only weapons that for some reason break
-			// when this is set to 1. I guess we can go with the old way of doing things and just
+			// These are the only weapons that for some reason break when this is set to 1.
+			// I guess we can go with the old way of doing things and just
 			// create the hand as the wearable. This will bring back the random red lights issue.
-			// VALVE PLS FIX (TM).
-
 			char sClassName[32];
 			GetEntityClassname(iWeapon, sClassName, sizeof(sClassName));
 
+			// The flamethrower, minigun, and medigun.
 			if(	StrEqual(sClassName, "tf_weapon_flamethrower") ||
 				StrEqual(sClassName, "tf_weapon_minigun") ||
 				StrEqual(sClassName, "tf_weapon_medigun")
@@ -669,6 +726,9 @@ public void OnWeaponSwitch(int client, int weapon)
 
 public void OnWeaponDropped(int weapon)
 {
+	// If a weapon is dropped and it has a negative level, this means it's
+	// most likely a Creators item. We'll remove it since it would be using
+	// the stock item on the ground.
 	if(IsValidEntity(weapon) && GetEntProp(weapon, Prop_Send, "m_iEntityLevel") == -1)
 	{
 		AcceptEntityInput(weapon, "Kill");
@@ -685,6 +745,8 @@ public bool IsClientValid(int client)
 
 public void TF2_OnConditionAdded(int client, TFCond cond)
 {
+	// If we are taunting, we don't want to be rendering any custom weapons.
+	// We have to manually stop rendering them ourselves, so let's handle it here.
 	if (cond == TFCond_Taunting)
 	{
 		bool bShouldHideWeapon = false;
@@ -693,19 +755,24 @@ public void TF2_OnConditionAdded(int client, TFCond cond)
 		if(iTaunt > 0)
 		{
 			bShouldHideWeapon = true;
-		} else {
+		}
+		else 
+		{
+			// Grab the players active weapon.
 			int iActiveWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
 
 			if(IsValidEntity(iActiveWeapon))
 			{
 				char sClassName[32];
 				GetEntityClassname(iActiveWeapon, sClassName, sizeof(sClassName));
-
+				
+				// We're not going to be rendering the Rocket Launcher and the Engineers shotgun.
 				if (StrEqual("tf_weapon_rocketlauncher", sClassName))bShouldHideWeapon = true;
 				if (StrEqual("tf_weapon_shotgun_primary", sClassName))bShouldHideWeapon = true;
 			}
 		}
-
+		
+		// Hide all of our weapons.
 		if(bShouldHideWeapon)
 		{
 			for (int i = 0; i < 5; i++)
@@ -725,6 +792,8 @@ public void TF2_OnConditionAdded(int client, TFCond cond)
 
 public void TF2_OnConditionRemoved(int client, TFCond cond)
 {
+	// If we've stopped taunting or zooming in, we should start
+	// to redraw our weapons.
 	if (cond == TFCond_Taunting ||
 		cond == TFCond_Zoomed
 	) {
@@ -733,7 +802,8 @@ public void TF2_OnConditionRemoved(int client, TFCond cond)
 			int iWeapon = GetPlayerWeaponSlot(client, i);
 			if (!IsValidEntity(iWeapon))continue;
 			if (!CEconItems_IsEntityCustomEconItem(iWeapon))continue;
-
+			
+			// Start rendering.
 			OnDrawWeapon(client, iWeapon);
 		}
 	}
@@ -786,14 +856,20 @@ public bool GetWeaponStyleDefinition(CEItemDefinitionWeapon xWeapon, int style, 
 public void CEconItems_OnCustomEntityStyleUpdated(int client, int entity, int style)
 {
 	CEItem xItem;
+	
+	// Create our CEItem struct from this entity.
 	if(CEconItems_GetEntityItemStruct(entity, xItem))
 	{
 		CEItemDefinitionWeapon xWeapon;
+		
+		// Create a CEItemDefinitionWeapon struct from this entity.
 		if(FindWeaponDefinitionByIndex(xItem.m_iItemDefinitionIndex, xWeapon))
 		{
+			// Create a CEItemDefinitionWeaponStyle struct from this item definition.
 			CEItemDefinitionWeaponStyle xStyle;
 			if(GetWeaponStyleDefinition(xWeapon, style, xStyle))
 			{
+				// Update our weapon model, and start rendering again.
 				strcopy(m_sWeaponModel[entity], sizeof(m_sWeaponModel[]), xStyle.m_sWorldModel);
 				OnDrawWeapon(client, entity);
 			}
@@ -808,26 +884,28 @@ public void CEconItems_OnCustomEntityStyleUpdated(int client, int entity, int st
 //--------------------------------------------------------------------
 public bool CEconItems_ShouldItemBeBlocked(int client, CEItem xItem, const char[] type)
 {
+	// We only want to care about weapons in this Forward.
 	if (!StrEqual(type, "weapon"))return false;
 
-	if(GameRules_GetProp("m_bPlayingMedieval") == 1)
+	// Checks to see if this is medieval. The reason why this has two checks is because
+	// of a bug in Medieval MvM missions where a tf_logic_medieval entity may exist, but
+	// the GameRules prop isn't properly set. To counteract this, we just hook the creation
+	// of the medieval logic entity.
+	if(GameRules_GetProp("m_bPlayingMedieval") == 1 || m_bLogicMedievalExists == true)
 	{
+		// Grab this weapons item definition.
 		CEItemDefinitionWeapon xWeapon;
 		if(FindWeaponDefinitionByIndex(xItem.m_iItemDefinitionIndex, xWeapon))
 		{
 			int item_slot = TF2Econ_GetItemSlot(xWeapon.m_iBaseIndex, TF2_GetPlayerClass(client));
 
 			// If this weapon is a melee weapon, allow it.
-			if(item_slot == 2)
-			{
-				return false;
-			}
-
+			if(item_slot == 2)return false;
+			
 			// Otherwise, see if this item has "allowed in medieval mode attribute".
-			if(CEconItems_GetAttributeBoolFromArray(xItem.m_Attributes, "allowed in medieval mode"))
-			{
-				return false;
-			}
+			if(CEconItems_GetAttributeBoolFromArray(xItem.m_Attributes, "allowed in medieval mode")) return false;
+			
+			// Allow the weapon if we get here since it shouldn't be restricted.
 			return true;
 		}
 	}
