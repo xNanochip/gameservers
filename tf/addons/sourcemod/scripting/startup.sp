@@ -9,6 +9,15 @@ public void OnMapStart()
     CreateTimer(5.0, GoToNextMap);
 }
 
+public void OnAllPluginsLoaded()
+{
+    // copy ce_server_index to sb_id for sourcebans
+    int ctf_serverindex = GetConVarInt(FindConVar("ce_server_index"));
+    SetConVarInt(FindConVar("sb_id"), ctf_serverindex);
+    ServerCommand("sm plugins reload sbpp_main");
+}
+    
+
 Action GoToNextMap(Handle timer)
 {
     if (firstmap)
@@ -16,11 +25,6 @@ Action GoToNextMap(Handle timer)
         firstmap = false;
         // load cleaner
         ServerCommand("sm exts load cleaner");
-
-        // copy ce_server_index to sb_id
-        int ctf_serverindex = GetConVarInt(FindConVar("ce_server_index"));
-        SetConVarInt(FindConVar("sb_id"), ctf_serverindex);
-        ServerCommand("sm plugins reload sbpp_main");
 
         // change the level
         ServerCommand("changelevel_next");
