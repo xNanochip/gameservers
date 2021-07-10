@@ -70,7 +70,7 @@ for dir in ./*/ ; do
     CI_LOCAL_REMOTE=$(git remote get-url origin)
     CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE##*@}"
     CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE/://}"
-    CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE%.git}"
+    CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE%.git*}"
     CI_REMOTE_REMOTE="${CI_SERVER_HOST}/${CI_PROJECT_PATH}"
 
     info "Comparing branches ${CI_COMMIT_HEAD} and ${CI_COMMIT_REF_NAME}."
