@@ -13,7 +13,7 @@ gitgc_aggressive=false
 usage()
 {
     echo "Usage, assuming you are running this as a ci script, which you should be"
-    echo "  -c removes all plugins and compiles them from scratch and recursively removes all untracked files in the sourcemod folder"
+    echo "  -c removes all plugins and compiles them from scratch and recursively removes all untracked files in the sourcemod folder. not compatible with -s -a or -h."
     echo "  -s culls ('shallowifies') all repositories to only have the last 25 commits, implies -h"
     echo "  -a runs aggressive git housekeeping on all repositories (THIS WILL TAKE A VERY LONG TIME)"
     echo "  -h runs normal git housekeeping on all repositories (git gc always gets run with --auto, this will force it to run)"
@@ -34,6 +34,12 @@ while getopts ":csahv" flag; do
         ?) usage                        ;;
     esac
 done
+
+# pretty obvious
+if ${gitclean} && ( ${gitshallow} || ${gitgc_aggressive} || ${gitgc} ); then
+    error "options not compatible"
+    exit 1
+fi
 
 info "Finding empty objects"
 numemptyobjs=$(find .git/objects/ -type f -empty | wc -l)
