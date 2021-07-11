@@ -14,7 +14,7 @@ float timetowait = 0.5;
 
 public void OnAllPluginsLoaded()
 {
-    if (mapchanges == 0)
+    if (mapchanges >= 0)
     {
         CreateTimer(timetowait, StartDaisyChain);
     }
