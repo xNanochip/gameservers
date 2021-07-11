@@ -52,7 +52,6 @@ ConVar g_hTimeStart = null;
 ConVar g_hTimeStop = null;
 ConVar g_hFinishMap = null;
 ConVar g_hDemoPath = null;
-ConVar ce_server_index;
 
 bool g_bIsRecording = false;
 bool g_bIsManual = false;
@@ -69,8 +68,6 @@ public void OnPluginStart()
 	g_hFinishMap = CreateConVar("sm_autorecord_finishmap", "1", "If 1, continue recording until the map ends", _, true, 0.0, true, 1.0);
 	g_hDemoPath = CreateConVar("sm_autorecord_path", ".", "Path to store recorded demos");
 	
-	ce_server_index = CreateConVar("ce_server_index", "-1", "Backwards compatibility for demo autorecorder.");
-
 	AutoExecConfig(true, "autorecorder");
 
 	RegAdminCmd("sm_record", Command_Record, ADMFLAG_KICK, "Starts a SourceTV demo");
@@ -234,7 +231,7 @@ void StartRecord()
 		{
 			GetMapDisplayName(sMap, sMap, sizeof sMap);
 		}
-		int id = ce_server_index.IntValue;
+		int id = GetConVarInt(FindConVar("ce_server_index"));
 		ServerCommand("tv_record \"%s/%d-%s-%s\"", sPath, id, sTime, sMap);
 		g_bIsRecording = true;
 
