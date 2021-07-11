@@ -2,11 +2,22 @@
 // on boot there's a bunch of fucking race conditions with plugins and cfgs and this just
 // fixes that.
 
+
+int mapchanges = -1;
+
+public void OnMapStart()
+{
+    mapchanges++;
+}
+
 float timetowait = 0.5;
 
 public void OnAllPluginsLoaded()
 {
-    CreateTimer(timetowait, StartDaisyChain);
+    if (mapchanges == 0)
+    {
+        CreateTimer(timetowait, StartDaisyChain);
+    }
 }
 
 Action StartDaisyChain(Handle timer)
