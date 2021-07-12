@@ -143,7 +143,7 @@ cleanup_plugins()
         if [[ -z ${SP_FILE} ]]; then
             # If no *.sp countrerpart is found, then delete the *.smx file
             important "Deleting orphan ${line} file"
-            echo rm -fv ${line}
+            rm -fv ${line}
         elif [ ${SP_FILE_COUNT} -eq 1 ]; then
             # If only one *.sp counterpart was found then all is good
             debug "${line} -> ${SP_FILE}"
