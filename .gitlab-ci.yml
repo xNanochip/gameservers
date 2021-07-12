@@ -32,6 +32,10 @@ generate-yml:
   tags:
     - worker
   needs: [compile_plugins]
+  only:
+  - master
+  - staging
+  - mvm
 
 trigger-ci:
   stage: trigger
@@ -40,5 +44,9 @@ trigger-ci:
       - artifact: cfg.yml
         job: generate-yml
   needs: [generate-yml]
+  only:
+  - master
+  - staging
+  - mvm
 
 
