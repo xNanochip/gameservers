@@ -9,9 +9,11 @@ WORKING_DIR="tf/addons/sourcemod"
 SPCOMP_PATH="scripting/spcomp64"
 SCRIPTS_DIR="scripting"
 COMPILED_DIR="plugins"
-# Exclusion list, use /dir/ for directories and /file_ for file_*.sp
-EXCLUDED="/stac/ /include/ /disabled/ /external/ /economy/ /discord/"
-EXCLUDED="grep -v -e ${EXCLUDED// / -e }"
+# Exclusion lists, use /dir/ for directories and /file_ for file_*.sp
+EXCLUDE_COMPILE="/stac/ /include/ /disabled/ /external/ /economy/ /discord/"
+EXCLUDE_COMPILE="grep -v -e ${EXCLUDE_COMPILE// / -e }"
+EXCLUDE_CLEANUP="/external/ /disabled/"
+EXCLUDE_CLEANUP="grep -v -e ${EXCLUDE_CLEANUP// / -e }"
 
 # Temporary files
 UNCOMPILED_LIST=$(mktemp)
@@ -46,7 +48,7 @@ reference_validation()
 # Remove all the *.smx counterparts that exist
 list_updated()
 {
-    UPDATED=$(git diff --name-only "${GIT_REF}" HEAD . | grep "\.sp$" | ${EXCLUDED})
+    UPDATED=$(git diff --name-only "${GIT_REF}" HEAD . | grep "\.sp$" | ${EXCLUDE_COMPILE})
     # skip compile if there's nothing *to* compile
     if [[ -z $UPDATED ]]; then
         ok "No updated files in diff"
@@ -67,7 +69,7 @@ list_updated()
 list_uncompiled()
 {
     # this may need to be quoted
-    UNCOMPILED=$(find "${SCRIPTS_DIR}" -iname "*.sp" | ${EXCLUDED})
+    UNCOMPILED=$(find "${SCRIPTS_DIR}" -iname "*.sp" | ${EXCLUDE_COMPILE})
     debug "Generating list of uncompiled plugins"
     # while loop, read from our uncompiled list we just got
     while IFS= read -r line; do
@@ -125,6 +127,36 @@ compile_error()
     exit 255
 }
 
+# Find all *.smx files inside ${COMPILED_DIR}
+# Select those that do not have a *.sp counterpart
+# And remove them
+cleanup_plugins()
+{
+    debug "Generating list of compiled plugins"
+    COMPILED=$(find "${COMPILED_DIR}" -iname "*.smx" | ${EXCLUDE_CLEANUP})
+    # while loop, read from our compiled list we just got
+    while IFS= read -r line; do
+        debug "Looking for $(basename "${line/.smx/.sp}")"
+        # Look for a *.sp counterpart
+        SP_FILE=$(find "${SCRIPTS_DIR}" -iname "$(basename "${line/.smx/.sp}")")
+        SP_FILE_COUNT=$(wc -l <<< ${SP_FILE})
+        if [[ -z ${SP_FILE} ]]; then
+            # If no *.sp countrerpart is found, then delete the *.smx file
+            important "Deleting orphan ${line} file"
+            echo rm -fv ${line}
+        elif [ ${SP_FILE_COUNT} -eq 1 ]; then
+            # If only one *.sp counterpart was found then all is good
+            debug "${line} -> ${SP_FILE}"
+        else
+            # If more than one *.sp counterpart was found, then print a warning (for cleanup)
+            warn "${line} -> ${SP_FILE//$'\n'/ - }"
+        fi
+
+    done <<< "${COMPILED}"
+
+    return 0
+}
+
 ###
 # Script begins here ↓
 pushd ${WORKING_DIR} >/dev/null || exit
@@ -152,4 +184,8 @@ if [[ $? -eq 0 ]]; then
 fi
 
 ok "All plugins compiled successfully !"
+
+cleanup_plugins
+ok "Obsolete plugins deleted !"
+
 exit 0
