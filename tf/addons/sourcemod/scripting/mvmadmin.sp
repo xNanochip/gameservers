@@ -61,7 +61,7 @@ public void OnPluginStart()
     RegAdminCmd("sm_equip_wearable_model", Command_Equip_Wearable_Model ,ADMFLAG_GENERIC, "Sets max number of players");
     RegAdminCmd("sm_change_bonemerge_model", Command_Change_Bonemerge_Model ,ADMFLAG_GENERIC, "Sets max number of players");
     //RegAdminCmd("sm_list_entities", Command_List_Entities, ADMFLAG_GENERIC, "List entities on the map");
-    RegConsoleCmd("sm_kill_tank", Command_Kill_Tank ,"Shows info about tanks and kills them");
+    RegAdminCmd("sm_kill_tank", Command_Kill_Tank, ADMFLAG_GENERIC,"Shows info about tanks and kills them");
     RegAdminCmd("sm_toggle_ready", Command_Force_Ready ,ADMFLAG_GENERIC, "Forces ready state");
     RegAdminCmd("sm_respec", Command_Respec, ADMFLAG_GENERIC, "Removes all upgrades from the player");
     RegAdminCmd("sm_anim", Command_Anim, ADMFLAG_GENERIC, "Plays animation on player");
