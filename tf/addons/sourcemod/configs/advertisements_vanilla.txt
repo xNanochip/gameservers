@@ -14,7 +14,6 @@
 // Accepts flags of admins that will not see the advertisement.
 // When omitted everyone will see the advertisement.
 // When left empty only admins will see the advertisement.
-
 "Advertisements"
 {
     "1"
@@ -31,25 +30,21 @@
     }
     "4"
     {
-        "chat"                  "{green}Seeing {red}red ERRORS{green}? Type {lightgreen}/ctfhats{green} in chat to disable custom cosmetics, or download our asset pack at {lightgreen}creators.tf/assetpack{green}!"
+        "chat"                  "{green}Familiarise yourself with our rules: {lightgreen}creators.tf/rules"
     }
     "5"
     {
-        "chat"                  "{green}Familiarise yourself with our rules: {lightgreen}creators.tf/rules"
+        "chat"                  "{gold}Tired of fighting? Join the {yellow}Creators.TF Silly Servers{gold}! More information on our Discord: {yellow}creators.tf/discord"
     }
     "6"
     {
-        "chat"                  "{gold}Tired of fighting? Join the {yellow}Creators.TF Silly Servers{gold}! More information on our Discord: {yellow}creators.tf/discord"
+        "chat"                  "{green}Want to report a problem or leave some feedback? Contact us at {lightgreen}support@creators.tf{green} or simply leave a message on the {lightgreen}#feedback {green}channel on our Discord server."
     }
     "7"
     {
-        "chat"                  "{green}Want to report a problem or leave some feedback? Contact us at {lightgreen}support@creators.tf {green}or simply leave a message on the {lightgreen}#feedback {green}channel on our Discord server."
-    }
-    "8"
-    {
         "chat"                  "{green}See any hate speech or prohibited content in chat or on decals? Screenshot it and send it directly to {lightgreen}@ModMail {green}on our Discord."
     }
-    "9"
+    "8"
     {
         "chat"                  "{green}Don't forget to {lightgreen}!nominate {green}the next map you want to play!"
     }

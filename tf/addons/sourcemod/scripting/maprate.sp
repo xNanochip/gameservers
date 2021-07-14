@@ -367,7 +367,7 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 		{
 			g_bToCloseMenu[client] = false;
 			CancelClientMenu(client, true);
-			MC_PrintToChat(client, "[{green}SM{default}] Auto-closed the map rating menu to prevent accidental rate. Type {lightgreen}!maprate {default}to reopen it.");
+			MC_PrintToChat(client, "[{creators}Creators.TF{default}] Auto-closed the map rating menu. Type {lightgreen}!maprate {default}to reopen it.");
 		}
 	}
 }
