@@ -21,7 +21,8 @@ cp_mercenarypark
 cp_mossrock
 cp_gorge
 cp_mountainlab
-cp_steel
+// cp_steel refresh
+workshop/2376443257
 // cp_villa
 workshop/2113052569
 // koth_ashville
