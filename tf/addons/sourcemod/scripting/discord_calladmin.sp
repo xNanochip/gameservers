@@ -258,7 +258,8 @@ public void CallAdmin_OnReportPost(int client, int target, const char[] reason)
         //           E.g., status.creators.tf/locate.php?q=stvdemos/202-2021_07_02_23_33-pl_vigil_rc7.dem
 		if (demo)
 		{
-			ReplaceString(sMSG, sizeof(sMSG), "{DEMO_NAME}.dem", g_sDemoName);
+			StrCat(g_sDemoName, 256, ".dem");
+			ReplaceString(sMSG, sizeof(sMSG), "{DEMO_NAME}", g_sDemoName);
 		}
 	}
 	
