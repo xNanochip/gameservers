@@ -237,16 +237,27 @@ void SetHostnameEtc()
         pubs = false;
     }
     
+    LogMessage("\n\n[CTF-INFO] SETTING HOSTNAME\n\n");
     // set our hostname here    
     char hostname[128];
     Format(hostname, sizeof(hostname), "%s | %s | %s | #%i", url, region, ctype, sid);
     ServerCommand("hostname %s", hostname);
+
+    CreateTimer(0.1, ExecBase);
+}
+
+Action ExecBase(Handle timer)
+{
+    LogMessage("\n\n[CTF-INFO] EXECING BASE.CFG\n\n");
+    // always exec our base
+    ServerCommand("exec quickplay/base");
 
     CreateTimer(0.1, ExecMapcycle);
 }
 
 Action ExecMapcycle(Handle timer)
 {
+    LogMessage("\n\n[CTF-INFO] SETTING MAPCYCLE\n\n");
     // set pub or mvm mapcycle depending on the server type
     if (pubs)
     {
@@ -256,18 +267,13 @@ Action ExecMapcycle(Handle timer)
     {
         ServerCommand("mapcyclefile quickplay/mapcycle_mvm.txt");
     }
-    CreateTimer(0.1, ExecBase);
-}
-
-Action ExecBase(Handle timer)
-{
-    // always exec our base
-    ServerCommand("exec quickplay/base");
     CreateTimer(0.1, ExecEconVanilla);
 }
 
+
 Action ExecEconVanilla(Handle timer)
 {
+    LogMessage("\n\n[CTF-INFO] EXECING TYPE CFG\n\n");
     // exec econ or vanilla depending on the server type
     if (econ)
     {
