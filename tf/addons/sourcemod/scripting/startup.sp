@@ -9,11 +9,6 @@ int changelevelNum;
 
 float timetowait = 2.5;
 
-public void OnPluginStart()
-{
-    LogMessage("\n\n[STARTUP] -> CREATED CTF CONVARS\n");
-}
-
 // OnConfigsExecuted -> StartDaisyChain -> LoadCleaner -> CopyIdxToSbId -> ReloadSBPP -> changelevelRand -> OnConfigsExecuted
 
 public void OnConfigsExecuted()
@@ -24,9 +19,9 @@ public void OnConfigsExecuted()
 
         if (changelevelNum == 0)
         {
+            ServerCommand("ctf_regen_info");
             CreateTimer(timetowait, StartDaisyChain);
         }
-
         if (changelevelNum >= 1)
         {
             booted = true;
