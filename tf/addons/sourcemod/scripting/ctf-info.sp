@@ -272,7 +272,7 @@ void SetHostnameEtc()
     }
     else
     {
-        ServerCommand("mapcyclefile quickplay/mapcycle-mvm.txt");
+        ServerCommand("mapcyclefile quickplay/mapcycle_mvm.txt");
     }
     
     // set our hostname here    
