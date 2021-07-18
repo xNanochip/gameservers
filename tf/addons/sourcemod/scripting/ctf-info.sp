@@ -21,6 +21,7 @@ ConVar ce_region;
 
 bool econ;
 bool pubs;
+bool mvm;
 
 public void OnPluginStart()
 {
@@ -225,18 +226,21 @@ void SetHostnameEtc()
         ctype = "Custom Pubs";
         econ = true;
         pubs = true;
+        mvm = false;
     }
     else if (type == VPLUS)
     {
         ctype = "Vanilla+ Pubs | NoDL";
         econ = false;
         pubs = true;
+        mvm = false;
     }
     else if (type == DD)
     {
         ctype = "Digital Directive MvM";
         econ = true;
         pubs = false;
+        mvm = true;
     }
     
     LogMessage("\n\n[CTF-INFO] SETTING HOSTNAME\n\n");
@@ -285,6 +289,12 @@ Action ExecEconVanilla(Handle timer)
     {
         ServerCommand("exec quickplay/vanilla");
     }
+    
+    if (mvm)
+    {
+    	ServerCommand("exec quickplay/mvm");
+    }
+    
     if (!didstartup)
     {
         CreateTimer(1.0, DoStartup);
