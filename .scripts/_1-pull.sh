@@ -79,6 +79,9 @@ if ${gitshallow}; then
     gitgc=true
 fi
 
+info "updating submodules..."
+git submodule update --init --recursive
+
 info "fetching..."
 git fetch origin "${CI_COMMIT_REF_NAME}" --depth 25
 
