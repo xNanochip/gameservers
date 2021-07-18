@@ -28,7 +28,7 @@ public void OnPluginStart()
     ce_region = CreateConVar("ce_region", " ", "Creators.TF Region");
     CreateConVar("ce_server_index", "-1", "Creators.TF Server Index");
 
-    LogMessage("\n\n[STARTUP] -> CREATED CTF CONVARS\n");
+    LogMessage("\n\n[CTF-INFO] -> CREATED CTF CONVARS\n");
 }
 
 Action RegenInfo(int args)
