@@ -20,7 +20,7 @@ public void OnConfigsExecuted()
         if (changelevelNum == 0)
         {
             ServerCommand("ctf_regen_info");
-            CreateTimer(timetowait, StartDaisyChain);
+            CreateTimer(2.5, StartDaisyChain);
         }
         if (changelevelNum >= 1)
         {
