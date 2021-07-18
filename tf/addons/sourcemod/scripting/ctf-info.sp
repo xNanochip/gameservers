@@ -9,7 +9,6 @@ ConVar ce_region;
 
 public void OnPluginStart()
 {
-    HookConVarChange(FindConVar("ce_server_index"), IndexChanged);
     RegServerCmd("ctf_regen_info", RegenInfo, "Regen CTF Info");
     CreateConVar
     (
@@ -26,6 +25,11 @@ public void OnPluginStart()
        FCVAR_NONE                 // flags
     );
 }
+
+public void OnAllPluginsLoaded()
+{
+    HookConVarChange(FindConVar("ce_server_index"), IndexChanged);
+}    
 
 Action RegenInfo(int args)
 {
