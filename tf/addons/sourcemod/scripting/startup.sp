@@ -17,7 +17,7 @@ public void OnPluginStart()
     LogMessage("\n\n[STARTUP] -> CREATED CTF CONVARS\n");
 }
 
-// OnConfigsExecuted -> changelevelNext -> OnConfigsExecuted -> StartDaisyChain -> LoadCleaner -> CopyIdxToSbId -> ReloadSBPP -> changelevelNext -> OnConfigsExecuted
+// OnConfigsExecuted -> changelevelRand -> OnConfigsExecuted -> StartDaisyChain -> LoadCleaner -> CopyIdxToSbId -> ReloadSBPP -> changelevelRand -> OnConfigsExecuted
 
 public void OnConfigsExecuted()
 {
@@ -26,7 +26,7 @@ public void OnConfigsExecuted()
         if (changelevelNum == 0)
         {
             // force a changelevel
-            CreateTimer(timetowait, changelevelNext);
+            CreateTimer(timetowait, changelevelRand);
         }
 
         if (changelevelNum == 1)
@@ -45,11 +45,12 @@ public void OnConfigsExecuted()
 }
 
 // reload our map
-Action changelevelNext(Handle timer)
+Action changelevelRand(Handle timer)
 {
     changelevelNum++;
     LogMessage("\n\n[STARTUP] -> FORCE CHANGING LEVEL (time %i)\n", changelevelNum);
-    ServerCommand("changelevel_next");
+    // shake it up a lil
+    ServerCommand("randommap");
 }
 
 Action StartDaisyChain(Handle timer)
@@ -81,6 +82,6 @@ Action ReloadSBPP(Handle timer)
 {
     LogMessage("\n\n[STARTUP] -> RELOADING SOURCEBANS\n");
     ServerCommand("sb_reload");
-    CreateTimer(timetowait, changelevelNext);
+    CreateTimer(timetowait, changelevelRand);
 }
 
