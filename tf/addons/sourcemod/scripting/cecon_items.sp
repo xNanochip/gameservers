@@ -60,7 +60,7 @@
 #include <tf2>
 #include <tf2_stocks>
 #include <tf2attributes>
-#include <tf_persist_item>
+//#include <tf_persist_item>
 #include <tf_econ_data>
 
 // ?

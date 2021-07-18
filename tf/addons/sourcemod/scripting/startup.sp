@@ -7,7 +7,7 @@ bool booted;
 
 int changelevelNum;
 
-float timetowait = 2.5;
+float timetowait = 0.25;
 
 // OnConfigsExecuted -> StartDaisyChain -> LoadCleaner -> CopyIdxToSbId -> ReloadSBPP -> changelevelRand -> OnConfigsExecuted
 
