@@ -84,4 +84,3 @@ Action ReloadSBPP(Handle timer)
     ServerCommand("sb_reload");
     CreateTimer(timetowait, changelevelRand);
 }
-

@@ -7,6 +7,9 @@
 // dynamically set
 ConVar ce_region;
 
+bool econ;
+bool pubs;
+
 public void OnPluginStart()
 {
     RegServerCmd("ctf_regen_info", RegenInfo, "Regen CTF Info");
@@ -26,19 +29,9 @@ public void OnPluginStart()
     );
 }
 
-public void OnAllPluginsLoaded()
-{
-    HookConVarChange(FindConVar("ce_server_index"), IndexChanged);
-}    
-
 Action RegenInfo(int args)
 {
     SetHostnameEtc();   
-}
-
-void IndexChanged(ConVar convar, const char[] oldValue, const char[] newValue)
-{
-    SetHostnameEtc();
 }
 
 enum
@@ -58,8 +51,9 @@ void SetHostnameEtc()
     char region[64];
     char c_region[24];
     int type;
-    bool econ;
-    bool pubs;
+
+    econ = false;
+    pubs = false;
 
     // unknown region
     // todo: events servers
@@ -249,22 +243,37 @@ void SetHostnameEtc()
         pubs = false;
     }
     
-    // Here's the meat of our execing
+    // set our hostname here    
+    char hostname[128];
+    Format(hostname, sizeof(hostname), "%s | %s | %s | #%i", url, region, ctype, sid);
+    ServerCommand("hostname %s", hostname);
 
+    CreateTimer(1.0, ExecBase);
+}
+
+Action ExecBase(Handle timer)
+{
     // always exec our base
     ServerCommand("exec quickplay/base");
+    CreateTimer(1.0, ExecEconVanilla);
+}
 
-
+Action ExecEconVanilla(Handle timer)
+{
     // exec econ or vanilla depending on the server type
     if (econ)
     {
         ServerCommand("exec quickplay/econ");
-    }
+    }   
     else
     {
         ServerCommand("exec quickplay/vanilla");
     }
+    CreateTimer(1.0, ExecMapcycle);
+}
 
+Action ExecMapcycle(Handle timer)
+{
     // set pub or mvm mapcycle depending on the server type
     if (pubs)
     {
@@ -274,9 +283,4 @@ void SetHostnameEtc()
     {
         ServerCommand("mapcyclefile quickplay/mapcycle_mvm.txt");
     }
-    
-    // set our hostname here    
-    char hostname[128];
-    Format(hostname, sizeof(hostname), "%s | %s | %s | #%i", url, region, ctype, sid);
-    ServerCommand("hostname %s", hostname);
 }
