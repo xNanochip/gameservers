@@ -1,6 +1,18 @@
 # Creators.TF Server Repository
 This is the repository that contains all of the code, configs, and content for the Creators.TF Servers. Creators.TF Servers have a lot of custom content such as custom weapons, cosmetics, strange parts, campaigns, just to name a few. A lot of this repository is the economy code (usually starting in `cecon_` or `ce_`), which is responsible for all of the previously mentioned custom features.
 
+To clone this project:
+
+```
+git clone --recurse-submodules <git@gitlab.com:creators_tf/gameservers/servers.git>
+```
+or if you've already cloned the project,
+
+```
+git pull
+git submodule update --init --recursive
+```
+
 The CI/CD scripts will automatically manage deployment out to all game servers when a commit is pushed.
 
 ## SourcePawn Development File Structure
@@ -63,7 +75,9 @@ The game server regions are as follows:
 
 ## Scripts 
 STRTA: or Scripts To Rule Them All:
-- `script/helpers.sh`: Contains an useful collection of shared functions.
-- `script/build.sh`: Compiles any uncompiled `.sp` plugin and (if given a git reference) any `.sp` in need of an update.
+- `.scripts/helpers.sh`: Contains an useful collection of shared functions.
+- `.scripts/ci.sh`: Master script for running ci.
+- `.scripts/_1-pull.sh`: Updates the repository in it's current directory with master 
+- `.scripts/_2-build.sh`: Recursively compiles any uncompiled `.sp` plugin in it's current directory and (if given a git reference) any `.sp` in need of an update.
 
  
