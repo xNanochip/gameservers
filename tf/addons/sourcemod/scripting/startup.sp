@@ -11,6 +11,16 @@ float timetowait = 0.25;
 
 // OnConfigsExecuted -> StartDaisyChain -> LoadCleaner -> CopyIdxToSbId -> ReloadSBPP -> changelevelRand -> OnConfigsExecuted
 
+public void OnPluginStart()
+{
+    RegServerCmd("_startup", StartupCallback, "Run boot stuff");
+}
+
+Action StartupCallback(int args)
+{
+    CreateTimer(0.1, StartDaisyChain);
+}
+
 public void OnConfigsExecuted()
 {
     if (!booted)
@@ -19,7 +29,7 @@ public void OnConfigsExecuted()
 
         if (changelevelNum == 0)
         {
-            CreateTimer(3.0, StartDaisyChain);
+            //CreateTimer(3.0, StartDaisyChain);
         }
         if (changelevelNum >= 1)
         {

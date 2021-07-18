@@ -3,6 +3,8 @@
 
 #include <sourcemod>
 
+bool didstartup;
+
 enum
 {
     UNKNOWN = 0,
@@ -283,5 +285,16 @@ Action ExecEconVanilla(Handle timer)
     {
         ServerCommand("exec quickplay/vanilla");
     }
+    if (!didstartup)
+    {
+        CreateTimer(1.0, DoStartup);
+    }
 }
 
+
+Action DoStartup(Handle timer)
+{
+    didstartup = true;
+    LogMessage("\n\n[CTF-INFO] BATON PASSING TO STARTUP PLUGIN\n\n");
+    ServerCommand("_startup");
+}
