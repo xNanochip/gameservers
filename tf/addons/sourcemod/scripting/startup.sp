@@ -3,8 +3,6 @@
 // fixes that.
 #pragma semicolon 1
 
-ConVar ce_server_index;
-
 bool booted;
 
 int changelevelNum;
@@ -13,30 +11,23 @@ float timetowait = 2.5;
 
 public void OnPluginStart()
 {
-    ce_server_index = CreateConVar("ce_server_index", "-1", "C.TF Server Index");
     LogMessage("\n\n[STARTUP] -> CREATED CTF CONVARS\n");
 }
 
-// OnConfigsExecuted -> changelevelRand -> OnConfigsExecuted -> StartDaisyChain -> LoadCleaner -> CopyIdxToSbId -> ReloadSBPP -> changelevelRand -> OnConfigsExecuted
+// OnConfigsExecuted -> StartDaisyChain -> LoadCleaner -> CopyIdxToSbId -> ReloadSBPP -> changelevelRand -> OnConfigsExecuted
 
 public void OnConfigsExecuted()
 {
     if (!booted)
     {
-        if (changelevelNum == 0)
-        {
-            // force a changelevel
-            CreateTimer(timetowait, changelevelRand);
-        }
+        LogMessage("\n\n[STARTUP] -> OnConfigsExecuted\n");
 
-        if (changelevelNum == 1)
+        if (changelevelNum == 0)
         {
             CreateTimer(timetowait, StartDaisyChain);
         }
 
-        LogMessage("\n\n[STARTUP] -> OnConfigsExecuted\n");
-
-        if (changelevelNum >= 2)
+        if (changelevelNum >= 1)
         {
             booted = true;
             LogMessage("\n\n[STARTUP] -> Fully booted! Have fun!\n");
@@ -72,7 +63,7 @@ Action LoadCleaner(Handle timer)
 Action CopyIdxToSbId(Handle timer)
 {
     LogMessage("\n\n[STARTUP] -> COPYING SERVER ID TO SB_ID\n");
-    int ctf_serverindex = GetConVarInt(ce_server_index);
+    int ctf_serverindex = GetConVarInt(FindConVar("ce_server_index"));
     SetConVarInt(FindConVar("sb_id"), ctf_serverindex);
     CreateTimer(timetowait, ReloadSBPP);
 }

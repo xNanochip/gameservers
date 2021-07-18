@@ -1,10 +1,20 @@
 #pragma semicolon 1
+#pragma newdecls required
 
 #include <sourcemod>
+
+enum
+{
+    UNKNOWN = 0,
+    QP,
+    VPLUS,
+    DD
+}
 
 // set in base cfg
 // ConVar ce_environment;
 // dynamically set
+//ConVar ce_server_index;
 ConVar ce_region;
 
 bool econ;
@@ -13,33 +23,17 @@ bool pubs;
 public void OnPluginStart()
 {
     RegServerCmd("ctf_regen_info", RegenInfo, "Regen CTF Info");
-    CreateConVar
-    (
-       "ce_environment",          // name
-       " ",                       // default value
-       "Creators.TF Environment", // description
-       FCVAR_NONE                 // flags
-    );
-    ce_region = CreateConVar
-    (
-       "ce_region",               // name
-       " ",                       // default value
-       "Creators.TF Region",      // description
-       FCVAR_NONE                 // flags
-    );
+
+    CreateConVar("ce_environment", " ", "Creators.TF Environment");
+    ce_region = CreateConVar("ce_region", " ", "Creators.TF Region");
+    CreateConVar("ce_server_index", "-1", "Creators.TF Server Index");
+
+    LogMessage("\n\n[STARTUP] -> CREATED CTF CONVARS\n");
 }
 
 Action RegenInfo(int args)
 {
     SetHostnameEtc();   
-}
-
-enum
-{
-    UNKNOWN = 0,
-    QP,
-    VPLUS,
-    DD
 }
 
 char url[32] = "Creators.TF";
