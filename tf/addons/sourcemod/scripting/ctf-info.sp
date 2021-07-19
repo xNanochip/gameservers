@@ -18,6 +18,7 @@ enum
 // dynamically set
 //ConVar ce_server_index;
 ConVar ce_region;
+ConVar ce_type;
 
 bool econ;
 bool pubs;
@@ -28,8 +29,9 @@ public void OnPluginStart()
     RegServerCmd("ctf_regen_info", RegenInfo, "Regen CTF Info");
 
     CreateConVar("ce_environment", " ", "Creators.TF Environment");
-    ce_region = CreateConVar("ce_region", " ", "Creators.TF Region");
+    ce_region = CreateConVar("ce_region", " ", "Creators.TF Server Region");
     CreateConVar("ce_server_index", "-1", "Creators.TF Server Index");
+    ce_type = CreateConVar("ce_type", " ", "Creators.TF Server Type");
 
     LogMessage("\n\n[CTF-INFO] -> CREATED CTF CONVARS\n");
 }
@@ -213,6 +215,7 @@ void SetHostnameEtc()
         type = UNKNOWN;
     }
 
+    // set ce_region
     SetConVarString(ce_region, c_region);
 
     // Pretty obvious.
@@ -242,11 +245,16 @@ void SetHostnameEtc()
         pubs = false;
         mvm = true;
     }
+
+    // set ce_type
+    SetConVarString(ce_type, ctype);
     
     LogMessage("\n\n[CTF-INFO] SETTING HOSTNAME\n\n");
     // set our hostname here    
     char hostname[128];
     Format(hostname, sizeof(hostname), "%s | %s | %s | #%i", url, region, ctype, sid);
+
+    // can i use SetConVarString here? lol -steph
     ServerCommand("hostname %s", hostname);
 
     CreateTimer(0.1, ExecBase);
