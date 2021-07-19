@@ -22,7 +22,7 @@ ConVar ce_type;
 
 bool econ;
 bool pubs;
-bool mvm;
+//bool mvm;
 
 //TODO: make it pull all this info from a kv file pls
 
@@ -231,21 +231,21 @@ void SetHostnameEtc()
         ctype = "Quickplay";
         econ = true;
         pubs = true;
-        mvm = false;
+        //mvm = false;
     }
     else if (type == VPLUS)
     {
         ctype = "Vanilla+ | NO DL";
         econ = false;
         pubs = true;
-        mvm = false;
+        //mvm = false;
     }
     else if (type == DD)
     {
         ctype = "Digital Directive MvM";
         econ = true;
         pubs = false;
-        mvm = true;
+        //mvm = true;
     }
 
     // set ce_type
@@ -258,9 +258,10 @@ void SetHostnameEtc()
 
     // can i use SetConVarString here? lol -steph
     // yes, FindConVar, then .SetString it. Methodmaps pls. -nano
-    ServerCommand("hostname %s", hostname);
-
-    CreateTimer(0.1, ExecBase);
+    // i will do it later -steph
+    //ServerCommand("hostname %s", hostname);
+    SetConVarString(FindConVar("hostname"), hostname);
+    CreateTimer(0.25, ExecBase);
 }
 
 Action ExecBase(Handle timer)
@@ -269,7 +270,7 @@ Action ExecBase(Handle timer)
     // always exec our base
     ServerCommand("exec quickplay/base");
 
-    CreateTimer(0.1, ExecMapcycle);
+    CreateTimer(0.25, ExecMapcycle);
 }
 
 Action ExecMapcycle(Handle timer)
@@ -284,7 +285,7 @@ Action ExecMapcycle(Handle timer)
     {
         ServerCommand("mapcyclefile quickplay/mapcycle_mvm.txt");
     }
-    CreateTimer(0.1, ExecEconVanilla);
+    CreateTimer(0.25, ExecEconVanilla);
 }
 
 
@@ -295,23 +296,31 @@ Action ExecEconVanilla(Handle timer)
     if (econ)
     {
         ServerCommand("exec quickplay/econ");
-    }   
+    }
     else
     {
         ServerCommand("exec quickplay/vanilla");
     }
-    
-    if (mvm)
+    CreateTimer(0.25, ExecGamemode);
+}
+
+Action ExecGamemode(Handle timer)
+{
+    LogMessage("\n\n[CTF-INFO] EXECING GAMEMODE CFG\n\n");
+    if (pubs)
     {
-    	ServerCommand("exec quickplay/mvm");
+        ServerCommand("exec quickplay/pubs");
     }
-    
+    else
+    {
+        ServerCommand("exec quickplay/mvm");
+    }
+
     if (!didstartup)
     {
         CreateTimer(1.0, DoStartup);
     }
 }
-
 
 Action DoStartup(Handle timer)
 {
