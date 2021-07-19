@@ -24,6 +24,8 @@ bool econ;
 bool pubs;
 bool mvm;
 
+//TODO: make it pull all this info from a kv file pls
+
 public void OnPluginStart()
 {
     RegServerCmd("ctf_regen_info", RegenInfo, "Regen CTF Info");
@@ -134,7 +136,7 @@ void SetHostnameEtc()
     **********/
     else if (sid >= 401 && sid <= 499)
     {
-        region = "Midwest US";
+        region = "East US";
         c_region = "CHI";
         type = DD;
     }
@@ -226,14 +228,14 @@ void SetHostnameEtc()
     }
     else if (type == QP)
     {
-        ctype = "Custom Pubs";
+        ctype = "Quickplay";
         econ = true;
         pubs = true;
         mvm = false;
     }
     else if (type == VPLUS)
     {
-        ctype = "Vanilla+ Pubs | NoDL";
+        ctype = "Vanilla+ | NO DL";
         econ = false;
         pubs = true;
         mvm = false;
@@ -255,6 +257,7 @@ void SetHostnameEtc()
     Format(hostname, sizeof(hostname), "%s | %s | %s | #%i", url, region, ctype, sid);
 
     // can i use SetConVarString here? lol -steph
+    // yes, FindConVar, then .SetString it. Methodmaps pls. -nano
     ServerCommand("hostname %s", hostname);
 
     CreateTimer(0.1, ExecBase);
