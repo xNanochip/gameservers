@@ -5,7 +5,7 @@ public Plugin myinfo =
     name             =  "Restart Soon:tm:",
     author           =  "steph&nie",
     description      =  "Restart map at end of map timer, if requested",
-    version          =  "0.0.4",
+    version          =  "0.0.5",
     url              =  "https://sappho.io"
 }
 
@@ -61,14 +61,16 @@ public Action kill(int Cl, int args)
     }
     else
     {
-    	if (GetRealClientCount() > 0)
-    	{
-	        b_kill = true;
-	        ReplyToCommand(Cl, "Server will die on map change.");
-	    } else {
-	    	ReplyToCommand(Cl, "Killing since there are no players on this server.");
-	    	KillNow();
-	    }
+        if (GetRealClientCount() > 0)
+        {
+	    b_kill = true;
+	    ReplyToCommand(Cl, "Server will die on map change.");
+        }
+        else
+        {
+	    ReplyToCommand(Cl, "Killing since there are no players on this server.");
+	    KillNow();
+        }
     }
 }
 
@@ -88,7 +90,7 @@ public Action unkill(int Cl, int args)
 void RestartNow() 
 {
     ServerCommand("sm_kick @humans This server is restarting. Please rejoin in about 30 seconds");
-    ServerCommand("_restart");
+    ServerCommand("quit");
 }
 
 void KillNow() 
