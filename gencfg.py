@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+	#!/usr/bin/env python3
 import os
 import datetime;
 import sys
@@ -154,7 +154,7 @@ else:
 if "EU" in c_region:
     region = "West EU"
 
-elif c_region == "VIN" or c_region = "US_POT":
+elif c_region == "VIN" or c_region == "US_POT":
     region = "East US"
 
 elif c_region == "LA":
