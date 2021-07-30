@@ -154,14 +154,14 @@ else:
 if "EU" in c_region:
     region = "West EU"
 
-elif c_region == "VIN" or "US" in c_region:
+elif c_region == "VIN" or c_region = "US_POT":
     region = "East US"
 
 elif c_region == "LA":
     region = "West US"
 
 elif c_region == "CHI":
-    region = "Central US"
+    region = "East US"
 
 elif c_region == "SGP":
     region = "Singapore"
