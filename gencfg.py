@@ -11,8 +11,8 @@ utcnow = datetime.datetime.utcnow()
 timestamp = utcnow.timestamp()
 
 
-config_file_string += ("# config generated at: {}\n".format(utcnow))
-config_file_string += ("# utc timestamp: {}\n\n".format(timestamp))
+config_file_string += ("// config generated at: {}\n".format(utcnow))
+config_file_string += ("// utc timestamp: {}\n\n".format(timestamp))
 
 # this is our server id variable straight from bash
 server_id = os.environ["SERVER_ID"]
