@@ -31,6 +31,7 @@ echo "./srcds_run $* ${py_args}"
 # we're good!
 ok "Starting server..."
 
+startPing "Server starting!"
 
 ./srcds_run $* ${py_args}
 
