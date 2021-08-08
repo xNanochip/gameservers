@@ -2,6 +2,7 @@
 #pragma newdecls required
 
 #include <sdkhooks>
+#include <cecon>
 #include <cecon_items>
 #include <sdktools>
 #include <tf2_stocks>
@@ -11,7 +12,7 @@ public Plugin myinfo =
 	name = "[CE Attribute] The Quickdraw",
 	author = "Creators.TF Team - ZoNiCaL.",
 	description = "The Quickdraw",
-	version = "rc-1.0",
+	version = "rc-1.1",
 	url = "https://creators.tf"
 };
 
@@ -115,6 +116,9 @@ public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &dam
 					// Kill the victim by dealing an absurd amount of damage.
 					damage = 999.0;
 					EmitGameSoundToClient(attacker, "Engineer.BattleCry03");
+					
+					// Send a game event that we've killed someone with the Quickdraw dueling mechanic.
+					CEcon_SendEventToClientUnique(attacker, "TF_QUICKDRAW_DUEL_KILL", 1);
 					return Plugin_Changed;
 				}
 			}
