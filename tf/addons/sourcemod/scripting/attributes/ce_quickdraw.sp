@@ -46,6 +46,7 @@ public void OnPluginStart()
 {
 	// Late hook our SDKHooks.
 	LateHook();
+	HookEvent("player_death", OnPlayerDeath, EventHookMode_Pre);
 }
 
 public void LateHook()
@@ -129,6 +130,22 @@ public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &dam
 			return Plugin_Changed;
 		}
 		
+	}
+	return Plugin_Continue;
+}
+
+public Action OnPlayerDeath(Event event, const char[] name, bool dontBroadcast)
+{
+	// Get the attacker of the victim who died.
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+	
+	// Are we under the Quickdraw one second bonus?
+	if (fBonusUntil[attacker] > GetEngineTime())
+	{
+		// If we are, all crits are dealt as mini-crits. The game doesn't actually
+		// recognize this as mini-crits, so we'll change this event to say this was
+		// dealt with mini-crits.
+		event.SetInt("crit_type", 1); // 1 is a mini-crit.
 	}
 	return Plugin_Continue;
 }
