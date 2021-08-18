@@ -4,16 +4,11 @@ source scripts/helpers.sh
 
 # written by sappho.io
 
-# use tmpfs
-tmp="/home/server"
+# TODO: use tmpfs
+tmp="/home/gitlab-runner/spaceship-gh"
 
 gl_origin="git@gitlab.com:creators_tf/gameservers/servers.git"
 gh_origin="git@github.com:CreatorsTF/gameservers.git"
-
-prebootstrap ()
-{
-    echo test
-}
 
 bootstrap ()
 {
@@ -51,8 +46,6 @@ bootstrap ()
     info "-> fetching gh origin"
     git pull -X theirs gh_origin master:gh_master --no-ff -f --no-edit --progress
 
-
-    #
     important "-> fetching gl"
 
     info "-> fetching gl origin"
@@ -62,6 +55,7 @@ bootstrap ()
     git checkout gh-master
     git checkout -b stripped-master
     git merge -X theirs gl_master --no-edit --squash
+
 
     ok "bootstrapped!"
 }
@@ -157,7 +151,7 @@ stripsecrets ()
     # i want to simplify this
     {
 // ***REPLACED SRC PASSWORD***
-        echo 'regex:(?m)(Basic .*==)==>***REPLACED C.TF API INFO***';
+        echo 'regex:(?m)(Basic .*==)==>***REPLACED API INFO***';
         echo 'regex:(?m)(\bhttp.*(@|/api/webhook).*\b)==>***REPLACED PRIVATE URL***';
     } >> regex.txt
 
