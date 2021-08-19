@@ -5,7 +5,7 @@ source scripts/helpers.sh
 # written by sappho.io
 
 # TODO: use tmpfs
-tmp="/home/gitlab-runner/spaceship-gh"
+tmp="/home/server"
 
 gl_origin="git@gitlab.com:creators_tf/gameservers/servers.git"
 gh_origin="git@github.com:CreatorsTF/gameservers.git"
