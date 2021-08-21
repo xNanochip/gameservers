@@ -15,8 +15,8 @@ github:
   - backend
   only:
   - master
-  variables:
-    GIT_STRATEGY: none
+  #variables:
+  #  GIT_STRATEGY: none
 
 compile_plugins:
   stage: compile_plugins
