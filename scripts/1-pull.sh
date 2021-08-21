@@ -84,7 +84,7 @@ fi
 ourbranch=$(git rev-parse --abbrev-ref HEAD)
 
 info "-> detatching"
-git switch --detach HEAD
+git checkout --detach HEAD -f
 
 info "-> deleting our branch"
 git branch -D ${ourbranch}
