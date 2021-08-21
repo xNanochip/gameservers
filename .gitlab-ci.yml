@@ -17,6 +17,16 @@ gitguardian:
   - worker-docker
   only:
   - master
+  - staging
+  - mvm
+  - server/weapon-testing-event
+
+compile_plugins:
+  stage: compile_plugins
+  script: ./scripts/2-build.sh
+  needs: []
+  tags:
+  - worker
 
 github:
   stage: github
@@ -60,6 +70,7 @@ generate-yml:
   - master
   - staging
   - mvm
+  - server/weapon-testing-event
 
 trigger-ci:
   stage: trigger
@@ -72,7 +83,7 @@ trigger-ci:
   - master
   - staging
   - mvm
-
+  - server/weapon-testing-event
 
 fastdl:
   stage: fastdl
