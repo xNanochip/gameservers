@@ -1,5 +1,4 @@
 stages:
-  - gitguardian
   - github
   - compile_plugins
   - genyml
@@ -8,30 +7,10 @@ stages:
 
 #  - test
 
-gitguardian:
-  image: gitguardian/ggshield:latest
-  stage: gitguardian
-  script: ggshield scan ci
-  needs: []
-  tags:
-  - worker-docker
-  only:
-  - master
-  - staging
-  - mvm
-  - server/weapon-testing-event
-
-compile_plugins:
-  stage: compile_plugins
-  script: ./scripts/2-build.sh
-  needs: []
-  tags:
-  - worker
-
 github:
   stage: github
   script: ./scripts/push-to-github.sh
-  needs: [gitguardian]
+  needs: []
   tags:
   - backend
   only:
@@ -39,6 +18,12 @@ github:
   variables:
     GIT_STRATEGY: none
 
+compile_plugins:
+  stage: compile_plugins
+  script: ./scripts/2-build.sh
+  needs: []
+  tags:
+  - worker
 
 # Secret Detection
 #include:
@@ -88,7 +73,7 @@ trigger-ci:
 fastdl:
   stage: fastdl
   script: ./scripts/0-fastdl.sh
-  needs: []
+  needs: [trigger-ci]
   tags:
   - fastdl
   only:
