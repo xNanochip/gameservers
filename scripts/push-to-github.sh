@@ -39,27 +39,44 @@ bootstrap ()
         git remote add gh_origin ${gh_origin}
     fi
 
-    info "-> detatching"
-    git switch --detach HEAD
+
 
     info "-> deleting stripped-master"
     git branch -D stripped-master
 
-    important "-> fetching gh"
+    info "-> detaching"
+    git checkout --detach HEAD -f
 
-    info "-> fetching gh origin"
-    git pull -X theirs gh_origin master:gh_master --no-ff -f --no-edit --progress
+
 
     important "-> fetching gl"
 
     info "-> fetching gl origin"
-    git pull -X theirs gl_origin master:gl_master --no-ff -f --no-edit --progress
+    git fetch gl_origin --progress master
+
+    info "-> checking out gl origin master"
+    git checkout -B gh_master gl_origin/master
+
+    info "-> resetting to gl origin master"
+    git reset --hard gl_origin/master
 
 
-    git checkout gh-master -f
-    git checkout -b stripped-master -f
-    git merge -X theirs gl_master --no-edit --squash
 
+    important "-> fetching gh"
+
+    info "-> fetching gh origin"
+    git fetch gh_origin --progress master
+
+    info "-> checking out gl origin master"
+    git checkout -B gh_master gh_origin/master
+
+    info "-> resetting to gl origin master"
+    git reset --hard gh_origin/master
+
+
+
+    info "-> merging gl_master into gh_master"
+    git merge -X theirs gl_master -v --log -m "Automerge by C.TF Prod"
 
     ok "bootstrapped!"
 }
@@ -169,7 +186,7 @@ push ()
 {
     # donezo
     ok "-> pushing to gh"
-    git push gh_origin stripped-master:master --force --progress
+    git push gh_origin gh_master:master --progress
 }
 
 bootstrap

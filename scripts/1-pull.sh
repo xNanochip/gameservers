@@ -81,35 +81,24 @@ if ${gitshallow}; then
     gitgc=true
 fi
 
-ourbranch=$(git rev-parse --abbrev-ref HEAD)
+revparse_branch=$(git rev-parse --abbrev-ref HEAD)
+ourbranch=$(git for-each-ref --format='%(objectname) %(refname:short)' refs/heads | awk "/^$(git rev-parse HEAD)/ {print \$2}")
+
 
 # fix HEAD issues
-if [[ "${ourbranch}" == "HEAD" ]]; then
-    ourbranch="master"
-    error "SERVER BRANCH = HEAD, FALLING BACK TO MASTER"
-    hook "SERVER BRANCH = HEAD, FALLING BACK TO MASTER"
-    git checkout -f master
+if [[ "${revparse_branch}" == "HEAD" ]]; then
+    error "SERVER BRANCH = ${revparse_branch} (real: ${ourbranch})"
+    hook "SERVER BRANCH = ${revparse_branch} (real: ${ourbranch})"
 fi
 
-info "-> detatching"
-git checkout --detach HEAD -f
+info "-> fetching ${ourbranch}"
+git fetch origin --progress ${ourbranch}
 
-info "-> deleting our branch"
-git branch -D ${ourbranch} -f
+info "-> checking out gl origin master"
+git checkout -B ${ourbranch} origin/${ourbranch}
 
-important "-> fetching gl"
-
-info "-> fetching gl origin"
-git pull -X theirs origin ${ourbranch} --no-ff -f --no-edit --progress
-
-info "-> checking out our branch"
-git checkout ${ourbranch}
-
-info "-> pulling our branch to make sure"
-git pull origin ${ourbranch} -f
-
-info "hard resetting"
-git reset --hard
+info "-> resetting to gl origin master"
+git reset --hard origin/${ourbranch}
 
 info "updating submodules..."
 git submodule update --init --recursive
