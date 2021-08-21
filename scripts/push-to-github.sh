@@ -40,13 +40,15 @@ bootstrap ()
     fi
 
 
+    #info "-> resetting"
+    #git reset --hard
 
-    info "-> deleting stripped-master"
-    git branch -D stripped-master
 
     info "-> detaching"
     git checkout --detach HEAD -f
 
+    warn "-> deleting stripped-master"
+    git branch -D stripped-master
 
 
     important "-> fetching gl"
@@ -73,9 +75,12 @@ bootstrap ()
     info "-> resetting to gl origin master"
     git reset --hard gh_origin/master
 
+    warn "-> checking out stripped-master"
+    git checkout -B stripped-master
 
 
-    info "-> merging gl_master into gh_master"
+
+    important "-> merging gl_master into gh_master"
     git merge -X theirs gl_master -v --log -m "Automerge by C.TF Prod"
 
     ok "bootstrapped!"
