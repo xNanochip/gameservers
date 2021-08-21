@@ -7,6 +7,10 @@ source scripts/helpers.sh
 # TODO: use tmpfs
 tmp="/home/server"
 
+debug "setting git config..."
+git config --global user.email "support@creators.tf"
+git config --global user.name "Creators.TF Production"
+
 gl_origin="git@gitlab.com:creators_tf/gameservers/servers.git"
 gh_origin="git@github.com:CreatorsTF/gameservers.git"
 
@@ -52,8 +56,8 @@ bootstrap ()
     git pull -X theirs gl_origin master:gl_master --no-ff -f --no-edit --progress
 
 
-    git checkout gh-master
-    git checkout -b stripped-master
+    git checkout gh-master -f
+    git checkout -b stripped-master -f
     git merge -X theirs gl_master --no-edit --squash
 
 
