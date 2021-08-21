@@ -68,11 +68,10 @@ for dir in ./*/ ; do
     cd "${dir}" || { error "can't cd to ${dir}"; continue; }
 
     # branches and remotes
-    CI_COMMIT_HEAD=$(git rev-parse --abbrev-ref HEAD)
-    # fix HEAD issues
-    if [[ "${CI_COMMIT_HEAD}" == "HEAD" ]]; then
-        CI_COMMIT_HEAD="master"
-    fi
+
+    # this is so long in case we have a detached head:
+    # https://stackoverflow.com/questions/6059336/how-to-find-the-current-git-branch-in-detached-head-state
+    CI_COMMIT_HEAD=$(git for-each-ref --format='%(objectname) %(refname:short)' refs/heads | awk "/^$(git rev-parse HEAD)/ {print \$2}")
     CI_LOCAL_REMOTE=$(git remote get-url origin)
     CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE##*@}"
     CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE/://}"
