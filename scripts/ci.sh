@@ -69,6 +69,10 @@ for dir in ./*/ ; do
 
     # branches and remotes
     CI_COMMIT_HEAD=$(git rev-parse --abbrev-ref HEAD)
+    # fix HEAD issues
+    if [[ "${CI_COMMIT_HEAD}" == "HEAD" ]]; then
+        CI_COMMIT_HEAD="master"
+    fi
     CI_LOCAL_REMOTE=$(git remote get-url origin)
     CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE##*@}"
     CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE/://}"
