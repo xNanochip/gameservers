@@ -98,10 +98,10 @@ pubs = False
 if sid > 100 and sid <= 199:
     c_region = "EU 1"
 
-    if sid <= 104:
+    if sid <= 103:
         type = "Quickplay"
 
-    elif sid <= 108:
+    elif sid <= 106:
         type = "Vanilla+"
 
     elif sid <= 112:
