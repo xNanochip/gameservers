@@ -538,27 +538,28 @@ public void CEconItems_OnCustomEntityStyleUpdated(int client, int entity, int st
 // We check here to see if this item can be used on this server.
 //--------------------------------------------------------------------
 
-/* 	PROVIDER CODE SUPPORT WILL BE IMPLEMENTED AT A FUTURE POINT
-	DON'T WORRY ABOUT ME FOR NOW
-	
 public bool CEconItems_ShouldItemBeBlocked(int client, CEItem xItem, const char[] type)
 {
 	if (!StrEqual(type, "cosmetic"))return false;
 	
-	// Grab our provider ID:
-	char providerID[16];
-	CEcon_GetServerProvider(providerID, sizeof(providerID));
-
-	// Grab the item definition from the schema here:
-	CEItemDefinition xDef;
-	if (CEconItems_GetItemDefinitionByIndex(xItem.m_iIndex, xDef))
+	// What's our environment?
+	ConVar hCE_Environment = FindConVar("ce_environment");
+	if (hCE_Environment != null)
 	{
-		// Does this servers provider ID match this economy item?
-		// If so, we wont block it by returning the opposite of StrEqual
-		// (in this case, true to false. If it doesn't, it'll be false to
-		// true instead).
-		return !StrEqual(providerID, xDef.m_sProvider, true);
+		char szEnvironment[256];
+		hCE_Environment.GetString(szEnvironment, sizeof(szEnvironment));
+		
+		// Are we in "live" environment, e.g not staging or on
+		// a public testing server?
+		if (!StrEqual(szEnvironment, "staging") || !StrEqual(szEnvironment, "public-testing"))
+		{
+			// Does this item have a testing attribute?
+			if (CEconItems_GetAttributeBoolFromArray(xItem.m_Attributes, "beta testing weapon"))
+			{
+				// Block this item.
+				return true;
+			}
+		}
 	}
 	return false;
 }
-*/

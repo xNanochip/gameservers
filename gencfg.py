@@ -2,6 +2,7 @@
 import os
 import datetime;
 import sys
+
 # we add things to this string over the course of this script and eventually flush it to disk as our server config file
 config_file_string = ""
 
@@ -10,13 +11,11 @@ utcnow = datetime.datetime.utcnow()
 # get timestamp of current utc time
 timestamp = utcnow.timestamp()
 
-
 config_file_string += ("// config generated at: {}\n".format(utcnow))
 config_file_string += ("// utc timestamp: {}\n\n".format(timestamp))
 
 # this is our server id variable straight from bash
 server_id = os.environ["SERVER_ID"]
-
 
 # staging servers do their own thing
 if "staging" in server_id:
@@ -26,17 +25,68 @@ if "staging" in server_id:
     else:
         mapcyclefile = "quickplay/mapcycle.txt"
 
-    ext_args = "+mapcyclefile {}".format(mapcyclefile)
+    ext_args = ("+mapcyclefile {}\n".format(mapcyclefile))
     print("args --->", ext_args)
 
+    config_file_string += ("exec quickplay/econ\n")
 
+    # Get the region from the string and exec a special config.
+    # We only have two staging servers (EU and Virginia)
+    if "eu" in server_id:
+        config_file_string += ("exec quickplay/server-staging-eu\n")
+    else:
+        config_file_string += ("exec quickplay/server-staging-vin\n")
+
+    # At this point, both server-staging-### configs execute everything we
+    # need to worry about such as "exec quickplay/base", setting hostname,
+    # password, etc etc.
+
+    # Flush our config file contents to disk quickly.
+    with open("./tf/cfg/quickplay/_id.cfg", "w") as f:
+        f.write(config_file_string)
+        f.flush()
+
+    # Flush our external arguments as well.
     with open("./py_args", "w") as f:
         f.write(ext_args)
         f.flush()
     sys.exit(0)
 
+# Testing Servers do their own thing
+elif "test" in server_id:
+    print("PUBLIC TESTING SERVER DETECTED! FALLING BACK TO MANUAL CFG")
+    if "mvm" in server_id:
+        mapcyclefile = "quickplay/mapcycle_mvm.txt"
+    else:
+        mapcyclefile = "quickplay/mapcycle.txt"
 
-# need it to be an int
+    ext_args = ("+mapcyclefile {}\n".format(mapcyclefile))
+    print("args --->", ext_args)
+
+    config_file_string += ("exec quickplay/econ\n")
+
+    # Exec a special config.
+    # Currently the only public testing server is located in Virginia.
+    # If another server is added in another region, feel free to add it here.
+    config_file_string += ("exec quickplay/server-publictest-vin\n")
+
+    # At this point, the server-weapon-test config executes everything we
+    # need to worry about such as "exec quickplay/base", setting hostname,
+    # password, etc etc.
+
+    # Flush our config file contents to disk quickly.
+    with open("./tf/cfg/quickplay/_id.cfg", "w") as f:
+        f.write(config_file_string)
+        f.flush()
+
+    # Flush our external arguments as well.
+    with open("./py_args", "w") as f:
+        f.write(ext_args)
+        f.flush()
+    sys.exit(0)
+
+# If we're not a staging or weapons testing server,
+# treat every server ID as an int past this point.
 sid = int(server_id)
 
 region = ""
@@ -44,17 +94,6 @@ cregion = ""
 
 econ = False
 pubs = False
-
-# don't think we need this cause events servers use their own stuff
-#if sid == 2 or sid == 3:
-#    type = "Events"
-#    if sid == 2:
-#        c_region = "VIN"
-#    elif sid == 3:
-#        c_region = "West EU"
-
-
-
 
 if sid > 100 and sid <= 199:
     c_region = "EU 1"

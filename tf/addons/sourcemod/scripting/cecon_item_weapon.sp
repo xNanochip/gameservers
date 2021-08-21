@@ -886,7 +886,31 @@ public bool CEconItems_ShouldItemBeBlocked(int client, CEItem xItem, const char[
 {
 	// We only want to care about weapons in this Forward.
 	if (!StrEqual(type, "weapon"))return false;
-
+	
+	// What's our environment?
+	ConVar hCE_Environment = FindConVar("ce_environment");
+	if (hCE_Environment != null)
+	{
+		char szEnvironment[256];
+		hCE_Environment.GetString(szEnvironment, sizeof(szEnvironment));
+		
+		// Are we in "live" environment, e.g not staging or on
+		// a public testing server?
+		if (StrEqual(szEnvironment, "staging") || StrEqual(szEnvironment, "public-testing"))
+		{
+			return false;
+		}
+		else
+		{
+			// Does this item have a testing attribute?
+			if (CEconItems_GetAttributeBoolFromArray(xItem.m_Attributes, "beta testing weapon"))
+			{
+				// Block this item.
+				return true;
+			}
+		}
+	}
+	
 	// Checks to see if this is medieval. The reason why this has two checks is because
 	// of a bug in Medieval MvM missions where a tf_logic_medieval entity may exist, but
 	// the GameRules prop isn't properly set. To counteract this, we just hook the creation
