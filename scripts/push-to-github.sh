@@ -184,7 +184,7 @@ stripsecrets ()
     # i want to simplify this
     {
 // ***REPLACED SRC PASSWORD***
-        echo 'regex:(?m)(Basic .*=)==>***REPLACED API INFO***';
+        echo 'regex:(?m)\***REPLACED API INFO***==>***REPLACED API INFO***';
         echo 'regex:(?m)(\bhttp.*(@|/api/webhook).*\b)==>***REPLACED PRIVATE URL***';
     } >> regex.txt
 
