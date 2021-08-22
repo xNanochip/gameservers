@@ -2,6 +2,8 @@
 
 source /home/server/helpers.sh
 
+export TERM="screen"
+
 # written by sappho.io
 
 # TODO: use tmpfs
@@ -95,7 +97,7 @@ bootstrap_raw ()
 bootstrap_stripped ()
 {
     info "rm-ing unclean repo"
-    rm -rfv ${tmp}/gs_stripped
+    rm -rf ${tmp}/gs_stripped
 
     info "cloning"
     git clone ${tmp}/gs_raw ${tmp}/gs_stripped --progress
