@@ -34,14 +34,39 @@ COMMAND=${1}
 # shift args down, deleting first arg as we just set it to a var
 shift 1
 
+# dumb bullshit logic for checking what folder our gameserver is in
 # dirs to check for possible gameserver folders
 TARGET_DIRS=(
     /srv/daemon-data
     /var/lib/pterodactyl/volumes
 )
 
-# this is clever and infinitely smarter than what it was before, good job
 WORK_DIR=$(du -s "${TARGET_DIRS[@]}" 2> /dev/null | sort -n | tail -n1 | cut -f2)
+
+# when one of those dirs doesn't exist we gotta run this
+if [[ $? != 0 ]]; then
+
+    if ! [ -d "/srv/daemon-data" ] && ! [ -d "/var/lib/pterodactyl/volumes" ]; then
+        echo "no work dir!"
+        exit 1
+
+    elif ! [ -d "/srv/daemon-data" ]; then
+        WORK_DIR="/var/lib/pterodactyl/volumes"
+
+    elif ! [ -d "/var/lib/pterodactyl/volumes" ]; then
+        WORK_DIR="/srv/daemon-data"
+
+    else
+        WORK_DIR=$(du -s "${TARGET_DIRS[@]}" 2> /dev/null  | sort -n | tail -n1 | cut -f2)
+
+    fi
+fi
+
+
+if [[ -z "${WORK_DIR}" ]]; then
+    echo "Couldn't find work dir!!!!!!"
+    exit 255
+fi
 
 debug "working dir: ${WORK_DIR}"
 
