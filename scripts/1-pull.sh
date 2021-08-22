@@ -91,14 +91,22 @@ if [[ "${revparse_branch}" == "HEAD" ]]; then
     hook "SERVER BRANCH = ${revparse_branch} (real: ${ourbranch})"
 fi
 
-info "-> fetching ${ourbranch}"
-git fetch origin --progress ${ourbranch}
 
-info "-> checking out gl origin master"
+#info "-> fetching origin just in case we need to recreate the branch"
+#git fetch ${ourbranch} --progress
+
+info "-> checking out ${ourbranch}"
 git checkout -B ${ourbranch} origin/${ourbranch}
 
-info "-> resetting to gl origin master"
+info "-> fetching ${ourbranch}"
+git fetch origin ${ourbranch} --progress
+
+info "-> resetting to origin/${ourbranch}"
 git reset --hard origin/${ourbranch}
+
+info "-> merging origin/${ourbranch} into current branch"
+git merge -X theirs -v FETCH_HEAD
+
 
 info "updating submodules..."
 git submodule update --init --recursive
