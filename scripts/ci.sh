@@ -64,7 +64,8 @@ fi
 
 
 if [[ -z "${WORK_DIR}" ]]; then
-    echo "Couldn't find work dir!!!!!!"
+    hook "Couldn't find work dir!"
+    echo "Couldn't find work dir!"
     exit 255
 fi
 
