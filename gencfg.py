@@ -111,13 +111,13 @@ elif sid > 200 and sid <= 299:
 
     c_region = "VIN"
 
-    if sid <= 204:
+    if sid <= 203:
         type = "Quickplay"
 
-    elif sid <= 208:
+    elif sid <= 206:
         type = "Vanilla+"
 
-    elif sid <= 212:
+    elif sid <= 210:
         type = "DigitalDirective"
 
 
