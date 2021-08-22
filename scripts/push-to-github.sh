@@ -2,6 +2,7 @@
 
 source /home/server/helpers.sh
 
+#
 export TERM="screen"
 
 # written by sappho.io
@@ -159,6 +160,7 @@ stripfiles ()
         echo 'regex:economy.*';
         echo 'discord.cfg';
         echo 'discord_seed.sp';
+        echo 'regex:server-staging.*';
     } >> paths.txt
 
     # invert-paths deletes these files
@@ -182,7 +184,7 @@ stripsecrets ()
     # i want to simplify this
     {
 // ***REPLACED SRC PASSWORD***
-        echo 'regex:(?m)(Basic .*==)==>***REPLACED API INFO***';
+        echo 'regex:(?m)(Basic .*=)==>***REPLACED API INFO***';
         echo 'regex:(?m)(\bhttp.*(@|/api/webhook).*\b)==>***REPLACED PRIVATE URL***';
     } >> regex.txt
 
