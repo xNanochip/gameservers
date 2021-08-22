@@ -16,7 +16,7 @@ jobs=(
 
 # all servers tags
 allservers=(
-    virginiapub
+    vinpub
     lapub
     eupub
     auspub
