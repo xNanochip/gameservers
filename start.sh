@@ -31,6 +31,12 @@ rm ./py_args
 # print out our full cmd
 echo "./srcds_run $* ${py_args}"
 
+# operate on hidden files too
+shopt -s dotglob
+
+echo "chmodding..."
+chmod 775 * -Rfv
+
 # we're good!
 ok "Starting server..."
 
