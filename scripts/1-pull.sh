@@ -92,8 +92,11 @@ if [[ "${revparse_branch}" == "HEAD" ]]; then
 fi
 
 
-#info "-> fetching origin just in case we need to recreate the branch"
-#git fetch ${ourbranch} --progress
+info "-> detaching"
+git checkout --detach HEAD -f
+
+info "-> deleting our old branch"
+git branch -D ${ourbranch}
 
 info "-> checking out ${ourbranch}"
 git checkout -B ${ourbranch} origin/${ourbranch}
