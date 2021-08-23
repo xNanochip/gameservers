@@ -35,7 +35,7 @@ ok "./srcds_run $* ${py_args}"
 shopt -s dotglob
 
 warn "chmodding..."
-chmod 775 * -Rfv
+chmod 775 * -Rf
 
 warn "truncating cleaner cfg just in case"
 truncate -s -1 tf/addons/sourcemod/configs/cleaner.cfg
