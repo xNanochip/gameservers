@@ -17,7 +17,7 @@ export STEAM_GAMESERVER_PACKET_HANDLER_NO_IPC=1
 python3 ./gencfg.py
 
 # wait a second
-sleep 1
+sleep 0.1
 
 # here's the args from our python script, for picking the map
 export py_args="$(cat ./py_args)"
@@ -29,13 +29,16 @@ important "PY ARGS = ${py_args}"
 rm ./py_args
 
 # print out our full cmd
-echo "./srcds_run $* ${py_args}"
+ok "./srcds_run $* ${py_args}"
 
 # operate on hidden files too
 shopt -s dotglob
 
-echo "chmodding..."
+warn "chmodding..."
 chmod 775 * -Rfv
+
+warn "truncating cleaner cfg just in case"
+truncate -s -1 tf/addons/sourcemod/configs/cleaner.cfg
 
 # we're good!
 ok "Starting server..."
