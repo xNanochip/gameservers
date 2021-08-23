@@ -28,7 +28,7 @@ allservers=(
 # staging servers tags
 stagingservers=(
     eupub
-    virginiapub
+    vinpub
 )
 
 # use staging by default
