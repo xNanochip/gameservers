@@ -149,7 +149,4 @@ else
     git gc --auto
 fi
 
-debug "truncating cleaner cfg just in case"
-truncate -s -1 tf/addons/sourcemod/configs/cleaner.cfg
-
 ok "git repo updated on this server (${PWD})"
