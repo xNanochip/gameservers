@@ -11,3 +11,4 @@ end_of_line = lf
 insert_final_newline = true
 
 # pawn stuff is in the .editorconfig file in the scripting dir
+
