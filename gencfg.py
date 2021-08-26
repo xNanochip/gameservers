@@ -20,10 +20,7 @@ server_id = os.environ["SERVER_ID"]
 # staging servers do their own thing
 if "staging" in server_id:
     print("STAGING SERVER DETECTED! FALLING BACK TO MANUAL CFG")
-    if "mvm" in server_id:
-        mapcyclefile = "quickplay/mapcycle_mvm.txt"
-    else:
-        mapcyclefile = "quickplay/mapcycle.txt"
+    mapcyclefile = "quickplay/mapcycle.txt"
 
     ext_args = ("+mapcyclefile {}\n".format(mapcyclefile))
     print("args --->", ext_args)
@@ -55,10 +52,7 @@ if "staging" in server_id:
 # Testing Servers do their own thing
 elif "test" in server_id:
     print("PUBLIC TESTING SERVER DETECTED! FALLING BACK TO MANUAL CFG")
-    if "mvm" in server_id:
-        mapcyclefile = "quickplay/mapcycle_mvm.txt"
-    else:
-        mapcyclefile = "quickplay/mapcycle.txt"
+    mapcyclefile = "quickplay/mapcycle.txt"
 
     ext_args = ("+mapcyclefile {}\n".format(mapcyclefile))
     print("args --->", ext_args)
@@ -98,49 +92,33 @@ pubs = False
 if sid > 100 and sid <= 199:
     c_region = "EU 1"
 
-    if sid <= 103:
+    if sid <= 104:
         type = "Quickplay"
 
-    elif sid <= 106:
+    elif sid <= 108:
         type = "Vanilla+"
 
-    elif sid <= 112:
-        type = "DigitalDirective"
 
 elif sid > 200 and sid <= 299:
 
     c_region = "VIN"
 
-    if sid <= 203:
+    if sid <= 204:
         type = "Quickplay"
 
-    elif sid <= 206:
+    elif sid <= 208:
         type = "Vanilla+"
-
-    elif sid <= 210:
-        type = "DigitalDirective"
 
 
 elif sid > 300 and sid <= 399:
 
     c_region = "LA"
 
-    if sid == 301:
+    if sid <= 302:
         type = "Quickplay"
 
-    elif sid == 302:
+    elif sid <= 304:
         type = "Vanilla+"
-
-    else:
-        type = "DigitalDirective"
-
-elif sid > 400 and sid <= 499:
-
-    c_region = "CHI"
-
-    type = "DigitalDirective"
-
-#elif sid > 500 and sid <= 599:
 
 
 elif sid > 600 and sid <= 699:
@@ -153,10 +131,6 @@ elif sid > 600 and sid <= 699:
     elif sid == 602:
         type = "Vanilla+"
 
-    else:
-        type = "DigitalDirective"
-
-
 elif sid > 700 and sid <= 799:
 
     c_region = "SGP"
@@ -167,22 +141,6 @@ elif sid > 700 and sid <= 799:
     elif sid == 702:
         type = "Vanilla+"
 
-    else:
-        type = "DigitalDirective"
-
-
-elif sid > 800 and sid <= 899:
-
-    if sid >= 800 and sid <= 849:
-
-        c_region = "US_POT"
-        type = "DigitalDirective"
-
-    elif sid >= 850 and sid <= 899:
-
-        c_region = "EU_POT"
-        type = "DigitalDirective"
-
 else:
     c_region = "Unknown"
 
@@ -192,14 +150,11 @@ else:
 if "EU" in c_region:
     region = "West EU"
 
-elif c_region == "VIN" or c_region == "US_POT":
+elif c_region == "VIN":
     region = "East US"
 
 elif c_region == "LA":
     region = "West US"
-
-elif c_region == "CHI":
-    region = "East US"
 
 elif c_region == "SGP":
     region = "Singapore"
@@ -216,11 +171,6 @@ if type == "Vanilla+":
     ctype = "Vanilla+ | NoDL"
     pubs = True
     econ = False
-
-elif type == "DigitalDirective":
-    ctype = "Digital Directive MVM"
-    pubs = False
-    econ = True
 
 else:
     ctype = type
@@ -240,14 +190,8 @@ config_file_string += ("ce_region {}\n".format(c_region))
 mapcyclefile = ""
 
 # mapcyclefile gets tacked onto the launch options so we don't waste time on itemtest
-if pubs:
-    mapcyclefile = "quickplay/mapcycle.txt"
-    config_file_string += ("exec quickplay/pubs\n")
-
-else:
-    mapcyclefile = "quickplay/mapcycle_mvm.txt"
-    config_file_string += ("exec quickplay/mvm\n")
-
+mapcyclefile = "quickplay/mapcycle.txt"
+config_file_string += ("exec quickplay/pubs\n")
 
 config_file_string += ("mapcyclefile {}\n".format(mapcyclefile))
 
