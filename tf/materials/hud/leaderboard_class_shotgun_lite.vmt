@@ -1,9 +1,3 @@
-"UnlitGeneric"
-{
-	"$basetexture" "hud/leaderboard_class_shotgun_lite"
-	"$vertexcolor" 1
-	"$no_fullbright" 1
-	"$ignorez" 1
-	"%keywords" "tf"
-	"$translucent" 1
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:e955ffb9520b8c7a6fe6799f0041bb3ecfea7d611f799997c75560164f376aa8
+size 160

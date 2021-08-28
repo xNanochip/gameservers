@@ -1,10 +1,3 @@
-"UnlitGeneric"
-{
-	"$baseTexture" "hud/leaderboard_class_soldier_banner_trio"
-	"$vertexcolor" 1
-	"$no_fullbright" 1
-	"$ignorez" 1
-	"%keywords" "tf"
-	"$translucent" 1
-}
-
+version https://git-lfs.github.com/spec/v1
+oid sha256:30887a2740a029935b05a909b22cfa81ce93f74074cbac47ac741f2efc2fbf1c
+size 168

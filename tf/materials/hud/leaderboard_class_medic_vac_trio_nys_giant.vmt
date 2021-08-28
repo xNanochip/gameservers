@@ -1,9 +1,3 @@
-"UnlitGeneric"
-{
-	"$basetexture" "hud/leaderboard_class_medic_vac_trio_nys"
-	"$vertexcolor" 1
-	"$no_fullbright" 1
-	"$ignorez" 1
-	"%keywords" "tf"
-	"$translucent" 1
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:5d14c45b85d6256ea2854c3554ce9a0204bacf7c923d8b639b35ac49ecd4e248
+size 166

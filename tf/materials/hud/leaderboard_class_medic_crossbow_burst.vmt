@@ -1,9 +1,3 @@
-"UnlitGeneric"
-{
-	"$baseTexture" "hud\leaderboard_class_medic_crossbow_burst"
-	"$vertexcolor" 1
-	"$no_fullbright" 1
-	"$ignorez" 1
-	"%keywords" "tf"
-	"$translucent" 1
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:fc20e32fc05e19986722405bf5813e161700ce937982281302a32ddf4b92bbc0
+size 167

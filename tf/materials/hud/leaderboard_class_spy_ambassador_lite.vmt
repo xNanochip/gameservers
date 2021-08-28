@@ -1,9 +1,3 @@
-"UnlitGeneric"
-{
-	"$basetexture" "hud/leaderboard_class_spy_ambassador_lite"
-	"$vertexcolor" 1
-	"$no_fullbright" 1
-	"$ignorez" 1
-	"%keywords" "tf"
-	"$translucent" 1
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:45ed8021ca93f963b98fd136c34d7a03aec796d0428787d55d60d248e21bf33c
+size 167

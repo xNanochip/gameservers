@@ -1,10 +1,3 @@
-"UnlitGeneric"
-{
-	"$baseTexture" "hud/leaderboard_class_tank_small_turret"
-	"$vertexcolor" 1
-	"$no_fullbright" 1
-	"$ignorez" 1
-	"%keywords" "tf"
-	"$translucent" 1
-}
-
+version https://git-lfs.github.com/spec/v1
+oid sha256:2c2b85f5bfb214ef667993c6ebe0dfe8d499ac7f998a9087f92c1ee4539daed2
+size 166

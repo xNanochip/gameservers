@@ -1,10 +1,3 @@
-"UnlitGeneric"
-{
-	"$baseTexture" "hud\leaderboard_class_medic_overheal"
-	"$vertexcolor" 1
-	"$no_fullbright" 1
-	"$ignorez" 1
-	"%keywords" "tf"
-	"$translucent" 1
-}
-
+version https://git-lfs.github.com/spec/v1
+oid sha256:daee546ba89de553a71cef0c7c58e275595168d3681621756a284adf122ab957
+size 163

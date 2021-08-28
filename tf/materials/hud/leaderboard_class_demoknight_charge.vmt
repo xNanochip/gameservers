@@ -1,9 +1,3 @@
-"UnlitGeneric"
-{
-	"$baseTexture" "hud\leaderboard_class_demoknight_charge"
-	"$vertexcolor" 1
-	"$no_fullbright" 1
-	"$ignorez" 1
-	"%keywords" "tf"
-	"$translucent" 1
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:41dc712daf5083eefa59eceff34066e97326d3c026fa5c8fbeb578c087a79518
+size 164

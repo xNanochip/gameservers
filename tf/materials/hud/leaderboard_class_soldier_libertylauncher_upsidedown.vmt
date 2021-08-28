@@ -1,10 +1,3 @@
-"UnlitGeneric"
-{
-	"$baseTexture" "hud\leaderboard_class_soldier_libertylauncher_upsidedown"
-	"$vertexcolor" 1
-	"$no_fullbright" 1
-	"$ignorez" 1
-	"%keywords" "tf"
-	"$translucent" 1
-}
-
+version https://git-lfs.github.com/spec/v1
+oid sha256:0936eb09eb2fa2ab6783f8702c23c6c7fe29f9cc9b2b170cedfb126413be92c3
+size 183

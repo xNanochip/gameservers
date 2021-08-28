@@ -1,9 +1,3 @@
-"UnlitGeneric"
-{
-	"$basetexture" "hud/leaderboard_class_soldier_rapid_conch"
-	"%keywords" "tf"
-	"$translucent" 1
-	"$vertexcolor" 1
-	"$no_fullbright" 1
-	"$ignorez" 1
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:ccd6aea2a79d5937c37910a9ce98f0798cc0841569ba5e431a501cb175747270
+size 167

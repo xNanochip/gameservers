@@ -1,9 +1,3 @@
-"UnlitGeneric"
-{
-	"$baseTexture" "hud\leaderboard_class_soldier_samurai_conch"
-	"$vertexcolor" 1
-	"$no_fullbright" 1
-	"$ignorez" 1
-	"%keywords" "tf"
-	"$translucent" 1
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:3eb8ef458b903a69a85001cb24f8714f050b22d4b901ece970369508567891ee
+size 168

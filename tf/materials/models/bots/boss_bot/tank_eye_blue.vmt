@@ -1,6 +1,3 @@
-"VertexLitGeneric"
-{
-	"$basetexture" "models\bots\boss_bot\tank_eye_blue.vtf"
-
-	"$selfillum" 1
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:8830148dfc4eb95575ea030b871620316b6c44e5dd2a6cde992d346b9429edd3
+size 96

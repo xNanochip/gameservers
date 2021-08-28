@@ -1,16 +1,3 @@
-"VertexlitGeneric"
-{
-	"$baseTexture" "models\bots\boss_bot\blimp_base_1_gray_final_damage2.vtf"
-
-	"$phong" "1"
-	"$phongexponent" "25"
-	"$phongboost" "0"
-	"$lightwarptexture" "models/player/pyro/pyro_lightwarp"
-	"$phongfresnelranges"	"[.25 1 4]"
-	"$basemapalphaphongmask" "1"
-
-	"$rimlight" "1"
-	"$rimlightexponent" "4"
-	"$rimlightboost" ".65"
-}
-
+version https://git-lfs.github.com/spec/v1
+oid sha256:70f60e2a4f8631d514ef6c0e2ead7b7f3a69916199af87a3b1ef760cf246f27b
+size 345

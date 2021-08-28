@@ -1,9 +1,3 @@
-"UnlitGeneric"
-{
-	"$baseTexture" "hud\leaderboard_class_scout_fan"
-	"$vertexcolor" 1
-	"$no_fullbright" 1
-	"$ignorez" 1
-	"%keywords" "tf"
-	"$translucent" 1
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:61c076c23cc6d1878bd89ee5ede84fbf6f28b1096601938fc9ae06ca7e614e1b
+size 156

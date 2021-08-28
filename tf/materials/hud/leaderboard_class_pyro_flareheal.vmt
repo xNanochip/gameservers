@@ -1,9 +1,3 @@
-"UnlitGeneric"
-{
-	"$baseTexture" "hud\leaderboard_class_pyro_flareheal"
-	"$vertexcolor" 1
-	"$no_fullbright" 1
-	"$ignorez" 1
-	"%keywords" "tf"
-	"$translucent" 1
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:35665c3520ea13aa2a8ef423210196b1666bdd71225dce7291da9f6b5b1e431e
+size 161
