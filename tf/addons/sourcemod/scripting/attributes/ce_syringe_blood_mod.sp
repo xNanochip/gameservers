@@ -26,7 +26,7 @@
 #define PLUGIN_NAME           "[CE Attribute] syringe blood mod"
 #define PLUGIN_AUTHOR         "Creators.TF Team"
 #define PLUGIN_DESCRIPTION    "syringe blood mod"
-#define PLUGIN_VERSION        "1.00"
+#define PLUGIN_VERSION        "2.01"
 #define PLUGIN_URL            "https//creators.tf"
 
 int m_iBlood[MAXPLAYERS]; // the amount of health stored in the syringe
@@ -92,10 +92,9 @@ public Action OnTraceAttack(int victim, int &attacker, int &inflictor, float &da
 	if(!IsPlayerAlive(victim)) return Plugin_Continue;
 	if(GetClientTeam(attacker) != GetClientTeam(victim)) return Plugin_Continue; // we cant heal enemies
 	int iWeapon = GetEntPropEnt(attacker, Prop_Send, "m_hActiveWeapon");
-	if(IsValidEntity(iWeapon) && IsSyringeBloodMod(iWeapon))
+	if(IsValidEntity(iWeapon) && IsSyringeBloodMod(iWeapon) && inflictor == attacker) // infilctor is the attacker for hitscan attacks and since we only want those, check for it
 	{
-		// are we actually fully charged
-		if(m_iBlood[attacker] >= m_iBloodCap[attacker])
+		if(m_iBlood[attacker] >= m_iBloodCap[attacker]) // are we actually fully charged
 		{
 			ApplyCharge(attacker, victim, iWeapon);
 		}

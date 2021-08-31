@@ -12,7 +12,7 @@ SPCOMP_PATH="scripting/spcomp64"
 SCRIPTS_DIR="scripting"
 COMPILED_DIR="plugins"
 # Exclusion lists, use /dir/ for directories and /file_ for file_*.sp
-EXCLUDE_COMPILE="/stac/ /include/ /disabled/ /external/ /economy/ /discord/"
+EXCLUDE_COMPILE="/stac/ /include/ /disabled/ /external/ /economy/ /discord/ /tf2-comp-fixes/"
 EXCLUDE_COMPILE="grep -v -e ${EXCLUDE_COMPILE// / -e }"
 EXCLUDE_CLEANUP="/external/ /disabled/"
 EXCLUDE_CLEANUP="grep -v -e ${EXCLUDE_CLEANUP// / -e }"
@@ -107,10 +107,11 @@ compile()
         info "Compiling ${plugin}"
         # compiler path  plugin name    output dir       output file replacing sp with smx
         ./${SPCOMP_PATH} "${plugin}" -o "${COMPILED_DIR}/$(basename "${plugin/.sp/.smx}")" \
-            -v=2 -z=9 -O=2 -\;=+ -E
-        # verbose, max compressed, max optimized, require semicolons, treat errors as warnings
-
-        # if something has gone wrong then stop everything and yell about it
+            -v=2 -\;=+ -E
+        # verbose, require semicolons, treat errors as warnings
+        # sync this file
+        sync "${COMPILED_DIR}/$(basename "${plugin/.sp/.smx}")"
+        # if something has gone wrong then yell about it
         if [[ $? -ne 0 ]]; then
             error "spcomp error while compiling ${plugin}"
             failed=1
@@ -149,6 +150,11 @@ cleanup_plugins()
         elif [ ${SP_FILE_COUNT} -eq 1 ]; then
             # If only one *.sp counterpart was found then all is good
             debug "${line} -> ${SP_FILE}"
+            # If the ${SP_FILE} lives on the exclusion list, then delete the compiled plugin
+            if [[ ${SP_FILE} == */disabled/* ]] || [[ ${SP_FILE} == */external/* ]]; then
+                important "Plugin is disabled or external, deleting the compiled file"
+                rm -fv ${line}
+            fi
         else
             # If more than one *.sp counterpart was found, then print a warning (for cleanup)
             warn "${line} -> ${SP_FILE//$'\n'/ - }"

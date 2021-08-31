@@ -1,14 +1,3 @@
-"VertexLitGeneric"
-{
-	"$basetexture"	"models/bots/boss_bot/tankredbody1_damage2"
-	"$surfaceprop"	"default"
-//	"$selfillum" 1
-	"$basemapalphaphongmask" 1
-	//phong properties
-	"$phong"	"1"
-	"$phongboost"	"2"
-	"$phongexponent"	"40"
-	"$phongfresnelranges"	"[.5 1 2]"
-	
-	"$rimlight" 1
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:614d5ad014e55d94516ca2646f1def632a5e990634fd5f77660f2c7b49af3115
+size 281

@@ -1,20 +1,3 @@
-"VertexLitGeneric"
-{
-	"$basetexture"	"models/bots/boss_bot/tankcolorbody1"
-	"$surfaceprop"	"default"
-//	"$selfillum" 1
-//	"$basemapalphaphongmask" 1
-	//phong properties
-	"$phong"	"1"
-	"$phongboost"	"2"
-	"$phongexponent"	"40"
-	"$phongfresnelranges"	"[.5 1 2]"
-	
-	"$rimlight" 1
-	
- 	"$blendtintbybasealpha" "1" 
- 	"$blendtintcoloroverbase" "1"  
-
-	"$colortint_base" "{91 133 160}"
-	"$colortint_tmp" "[0 0 0]" 
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:67ba35574b17e62ada3ead70eafc384e5e72e58297c089a58bb0e9c6663745d2
+size 408

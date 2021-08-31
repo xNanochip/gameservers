@@ -10,13 +10,13 @@ jobnames=(
 
 # scripts to execute for each job - adjust flags here
 jobs=(
-    "./scripts/ci.sh pull -v -c"
+    "./scripts/ci.sh pull -v"
     "./scripts/ci.sh build"
 )
 
 # all servers tags
 allservers=(
-    virginiapub
+    vinpub
     lapub
     eupub
     auspub
@@ -28,7 +28,7 @@ allservers=(
 # staging servers tags
 stagingservers=(
     eupub
-    virginiapub
+    vinpub
 )
 
 # use staging by default
@@ -67,13 +67,17 @@ do
         # only do the needs stuff if we're not on the first stage
         if (( i > 0 )); then
         # get the previous str of the jobnames array
-        echo "  needs:"
-        echo "    - job: ${jobnames[i-1]}_${tag}"
+            echo "  needs:"
+            echo "    - job: ${jobnames[i-1]}_${tag}"
         fi
         # Tags
         echo "  tags:"
         echo "    - ${tag}"
+        if [[ $jobname =~ build ]]; then
+            echo "  variables:"
+            echo "    GIT_STRATEGY: none"
+        fi
     done
-    echo ""
     ((i=i+1))
+    echo ""
 done

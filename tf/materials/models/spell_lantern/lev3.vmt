@@ -1,16 +1,3 @@
-"VertexLitGeneric"
-{
-	"$basetexture" "models/spell_lantern/lev3"
-	"$phong" "1"
-	"$phongexponent" ".5"
-	"$phongboost" "1"
-	"$lightwarptexture" "models\workshop\weapons\c_models\c_fists_of_steel\c_fists_of_steel_lightwarp_blue"	
-	"$phongfresnelranges"	"[.25 1 4]"
-	"$basemapalphaphongmask" "1"
-
-	"$rimlight" "1"
-	"$rimlightexponent" ".5"
-	"$rimlightboost" "2"
-
-}
-
+version https://git-lfs.github.com/spec/v1
+oid sha256:a32417d5627642602c61d560476f008049dfc3539e54efb321d8b4aeabf35669
+size 362

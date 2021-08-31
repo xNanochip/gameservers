@@ -4,8 +4,11 @@
 source scripts/helpers.sh
 
 # a2s shennanigans
-export STEAM_GAMESERVER_RATE_LIMIT_200MS=25
+# https://steamcommunity.com/discussions/forum/14/2974028351344359625/
+export STEAM_GAMESERVER_RATE_LIMIT_200MS=30
 export STEAM_GAMESERVER_PACKET_HANDLER_NO_IPC=1
+# Not yet.
+#export STEAM_GAMESERVER_A2S_INFO_REQUIRE_CHALLENGE=1
 
 # update server if it needs it
 ./steamcmd/steamcmd.sh +login anonymous +force_install_dir ${PWD} +app_update 232250 +exit
@@ -14,7 +17,7 @@ export STEAM_GAMESERVER_PACKET_HANDLER_NO_IPC=1
 python3 ./gencfg.py
 
 # wait a second
-sleep 1
+sleep 0.1
 
 # here's the args from our python script, for picking the map
 export py_args="$(cat ./py_args)"
@@ -26,7 +29,10 @@ important "PY ARGS = ${py_args}"
 rm ./py_args
 
 # print out our full cmd
-echo "./srcds_run $* ${py_args}"
+ok "./srcds_run $* ${py_args}"
+
+# operate on hidden files too
+shopt -s dotglob
 
 # we're good!
 ok "Starting server..."
@@ -34,4 +40,3 @@ ok "Starting server..."
 startPing "Server starting!"
 
 ./srcds_run $* ${py_args}
-

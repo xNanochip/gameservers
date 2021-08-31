@@ -1,9 +1,3 @@
-"UnlitGeneric"
-{
-	"$baseTexture" "hud/leaderboard_class_demo_knight_bottle"
-	"$vertexcolor" 1
-	"$no_fullbright" 1
-	"$ignorez" 1
-	"%keywords" "tf"
-	"$translucent" 1
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:213e611db267aa2be8386f0b6e308c2dd60bb34904d879b4bfe2107753434352
+size 165
