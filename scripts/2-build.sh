@@ -111,9 +111,7 @@ compile()
         # verbose, require semicolons, treat errors as warnings
         # sync this file
         sync "${COMPILED_DIR}/$(basename "${plugin/.sp/.smx}")"
-        # wait just a second
-        sleep 0.05
-        # if something has gone wrong then stop everything and yell about it
+        # if something has gone wrong then yell about it
         if [[ $? -ne 0 ]]; then
             error "spcomp error while compiling ${plugin}"
             failed=1
