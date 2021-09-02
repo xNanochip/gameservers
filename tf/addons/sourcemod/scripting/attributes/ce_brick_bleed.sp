@@ -44,7 +44,6 @@ public void OnClientPutInServer(int client)
 	SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamage);
 }
 
-
 public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem xItem, const char[] type)
 {
 	if (StrEqual(type, "weapon"))
@@ -58,7 +57,7 @@ public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem xItem, co
 
 public Action OnTakeDamage(int client, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3])
 {
-	if (bIsBrick[inflictor])
+	if (bIsBrick[inflictor] && IsBrickEntity(inflictor))
 	{
 		float attackerpos[3], vicpos[3];
 		GetClientAbsOrigin(attacker, attackerpos);
@@ -95,13 +94,20 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		SDKHook(entity, SDKHook_SpawnPost, HookSpawn);
 	}
+	else
+	{
+		bIsBrick[entity] = false;
+	}
 }
 
 public Action HookSpawn(int entity)
 {
 	int owner = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
-	int weapon = GetEntPropEnt(owner, Prop_Send, "m_hActiveWeapon"); //gets weapon
-	if (IsValidClient(owner) && IsValidEntity(weapon) && Brick[weapon])
+	if (!IsValidClient(owner)) return Plugin_Continue;
+	
+	int weapon = GetPlayerWeaponSlot(owner, TFWeaponSlot_Secondary);
+	//int weapon = GetEntPropEnt(owner, Prop_Send, "m_hActiveWeapon");
+	if (IsValidEntity(weapon) && Brick[weapon])
 	{
 		float position[3], rot[3], velocity[3];
 		int team = GetEntProp(entity, Prop_Send, "m_iTeamNum"); //gets team of projectile
@@ -134,6 +140,18 @@ public Action HookSpawn(int entity)
 
 		bIsBrick[proj] = true;
 	}
+	return Plugin_Continue;
+}
+
+public bool IsBrickEntity(int projectile)
+{
+	bool result = false;
+	char classname[64];
+	GetEntityClassname(projectile, classname, sizeof classname);
+	if (StrEqual(classname, "tf_projectile_throwable_brick"))
+		result = true;
+	
+	return result;
 }
 
 public void SetProjectileModel(int proj, int modelIndex)
