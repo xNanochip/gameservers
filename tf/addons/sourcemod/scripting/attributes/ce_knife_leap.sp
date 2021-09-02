@@ -7,11 +7,12 @@
 #include <sdkhooks>
 #include <tf2_stocks>
 #include <cecon_items>
+#include <timers>
 
 #define PLUGIN_NAME           "[CE Attribute] knife leap"
 #define PLUGIN_AUTHOR         "Creators.TF Team"
 #define PLUGIN_DESCRIPTION    ""
-#define PLUGIN_VERSION        "1.10"
+#define PLUGIN_VERSION        "1.11"
 #define PLUGIN_URL            "https//creators.tf"
 
 #define SOUND_LEAP "TFPlayer.AirBlastImpact"
@@ -78,12 +79,13 @@ void DrawHUD(int client)
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon, int &subtype, int &cmdnum, int &tickcount, int &seed, int mouse[2])
 {
-	if(HasAttributeActive(client))
+	if(buttons & IN_RELOAD)
 	{
-		if(buttons & IN_RELOAD)
+		int iWeapon = GetAttribute(client);
+		if(iWeapon >= 0)
 		{
 			//PrintToChat(client, "Knife dash");
-			int iWeapon = GetActiveWeapon(client);
+			
 			float flCooldown = CEconItems_GetEntityAttributeFloat(iWeapon, "knife leap cooldown");
 			if(flCooldown <= 0 )
 			{
@@ -108,6 +110,12 @@ void PerformDash(int client, int weapon)
 	if(!TF2_IsPlayerInCondition(client, TFCond_Cloaked))
 	{
 		// we can only leap while cloaked
+		return;
+	}
+	//PrintToChat(client, "finish time: %f, time: %f", flCloakFinishTime, GetGameTime());
+	if(GetEntPropFloat(client, Prop_Send, "m_flInvisChangeCompleteTime") >= GetGameTime())
+	{
+		// we havent finished cloaking yet
 		return;
 	}
 	
@@ -173,7 +181,7 @@ bool HasAttribute(int client)
 
 int GetAttribute(int client)
 {
-	for (int i = 0; i <= TFWeaponSlot_Melee; i++)
+	for (int i = 0; i <= TFWeaponSlot_PDA; i++)
 	{
 		int iWeapon = GetPlayerWeaponSlot(client, i);
 		if(iWeapon > 0 && IsValidEntity(iWeapon) && CEconItems_GetEntityAttributeBool(iWeapon, "knife leap"))
@@ -184,6 +192,7 @@ int GetAttribute(int client)
 	return -1;
 }
 
+/*
 bool HasAttributeActive(int client)
 {
     int iActiveWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
@@ -193,6 +202,7 @@ bool HasAttributeActive(int client)
     }
     return false;
 }
+*/
 
 stock int GetActiveWeapon(int client)
 {
