@@ -78,8 +78,6 @@ pl_enclosure_final
 // pl_fifthcurve
 workshop/648227046
 pl_frontier_final
-// pl_sludgepit_final4
-workshop/1445384680
 // pl_stranded_rc6
 workshop/1481954279
 // pl_summercoast_rc8d
