@@ -8,7 +8,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-bool bShowHats[MAXPLAYERS+1] = true;
+bool bShowHats[MAXPLAYERS+1] = false;
 Handle ctfHatsCookie;
 
 public Plugin myinfo =
@@ -50,10 +50,10 @@ public void OnClientCookiesCached(int client)
     char cookievalue[8];
     // get cookie value from db
     GetClientCookie(client, ctfHatsCookie, cookievalue, sizeof(cookievalue));
-    // if we dont have a cookie value set it to 1
+    // if we dont have a cookie value set it to 0
     if (!cookievalue[0])
     {
-        cookievalue = "1";
+        cookievalue = "0";
     }
 
     // StringToIntToBool essentially, the bang bang double negates it, once to an inverted bool, twice to a proper bool
