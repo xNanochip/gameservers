@@ -21,6 +21,7 @@ cp_snakewater_final1
 cp_sunshine
 cp_mercenarypark
 cp_mossrock
+cp_metalworks
 
 // overgrown
 workshop/503939302
@@ -84,8 +85,6 @@ workshop/1481954279
 // pl_summercoast_rc8d
 workshop/1761528829
 pl_swiftwater_final1
-// pl_timbermill
-workshop/454304371
 pl_upward
 pl_pier
 // pl_vigil_rc7
