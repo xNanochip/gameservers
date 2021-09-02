@@ -4,6 +4,8 @@
 // This file defines what maps are allowed in pubs.
 // ----------------------------------------------------------//
 //
+
+
 // cp_glassworks_rc6a 5cp
 workshop/454118349
 cp_powerhouse
@@ -19,12 +21,19 @@ cp_snakewater_final1
 cp_sunshine
 cp_mercenarypark
 cp_mossrock
-cp_gorge
+
+// overgrown
+workshop/503939302
+
+// gorge reborn
+workshop/2424608178
+
 cp_mountainlab
 // cp_steel refresh
 workshop/2376443257
 // cp_villa
 workshop/2113052569
+
 // koth_ashville
 workshop/2130459942
 // koth_bagel_rc4a
@@ -54,9 +63,15 @@ workshop/1962574007
 workshop/1549817316
 // koth_warmtic
 workshop/2443241140
+// sharkbay
+workshop/2404226979
+
 // pl_badwater_pro_v12
 workshop/2142942074
-pl_barnblitz_pro6
+// problitz
+workshop/2562184861
+// humidity
+workshop/971228749
 pl_borneo
 pl_enclosure_final
 // pl_fifthcurve
