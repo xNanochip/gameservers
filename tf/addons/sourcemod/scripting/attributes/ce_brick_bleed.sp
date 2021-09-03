@@ -44,17 +44,6 @@ public void OnClientPutInServer(int client)
 	SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamage);
 }
 
-public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem xItem, const char[] type)
-{
-	if (StrEqual(type, "weapon"))
-	{
-		if (CEconItems_GetEntityAttributeInteger(entity, "proj is brick") > 0)
-		{
-			Brick[entity] = true;
-		}
-	}
-}
-
 public Action OnTakeDamage(int client, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3])
 {
 	if (bIsBrick[inflictor] && IsBrickEntity(inflictor))
@@ -88,6 +77,12 @@ public float ClampFloat(float val, float min, float max)
 	return val > max ? max : val < min ? min : val;
 }
 
+public void OnEntityDestroyed(int entity)
+{
+	Brick[entity] = false;
+	bIsBrick[entity] = false;
+}
+
 public void OnEntityCreated(int entity, const char[] classname)
 {
 	if (StrEqual(classname, "tf_projectile_jar"))
@@ -96,6 +91,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 	}
 	else
 	{
+		Brick[entity] = false;
 		bIsBrick[entity] = false;
 	}
 }
@@ -107,7 +103,7 @@ public Action HookSpawn(int entity)
 	
 	int weapon = GetPlayerWeaponSlot(owner, TFWeaponSlot_Secondary);
 	//int weapon = GetEntPropEnt(owner, Prop_Send, "m_hActiveWeapon");
-	if (IsValidEntity(weapon) && Brick[weapon])
+	if (CEconItems_GetEntityAttributeBool(weapon, "proj is brick"))
 	{
 		float position[3], rot[3], velocity[3];
 		int team = GetEntProp(entity, Prop_Send, "m_iTeamNum"); //gets team of projectile
