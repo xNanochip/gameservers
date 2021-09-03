@@ -16,6 +16,12 @@ int brickModelIndex;
 
 //Handle g_SDKGetVelocity;
 
+#define DEFAULT_BRICK_BLEED 4.0
+#define DEFAULT_BRICK_BLEED_MIN 3.0
+#define DEFAULT_BRICK_BLEED_MAX 8.0
+#define DEFAULT_BRICK_BLEED_DIST 550.0
+#define DEFAULT_BRICK_BLEED_DIST_MIN 400.0
+
 public Plugin myinfo =
 {
 	name    = "[Attribute] Brick",
@@ -48,22 +54,57 @@ public Action OnTakeDamage(int client, int &attacker, int &inflictor, float &dam
 {
 	if (bIsBrick[inflictor] && IsBrickEntity(inflictor))
 	{
+		float distance, bleed, bleedMin, bleedMax, baseDistance, minDist;
+		
+		// Grab the distance between client and attacker.
 		float attackerpos[3], vicpos[3];
 		GetClientAbsOrigin(attacker, attackerpos);
 		GetClientAbsOrigin(client, vicpos);
 
 		//Get our bleed attributes
-		float distance = (GetVectorDistance(attackerpos, vicpos));
-		float bleed = CEconItems_GetEntityAttributeFloat(weapon, "brick bleed");
-		float bleedMin = CEconItems_GetEntityAttributeFloat(weapon, "brick bleed min");
-		float bleedMax = CEconItems_GetEntityAttributeFloat(weapon, "brick bleed max");
-		float baseDistance = CEconItems_GetEntityAttributeFloat(weapon, "brick bleed dist");
-		float minDist = CEconItems_GetEntityAttributeFloat(weapon, "brick bleed dist min");
-
+		distance = (GetVectorDistance(attackerpos, vicpos));
+		
+		// If the weapon that dealt this damage wasn't a brick, grab the attackers original brick
+		// and get attributes from there.
+		if (!CEconItems_GetEntityAttributeBool(weapon, "proj is brick"))
+		{
+			int brickWeapon = GetPlayerWeaponSlot(attacker, TFWeaponSlot_Secondary);
+			
+			// Is this a brick weapon?
+			if (IsValidEntity(brickWeapon) && CEconItems_GetEntityAttributeBool(brickWeapon, "proj is brick"))
+			{
+				bleed = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed");
+				bleedMin = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed min");
+				bleedMax = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed max");
+				baseDistance = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed dist");
+				minDist = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed dist min");
+			}
+			// This isn't a brick, use placeholder values.
+			else
+			{
+				bleed = DEFAULT_BRICK_BLEED;
+				bleedMin = DEFAULT_BRICK_BLEED_MIN;
+				bleedMax = DEFAULT_BRICK_BLEED_MAX;
+				baseDistance = DEFAULT_BRICK_BLEED_DIST;
+				minDist = DEFAULT_BRICK_BLEED_DIST_MIN;
+			}
+		}
+		else
+		{
+			// This is already a brick, grab it's attributes.
+			bleed = CEconItems_GetEntityAttributeFloat(weapon, "brick bleed");
+			bleedMin = CEconItems_GetEntityAttributeFloat(weapon, "brick bleed min");
+			bleedMax = CEconItems_GetEntityAttributeFloat(weapon, "brick bleed max");
+			baseDistance = CEconItems_GetEntityAttributeFloat(weapon, "brick bleed dist");
+			minDist = CEconItems_GetEntityAttributeFloat(weapon, "brick bleed dist min");
+		}
+		
 		//minimum distance for bleed
 		if (distance >= minDist)
 		{
 			bleed = ClampFloat((distance / baseDistance) * bleed, bleedMin, bleedMax);
+			
+			// If we have a valid bleed duration, make the client bleed.
 			TF2_MakeBleed(client, attacker, bleed);
 		}
 		bIsBrick[inflictor] = false;
@@ -99,6 +140,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 public Action HookSpawn(int entity)
 {
 	int owner = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
+	PrintToChatAll("%d", owner);
 	if (!IsValidClient(owner)) return Plugin_Continue;
 	
 	int weapon = GetPlayerWeaponSlot(owner, TFWeaponSlot_Secondary);
