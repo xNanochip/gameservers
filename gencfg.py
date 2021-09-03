@@ -106,7 +106,7 @@ elif sid > 200 and sid <= 299:
     if sid <= 203:
         type = "Quickplay"
 
-    elif sid <= 204:
+    else:
         type = "Vanilla+"
 
 
@@ -114,10 +114,10 @@ elif sid > 300 and sid <= 399:
 
     c_region = "LA"
 
-    if sid == 301:
+    if sid <= 302:
         type = "Quickplay"
 
-    elif sid == 302:
+    else:
         type = "Vanilla+"
 
 
