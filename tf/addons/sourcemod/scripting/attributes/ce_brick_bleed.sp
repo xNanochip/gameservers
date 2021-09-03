@@ -140,7 +140,6 @@ public void OnEntityCreated(int entity, const char[] classname)
 public Action HookSpawn(int entity)
 {
 	int owner = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
-	PrintToChatAll("%d", owner);
 	if (!IsValidClient(owner)) return Plugin_Continue;
 	
 	int weapon = GetPlayerWeaponSlot(owner, TFWeaponSlot_Secondary);
