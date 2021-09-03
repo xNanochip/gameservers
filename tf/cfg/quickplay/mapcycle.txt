@@ -50,8 +50,6 @@ workshop/2112251255
 koth_harvest_final
 koth_highpass
 koth_king
-// koth_koreto
-workshop/2108259108
 // koth_product_rcx
 workshop/454272353
 // koth_ramjam_rc1
