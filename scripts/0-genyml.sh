@@ -21,13 +21,10 @@ allservers=(
     eupub
     auspub
     sgppub
-    uspotato1
-    eupotato2
 )
 
 # staging servers tags
 stagingservers=(
-    eupub
     vinpub
 )
 
