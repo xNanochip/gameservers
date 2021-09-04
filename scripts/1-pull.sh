@@ -85,7 +85,7 @@ revparse_branch=$(git rev-parse --abbrev-ref HEAD)
 ourbranch=$(git for-each-ref --format='%(objectname) %(refname:short)' refs/heads | awk "/^$(git rev-parse HEAD)/ {print \$2}")
 
 # have to do this AGAIN
-if [[ "${ourbranch" == "" ]]; then
+if [[ "${ourbranch}" == "" ]]; then
     ourbranch="stable"
 fi
 
