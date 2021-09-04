@@ -66,6 +66,4 @@ github:
   tags:
   - backend
   only:
-  - master
-  #variables:
-  #  GIT_STRATEGY: none
+  - stable
