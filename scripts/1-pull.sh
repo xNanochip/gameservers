@@ -100,6 +100,9 @@ git branch -D ${ourbranch}
 info "-> pulling our new branch from origin
 git pull origin ${ourbranch}:${ourbranch} --force
 
+info "-> checking out ${ourbranch}"
+git checkout -B ${ourbranch}
+
 info "-> resetting to origin/${ourbranch}"
 git reset --hard origin/${ourbranch}
 
