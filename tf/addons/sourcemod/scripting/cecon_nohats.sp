@@ -30,7 +30,7 @@ public void OnPluginStart()
     RegConsoleCmd("sm_nohats",          ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
     RegConsoleCmd("sm_hats",            ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
 
-    ctfHatsCookie = RegClientCookie("CTF_ShowHats__", ".", CookieAccess_Protected);
+    ctfHatsCookie = RegClientCookie("CTF_ShowHats", ".", CookieAccess_Protected);
 
     // loop thru clients
     for (int i = 1; i <= MaxClients; i++)
@@ -109,13 +109,18 @@ public void CEconItems_OnItemIsEquipped(int client, int entity, CEItem item, con
     // client equipped a ctf hat, hook it
     if (StrEqual(type, "cosmetic"))
     {
-        RequestFrame(HookDelay, entity);
+        RequestFrame(HookDelay, EntIndexToEntRef(entity));
     }
 }
 
-void HookDelay(int entity)
+void HookDelay(int entityref)
 {
-    SDKHook(entity, SDKHook_SetTransmit, SetTransmitHat);
+    // make sure this is real
+    int entity = EntRefToEntIndex(entityref);
+    if (IsValidEntity(entity))
+    {
+        SDKHook(entity, SDKHook_SetTransmit, SetTransmitHat);
+    }
 }
 
 public Action SetTransmitHat(int entity, int client)
