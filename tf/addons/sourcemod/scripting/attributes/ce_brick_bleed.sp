@@ -23,6 +23,7 @@ int brickModelIndex;
 #define DEFAULT_BRICK_BLEED_MAX         8.0
 #define DEFAULT_BRICK_BLEED_DIST        550.0
 #define DEFAULT_BRICK_BLEED_DIST_MIN    400.0
+#define DEFUALT_DAMAGE_BUFF				25.0
 
 public Plugin myinfo =
 {
@@ -204,20 +205,19 @@ public Action OnTakeDamage
 {
 	if (bIsBrick[inflictor] && IsBrickEntity(inflictor))
 	{
-		// float distance, bleed, bleedMin, bleedMax, baseDistance, minDist;
-		// ^^ bad practice, unclear if these are one float and an int
 		float distance;
 		float bleed;
 		float bleedMin;
 		float bleedMax;
 		float baseDistance;
 		float minDist;
+		float additionalDamage;
 		// Grab the distance between client and attacker.
 		float attackerpos[3], vicpos[3];
 		GetClientAbsOrigin(attacker, attackerpos);
 		GetClientAbsOrigin(client, vicpos);
 
-		//Get our bleed attributes
+		// Get our bleed attributes
 		distance = (GetVectorDistance(attackerpos, vicpos));
 
 		// If the weapon that dealt this damage wasn't a brick, grab the attackers original brick
@@ -234,6 +234,7 @@ public Action OnTakeDamage
 				bleedMax     = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed max");
 				baseDistance = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed dist");
 				minDist      = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed dist min");
+				additionalDamage = CEconItems_GetEntityAttributeFloat(brickWeapon, "full value damage bonus");
 			}
 			// This isn't a brick, use placeholder values.
 			else
@@ -243,6 +244,7 @@ public Action OnTakeDamage
 				bleedMax     = DEFAULT_BRICK_BLEED_MAX;
 				baseDistance = DEFAULT_BRICK_BLEED_DIST;
 				minDist      = DEFAULT_BRICK_BLEED_DIST_MIN;
+				additionalDamage = DEFUALT_DAMAGE_BUFF;
 			}
 		}
 		else
@@ -253,7 +255,11 @@ public Action OnTakeDamage
 			bleedMax         = CEconItems_GetEntityAttributeFloat(weapon, "brick bleed max");
 			baseDistance     = CEconItems_GetEntityAttributeFloat(weapon, "brick bleed dist");
 			minDist          = CEconItems_GetEntityAttributeFloat(weapon, "brick bleed dist min");
+			additionalDamage = CEconItems_GetEntityAttributeFloat(weapon, "full value damage bonus");
 		}
+		
+		// Add our damage bonus.
+		damage += additionalDamage;
 
 		// minimum distance for bleed
 		if (distance >= minDist)
@@ -266,7 +272,7 @@ public Action OnTakeDamage
 
 		bIsBrick[inflictor] = false;
 	}
-	return Plugin_Continue;
+	return Plugin_Changed;
 }
 
 
