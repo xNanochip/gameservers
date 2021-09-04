@@ -98,6 +98,12 @@ for dir in ./*/ ; do
     # this is so long in case we have a detached head:
     # https://stackoverflow.com/questions/6059336/how-to-find-the-current-git-branch-in-detached-head-state
     CI_COMMIT_HEAD=$(git for-each-ref --format='%(objectname) %(refname:short)' refs/heads | awk "/^$(git rev-parse HEAD)/ {print \$2}")
+    if [[ "${CI_COMMIT_HEAD}" == "" ]]; then
+        hook "Something has gone horribly wrong, git branch is BLANK. Falling back to stable!!!"
+        error "Something has gone horribly wrong, git branch is BLANK. Falling back to stable!!!"
+        # todo: don't hardcode this, dumbass
+        CI_COMMIT_HEAD=stable
+    fi
     CI_LOCAL_REMOTE=$(git remote get-url origin)
     CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE##*@}"
     CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE/://}"

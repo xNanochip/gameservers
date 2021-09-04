@@ -22,14 +22,14 @@ bootstrap_raw ()
     if [ ! -d "${tmp}/gs_raw" ]; then
         info "-> Cloning repo!"
         git clone ${gl_origin} \
-        -b master --single-branch ${tmp}/gs_raw \
+        -b ${CI_DEFAULT_BRANCH} --single-branch ${tmp}/gs_raw \
         --progress
 
         cd ${tmp}/gs_raw || exit 255
 
         info "-> moving master to gl_master"
         git checkout -B gl_master
-        git branch -D master
+        git branch -D ${CI_DEFAULT_BRANCH}
     else
         cd ${tmp}/gs_raw || exit 255
     fi
@@ -53,16 +53,16 @@ bootstrap_raw ()
     important "-> fetching gl"
 
     info "-> fetching gl origin just in case we need to recreate the branch"
-    git fetch gl_origin --progress master
+    git fetch gl_origin --progress ${CI_DEFAULT_BRANCH}
 
     info "-> checking out gl origin master"
-    git checkout -B gl_master gl_origin/master
+    git checkout -B gl_master gl_origin/${CI_DEFAULT_BRANCH}
 
     info "-> resetting to gl origin master"
-    git reset --hard gl_origin/master
+    git reset --hard gl_origin/${CI_DEFAULT_BRANCH}
 
     info "-> fetching gl origin"
-    git fetch gl_origin --progress master
+    git fetch gl_origin --progress ${CI_DEFAULT_BRANCH}
 
     info "-> merging into current branch"
     git merge -v FETCH_HEAD

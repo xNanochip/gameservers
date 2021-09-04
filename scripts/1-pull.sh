@@ -84,6 +84,11 @@ fi
 revparse_branch=$(git rev-parse --abbrev-ref HEAD)
 ourbranch=$(git for-each-ref --format='%(objectname) %(refname:short)' refs/heads | awk "/^$(git rev-parse HEAD)/ {print \$2}")
 
+# have to do this AGAIN
+if [[ "${ourbranch}" == "" ]]; then
+    ourbranch="stable"
+fi
+
 
 # fix HEAD issues
 if [[ "${revparse_branch}" == "HEAD" ]]; then
@@ -91,25 +96,30 @@ if [[ "${revparse_branch}" == "HEAD" ]]; then
     hook "SERVER BRANCH = ${revparse_branch} (real: ${ourbranch})"
 fi
 
-
 info "-> detaching"
 git checkout --detach HEAD -f
 
 info "-> deleting our old branch"
 git branch -D ${ourbranch}
 
+# don't ask questions you're not prepared to handle the answers to
+info "-> getting our branch from origin with ref bullshit"
+git fetch origin refs/heads/${ourbranch}:refs/remotes/origin/${ourbranch}
+
+# info "-> pulling our new branch from origin"
+# git pull origin ${ourbranch}:${ourbranch} --force
+
 info "-> checking out ${ourbranch}"
 git checkout -B ${ourbranch} origin/${ourbranch}
-
-info "-> fetching ${ourbranch}"
-git fetch origin ${ourbranch} --progress
 
 info "-> resetting to origin/${ourbranch}"
 git reset --hard origin/${ourbranch}
 
-info "-> merging origin/${ourbranch} into current branch"
-git merge -X theirs -v FETCH_HEAD
-
+# info "-> fetching ${ourbranch}"
+# git fetch origin ${ourbranch} --progress
+# 
+# info "-> merging origin/${ourbranch} into current branch"
+# git merge -X theirs -v FETCH_HEAD
 
 info "updating submodules..."
 git submodule update --init --recursive
