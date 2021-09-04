@@ -102,8 +102,12 @@ git checkout --detach HEAD -f
 info "-> deleting our old branch"
 git branch -D ${ourbranch}
 
-info "-> pulling our new branch from origin"
-git pull origin ${ourbranch}:${ourbranch} --force
+# don't ask questions you're not prepared to handle the answers to
+info "-> getting our branch from origin with ref bullshit
+git fetch origin refs/heads/${ourbranch}:refs/remotes/origin/${ourbranch}
+
+# info "-> pulling our new branch from origin"
+# git pull origin ${ourbranch}:${ourbranch} --force
 
 info "-> checking out ${ourbranch}"
 git checkout -B ${ourbranch} origin/${ourbranch}
