@@ -97,18 +97,23 @@ git checkout --detach HEAD -f
 info "-> deleting our old branch"
 git branch -D ${ourbranch}
 
-info "-> fetching ${ourbranch}"
-git fetch origin ${ourbranch} --progress
-
-info "-> checking out ${ourbranch}"
-git checkout -B ${ourbranch} origin/${ourbranch}
+info "-> pulling our new branch from origin
+git pull origin ${ourbranch}:${ourbranch} --force
 
 info "-> resetting to origin/${ourbranch}"
 git reset --hard origin/${ourbranch}
 
-info "-> merging origin/${ourbranch} into current branch"
-git merge -X theirs -v FETCH_HEAD
-
+# info "-> fetching ${ourbranch}"
+# git fetch origin ${ourbranch} --progress
+# 
+# info "-> checking out ${ourbranch}"
+# git checkout -B ${ourbranch} origin/${ourbranch}
+# 
+# info "-> resetting to origin/${ourbranch}"
+# git reset --hard origin/${ourbranch}
+# 
+# info "-> merging origin/${ourbranch} into current branch"
+# git merge -X theirs -v FETCH_HEAD
 
 info "updating submodules..."
 git submodule update --init --recursive
