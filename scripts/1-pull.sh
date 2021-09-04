@@ -91,18 +91,17 @@ if [[ "${revparse_branch}" == "HEAD" ]]; then
     hook "SERVER BRANCH = ${revparse_branch} (real: ${ourbranch})"
 fi
 
-
 info "-> detaching"
 git checkout --detach HEAD -f
 
 info "-> deleting our old branch"
 git branch -D ${ourbranch}
 
-info "-> checking out ${ourbranch}"
-git checkout -B ${ourbranch} origin/${ourbranch}
-
 info "-> fetching ${ourbranch}"
 git fetch origin ${ourbranch} --progress
+
+info "-> checking out ${ourbranch}"
+git checkout -B ${ourbranch} origin/${ourbranch}
 
 info "-> resetting to origin/${ourbranch}"
 git reset --hard origin/${ourbranch}
