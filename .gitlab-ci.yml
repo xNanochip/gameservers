@@ -1,29 +1,9 @@
 stages:
-  - github
   - compile_plugins
   - genyml
   - trigger
   - fastdl
-
-#  - test
-
-github:
-  stage: github
-  script: ./scripts/push-to-github.sh
-  needs: []
-  tags:
-  - backend
-  only:
-  - master
-  #variables:
-  #  GIT_STRATEGY: none
-
-compile_plugins:
-  stage: compile_plugins
-  script: ./scripts/2-build.sh
-  needs: []
-  tags:
-  - worker
+  - github
 
 # Secret Detection
 #include:
@@ -52,10 +32,9 @@ generate-yml:
     - worker
   needs: [compile_plugins]
   only:
-  - master
-  - staging
-  - mvm
-  - server/weapon-testing-event
+  - stable
+  - unstable
+  - nightly
 
 trigger-ci:
   stage: trigger
@@ -65,10 +44,9 @@ trigger-ci:
         job: generate-yml
   needs: [generate-yml]
   only:
-  - master
-  - staging
-  - mvm
-  - server/weapon-testing-event
+  - stable
+  - unstable
+  - nightly
 
 fastdl:
   stage: fastdl
@@ -77,7 +55,17 @@ fastdl:
   tags:
   - fastdl
   only:
-  - master
-  - staging
-  - mvm
+  - stable
+  - unstable
+  - nightly
 
+github:
+  stage: github
+  script: ./scripts/push-to-github.sh
+  needs: [fastdl]
+  tags:
+  - backend
+  only:
+  - master
+  #variables:
+  #  GIT_STRATEGY: none
