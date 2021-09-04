@@ -97,7 +97,7 @@ git checkout --detach HEAD -f
 info "-> deleting our old branch"
 git branch -D ${ourbranch}
 
-info "-> pulling our new branch from origin
+info "-> pulling our new branch from origin"
 git pull origin ${ourbranch}:${ourbranch} --force
 
 info "-> checking out ${ourbranch}"
