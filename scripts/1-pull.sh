@@ -106,19 +106,13 @@ info "-> pulling our new branch from origin"
 git pull origin ${ourbranch}:${ourbranch} --force
 
 info "-> checking out ${ourbranch}"
-git checkout -B ${ourbranch}
+git checkout -B ${ourbranch} origin/${ourbranch}
 
 info "-> resetting to origin/${ourbranch}"
 git reset --hard origin/${ourbranch}
 
 # info "-> fetching ${ourbranch}"
 # git fetch origin ${ourbranch} --progress
-# 
-# info "-> checking out ${ourbranch}"
-# git checkout -B ${ourbranch} origin/${ourbranch}
-# 
-# info "-> resetting to origin/${ourbranch}"
-# git reset --hard origin/${ourbranch}
 # 
 # info "-> merging origin/${ourbranch} into current branch"
 # git merge -X theirs -v FETCH_HEAD
