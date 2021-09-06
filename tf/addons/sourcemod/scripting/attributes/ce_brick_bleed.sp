@@ -117,10 +117,16 @@ void HookJarRF(int entref)
 		LogMessage("%f %f %f", velocity[0], velocity[1], velocity[2]);
 
 		// Get rotation of projectile - "Won't get the angle of the velocity"
-		GetEntPropVector(entity, Prop_Send, "m_angRotation", rot);
+		// GetEntPropVector(entity, Prop_Send, "m_angRotation", rot);
 
 		// increase pitch to try and match how projectiles arc upwards at first
-		// rot[0] -= 7.0;
+		rot[2] += 7.0;
+
+		// throw from lower
+		position[2] -= 22.5;
+		// throw from a little to the left
+		position[0] -= 10.0;
+		// this is so it matches the crosshair a bit better
 
 		// Get our custom speed of this projectile
 		float speed = CEconItems_GetEntityAttributeFloat(weapon, "brick speed");
