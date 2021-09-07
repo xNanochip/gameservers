@@ -1938,9 +1938,9 @@ public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char
 				int sbid = GetConVarInt(FindConVar("sb_id"));
 				if (sbid != -1)
 				{
-					LogMessage("sbid = %i", sbid);
 					serverID = sbid;
 				}
+
 				// if it's not valid, make it 0
 				// we consider -1 valid here
 				if (serverID < -1)
