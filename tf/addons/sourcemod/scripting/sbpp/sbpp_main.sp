@@ -296,7 +296,7 @@ public void OnMapStart()
 
 void sbid_reload(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	ReadConfig();
+	ResetSettings();
 }
 
 public void OnMapEnd()
