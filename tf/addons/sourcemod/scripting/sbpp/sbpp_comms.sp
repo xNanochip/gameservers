@@ -1936,6 +1936,7 @@ public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char
 					serverID = sbid;
 				}
 
+
 				// if it's not valid, make it 0
 				if (serverID < 1)
 				{
