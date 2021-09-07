@@ -6,6 +6,7 @@
 #include <tf2_stocks>
 #include <tf2>
 #include <cecon_items>
+#include <concolors>
 
 #define BRICKMODEL "models/weapons/c_models/c_brick/c_brick.mdl"
 
@@ -60,48 +61,35 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		if (IsValidEntity(entity) && entity > 0 && entity <= MAXENTITIES)
 		{
-			LogMessage("hooking %i", entity);
-			SDKHook(entity, SDKHook_SpawnPost, HookJarSpawn_Post);
+			RequestFrame(HookJarRF, EntIndexToEntRef(entity));
 		}
 	}
 }
 
-// This creates the brick from the jar(ate?).
-Action HookJarSpawn_Post(int entity)
-{
-	LogMessage("made it to HookJarSpawn");
-	RequestFrame(HookJarRF, EntIndexToEntRef(entity));
-	return;
-}
-
 void HookJarRF(int entref)
 {
-	// make sure this is real
 	int entity = EntRefToEntIndex(entref);
-	if (!IsValidEntity(entity))
+
+	if (!IsValidEntity(entity) || !entity)
 	{
-		LogMessage("not a valid ent");
 		return;
 	}
-	LogMessage("valid ent rf 1 - %i", entity);
-	LogMessage("made it to HookJarRF");
 
 	int launcher = GetEntPropEnt(entity, Prop_Send, "m_hLauncher");
 	int owner    = GetEntPropEnt(launcher, Prop_Send, "m_hOwner");
+
 	if (!IsValidClient(owner))
 	{
-		LogMessage("not valid client %N", owner);
-
 		return;
 	}
-
-	LogMessage("valid client %N", owner);
 
 	int weapon = GetPlayerWeaponSlot(owner, TFWeaponSlot_Secondary);
 
 	if  (CEconItems_GetEntityAttributeBool(weapon, "proj is brick"))
 	{
-		/* GETTING THE INFO OF THE EXISTING PROJECTILE */
+		/*
+			GETTING THE INFO OF OUR EXISTING JAR TO STEAL FOR OUR BRICK
+		*/
 		float position[3];
 		float velocity[3];
 		float rot[3];
@@ -114,7 +102,6 @@ void HookJarRF(int entref)
 
 		// get (INIT) velocity of projectile
 		GetEntPropVector(entity, Prop_Send, "m_vInitialVelocity", velocity);
-		LogMessage("%f %f %f", velocity[0], velocity[1], velocity[2]);
 
 		// Get rotation of projectile - "Won't get the angle of the velocity"
 		// GetEntPropVector(entity, Prop_Send, "m_angRotation", rot);
@@ -129,44 +116,49 @@ void HookJarRF(int entref)
 		// this is so it matches the crosshair a bit better
 
 		// Get our custom speed of this projectile
-		float speed = CEconItems_GetEntityAttributeFloat(weapon, "brick speed");
+		float speed = 1.8; //CEconItems_GetEntityAttributeFloat(weapon, "brick speed");
 
-		/* DESTROYING THE INITIAL PROJECTILE AND CREATING OUR BRICK */
+		/*
+			DESTROYING THE INITIAL PROJECTILE AND CREATING OUR BRICK
+		*/
+
 		RemoveEntity(entity);
 
 		// Spawn brick projectile
-		int proj = CreateEntityByName("tf_projectile_throwable_brick");
+		int newbrick = CreateEntityByName("tf_projectile_throwable_brick");
 
 		// set its team to ours
-		SetEntProp(proj, Prop_Send, "m_iTeamNum", team);
+		SetEntProp(newbrick, Prop_Send, "m_iTeamNum", team);
 
 		// assign the owner
-		SetEntPropEnt(proj, Prop_Send, "m_hOwnerEntity", owner);
+		SetEntPropEnt(newbrick, Prop_Send, "m_hOwnerEntity", owner);
 
 		// assign the thrower
-		SetEntPropEnt(proj, Prop_Send, "m_hThrower", owner);
+		SetEntPropEnt(newbrick, Prop_Send, "m_hThrower", owner);
 
 		// assign the weapon launching the brick
-		SetEntPropEnt(proj, Prop_Send, "m_hLauncher", weapon);
-		SetEntPropEnt(proj, Prop_Send, "m_hOriginalLauncher", weapon);
-
-		// set its model
-		// TODO TODO TODO: Set the model up properly so that it doesn't use the bread model's hitbox
-		// Currently it clips into the ground a bit. Too bad!
-		SetProjectileModel(proj, brickModelIndex);
+		SetEntPropEnt(newbrick, Prop_Send, "m_hLauncher", weapon);
+		SetEntPropEnt(newbrick, Prop_Send, "m_hOriginalLauncher", weapon);
 
 		// Scale our init velocity with speed as a multiplier
 		ScaleVector(velocity, speed);
 
 		// Should be using an extension but this should be good enough
-		SetEntPropVector(proj, Prop_Send, "m_vInitialVelocity", velocity);
+		SetEntPropVector(newbrick, Prop_Send, "m_vInitialVelocity", velocity);
 
 		// Spawn that thang!
-		DispatchSpawn(proj);
-		TeleportEntity(proj, position, rot, velocity);
-		ActivateEntity(proj);
+		DispatchSpawn(newbrick);
+		TeleportEntity(newbrick, position, rot, velocity);
+		// ActivateEntity(newbrick);
 
-		bIsBrick[proj] = true;
+		// TODO TODO TODO: Set the model up properly so that it doesn't use the bread model's hitbox
+		// Currently it clips into the ground a bit. Too bad!
+
+		// for some reason this needs to be after we spawn it
+		SetEntityModel(newbrick, BRICKMODEL);
+
+
+		bIsBrick[newbrick] = true;
 	}
 }
 
