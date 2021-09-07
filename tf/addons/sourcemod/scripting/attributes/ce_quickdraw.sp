@@ -12,7 +12,7 @@ public Plugin myinfo =
 	name = "[CE Attribute] The Quickdraw",
 	author = "Creators.TF Team - ZoNiCaL.",
 	description = "The Quickdraw",
-	version = "rc-1.1",
+	version = "1.2",
 	url = "https://creators.tf"
 };
 
@@ -164,29 +164,32 @@ stock float MiniCritDamage(int attacker, int victim, float damage, float basedam
 	partpos[2] += 15.0;
 	
 	// Create the particle itself.
-	if (!TF2_IsPlayerInCondition(victim, TFCond_Disguised)) // We don't want to display the particle effect for
-															// disguised spies. This will give them away!
+	// We don't want to display the particle effect for disguised spies OR for spies who are cloaked.
+	// This will give them away! This check will also prevent a fake minicrit if spies are disguised and cloaked.
+	if (TF2_IsPlayerInCondition(victim, TFCond_Disguised) || TF2_IsPlayerInCondition(victim, TFCond_Cloaked)) 
 	{
-		int iParticle = CreateEntityByName("info_particle_system");
-		if (IsValidEdict(iParticle))
-		{
-			// Teleport our particle system to slightly above our head.
-			TeleportEntity(iParticle, partpos, NULL_VECTOR, NULL_VECTOR);
-			
-			// Set the particle effect.
-			DispatchKeyValue(iParticle, "effect_name", "minicrit_text");
-			
-			// Parent this particle system to the player.
-			SetVariantString("!activator");
-			AcceptEntityInput(iParticle, "SetParent", victim, iParticle, 0);
-			
-			// Spawn entity.
-			DispatchSpawn(iParticle);
-			ActivateEntity(iParticle);
-			
-			// Activate the particle system.
-			AcceptEntityInput(iParticle, "Start");
-		}
+		return damage;
+	}
+	
+	int iParticle = CreateEntityByName("info_particle_system");
+	if (IsValidEdict(iParticle))
+	{
+		// Teleport our particle system to slightly above our head.
+		TeleportEntity(iParticle, partpos, NULL_VECTOR, NULL_VECTOR);
+		
+		// Set the particle effect.
+		DispatchKeyValue(iParticle, "effect_name", "minicrit_text");
+		
+		// Parent this particle system to the player.
+		SetVariantString("!activator");
+		AcceptEntityInput(iParticle, "SetParent", victim, iParticle, 0);
+		
+		// Spawn entity.
+		DispatchSpawn(iParticle);
+		ActivateEntity(iParticle);
+		
+		// Activate the particle system.
+		AcceptEntityInput(iParticle, "Start");
 	}
 	
 	// Play the sound:
