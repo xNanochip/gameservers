@@ -70,10 +70,10 @@ do
         # Tags
         echo "  tags:"
         echo "    - ${tag}"
-        if [[ $jobname =~ build ]]; then
-            echo "  variables:"
-            echo "    GIT_STRATEGY: none"
-        fi
+#        if [[ $jobname =~ build ]]; then
+#            echo "  variables:"
+#            echo "    GIT_STRATEGY: none"
+#        fi
     done
     ((i=i+1))
     echo ""
