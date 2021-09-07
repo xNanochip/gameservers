@@ -40,3 +40,4 @@ ok "Starting server..."
 startPing "Server starting!"
 
 ./srcds_run $* ${py_args}
+
