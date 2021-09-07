@@ -15,10 +15,6 @@
 #define MAXENTITIES 2048
 bool bIsBrick[MAXENTITIES + 1];
 
-int brickModelIndex;
-
-//Handle g_SDKGetVelocity;
-
 #define DEFAULT_BRICK_BLEED             4.0
 #define DEFAULT_BRICK_BLEED_MIN         3.0
 #define DEFAULT_BRICK_BLEED_MAX         8.0
@@ -163,19 +159,6 @@ void HookJarRF(int entref)
 		bIsBrick[newbrick] = true;
 	}
 }
-
-// wot is this doing
-public void SetProjectileModel(int proj, int modelIndex)
-{
-	if (HasEntProp(proj, Prop_Send, "m_nModelIndexOverrides"))
-	{
-		for (int i = 0; i < 4; i++)
-		{
-			SetEntProp(proj, Prop_Send, "m_nModelIndexOverrides", modelIndex, _, i);
-		}
-	}
-}
-
 
 bool IsBrickEntity(int projectile)
 {
