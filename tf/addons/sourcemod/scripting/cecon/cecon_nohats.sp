@@ -129,8 +129,5 @@ public Action SetTransmitHat(int entity, int client)
     {
         return Plugin_Continue;
     }
-    else
-    {
-        return Plugin_Stop;
-    }
+    return Plugin_Stop;
 }
