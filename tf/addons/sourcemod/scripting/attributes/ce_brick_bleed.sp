@@ -51,7 +51,7 @@ public void OnClientPutInServer(int client)
 
 public void OnMapStart()
 {
-	brickModelIndex = PrecacheModel(BRICKMODEL, true);
+	PrecacheModel(BRICKMODEL, true);
 }
 
 public void OnEntityCreated(int entity, const char[] classname)
@@ -83,6 +83,7 @@ void HookJarRF(int entref)
 		return;
 	}
 
+	// why do we do this?
 	int weapon = GetPlayerWeaponSlot(owner, TFWeaponSlot_Secondary);
 
 	if  (CEconItems_GetEntityAttributeBool(weapon, "proj is brick"))
