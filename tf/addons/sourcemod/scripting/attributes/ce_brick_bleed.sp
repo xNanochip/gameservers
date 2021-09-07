@@ -30,7 +30,7 @@ public Plugin myinfo =
 	// lol
 	name    = "[Attribute] Brick",
 	author  = "IvoryPal",
-	version = "1.0"
+	version = "1.1"
 }
 
 public void OnPluginStart()
