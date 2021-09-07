@@ -238,6 +238,11 @@ public void OnLibraryRemoved(const char[] name)
 		hTopMenu = null;
 }
 
+public void OnConfigsExecuted()
+{
+	ReadConfig();
+}
+
 public void OnMapStart()
 {
 	ReadConfig();
@@ -1936,9 +1941,8 @@ public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char
 					serverID = sbid;
 				}
 
-
 				// if it's not valid, make it 0
-				if (serverID < 1)
+				if (serverID < -1)
 				{
 					serverID = 0;
 				}
