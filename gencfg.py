@@ -83,7 +83,7 @@ elif "test" in server_id:
 # treat every server ID as an int past this point.
 sid = int(server_id)
 
-region = ""
+region  = ""
 cregion = ""
 
 econ = False
@@ -92,54 +92,50 @@ pubs = False
 if sid > 100 and sid <= 199:
     c_region = "EU 1"
 
-    if sid <= 102:
-        type = "Quickplay"
-
-    elif sid <= 104:
+    if sid == 104:
         type = "Vanilla+"
+    else:
+        type = "Quickplay"
 
 
 elif sid > 200 and sid <= 299:
 
     c_region = "VIN"
 
-    if sid <= 203:
-        type = "Quickplay"
-
-    else:
+    if sid == 204:
         type = "Vanilla+"
+    else:
+        type = "Quickplay"
 
 
 elif sid > 300 and sid <= 399:
 
     c_region = "LA"
 
-    if sid <= 302:
-        type = "Quickplay"
-
-    else:
+    if sid == 302:
         type = "Vanilla+"
+    else:
+        type = "Quickplay"
 
 
 elif sid > 600 and sid <= 699:
 
     c_region = "AUS"
 
-    if sid == 601:
+    if sid == 602:
+        type = "Vanilla+"
+    else:
         type = "Quickplay"
 
-    elif sid == 602:
-        type = "Vanilla+"
 
 elif sid > 700 and sid <= 799:
 
     c_region = "SGP"
 
-    if sid == 701:
-        type = "Quickplay"
-
-    elif sid == 702:
+    if sid == 702:
         type = "Vanilla+"
+    else:
+        type = "Quickplay"
 
 else:
     c_region = "Unknown"
