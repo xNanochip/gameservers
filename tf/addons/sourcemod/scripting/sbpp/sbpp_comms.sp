@@ -1933,19 +1933,22 @@ public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char
 			else if (strcmp("ServerID", key, false) == 0)
 			{
 				serverID = StringToInt(value);
+				LogMessage("0 SERVERID = %i", serverID);
 
 				// get our sb_id value if we have one
 				int sbid = GetConVarInt(FindConVar("sb_id"));
 				if (sbid != -1)
 				{
+					LogMessage("sbid = %i", sbid);
 					serverID = sbid;
 				}
-
+				LogMessage("1 SERVERID = %i", serverID);
 				// if it's not valid, make it 0
 				if (serverID < -1)
 				{
 					serverID = 0;
 				}
+				LogMessage("2 SERVERID = %i", serverID);
 			}
 			else if (strcmp("DefaultTime", key, false) == 0)
 			{
