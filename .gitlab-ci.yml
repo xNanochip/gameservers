@@ -18,8 +18,8 @@ compile_plugins:
   stage: compile_plugins
   script: ./scripts/2-build.sh
   needs: []
-  tags:
-  - worker
+#  tags:
+#  - worker
 
 # this generates our yml so we don't run on more servers than needed
 generate-yml:
@@ -28,8 +28,8 @@ generate-yml:
   artifacts:
     paths:
       - cfg.yml
-  tags:
-    - worker
+#  tags:
+#    - worker
   needs: [compile_plugins]
   only:
   - stable
