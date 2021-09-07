@@ -187,6 +187,7 @@ public void OnPluginStart()
 		-1.0,
 		false
 	);
+	HookConVarChange(sb_id, sbid_reload);
 
 	if ((TimeMenuHandle = CreateMenu(MenuHandler_BanTimeList, MenuAction_Select|MenuAction_Cancel|MenuAction_DrawItem)) != INVALID_HANDLE)
 	{
@@ -291,6 +292,11 @@ public void OnConfigsExecuted()
 public void OnMapStart()
 {
 	ResetSettings();
+}
+
+void sbid_reload(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	ReadConfig();
 }
 
 public void OnMapEnd()
