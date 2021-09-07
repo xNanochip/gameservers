@@ -20,7 +20,7 @@ bool bIsBrick[MAXENTITIES + 1];
 #define DEFAULT_BRICK_BLEED_MAX         8.0
 #define DEFAULT_BRICK_BLEED_DIST        550.0
 #define DEFAULT_BRICK_BLEED_DIST_MIN    400.0
-#define DEFUALT_DAMAGE_BUFF				25.0
+#define DEFAULT_DAMAGE_BUFF             25.0
 
 public Plugin myinfo =
 {
@@ -211,22 +211,22 @@ public Action OnTakeDamage
 			// Is this a brick weapon?
 			if (IsValidEntity(brickWeapon) && CEconItems_GetEntityAttributeBool(brickWeapon, "proj is brick"))
 			{
-				bleed        = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed");
-				bleedMin     = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed min");
-				bleedMax     = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed max");
-				baseDistance = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed dist");
-				minDist      = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed dist min");
+				bleed            = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed");
+				bleedMin         = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed min");
+				bleedMax         = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed max");
+				baseDistance     = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed dist");
+				minDist          = CEconItems_GetEntityAttributeFloat(brickWeapon, "brick bleed dist min");
 				additionalDamage = CEconItems_GetEntityAttributeFloat(brickWeapon, "full value damage bonus");
 			}
 			// This isn't a brick, use placeholder values.
 			else
 			{
-				bleed        = DEFAULT_BRICK_BLEED;
-				bleedMin     = DEFAULT_BRICK_BLEED_MIN;
-				bleedMax     = DEFAULT_BRICK_BLEED_MAX;
-				baseDistance = DEFAULT_BRICK_BLEED_DIST;
-				minDist      = DEFAULT_BRICK_BLEED_DIST_MIN;
-				additionalDamage = DEFUALT_DAMAGE_BUFF;
+				bleed            = DEFAULT_BRICK_BLEED;
+				bleedMin         = DEFAULT_BRICK_BLEED_MIN;
+				bleedMax         = DEFAULT_BRICK_BLEED_MAX;
+				baseDistance     = DEFAULT_BRICK_BLEED_DIST;
+				minDist          = DEFAULT_BRICK_BLEED_DIST_MIN;
+				additionalDamage = DEFAULT_DAMAGE_BUFF;
 			}
 		}
 		else
