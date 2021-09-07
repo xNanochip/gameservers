@@ -1930,11 +1930,12 @@ public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char
 				serverID = StringToInt(value);
 
 				// get our sb_id value if we have one
-				int sbid = GetConVarInt(sb_id);
+				int sbid = GetConVarInt(FindConVar("sb_id"));
 				if (sbid != -1)
 				{
 					serverID = sbid;
 				}
+
 
 				// if it's not valid, make it 0
 				if (serverID < 1)
