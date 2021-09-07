@@ -12,7 +12,6 @@
 #pragma newdecls required
 #include <stocksoup/plugin_utils>
 #include <stocksoup/log_server>
-
 #include <stocksoup/files>
 
 #define PLUGIN_VERSION "1.4.0-pre"
