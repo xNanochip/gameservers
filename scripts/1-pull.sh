@@ -104,7 +104,7 @@ git branch -D ${ourbranch}
 
 # don't ask questions you're not prepared to handle the answers to
 info "-> getting our branch from origin with ref bullshit"
-git fetch origin refs/heads/${ourbranch}:refs/remotes/origin/${ourbranch}
+git fetch origin refs/heads/${ourbranch}:refs/remotes/origin/${ourbranch} -f
 
 # info "-> pulling our new branch from origin"
 # git pull origin ${ourbranch}:${ourbranch} --force
