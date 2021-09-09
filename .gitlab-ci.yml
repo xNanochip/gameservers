@@ -17,7 +17,12 @@ stages:
 compile_plugins:
   stage: compile_plugins
   script: ./scripts/2-build.sh
+  after_script: zip -r plugins.zip tf/addons/sourcemod/plugins/
+  artifacts:
+    paths:
+      - plugins.zip
   needs: []
+
 #  tags:
 #  - worker
 
