@@ -53,5 +53,19 @@ debug()
     fi
 }
 
+# sets ${thisbranch} to this dir's current git branch
 
+getThisBranch()
+{
+    # this is so long in case we have a detached head:
+    # https://stackoverflow.com/questions/6059336/how-to-find-the-current-git-branch-in-detached-head-state
+    # Cuts the "HEAD\n" off as well
+    thisbranch=$(git branch --remote --verbose --no-abbrev --contains | sed -rne 's/^[^\/]*\/([^\ ]+).*$/\1/p' | sed -z 's/HEAD\n//g')
+    if [[ "${thisbranch}" == "" ]]; then
+        hook  "Something has gone horribly wrong, git branch is BLANK. Falling back to default branch!!!"
+        error "Something has gone horribly wrong, git branch is BLANK. Falling back to default branch!!!"
+        thisbranch="${CI_DEFAULT_BRANCH}"
+    fi
+    export thisbranch
+}
 
