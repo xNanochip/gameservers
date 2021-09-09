@@ -81,20 +81,9 @@ if ${gitshallow}; then
     gitgc=true
 fi
 
-revparse_branch=$(git rev-parse --abbrev-ref HEAD)
-ourbranch=$(git for-each-ref --format='%(objectname) %(refname:short)' refs/heads | awk "/^$(git rev-parse HEAD)/ {print \$2}")
 
-# have to do this AGAIN
-if [[ "${ourbranch}" == "" ]]; then
-    ourbranch="stable"
-fi
-
-
-# fix HEAD issues
-if [[ "${revparse_branch}" == "HEAD" ]]; then
-    error "SERVER BRANCH = ${revparse_branch} (real: ${ourbranch})"
-    hook "SERVER BRANCH = ${revparse_branch} (real: ${ourbranch})"
-fi
+# sets ${thisbranch} to this dir's current git branch
+getThisBranch
 
 info "-> detaching"
 git checkout --detach HEAD -f
@@ -106,20 +95,11 @@ git branch -D ${ourbranch}
 info "-> getting our branch from origin with ref bullshit"
 git fetch origin refs/heads/${ourbranch}:refs/remotes/origin/${ourbranch} -f
 
-# info "-> pulling our new branch from origin"
-# git pull origin ${ourbranch}:${ourbranch} --force
-
 info "-> checking out ${ourbranch}"
 git checkout -B ${ourbranch} origin/${ourbranch}
 
 info "-> resetting to origin/${ourbranch}"
 git reset --hard origin/${ourbranch}
-
-# info "-> fetching ${ourbranch}"
-# git fetch origin ${ourbranch} --progress
-# 
-# info "-> merging origin/${ourbranch} into current branch"
-# git merge -X theirs -v FETCH_HEAD
 
 info "updating submodules..."
 git submodule update --init --recursive --force

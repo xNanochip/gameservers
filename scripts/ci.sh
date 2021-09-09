@@ -74,10 +74,6 @@ debug "working dir: ${WORK_DIR}"
 # go to our directory with (presumably) gameservers in it or die trying
 cd "${WORK_DIR}" || { error "can't cd to workdir ${WORK_DIR}!!!"; hook "can't cd to workdir ${WORK_DIR}"; exit 1; }
 
-# kill any git operations that are running and don't fail if we don't find any
-# PROBABLY BAD PRACTICE LOL
-# killall -s SIGKILL -q git || true
-
 # iterate thru directories in our work dir which we just cd'd to
 for dir in ./*/ ; do
     # we didn't find a git folder
@@ -95,25 +91,19 @@ for dir in ./*/ ; do
 
     # branches and remotes
 
-    # this is so long in case we have a detached head:
-    # https://stackoverflow.com/questions/6059336/how-to-find-the-current-git-branch-in-detached-head-state
-    CI_COMMIT_HEAD=$(git for-each-ref --format='%(objectname) %(refname:short)' refs/heads | awk "/^$(git rev-parse HEAD)/ {print \$2}")
-    if [[ "${CI_COMMIT_HEAD}" == "" ]]; then
-        hook "Something has gone horribly wrong, git branch is BLANK. Falling back to stable!!!"
-        error "Something has gone horribly wrong, git branch is BLANK. Falling back to stable!!!"
-        # todo: don't hardcode this, dumbass
-        CI_COMMIT_HEAD=stable
-    fi
+    # sets ${thisbranch} to this dir's current git branch
+    getThisBranch
+
     CI_LOCAL_REMOTE=$(git remote get-url origin)
     CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE##*@}"
     CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE/://}"
     CI_LOCAL_REMOTE="${CI_LOCAL_REMOTE%.git*}"
     CI_REMOTE_REMOTE="${CI_SERVER_HOST}/${CI_PROJECT_PATH}"
 
-    info "Comparing branches ${CI_COMMIT_HEAD} and ${CI_COMMIT_REF_NAME}."
+    info "Comparing branches ${thisbranch} and ${CI_COMMIT_REF_NAME}."
     info "Comparing local ${CI_LOCAL_REMOTE} and remote ${CI_REMOTE_REMOTE}."
 
-    if [[ "${CI_COMMIT_HEAD}" == "${CI_COMMIT_REF_NAME}" ]] && [[ "${CI_LOCAL_REMOTE}" == "${CI_REMOTE_REMOTE}" ]]; then
+    if [[ "${thisbranch}" == "${CI_COMMIT_REF_NAME}" ]] && [[ "${CI_LOCAL_REMOTE}" == "${CI_REMOTE_REMOTE}" ]]; then
         debug "branches match"
         case "${COMMAND}" in
             pull)
@@ -137,3 +127,5 @@ for dir in ./*/ ; do
     fi
     cd ..
 done
+
+
