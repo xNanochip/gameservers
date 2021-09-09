@@ -85,21 +85,23 @@ fi
 # sets ${thisbranch} to this dir's current git branch
 getThisBranch
 
+important "----------> thisbranch == ${thisbranch}"
+
 info "-> detaching"
 git checkout --detach HEAD -f
 
 info "-> deleting our old branch"
-git branch -D ${ourbranch}
+git branch -D ${thisbranch}
 
 # don't ask questions you're not prepared to handle the answers to
 info "-> getting our branch from origin with ref bullshit"
-git fetch origin refs/heads/${ourbranch}:refs/remotes/origin/${ourbranch} -f
+git fetch origin refs/heads/${thisbranch}:refs/remotes/origin/${thisbranch} -f
 
-info "-> checking out ${ourbranch}"
-git checkout -B ${ourbranch} origin/${ourbranch}
+info "-> checking out ${thisbranch}"
+git checkout -B ${thisbranch} origin/${thisbranch}
 
-info "-> resetting to origin/${ourbranch}"
-git reset --hard origin/${ourbranch}
+info "-> resetting to origin/${thisbranch}"
+git reset --hard origin/${thisbranch}
 
 info "updating submodules..."
 git submodule update --init --recursive --force
