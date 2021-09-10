@@ -10,12 +10,16 @@ export TERM="screen"
 # TODO: use tmpfs
 tmp="/home/server"
 
+gh_branch="stable"
+#CI_DEFAULT_BRANCH="stable"
+
 debug "setting git config..."
-# 
+
+#
 git config --global user.email "support@creators.tf"
 git config --global user.name "Creators.TF Production"
 # for pushing lfs properly because we scrub files from history
-git config lfs.allowincompletepush true
+git config --global lfs.allowincompletepush true
 gl_origin="git@gitlab.com:creators_tf/gameservers/servers.git"
 gh_origin="git@github.com:CreatorsTF/gameservers.git"
 
@@ -23,13 +27,13 @@ bootstrap_raw ()
 {
     if [ ! -d "${tmp}/gs_raw" ]; then
         info "-> Cloning repo!"
-        git lfs clone ${gl_origin} \
+        git clone ${gl_origin} \
         -b ${CI_DEFAULT_BRANCH} --single-branch ${tmp}/gs_raw \
         --progress
 
         cd ${tmp}/gs_raw || exit 255
 
-        info "-> moving master to gl_master"
+        info "-> moving ${CI_DEFAULT_BRANCH} to gl_master"
         git checkout -B gl_master
         git branch -D ${CI_DEFAULT_BRANCH}
     else
@@ -79,16 +83,16 @@ bootstrap_raw ()
     important "-> fetching gh"
 
     info "-> fetching gh origin just in case we need to recreate the branch"
-    git fetch gh_origin --progress master
+    git fetch gh_origin --progress ${gh_branch}
 
-    info "-> checking out gh origin master"
-    git checkout -B gh_master gh_origin/master
+    info "-> checking out gh origin ${gh_branch}"
+    git checkout -B gh_master gh_origin/${gh_branch} ||
 
-    info "-> resetting to gl origin master"
-    git reset --hard gh_origin/master
+    info "-> resetting to gl origin ${gh_branch}"
+    git reset --hard gh_origin/${gh_branch}
 
     info "-> fetching gl origin again"
-    git fetch gh_origin --progress master
+    git fetch gh_origin --progress ${gh_branch}
 
     info "-> merging into current branch"
     git merge -v FETCH_HEAD
@@ -103,7 +107,7 @@ bootstrap_stripped ()
     rm -rf ${tmp}/gs_stripped
 
     info "cloning"
-    git lfs clone ${tmp}/gs_raw ${tmp}/gs_stripped --progress
+    git clone ${tmp}/gs_raw ${tmp}/gs_stripped --progress
 
     info "cd-ing"
     cd ${tmp}/gs_stripped
@@ -124,6 +128,9 @@ bootstrap_stripped ()
     info "-> moving master to stripped-master"
     git checkout -f gl_master
     git checkout -B stripped-master
+
+    info "-> lfs migrating"
+    git lfs migrate export --include="*" --everything
 }
 
 # used to use BFG for this
@@ -230,7 +237,7 @@ push ()
 {
     # donezo
     ok "-> pushing to gh"
-    git lfs push gh_origin stripped-master:master --progress --force --no-verify --all 
+    git push gh_origin stripped-master:${gh_branch} --progress --force
 }
 
 bootstrap_raw       || exit 255
