@@ -129,8 +129,8 @@ bootstrap_stripped ()
     git checkout -f gl_master
     git checkout -B stripped-master
 
-    info "-> lfs migrating"
-    git lfs migrate export --include="*" --everything
+#    info "-> lfs migrating"
+#    git lfs migrate export --include="*" --everything
 }
 
 # used to use BFG for this
