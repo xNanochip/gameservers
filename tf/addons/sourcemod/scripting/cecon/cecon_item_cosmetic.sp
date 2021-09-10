@@ -86,13 +86,16 @@ Handle g_WarningCookie;
 
 public void OnPluginStart()
 {
-	g_WarningCookie = RegClientCookie("cecon_cosmetic_warning_message_cookie", "Shows a warning message if a default tf2 wearable was replaced with a CreatorsTF wearable.", CookieAccess_Public);
+	g_WarningCookie = RegClientCookie("ctf_warning_message_cookie", "Shows a warning message if a default tf2 wearable was replaced with a CreatorsTF wearable.", CookieAccess_Public);
 	SetCookiePrefabMenu(g_WarningCookie, CookieMenu_OnOff_Int, "Cosmetic Wearable Replacement Warning Chat Message");
 	
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		m_bHasSeenWarning[i] = false;
-		if (AreClientCookiesCached(i)) OnClientCookiesCached(i);
+		if (AreClientCookiesCached(i))
+		{
+			OnClientCookiesCached(i);
+		}
 	}
 }
 

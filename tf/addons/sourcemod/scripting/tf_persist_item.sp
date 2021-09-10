@@ -1,6 +1,5 @@
 /**
  * [TF2] Item Persistence
- * ALERT ! THIS PLUGIN HAD BEEN MODIFIED TO ALLOW SIGSEGV EXTENSION TO BE LATE LOADED. DO NOT UPDATE, UNLESS YOU KNOW HOW TO FIX IT AFTERWARDS (add requestframe to plugin start to load dhook with a delay)
  */
 #pragma semicolon 1
 #include <sourcemod>
@@ -21,7 +20,6 @@ public Plugin myinfo = {
 }
 
 Handle g_fwdOnReplaceItem;
-Handle g_dtGetLoadoutItem;
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	RegPluginLibrary("tf_persist_item");
@@ -37,15 +35,10 @@ public void OnPluginStart() {
 	}
 	
 	// y'know, I'm not 100% sure this is sane
-	g_dtGetLoadoutItem = DHookCreateFromConf(hGameConf, "CTFPlayer::GetLoadoutItem()");
-
-	// Delaying enabling dhook
-	RequestFrame(LoadDelayed);
+	Handle dtGetLoadoutItem = DHookCreateFromConf(hGameConf, "CTFPlayer::GetLoadoutItem()");
+	DHookEnableDetour(dtGetLoadoutItem, true, OnGetLoadoutItemPost);
+	
 	delete hGameConf;
-}
-
-public void LoadDelayed() {
-	DHookEnableDetour(g_dtGetLoadoutItem, true, OnGetLoadoutItemPost);
 }
 
 public MRESReturn OnGetLoadoutItemPost(int client, Handle hReturn, Handle hParams) {

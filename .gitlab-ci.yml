@@ -17,9 +17,16 @@ stages:
 compile_plugins:
   stage: compile_plugins
   script: ./scripts/2-build.sh
+  after_script:
+    - zip -r plugins.zip tf/addons/sourcemod/plugins/
+  artifacts:
+    paths:
+      - plugins.zip
   needs: []
-  tags:
-  - worker
+
+
+#  tags:
+#  - worker
 
 # this generates our yml so we don't run on more servers than needed
 generate-yml:
@@ -28,8 +35,8 @@ generate-yml:
   artifacts:
     paths:
       - cfg.yml
-  tags:
-    - worker
+#  tags:
+#    - worker
   needs: [compile_plugins]
   only:
   - stable

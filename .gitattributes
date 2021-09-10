@@ -22,3 +22,4 @@
 *.nav   filter=lfs diff=lfs merge=lfs -diff
 *.bsp   filter=lfs diff=lfs merge=lfs -diff
 *.dat   filter=lfs diff=lfs merge=lfs -diff
+*.phy   filter=lfs diff=lfs merge=lfs -diff

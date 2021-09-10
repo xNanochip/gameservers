@@ -8,6 +8,8 @@
 #pragma semicolon 1
 #pragma newdecls required
 
+#define CTFHatDesc "Locally toggles Creators.TF custom cosmetic visibility"
+
 bool bShowHats[MAXPLAYERS+1] = false;
 Handle ctfHatsCookie;
 
@@ -22,26 +24,24 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-    RegConsoleCmd("sm_cosmetics",       ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
-    RegConsoleCmd("sm_noctfhats",       ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
-    RegConsoleCmd("sm_togglectfhats",   ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
-    RegConsoleCmd("sm_togglehats",      ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
-    RegConsoleCmd("sm_ctfhats",         ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
-    RegConsoleCmd("sm_nohats",          ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
-    RegConsoleCmd("sm_hats",            ToggleCTFHat, "Locally toggles Creators.TF custom cosmetic visibility");
+    RegConsoleCmd("sm_cosmetics",       ToggleCTFHat, CTFHatDesc);
+    RegConsoleCmd("sm_noctfhats",       ToggleCTFHat, CTFHatDesc);
+    RegConsoleCmd("sm_togglectfhats",   ToggleCTFHat, CTFHatDesc);
+    RegConsoleCmd("sm_togglehats",      ToggleCTFHat, CTFHatDesc);
+    RegConsoleCmd("sm_ctfhats",         ToggleCTFHat, CTFHatDesc);
+    RegConsoleCmd("sm_nohats",          ToggleCTFHat, CTFHatDesc);
+    RegConsoleCmd("sm_hats",            ToggleCTFHat, CTFHatDesc);
 
-    ctfHatsCookie = RegClientCookie("CTF_ShowHats", ".", CookieAccess_Protected);
+    ctfHatsCookie = RegClientCookie("CTF_ShowHats", CTFHatDesc, CookieAccess_Protected);
 
     // loop thru clients
     for (int i = 1; i <= MaxClients; i++)
     {
-        if (!AreClientCookiesCached(i))
+        if (AreClientCookiesCached(i))
         {
-            continue;
+            // run OCCC for lateloading
+            OnClientCookiesCached(i);
         }
-
-        // run OCCC for lateloading
-        OnClientCookiesCached(i);
     }
 }
 
@@ -54,6 +54,8 @@ public void OnClientCookiesCached(int client)
     if (!cookievalue[0])
     {
         cookievalue = "0";
+        // save it
+        SetClientCookie(client, ctfHatsCookie, cookievalue);
     }
 
     // StringToIntToBool essentially, the bang bang double negates it, once to an inverted bool, twice to a proper bool
@@ -63,13 +65,6 @@ public void OnClientCookiesCached(int client)
 // when a client runs sm_nohats etc
 public Action ToggleCTFHat(int client, int args)
 {
-    // make sure we yell at the client if we dont have a connection to the db
-    bool nosave;
-    if (!AreClientCookiesCached(client))
-    {
-        nosave = true;
-    }
-
     // toggle
     bShowHats[client] = !bShowHats[client];
 
@@ -85,16 +80,14 @@ public Action ToggleCTFHat(int client, int args)
         cookievalue = "0";
     }
 
-    if (nosave)
+    if (!AreClientCookiesCached(client))
     {
         PrintToChat(client, "\x01* Your settings will not be saved due to our cookie server being down.");
         return Plugin_Handled;
     }
-    else
-    {
-        // save to cookie
-        SetClientCookie(client, ctfHatsCookie, cookievalue);
-    }
+
+    // save to cookie
+    SetClientCookie(client, ctfHatsCookie, cookievalue);
 
     return Plugin_Handled;
 }
@@ -129,8 +122,5 @@ public Action SetTransmitHat(int entity, int client)
     {
         return Plugin_Continue;
     }
-    else
-    {
-        return Plugin_Stop;
-    }
+    return Plugin_Stop;
 }

@@ -231,10 +231,10 @@ push ()
     git push gh_origin stripped-master:master --progress --force
 }
 
-bootstrap_raw
-bootstrap_stripped
-stripchunkyblobs
-stripfiles
-stripsecrets
-syncdisk
-push
+bootstrap_raw       || exit 255
+bootstrap_stripped  || exit 255
+stripchunkyblobs    || exit 255
+stripfiles          || exit 255
+stripsecrets        || exit 255
+syncdisk            || exit 255
+push                || exit 1
