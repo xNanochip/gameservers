@@ -230,7 +230,7 @@ push ()
 {
     # donezo
     ok "-> pushing to gh"
-    git push gh_origin stripped-master:master --progress --force --no-verify
+    git lfs push gh_origin stripped-master:master --progress --force --no-verify --all 
 }
 
 bootstrap_raw       || exit 255
