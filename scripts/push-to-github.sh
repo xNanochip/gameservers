@@ -23,7 +23,7 @@ bootstrap_raw ()
 {
     if [ ! -d "${tmp}/gs_raw" ]; then
         info "-> Cloning repo!"
-        git clone ${gl_origin} \
+        git lfs clone ${gl_origin} \
         -b ${CI_DEFAULT_BRANCH} --single-branch ${tmp}/gs_raw \
         --progress
 
@@ -103,7 +103,7 @@ bootstrap_stripped ()
     rm -rf ${tmp}/gs_stripped
 
     info "cloning"
-    git clone ${tmp}/gs_raw ${tmp}/gs_stripped --progress
+    git lfs clone ${tmp}/gs_raw ${tmp}/gs_stripped --progress
 
     info "cd-ing"
     cd ${tmp}/gs_stripped
