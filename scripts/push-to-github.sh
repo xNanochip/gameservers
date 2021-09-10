@@ -11,9 +11,11 @@ export TERM="screen"
 tmp="/home/server"
 
 debug "setting git config..."
+# 
 git config --global user.email "support@creators.tf"
 git config --global user.name "Creators.TF Production"
-
+# for pushing lfs properly because we scrub files from history
+git config lfs.allowincompletepush true
 gl_origin="git@gitlab.com:creators_tf/gameservers/servers.git"
 gh_origin="git@github.com:CreatorsTF/gameservers.git"
 
