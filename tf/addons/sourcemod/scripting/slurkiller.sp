@@ -5,6 +5,7 @@
 #include <sourcemod>
 #include <regex>
 #include <sourcecomms>
+#include <sourcebanspp>
 // more colors double prints ????
 #include <color_literals>
 
@@ -16,7 +17,7 @@ public Plugin myinfo =
     name             = "Slur Killer",
     author           = "steph&nie",
     description      = ".",
-    version          = "1.2.3",
+    version          = "1.2.4",
     url              = "https://sappho.io/"
 };
 
@@ -66,8 +67,10 @@ public Action OnClientSayCommand(int Cl, const char[] command, const char[] sArg
         {
             char reason[512];
             Format(reason, sizeof(reason), "Auto silenced for hate speech, user said: %s", sArgs);
-            SourceComms_SetClientGag (Cl, true, 10080, true, reason);
-            SourceComms_SetClientMute(Cl, true, 10080, true, reason);
+            // Agreed on by the mod team on 9/16/2021
+            SBPP_BanPlayer(0, Cl, 20160, reason);
+            // SourceComms_SetClientGag (Cl, true, 10080, true, reason);
+            // SourceComms_SetClientMute(Cl, true, 10080, true, reason);
         }
         return Plugin_Handled;
     }
