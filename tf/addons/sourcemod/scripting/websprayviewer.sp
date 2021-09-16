@@ -8,7 +8,7 @@
 
 WebResponse webIndex;
 WebResponse webStyle;
-WebResponse webVTFlib;
+// WebResponse webVTFlib;
 WebResponse webNotFound;
 
 ConVar cvarSprayURL;
@@ -30,11 +30,12 @@ public void OnPluginStart()
 	webStyle.AddHeader(WebHeader_ContentType, "text/css");
 	webStyle.AddHeader(WebHeader_CacheControl, "public, max-age=2629740");
 
-	BuildPath(Path_SM, path, sizeof(path), BASE_PATH ... "vtflib.js");
+	/*
+        BuildPath(Path_SM, path, sizeof(path), BASE_PATH ... "vtflib.js");
 	webVTFlib = new WebFileResponse(path);
 	webVTFlib.AddHeader(WebHeader_ContentType, "text/javascript");
 	webVTFlib.AddHeader(WebHeader_CacheControl, "public, max-age=2629740");
-
+	*/
 	webNotFound = new WebStringResponse("404 Not Found");
 
 	// Auto-detect the URL for displaying in the MotD
@@ -175,8 +176,8 @@ public bool OnWebRequest(WebConnection connection, const char[] method, const ch
 		return connection.QueueResponse(WebStatus_OK, webIndex);
 	if (StrEqual(url, "/style.css"))
 		return connection.QueueResponse(WebStatus_OK, webStyle);
-	if (StrEqual(url, "/vtflib.js"))
-		return connection.QueueResponse(WebStatus_OK, webVTFlib);
+	//if (StrEqual(url, "/vtflib.js"))
+	//	return connection.QueueResponse(WebStatus_OK, webVTFlib);
 
 	return connection.QueueResponse(WebStatus_NotFound, webNotFound);
 }
