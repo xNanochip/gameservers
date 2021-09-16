@@ -1,88 +1,88 @@
-// ----------------------------------------------------------//
-// Creators.TF Generic Mapcycle
-// ----------------------------------------------------------//
-// This file defines what maps are allowed in pubs.
-// ----------------------------------------------------------//
 //
-
-
-// cp_glassworks_rc6a 5cp
-workshop/454118349
-cp_powerhouse
-cp_freight_final1
-cp_process_f7
-// cp_fulgur_rc2a
+// Creators.TF Generic Mapcycle
+//
+// This file defines what maps are allowed in pubs.
+//
+//
+// ----------------------------------------------------------//
+// workshop maps
+// ----------------------------------------------------------//
+//                      cp_fulgur
 workshop/2068252300
-// cp_kalinka_rc6a 5cp
+//                      cp_kalinka
 workshop/1272700588
-// cp_lushlands (badlands lush)
+//                      cp_lushlands
 workshop/1631828718
+//                      cp_process_refresh
+workshop/2302948105
+//                      cp_glassworks
+workshop/454118349
+//                      cp_overgrown
+workshop/503939302
+//                      cp_gorge_reborn
+workshop/2424608178
+//                      cp_steel_refresh
+workshop/2376443257
+//                      cp_villa
+workshop/2113052569
+//                      koth_ashville
+workshop/2130459942
+//                      koth_bagel
+workshop/2514036946
+//                      koth_cascade
+workshop/1133407330
+//                      koth_clearcut
+workshop/2107050255
+//                      koth_daenam
+workshop/1724698099
+//                      koth_databank
+workshop/2112251255
+//                      koth_product
+workshop/454272353
+//                      koth_ramjam
+workshop/459778887
+//                      koth_slaughter
+workshop/1712845210
+//                      koth_spillway
+workshop/1962574007
+//                      koth_synthetic
+workshop/1549817316
+//                      koth_warmtic
+workshop/2443241140
+//                      koth_sharkbay
+workshop/2404226979
+//                      pl_badwater
+workshop/2142942074
+//                      pl_problitz
+workshop/2562184861
+//                      pl_humidity
+workshop/971228749
+//                      pl_fifthcurve
+workshop/648227046
+//                      pl_stranded
+workshop/1481954279
+//                      pl_summercoast
+workshop/1761528829
+//                      pl_vigil
+workshop/1266210012
+// ----------------------------------------------------------//
+// default maps
+// ----------------------------------------------------------//
+cp_freight_final1
+cp_mercenarypark
+cp_metalworks
+cp_mossrock
+cp_mountainlab
+cp_powerhouse
 cp_snakewater_final1
 cp_sunshine
-cp_mercenarypark
-cp_mossrock
-cp_metalworks
-
-// overgrown
-workshop/503939302
-
-// gorge reborn
-workshop/2424608178
-
-cp_mountainlab
-// cp_steel refresh
-workshop/2376443257
-// cp_villa
-workshop/2113052569
-
-// koth_ashville
-workshop/2130459942
-// koth_bagel_rc4a
-workshop/2514036946
-// koth_cascade_rc2
-workshop/1133407330
-// koth_clearcut_b15
-workshop/2107050255
-// koth_daenam_b10
-workshop/1724698099
-// koth_databank_rc3
-workshop/2112251255
 koth_harvest_final
 koth_highpass
 koth_king
 koth_lazarus
-// koth_product_rcx
-workshop/454272353
-// koth_ramjam_rc1
-workshop/459778887
-// koth_slaughter_b2a
-workshop/1712845210
-// koth_spillway_rc3a
-workshop/1962574007
-// koth_synthetic_rc6a
-workshop/1549817316
-// koth_warmtic
-workshop/2443241140
-// sharkbay
-workshop/2404226979
-
-// pl_badwater_pro_v12
-workshop/2142942074
-// problitz
-workshop/2562184861
-// humidity
-workshop/971228749
 pl_borneo
 pl_enclosure_final
-// pl_fifthcurve
-workshop/648227046
 pl_frontier_final
-// pl_stranded_rc6
-workshop/1481954279
-// pl_summercoast_rc8d
-workshop/1761528829
+pl_pier
 pl_swiftwater_final1
 pl_upward
-pl_pier
-// pl_vigil_rc7
-workshop/1266210012

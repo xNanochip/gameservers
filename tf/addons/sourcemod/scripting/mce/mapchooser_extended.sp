@@ -1,37 +1,3 @@
-/**
- * vim: set ts=4 :
- * =============================================================================
- * MapChooser Extended
- * Creates a map vote at appropriate times, setting sm_nextmap to the winning
- * vote.  Includes extra options not present in the SourceMod MapChooser
- *
- * MapChooser Extended (C)2011-2013 Powerlord (Ross Bemrose)
- * SourceMod (C)2004-2007 AlliedModders LLC.  All rights reserved.
- * =============================================================================
- *
- * This program is free software; you can redistribute it and/or modify it under
- * the terms of the GNU General Public License, version 3.0, as published by the
- * Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * As a special exception, AlliedModders LLC gives you permission to link the
- * code of this program (as well as its derivative works) to "Half-Life 2," the
- * "Source Engine," the "SourcePawn JIT," and any Game MODs that run on software
- * by the Valve Corporation.  You must obey the GNU General Public License in
- * all respects for all other code used.  Additionally, AlliedModders LLC grants
- * this exception to all derivative works.  AlliedModders LLC defines further
- * exceptions, found in LICENSE.txt (as of this writing, version JULY-31-2007),
- * or <http://www.sourcemod.net/license.php>.
- *
- * Version: $Id$
- */
 
 //#define DEBUG
 
@@ -46,16 +12,16 @@
 #pragma semicolon 1
 #include <sourcemod>
 #include <mapchooser>
-#include "include/mapchooser_extended"
+#include <mapchooser_extended>
 #include <nextmap>
 #include <sdktools>
 #include <colors>
-#include <mapnames>
+#include <prettymap>
 
 #undef REQUIRE_PLUGIN
 #include <nativevotes>
 
-#define MCE_VERSION "1.10.2"
+#define MCE_VERSION "1.10.4"
 
 #define NV "nativevotes"
 
@@ -84,11 +50,11 @@ enum
 
 public Plugin:myinfo =
 {
-	name = "MapChooser Extended",
-	author = "Powerlord, Zuko, Nanochip, and AlliedModders LLC",
-	description = "Automated Map Voting with Extensions",
-	version = MCE_VERSION,
-	url = "https://forums.alliedmods.net/showthread.php?t=156974"
+	name           = "MapChooser Extended",
+	author         = "Powerlord, Zuko, Nanochip, and AlliedModders LLC",
+	description    = "Automated Map Voting with Extensions",
+	version        = MCE_VERSION,
+	url            = "https://forums.alliedmods.net/showthread.php?t=156974"
 };
 
 /* Valve ConVars */
@@ -568,7 +534,7 @@ public Action Command_SetNextmap(int client, int args)
 	}
 
 	GetMapDisplayName(displayName, displayName, sizeof(displayName));
-	GetPrettyMapName(displayName, displayName, sizeof displayName);
+	// GetPrettyMapName(displayName, displayName, sizeof displayName);
 
 	ShowActivity2(client, "[SM] ", "%t", "Changed Next Map", displayName);
 	LogAction(client, -1, "\"%L\" changed nextmap to \"%s\"", client, map);
@@ -1024,8 +990,14 @@ InitiateVote(MapChange:when, Handle:inputlist=INVALID_HANDLE)
 	if (GetConVarBool(g_Cvar_IntermissionVote))
 	{
 		// just cancel the current votes in progress since this is the most important one.
-		if (IsVoteInProgress()) CancelVote();
-		if (g_NativeVotes && NativeVotes_IsVoteInProgress()) NativeVotes_Cancel();
+		if (IsVoteInProgress())
+		{
+			CancelVote();
+		}
+		if (g_NativeVotes && NativeVotes_IsVoteInProgress())
+		{
+			NativeVotes_Cancel();
+		}
 	}
 	else
 	{
@@ -1117,9 +1089,9 @@ InitiateVote(MapChange:when, Handle:inputlist=INVALID_HANDLE)
 		SetVoteResultCallback(g_VoteMenu, Handler_MapVoteFinished);
 	}
 
-	/* Call OnMapVoteStarted() Forward */
-//	Call_StartForward(g_MapVoteStartedForward);
-//	Call_Finish();
+//  Call OnMapVoteStarted() Forward
+//  Call_StartForward(g_MapVoteStartedForward);
+//  Call_Finish();
 
 	/**
 	 * TODO: Make a proper decision on when to clear the nominations list.
@@ -1466,7 +1438,10 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 				WritePackString(data, map);
 				g_ChangeMapInProgress = false;
 			}
-			else SetNextMap(map);
+			else
+			{
+				SetNextMap(map);
+			}
 		}
 		else if (g_ChangeTime == MapChange_Instant)
 		{
@@ -1482,7 +1457,8 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 				NativeVotes_DisplayPassEx(menu, NativeVotesPass_ChgLevel, display);
 			}
 		}
-		else // MapChange_RoundEnd
+		 // MapChange_RoundEnd
+		else
 		{
 			SetNextMap(map);
 			g_ChangeMapAtRoundEnd = true;
@@ -1498,7 +1474,7 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 
 		g_HasVoteStarted = false;
 		g_MapVoteCompleted = true;
-		
+
 		char sDisplay[128];
 		GetPrettyMapName(displayName, sDisplay, sizeof(sDisplay));
 
@@ -1549,7 +1525,7 @@ public Handler_MapVoteFinished(Handle:menu,
 			{
 				NativeVotes_DisplayFail(menu, NativeVotesFail_NotEnoughVotes);
 			}
-			
+
 			g_bDidRevote = true;
 
 			CPrintToChatAll("[MCE] %t", "Tie Vote", GetArraySize(mapList));
@@ -1588,7 +1564,7 @@ public Handler_MapVoteFinished(Handle:menu,
 			{
 				NativeVotes_DisplayFail(menu, NativeVotesFail_NotEnoughVotes);
 			}
-			
+
 			g_bDidRevote = true;
 
 			CPrintToChatAll("[MCE] %t", "Revote Is Needed", required_percent);
@@ -1811,7 +1787,7 @@ CreateNextVote()
 
 	decl String:map[PLATFORM_MAX_PATH];
 	new Handle:tempMaps  = CloneArray(g_MapList);
-	
+
 	for (int i = 0; i < GetArraySize(g_MapList); i++)
 	{
 		GetArrayString(g_MapList, i, map, sizeof(map));
@@ -2249,7 +2225,7 @@ public Native_CanNominate(Handle:plugin, numParams)
 }
 
 
-stock AddMapItem(const String:map[])
+stock AddMapItem(const char[] map)
 {
 	char sMap[128];
 	GetMapDisplayName(map, sMap, sizeof sMap);

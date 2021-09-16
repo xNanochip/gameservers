@@ -1,7 +1,7 @@
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "Nanochip"
-#define PLUGIN_VERSION "1.3"
+#define PLUGIN_VERSION "1.3.1"
 
 #include <sourcemod>
 #include <sdktools>
@@ -12,7 +12,7 @@
 
 public Plugin myinfo =
 {
-	name = "[TF2] Vote Scramle",
+	name = "[TF2] Vote Scramble",
 	author = PLUGIN_AUTHOR,
 	description = "Vote to scramble teams.",
 	version = PLUGIN_VERSION,
@@ -264,9 +264,9 @@ public void Event_RoundEnd(Handle event, const char[] name, bool dontBroadcast)
 public Action Timer_Scramble(Handle timer)
 {
 	// scramble teams with default valve scramble
-	//ServerCommand("mp_scrambleteams");
+	ServerCommand("mp_scrambleteams");
 	// scramble teams with gscramble
-	ServerCommand("sm_scramble 0.1 1 -1");
+	// ServerCommand("sm_scramble 0.1 1 -1");
 	int timeleft;
 	GetMapTimeLeft(timeleft);
 	int mins, secs;
