@@ -1,53 +1,20 @@
-/**
- * vim: set ts=4 :
- * =============================================================================
- * Nominations Extended
- * Allows players to nominate maps for Mapchooser
- *
- * Nominations Extended (C)2012-2013 Powerlord (Ross Bemrose)
- * SourceMod (C)2004-2007 AlliedModders LLC.  All rights reserved.
- * =============================================================================
- *
- * This program is free software; you can redistribute it and/or modify it under
- * the terms of the GNU General Public License, version 3.0, as published by the
- * Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * As a special exception, AlliedModders LLC gives you permission to link the
- * code of this program (as well as its derivative works) to "Half-Life 2," the
- * "Source Engine," the "SourcePawn JIT," and any Game MODs that run on software
- * by the Valve Corporation.  You must obey the GNU General Public License in
- * all respects for all other code used.  Additionally, AlliedModders LLC grants
- * this exception to all derivative works.  AlliedModders LLC defines further
- * exceptions, found in LICENSE.txt (as of this writing, version JULY-31-2007),
- * or <http://www.sourcemod.net/license.php>.
- *
- * Version: $Id$
- */
 
 #include <sourcemod>
 #include <mapchooser>
-#include "include/mapchooser_extended"
+#include <mapchooser_extended>
 #include <colors>
-#include <mapnames>
+#include <prettymap>
 #pragma semicolon 1
 
-#define MCE_VERSION "1.10.0"
+#define MCE_VERSION "1.10.4"
 
 public Plugin:myinfo =
 {
-	name = "Map Nominations Extended",
-	author = "Powerlord and AlliedModders LLC",
-	description = "Provides Map Nominations",
-	version = MCE_VERSION,
-	url = "https://forums.alliedmods.net/showthread.php?t=156974"
+	name            = "Map Nominations Extended",
+	author          = "Powerlord and AlliedModders LLC",
+	description     = "Provides Map Nominations",
+	version         = MCE_VERSION,
+	url             = "https://forums.alliedmods.net/showthread.php?t=156974"
 };
 
 new Handle:g_Cvar_ExcludeOld = INVALID_HANDLE;
@@ -121,7 +88,7 @@ public OnConfigsExecuted()
 public OnNominationRemoved(const String:map[], owner)
 {
 	new status;
-	
+
 	char resolvedMap[PLATFORM_MAX_PATH];
 	FindMap(map, resolvedMap, sizeof(resolvedMap));
 
@@ -156,9 +123,9 @@ public Action:Command_Addmap(client, args)
 	{
 		// We couldn't resolve the map entry to a filename, so...
 		ReplyToCommand(client, "%t", "Map was not found", mapname);
-		return Plugin_Handled;		
+		return Plugin_Handled;
 	}
-	
+
 	char displayName[PLATFORM_MAX_PATH];
 	GetMapDisplayName(resolvedMap, displayName, sizeof(displayName));
 
@@ -252,7 +219,7 @@ public Action:Command_Nominate(client, args)
 		return Plugin_Handled;
 	}
 	*/
-	
+
 	//----------------------------------------------------------//
 	// This is a fix to the problem above,
 	//----------------------------------------------------------//
@@ -277,7 +244,7 @@ public Action:Command_Nominate(client, args)
 		return Plugin_Handled;
 	}
 	//----------------------------------------------------------//
-	
+
 	GetPrettyMapName(displayName, displayName, sizeof displayName);
 
 	if (!GetTrieValue(g_mapTrie, mapname, status))
@@ -376,9 +343,9 @@ BuildMapMenu()
 		new status = MAPSTATUS_ENABLED;
 
 		GetArrayString(g_MapList, i, map, sizeof(map));
-		
+
 		FindMap(map, map, sizeof(map));
-		
+
 		char displayName[PLATFORM_MAX_PATH];
 		GetMapDisplayName(map, displayName, sizeof(displayName));
 
@@ -424,7 +391,7 @@ public Handler_MapSelectMenu(Handle:menu, MenuAction:action, param1, param2)
 			char name[MAX_NAME_LENGTH];
 			char sDisplay[PLATFORM_MAX_PATH];
 			GetMenuItem(menu, param2, map, sizeof(map), _, sDisplay, sizeof(sDisplay));
-			
+
 			FindMap(map, map, sizeof map);
 
 			GetClientName(param1, name, MAX_NAME_LENGTH);

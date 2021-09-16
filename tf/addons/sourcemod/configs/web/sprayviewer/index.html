@@ -12,7 +12,7 @@
         <div class="subtitle" id="playercount">Players online with sprays: ?</div>
     </div>
 
-    <script src="vtflib.js"></script>
+    <script src="https://raw.githubusercontent.com/sapphonie/webspraypanel/master/configs/web/sprayviewer/vtflib.js"></script>
     <script type="text/javascript">
 
         VTFLib();
@@ -28,8 +28,11 @@
 
             request.onload = function()
             {
-                if (this.status != 200)
+                if (this.status != 200 && this.status != 304)
+                {
+                    console.log('onload Got bad status ' + this.status);
                     return;
+                }
 
                 var buffer = new DataView(this.response);
                 var cursor = 0;
@@ -98,8 +101,9 @@
 
             request.onload = function()
             {
-                if (this.status != 200)
+                if (this.status != 200 && this.status != 304)
                 {
+                    console.log('addspray Got bad status ' + this.status);
                     return;
                 }
 
@@ -127,7 +131,7 @@
                 var imageData = ctx.getImageData(0, 0, spray.width, spray.height);
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                canvas.width = spray.width;
+                canvas.width  = spray.width;
                 canvas.height = spray.height;
 
                 var frame = 0;
