@@ -199,3 +199,4 @@ int WriteBytes(char[] buffer, int maxlength, int value, int numbytes)
 
 	return numbytes;
 }
+
