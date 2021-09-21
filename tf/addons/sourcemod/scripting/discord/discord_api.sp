@@ -8,18 +8,18 @@
 #include <SteamWorks>
 #include <smjansson>
 
-#include "external/discord/DiscordRequest.sp"
-#include "external/discord/SendMessage.sp"
-#include "external/discord/GetGuilds.sp"
-#include "external/discord/GetGuildChannels.sp"
-#include "external/discord/ListenToChannel.sp"
-#include "external/discord/SendWebHook.sp"
-#include "external/discord/reactions.sp"
-#include "external/discord/UserObject.sp"
-#include "external/discord/MessageObject.sp"
-#include "external/discord/GuildMembers.sp"
-#include "external/discord/GuildRole.sp"
-#include "external/discord/deletemessage.sp"
+#include "discord/DiscordRequest.sp"
+#include "discord/SendMessage.sp"
+#include "discord/GetGuilds.sp"
+#include "discord/GetGuildChannels.sp"
+#include "discord/ListenToChannel.sp"
+#include "discord/SendWebHook.sp"
+#include "discord/reactions.sp"
+#include "discord/UserObject.sp"
+#include "discord/MessageObject.sp"
+#include "discord/GuildMembers.sp"
+#include "discord/GuildRole.sp"
+#include "discord/deletemessage.sp"
 
 //For rate limitation
 Handle hRateLimit = null;

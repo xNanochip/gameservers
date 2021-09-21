@@ -3,7 +3,7 @@
 
 #include <sourcemod>
 #include <calladmin>
-#include "include/discord.inc"
+#include <discord>
 #include <SteamWorks>
 
 #define PLUGIN_VERSION "1.2"
