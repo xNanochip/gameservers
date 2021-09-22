@@ -8,6 +8,9 @@
     - FAKE ANGLES
     - TURN BINDS
 */
+
+// float srvClangles[TFMAXPLAYERS+1][3][3];
+
 public Action OnPlayerRunCmd
 (
     int Cl,
@@ -70,6 +73,21 @@ public Action OnPlayerRunCmd
     clangles[Cl][2] = clangles[Cl][1];
     clangles[Cl][1] = clangles[Cl][0];
     clangles[Cl][0] = angles;
+    // GetClientEyeAngles( Cl, clangles[Cl][0] );
+
+
+/*
+    srvClangles[Cl][2] = srvClangles[Cl][1];
+    srvClangles[Cl][1] = srvClangles[Cl][0];
+    GetClientEyeAngles( Cl, srvClangles[Cl][0] );
+
+    LogMessage(
+        "real angles = %f %f %f",
+        srvClangles[Cl][0][0],
+        srvClangles[Cl][1][0],
+        srvClangles[Cl][2][0]
+    );
+*/
 
     // grab cmdnum
     for (int i = 5; i > 0; --i)
@@ -580,10 +598,9 @@ void psilentCheck(int userid)
         maxPsilentDetections != -1
         &&
         (
-               clbuttons[Cl][0] & IN_ATTACK
-            || clbuttons[Cl][2] & IN_ATTACK
-            || clbuttons[Cl][3] & IN_ATTACK
-            || clbuttons[Cl][4] & IN_ATTACK
+            clbuttons[Cl][0] & IN_ATTACK
+            ||
+            clbuttons[Cl][1] & IN_ATTACK
         )
     )
     {
@@ -732,10 +749,9 @@ void aimsnapCheck(int userid)
         // thinking about removing this...
         if
         (
-               didBangOnFrame[Cl][1]
-            || didHurtOnFrame[Cl][1]
-            || didBangOnFrame[Cl][2]
-            || didHurtOnFrame[Cl][2]
+            didHurtOnFrame[Cl][1]
+            &&
+            didBangOnFrame[Cl][1]
         )
         {
             float snapsize = 15.0;
@@ -888,26 +904,19 @@ void triggerbotCheck(int userid)
         }
         if
         (
-            // attack > 0
-            // &&
             // thinking about removing this...
             (
-                (
-                       didBangOnFrame[Cl][0]
-                    || didBangOnFrame[Cl][1]
-                    || didBangOnFrame[Cl][2]
-                    // either we ignore nonhitscan or we ignore certain weapons
-                    //|| didHurtOnFrame[Cl][0]
-                    //|| didHurtOnFrame[Cl][1]
-                    //|| didHurtOnFrame[Cl][2]
-                )
-                &&
-                attack == 1
+                   didBangOnFrame[Cl][0]
+                || didHurtOnFrame[Cl][0]
+                || didBangOnFrame[Cl][1]
+                || didHurtOnFrame[Cl][1]
+                || didBangOnFrame[Cl][2]
+                || didHurtOnFrame[Cl][2]
             )
-            ||
+            &&
             // count all attack2 single inputs
             (
-                attack == 2
+                attack > 0
             )
         )
         {

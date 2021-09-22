@@ -87,6 +87,8 @@ public void OnPluginStart()
     LoadTranslations("common.phrases");
     LoadTranslations("stac.phrases.txt");
 
+    checkOS();
+
     // updater
     if (LibraryExists("updater"))
     {
@@ -104,7 +106,8 @@ public void OnPluginStart()
     // setup regex - "Recording to ".*""
     demonameRegex       = CompileRegex("Recording to \".*\"");
     demonameRegexFINAL  = CompileRegex("\".*\"");
-    publicIPRegex       = CompileRegex("public ip: \\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b");
+    // this is fucking disgusting
+    publicIPRegex       = CompileRegex("(ip  : .*)\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b");
     IPRegex             = CompileRegex("\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b");
 
     // grab round start events for calculating tps
@@ -115,6 +118,8 @@ public void OnPluginStart()
     HookEvent("player_disconnect", ePlayerDisconnect);
     // grab player name changes
     HookEvent("player_changename", ePlayerChangedName, EventHookMode_Pre);
+    // grab player cheevs
+    HookEvent("achievement_earned", ePlayerAchievement, EventHookMode_Post);
 
     // hook sv_cheats so we can instantly unload if cheats get turned on
     HookConVarChange(FindConVar("sv_cheats"), GenericCvarChanged);
