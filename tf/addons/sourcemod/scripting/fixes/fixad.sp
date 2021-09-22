@@ -30,6 +30,7 @@ public Action CheckGamemode(Handle timer)
         {
             SetVariantBool(false);
             AcceptEntityInput(ent, "SetStalemateOnTimelimit");
+            SetConVarInt(FindConVar("mp_match_end_at_timelimit"), 0);
             LogMessage("fixed a/d map timelimit");
             continue;
         }
