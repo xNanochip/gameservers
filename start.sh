@@ -10,6 +10,10 @@ source scripts/helpers.sh
 # Not yet.
 # export STEAM_GAMESERVER_A2S_INFO_REQUIRE_CHALLENGE=1
 
+# dirty hack - valve incompetence strikes again
+export STEAM_GAMESERVER_A2S_INFO_STRICT_LEGACY_PROTOCOL=1
+
+
 # update server if it needs it
 ./steamcmd/steamcmd.sh +login anonymous +force_install_dir ${PWD} +app_update 232250 +exit
 
