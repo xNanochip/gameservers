@@ -31,7 +31,7 @@
     }
     "4"
     {
-        "chat"                  "{green}Seeing {red}red ERRORS{green}? Type {lightgreen}/ctfhats{green} in chat to disable custom cosmetics, or download our asset pack at {lightgreen}creators.tf/assetpack{green}!"
+        "chat"                  "{green}Can't see your custom hats? Type {lightgreen}/ctfhats{green} in chat to toggle custom cosmetics on and off, and make sure to download our full asset pack at {lightgreen}creators.tf/assetpack{green}!"
     }
     "5"
     {
