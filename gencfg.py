@@ -91,51 +91,32 @@ pubs = False
 
 if sid > 100 and sid <= 199:
     c_region = "EU 1"
-
-    if sid == 104:
-        type = "Vanilla+"
-    else:
-        type = "Quickplay"
+    type = "Quickplay"
 
 
 elif sid > 200 and sid <= 299:
 
     c_region = "VIN"
-
-    if sid == 204:
-        type = "Vanilla+"
-    else:
-        type = "Quickplay"
+    type = "Quickplay"
 
 
 elif sid > 300 and sid <= 399:
 
     c_region = "LA"
-
-    if sid == 302:
-        type = "Vanilla+"
-    else:
-        type = "Quickplay"
+    type = "Quickplay"
 
 
 elif sid > 600 and sid <= 699:
 
     c_region = "AUS"
-
-    if sid == 602:
-        type = "Vanilla+"
-    else:
-        type = "Quickplay"
+    type = "Quickplay"
 
 
 elif sid > 700 and sid <= 799:
 
     c_region = "SGP"
 
-    if sid == 702:
-        type = "Vanilla+"
-    else:
-        type = "Quickplay"
+    type = "Quickplay"
 
 else:
     c_region = "Unknown"
@@ -163,15 +144,15 @@ elif c_region == "AUS":
 pubs = False
 econ = False
 
-if type == "Vanilla+":
-    ctype = "Vanilla+ | NoDL"
-    pubs = True
-    econ = False
+#if type == "Vanilla+":
+#    ctype = "Vanilla+ | NoDL"
+#    pubs = True
+#    econ = False
 
-else:
-    ctype = type
-    pubs = True
-    econ = True
+#else:
+ctype = type
+pubs = True
+econ = True
 
 # always exec our base cfg
 config_file_string += ("exec quickplay/base\n")
